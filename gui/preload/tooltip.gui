@@ -1,0 +1,306 @@
+template DefaultTooltipText
+{
+	#using = FontNormal
+	default_format = "#medium"
+	align = left
+	autoresize = yes
+	multiline = yes
+
+	max_width = 450
+}
+
+template TooltipFocus {
+	block "focus" {
+		background = {
+			using = Background_Area_Solid
+			margin = { 1920 1080 }
+			visible = "[Not(GetVariableSystem.Exists('tooltip_focus'))]"
+		}
+	}
+}
+
+template TooltipSound {
+	state = {
+		name = _show
+		start_sound = {
+			soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+		}
+	}
+}
+
+template GeneralTooltipSetup
+{
+	filter_mouse = all
+	# using = TooltipFocus
+	button = {
+		name = "close_tooltips"
+		size = { 0 0 } # Intentional zero size
+		visible = "[PdxGuiWidget.IsNestedTooltip]"
+		onclick = "[CloseAllTooltips]"
+		shortcut = "close_tooltips"
+	}
+	# using = TooltipSound
+}
+
+template DefaultTooltipBackground
+{
+	using = TooltipFocus
+	background = {
+		name = "bg"
+		block "bg_texture" {
+			texture = "gfx/interface/tooltips/tooltip_bg.dds"
+		}
+
+		spriteType = Corneredtiled
+		spriteborder = { 3 5 }
+
+		block "bg_color" {
+			tintcolor = "[TooltipInfo.GetTintColor]"
+		}
+
+		modify_texture = {
+			name = "overlay"
+			texture = "gfx/interface/component_overlay/overlay_window.dds"
+			spriteType = Corneredstretched
+			spriteborder = { 0 0 }
+			blend_mode = overlay
+		}
+	}
+
+	background = {
+		name = "frame"
+		texture = "gfx/interface/tooltips/tooltip_frame.dds"
+		spriteType = Corneredtiled
+		spriteborder = { 20 20 }
+
+		block "frame_color" {
+			tintcolor = "[TooltipInfo.GetTintColor]"
+		}
+
+		modify_texture = {
+			name = "overlay"
+			texture = "gfx/interface/component_overlay/overlay_window.dds"
+			spriteType = Corneredstretched
+			spriteborder = { 0 0 }
+			blend_mode = overlay
+		}
+	}
+
+	margin_widget = {
+		size = { 100% 100% }
+		margin = { 3 3 }
+
+		icon = {
+			name = "tooltip_locked"
+			visible = "[PdxGuiWidget.IsTooltipLocked]"
+			texture = "gfx/interface/tooltips/tooltip_frame.dds"
+			spriteType = Corneredtiled
+			spriteborder = { 20 20 }
+			tintcolor = "[TooltipInfo.GetTintColor]"
+			size = { 100% 100% }
+			alpha = 1
+
+			state = {
+				name = _show
+				bezier = { 0.25 0.1 0.25 1 }
+				duration = 0.15
+				alpha = 1
+			}
+
+			state = {
+				name = _hide
+				alpha = 0
+			}
+
+			modify_texture = {
+				name = "overlay"
+				texture = "gfx/interface/component_overlay/overlay_window.dds"
+				spriteType = Corneredstretched
+				spriteborder = { 0 0 }
+				blend_mode = overlay
+			}
+		}
+
+		block "progress"
+		{
+			progresspie = {
+				name = "tooltip_progress"
+				visible = "[And(UsesTimerLocking, Not(PdxGuiWidget.IsTooltipLocked))]"
+				parentanchor = top|right
+				position = { -3 3 }
+				size = { 20 20 }
+				min = 0
+				max = 1
+				tintcolor = "[TooltipInfo.GetTintColor]"
+				value = "[PdxGuiWidget.GetTooltipLockProgress]"
+				texture = "gfx/interface/progressbars/progress_circle.dds"
+				framesize = { 248 248 }
+				frame = 2
+
+				state = {
+					name = _show
+					alpha = 1
+				}
+
+				state = {
+					name = _hide
+					bezier = { 0.25 0.1 0.25 1 }
+					duration = 0.05
+					alpha = 0
+				}
+			}
+		}
+	}
+}
+
+container = {
+	name = "ProvinceTooltipWidget"
+	filter_mouse = all
+	alwaystransparent = yes
+
+	flowcontainer = {
+		position = { 25 25 }
+		direction = vertical
+
+		widget = {
+			name = "background"
+			using = DefaultTooltipBackground
+			blockoverride "focus" { }
+			size = { 100% 100% }
+			alwaystransparent = yes
+
+			blockoverride "bg_color" {
+				tintcolor = { 1.0 1 1.0 0.8 }
+			}
+			blockoverride "progress" {}
+		}
+
+		textbox = {
+			using = DefaultTooltipText
+			name = "TooltipText"
+			margin = { 20 10 }
+		}
+	}
+}
+
+# container = {
+# 	name = "ProvinceTooltipWidget"
+# 	filter_mouse = all
+# 	alwaystransparent = yes
+# 	minimumsize = { 1920 1080 }
+#
+# 	flowcontainer = {
+# 		position = { 0 -5 }
+# 		position = { 25 25 }
+# 		direction = vertical
+# 		parentanchor = hcenter|bottom
+#
+# 		widget = {
+# 			name = "background"
+# 			using = DefaultTooltipBackground
+# 			size = { 100% 100% }
+# 			alwaystransparent = yes
+#
+# 			blockoverride "bg_color" {
+# 				tintcolor = { 1.0 1 1.0 0.8 }
+# 			}
+# 			blockoverride "progress" {}
+# 		}
+#
+# 		textbox = {
+# 			using = DefaultTooltipText
+# 			name = "TooltipText"
+# 			margin = { 20 10 }
+# 		}
+# 	}
+# }
+
+template DefaultTooltipWidget {
+	container = {
+		using = GeneralTooltipSetup
+		alwaystransparent = no
+
+		widget = {
+			name = "background"
+			using = DefaultTooltipBackground
+			size = { 100% 100% }
+			alwaystransparent = no
+		}
+
+		flowcontainer = {
+			direction = vertical
+			margin_right = 10
+
+			textbox = {
+				name = "TooltipText"
+				using = DefaultTooltipText
+				margin = { 20 20 }
+				margin_top = 10
+
+				fonttintcolor = "[TooltipInfo.GetTintColor]"
+				alwaystransparent = yes
+			}
+
+			textbox = {
+				alwaystransparent = yes
+				name = "TooltipTextShortcut"
+				using = DefaultTooltipText
+				parentanchor = right
+				margin_top = -20
+				margin_bottom = 15
+				margin_right = 15
+			}
+		}
+	}
+}
+
+template TooltipWithFakeShortcut {
+	container = {
+		using = GeneralTooltipSetup
+		alwaystransparent = no
+
+		widget = {
+			name = "background"
+			using = DefaultTooltipBackground
+			size = { 100% 100% }
+			alwaystransparent = no
+		}
+
+		flowcontainer = {
+			direction = vertical
+			margin_right = 10
+
+			textbox = {
+				name = "TooltipText"
+				using = DefaultTooltipText
+				margin = { 20 20 }
+				margin_top = 10
+
+				fonttintcolor = "[TooltipInfo.GetTintColor]"
+				alwaystransparent = no
+			}
+
+			textbox = {
+				name = "TooltipTextFakeShortcut"
+				using = DefaultTooltipText
+				block "shortcut_text" {}
+				parentanchor = right
+				margin_top = -20
+				margin_bottom = 15
+				margin_right = 15
+			}
+		}
+	}
+}
+
+container = {
+	alwaystransparent = no
+	name = "DefaultTooltipWidget"
+	using = DefaultTooltipWidget
+}
+
+template StruggleEffectTooltipText
+{
+	using = DefaultTooltipText
+	max_width = 800
+}

@@ -1,0 +1,185 @@
+is_army_in_combat = {
+	is_shown = {
+		is_army_in_combat = yes
+	}
+}
+
+add_from_map_outliner = {
+	saved_scopes = { target }
+
+	effect = {
+		if = {
+			limit = {
+				NOT = {
+					is_target_in_variable_list = {
+						name = hostiles_inside
+						target = scope:target
+					}
+				}
+				any_player = {
+					any_war_enemy = {
+						this = scope:target.army_owner
+					}
+				}
+			}
+			add_to_variable_list = {
+				name = hostile_armies_temp
+				target = scope:target
+			}
+		}
+	}
+}
+
+sort_armies = {
+	effect = {
+		clear_variable_list = hostiles_outside
+
+		ordered_in_list = {
+			variable = hostile_armies_temp
+			min = 0
+			order_by = army_size
+			root = {
+				add_to_variable_list = {
+					name = hostiles_outside
+					target = prev
+				}
+			}
+		}
+
+		every_in_list = {
+			variable = hostiles_outside
+			limit = {
+				NOT = { exists = this }
+			}
+			root = {
+				remove_list_variable = {
+					name = hostiles_outside
+					target = prev
+				}
+			}
+		}
+
+		clear_variable_list = hostile_armies_temp
+	}
+	# remove_variable = refresh_armies
+}
+
+clear_dead_armies = {
+	effect = {
+		if = {
+			limit = { has_variable_list = allied_units }
+			every_in_list = {
+				variable = allied_units
+				limit = {
+					NOT = { exists = this }
+				}
+				root = {
+					remove_list_variable = {
+						name = allied_units
+						target = prev
+					}
+				}
+			}
+		}
+		if = {
+			limit = { has_variable_list = hostiles_inside }
+			every_in_list = {
+				variable = hostiles_inside
+				limit = {
+					NOT = { exists = this }
+				}
+				root = {
+					remove_list_variable = {
+						name = hostiles_inside
+						target = prev
+					}
+				}
+			}
+			every_in_list = {
+				variable = hostiles_inside
+				save_scope_as = army
+
+				if = {
+					limit = {
+						NOT = {
+							any_player = {
+								OR = {
+									any_war_enemy = {
+										this = scope:army.army_owner
+									}
+									any_hostile_raider = {
+										this = scope:army.army_owner
+									}
+								}
+								OR = {
+									any_realm_province = {
+										this = scope:army.location
+									}
+									any_war_ally = {
+										any_realm_province = {
+											this = scope:army.location
+										}
+									}
+								}
+							}
+						}
+					}
+					root = {
+						remove_list_variable = {
+							name = hostiles_inside
+							target = scope:army
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+# sieges_and_battles = {
+# 	effect = {
+# 		clear_variable_list = sieges
+# 		clear_variable_list = battles
+#
+# 		every_in_list = {
+# 			variable = hostiles_inside
+# 			limit = {
+# 				OR = {
+# 					is_army_in_siege = yes
+# 					is_army_in_raid = yes
+# 				}
+# 				is_army_in_combat = no
+# 			}
+# 			root = {
+# 				add_to_variable_list = {
+# 					name = sieges
+# 					target = prev
+# 				}
+# 			}
+# 		}
+#
+# 		every_in_list = {
+# 			variable = hostiles_inside
+# 			limit = {
+# 				is_army_in_combat
+# 			}
+# 			root = {
+# 				add_to_variable_list = {
+# 					name = battles
+# 					target = prev
+# 				}
+# 			}
+# 		}
+# 	}
+# }
+#
+# county_holdings = {
+# 	effect = {
+# 		if = {
+# 			limit = {
+# 				NOT = { has_variable_list = adj_holdings }
+# 			}
+#
+# 		}
+# 	}
+# }

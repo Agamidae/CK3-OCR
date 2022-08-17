@@ -1,0 +1,276 @@
+holdings_list = {
+	saved_scopes = {
+		player
+	}
+	effect = {
+		if = {
+			limit = {
+				scope:player = { exists = var:expanded_view }
+				is_alive = yes
+			}
+			clear_variable_list = holdings
+			clear_variable_list = counties
+			clear_variable_list = neighbours
+			if = {
+				limit = { scope:player = { NOT = { exists = var:holdings_filter } } }
+				scope:player = {
+					set_variable = {
+						name = holdings_filter
+						value = flag:personal
+					}
+				}
+			}
+			if = {
+				limit = { scope:player = { NOT = { exists = var:holdings_sorting } } }
+				scope:player = {
+					set_variable = {
+						name = holdings_sorting
+						value = flag:income
+					}
+				}
+			}
+			if = {
+				limit = {
+					scope:player = { var:holdings_filter = flag:personal }
+				}
+				every_directly_owned_province = {
+					limit = {
+						barony = {
+							is_leased_out = no
+						}
+					}
+					add_to_list = holdings
+				}
+			}
+			else = {
+				every_realm_province = {
+					add_to_list = holdings
+				}
+			}
+			if = {
+				limit = {
+					scope:player = { var:holdings_sorting = flag:income }
+				}
+				ordered_in_list = {
+					list = holdings
+					order_by = monthly_income
+					min = 0
+
+					root = {
+						add_to_variable_list = {
+							name = holdings
+							target = prev
+						}
+					}
+				}
+			}
+			else = {
+				ordered_in_list = {
+					list = holdings
+					order_by = building_levies
+					min = 0
+
+					root = {
+						add_to_variable_list = {
+							name = holdings
+							target = prev
+						}
+					}
+				}
+			}
+
+			ordered_realm_county = {
+				order_by = total_tax
+				min = 0
+				set_variable = {
+					name = total_tax
+					value = total_tax
+				}
+				set_variable = {
+					name = total_levies
+					value = total_levies
+				}
+				root = {
+					add_to_variable_list = {
+						name = counties
+						target = prev
+					}
+				}
+			}
+
+			#neighbours
+
+
+			clear_variable_list = adjacent_rulers
+			clear_variable_list = adjacent_rulers_across_water
+			clear_variable_list = adjacent_vassals
+
+			capital_province = {
+				save_scope_as = origin
+			}
+
+			if = {
+				limit = {
+					is_independent_ruler = yes
+				}
+				every_neighboring_top_liege_realm_owner = {
+					add_to_list = adjacent_rulers
+					set_variable = {
+						name = direction
+						value = capital_province.ruler_direction_svalue
+					}
+					if = {
+						limit = {
+							var:direction = 0
+						}
+						set_variable = {
+							name = direction
+							value = capital_province.direction_svalue
+						}
+					}
+				}
+				every_neighboring_and_across_water_top_liege_realm_owner = {
+					limit = {
+						NOT = {
+							is_in_list = adjacent_rulers
+						}
+					}
+					add_to_list = adjacent_rulers_across_water
+					set_variable = {
+						name = direction
+						value = capital_province.ruler_direction_svalue
+					}
+					if = {
+						limit = {
+							var:direction = 0
+						}
+						set_variable = {
+							name = direction
+							value = capital_province.direction_svalue
+						}
+					}
+				}
+			}
+
+			if = {
+				limit = {
+					is_independent_ruler = no
+				}
+				every_character_to_title_neighboring_county = {
+					add_neighbours_for_vassal = { x = adjacent_rulers }
+				}
+				every_character_to_title_neighboring_and_across_water_county = {
+					add_neighbours_for_vassal = { x = adjacent_rulers_across_water }
+				}
+			}
+
+			ordered_in_list = {
+				list = adjacent_rulers
+				order_by = max_military_strength
+				min = 0
+
+				root = {
+					add_to_variable_list = {
+						name = adjacent_rulers
+						target = prev
+					}
+				}
+			}
+			ordered_in_list = {
+				list = adjacent_rulers_across_water
+				order_by = max_military_strength
+				min = 0
+				limit = {
+					NOT = { is_in_list = adjacent_rulers }
+				}
+
+				root = {
+					add_to_variable_list = {
+						name = adjacent_rulers_across_water
+						target = prev
+					}
+				}
+			}
+			ordered_in_list = {
+				list = adjacent_vassals
+				order_by = max_military_strength
+				min = 0
+
+				root = {
+					add_to_variable_list = {
+						name = adjacent_vassals
+						target = prev
+					}
+				}
+			}
+		}
+	}
+}
+
+personal_holdings = {
+	effect = {
+		set_variable = {
+			name = holdings_filter
+			value = flag:personal
+		}
+	}
+	is_shown = {
+		exists = var:holdings_filter
+		NOT = { var:holdings_filter = flag:personal }
+	}
+}
+
+realm_holdings = {
+	effect = {
+		set_variable = {
+			name = holdings_filter
+			value = flag:realm
+		}
+	}
+	is_shown = {
+		exists = var:holdings_filter
+		NOT = { var:holdings_filter = flag:realm }
+	}
+}
+
+holdings_gold = {
+	effect = {
+		set_variable = {
+			name = holdings_sorting
+			value = flag:income
+		}
+	}
+	is_shown = {
+		exists = var:holdings_sorting
+		NOT = { var:holdings_sorting = flag:income }
+	}
+}
+
+holdings_levies = {
+	effect = {
+		set_variable = {
+			name = holdings_sorting
+			value = flag:levies
+		}
+	}
+	is_shown = {
+		exists = var:holdings_sorting
+		NOT = { var:holdings_sorting = flag:levies }
+	}
+}
+
+expanded_view = {
+	effect = {
+		set_variable = expanded_view
+	}
+	is_shown = {
+		exists = var:expanded_view
+	}
+}
+
+close_expanded_view = {
+	effect = {
+		remove_variable = expanded_view
+	}
+}
+
