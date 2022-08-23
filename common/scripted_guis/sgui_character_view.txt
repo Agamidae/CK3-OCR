@@ -11,15 +11,15 @@ holdings_list = {
 			clear_variable_list = holdings
 			clear_variable_list = counties
 			clear_variable_list = neighbours
-			if = {
-				limit = { scope:player = { NOT = { exists = var:holdings_filter } } }
-				scope:player = {
-					set_variable = {
-						name = holdings_filter
-						value = flag:personal
-					}
-				}
-			}
+			# if = {
+			# 	limit = { scope:player = { NOT = { exists = var:holdings_filter } } }
+			# 	scope:player = {
+			# 		set_variable = {
+			# 			name = holdings_filter
+			# 			value = flag:personal
+			# 		}
+			# 	}
+			# }
 			if = {
 				limit = { scope:player = { NOT = { exists = var:holdings_sorting } } }
 				scope:player = {
@@ -29,24 +29,41 @@ holdings_list = {
 					}
 				}
 			}
-			if = {
+			# if = {
+			# 	limit = {
+			# 		scope:player = { var:holdings_filter = flag:personal }
+			# 	}
+			# 	every_directly_owned_province = {
+			# 		limit = {
+			# 			barony = {
+			# 				is_leased_out = no
+			# 			}
+			# 		}
+			# 		add_to_list = holdings
+			# 	}
+			# }
+			# else = {
+			# 	every_realm_province = {
+			# 		add_to_list = holdings
+			# 	}
+			# }
+
+			every_directly_owned_province = {
 				limit = {
-					scope:player = { var:holdings_filter = flag:personal }
-				}
-				every_directly_owned_province = {
-					limit = {
-						barony = {
-							is_leased_out = no
-						}
+					barony = {
+						is_leased_out = no
 					}
-					add_to_list = holdings
 				}
+				add_to_list = holdings
 			}
-			else = {
-				every_realm_province = {
-					add_to_list = holdings
+
+			every_realm_province = {
+				limit = {
+					NOT = { is_in_list = holdings }
 				}
+				add_to_list = realm_holdings
 			}
+
 			if = {
 				limit = {
 					scope:player = { var:holdings_sorting = flag:income }
@@ -59,6 +76,18 @@ holdings_list = {
 					root = {
 						add_to_variable_list = {
 							name = holdings
+							target = prev
+						}
+					}
+				}
+				ordered_in_list = {
+					list = realm_holdings
+					order_by = monthly_income
+					min = 0
+
+					root = {
+						add_to_variable_list = {
+							name = realm_holdings
 							target = prev
 						}
 					}
@@ -77,10 +106,25 @@ holdings_list = {
 						}
 					}
 				}
+				ordered_in_list = {
+					list = realm_holdings
+					order_by = building_levies
+					min = 0
+
+					root = {
+						add_to_variable_list = {
+							name = realm_holdings
+							target = prev
+						}
+					}
+				}
 			}
 
-			ordered_realm_county = {
+			ordered_sub_realm_county = {
 				order_by = total_tax
+				limit = {
+					holder = root
+				}
 				min = 0
 				set_variable = {
 					name = total_tax
@@ -98,8 +142,29 @@ holdings_list = {
 				}
 			}
 
-			#neighbours
+			ordered_sub_realm_county = {
+				order_by = total_tax
+				limit = {
+					NOT = { holder = root }
+				}
+				min = 0
+				set_variable = {
+					name = total_tax
+					value = total_tax
+				}
+				set_variable = {
+					name = total_levies
+					value = total_levies
+				}
+				root = {
+					add_to_variable_list = {
+						name = vassal_counties
+						target = prev
+					}
+				}
+			}
 
+			#neighbours
 
 			clear_variable_list = adjacent_rulers
 			clear_variable_list = adjacent_rulers_across_water

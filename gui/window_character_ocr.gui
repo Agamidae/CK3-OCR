@@ -4,31 +4,6 @@ types OCRTypes {
 		direction = vertical
 		# layoutpolicy_horizontal = expanding
 		ignoreinvisible = yes
-		button = {
-			# block "button1" {
-			# 	datacontext = "[GetScriptedGui('personal_holdings')]"
-			# }
-			visible = "[GetScriptedGui('personal_holdings').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-			onclick = "[GetScriptedGui('personal_holdings').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-			onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
-			text_single = {
-				margin = { 10 0 }
-				resizeparent = yes
-				raw_text = "Show [Character.GetDomainSize] personal holdings. Button."
-			}
-		}
-
-		button = {
-			visible = "[GetScriptedGui('realm_holdings').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-			onclick = "[GetScriptedGui('realm_holdings').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-			onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
-			text_single = {
-				margin = { 10 0 }
-				resizeparent = yes
-				raw_text = "Show all [Character.RealmSize] realm holdings, Button."
-			}
-		}
-		datamodel = "[Character.MakeScope.GetList('holdings')]"
 
 		divider_light = {
 			size = { 400 3 }
@@ -45,6 +20,10 @@ types OCRTypes {
 					datacontext = "[Scope.GetProvince]"
 					spacing = 5
 					text_single = {
+						raw_text = "[Province.GetHolding.GetType.GetName]"
+						visible = "[Not(EqualTo_string(Province.GetHolding.GetType.GetKey, ''))]"
+					}
+					text_single = {
 						raw_text = "[Province.GetNameNoTooltip],"
 					}
 					text_single = {
@@ -53,10 +32,6 @@ types OCRTypes {
 					}
 					text_single = {
 						raw_text = "Levies: [Province.GetHolding.GetMaxLevySize|0]."
-						visible = "[Not(EqualTo_string(Province.GetHolding.GetType.GetKey, ''))]"
-					}
-					text_single = {
-						raw_text = "[Province.GetHolding.GetType.GetName]."
 						visible = "[Not(EqualTo_string(Province.GetHolding.GetType.GetKey, ''))]"
 					}
 					text_single = {
@@ -71,6 +46,15 @@ types OCRTypes {
 				}
 			}
 		}
+
+		# text_single = {
+		# 	layoutpolicy_horizontal = expanding
+		# 	raw_text = ""
+		# }
+		#
+		# flowcontainer = {
+		# 	datamodel = "[Character.MakeScope.GetList('realm_holdings')]"
+		# }
 	}
 
 	type char_name = button {
@@ -343,9 +327,9 @@ types OCRTypes {
 
 		#main view
 		vbox = {
-			size = { 0 0 }
-			layoutpolicy_horizontal = expanding
-			# scissor = yes
+			# size = { 0 560 }
+			layoutpolicy_horizontal = preferred
+			scissor = yes
 
 			vbox = {
 				layoutpolicy_horizontal = expanding
@@ -409,7 +393,6 @@ types OCRTypes {
 
 					expand = { }
 				}
-
 
 				vbox = {
 					visible = "[And(CharacterWindow.AreNoneExpanded, Not(GetVariableSystem.Exists('expand_view')))]"
@@ -509,13 +492,79 @@ types OCRTypes {
 						}
 
 						expand = { }
-
 					}
 
-					text_single = {
-						raw_text = "Buttons: "
+					widget = {
+						size = { 0 20 }
 						layoutpolicy_horizontal = expanding
+
+						hbox = {
+							spacing = 5
+							layoutpolicy_horizontal = expanding
+							text_single = {
+								raw_text = "Is at war."
+								visible = "[Character.IsAtWar]"
+							}
+							text_single = {
+								raw_text = "Unmarried."
+								visible = "[Not(Character.GetPrimarySpouseOrBetrothed.IsValid)]"
+							}
+							text_single = {
+								raw_text = "No heir."
+								visible = "[And(Not(Character.GetPrimaryTitle.GetHeir.IsValid), Character.HasLandedTitles)]"
+							}
+							expand = { }
+						}
 					}
+
+					# text_single = {
+					# 	raw_text = "Buttons: "
+					# 	layoutpolicy_horizontal = expanding
+					# }
+
+					widget = {
+						size = { 0 20 }
+						layoutpolicy_horizontal = expanding
+
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							button = {
+								size = { 0 0 }
+								onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Character.GetCapitalLocation.GetId))]"
+								onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCapitalLocation.GetCoATitle.GetID)]"
+								visible = "[Character.HasLandedTitles]"
+								text_single = {
+									resizeparent = yes
+									margin_left = 5
+									raw_text = "Capital: [Character.GetCapitalLocation.GetNameNoTooltip]."
+								}
+							}
+							button = {
+								size = { 0 0 }
+								onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Character.GetCurrentLocation.GetId))]"
+								onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCurrentLocation.GetCoATitle.GetID)]"
+								visible = "[And(Not(Character.HasLandedTitles), Character.HasLocation)]"
+								text_single = {
+									resizeparent = yes
+									margin_left = 5
+									raw_text = "Location: [Character.GetCurrentLocation.GetNameNoTooltip]."
+								}
+							}
+							button = {
+								visible = "[Not(Character.IsLocalPlayer)]"
+								onclick = "[Character.ToggleCharacterPinned]"
+								text_single = {
+									margin_left = 5
+									resizeparent = yes
+									raw_text = "[AddTextIf(Character.IsPinned, 'Un')]pin character."
+								}
+							}
+							expand = { }
+						}
+					}
+
 
 					widget = {
 						size = { 0 25 }
@@ -523,6 +572,7 @@ types OCRTypes {
 
 						#buttons
 						hbox = {
+							spacing = -2
 							layoutpolicy_horizontal = expanding
 
 							hbox = {
@@ -541,7 +591,7 @@ types OCRTypes {
 										text_single = {
 											resizeparent = yes
 											name = "domain_limit"
-											raw_text = "[Character.GetDomainSize] Holdings."
+											raw_text = "[Character.GetDomainSize] holdings, [GuiScope.SetRoot(Character.MakeScope).ScriptValue('realm_holdings')] total."
 											margin = { 5 0 }
 										}
 									}
@@ -553,8 +603,9 @@ types OCRTypes {
 									using = expanded_view
 									text_single = {
 										resizeparent = yes
-										raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('total_counties')] Total counties."
+										raw_text = "[Character.RealmSize] counties total."
 										margin = { 5 0 }
+										# [GuiScope.SetRoot(Character.MakeScope).ScriptValue('my_counties')]
 									}
 								}
 								# flowcontainer = {
@@ -582,6 +633,7 @@ types OCRTypes {
 							}
 
 							hbox = {
+								spacing = -2
 								# layoutpolicy_horizontal = expanding
 
 								button = {
@@ -646,6 +698,7 @@ types OCRTypes {
 							tooltip = "[SelectLocalization( Or( Or( Character.IsLocalPlayer, Character.HasArtifacts), Character.HasAnyArtifactClaims ),'OPEN_INVENTORY_TOOLTIP','EMPTY_INVENTORY_TOOLTIP')]"
 
 							flowcontainer = {
+								ignoreinvisible = yes
 								resizeparent = yes
 								margin = { 5 0 }
 								spacing = 5
@@ -662,7 +715,6 @@ types OCRTypes {
 							}
 
 						}
-
 
 						button = {
 							name = "open_kill_list"
@@ -771,7 +823,7 @@ types OCRTypes {
 								# tooltip = "[CharacterWindow.GetFocusButtonTooltip]"
 
 								text_single = {
-									raw_text = "Focus: [CharacterWindow.GetCharacter.GetFocus.GetName]. [AddTextIf(CharacterWindow.CanClickFocusButton, 'Button.')]"
+									raw_text = "Lifestyle: [CharacterWindow.GetCharacter.GetFocus.GetName]. [AddTextIf(CharacterWindow.CanClickFocusButton, 'Button.')]"
 									alwaystransparent = yes
 									margin_left = 5
 									resizeparent = yes
@@ -968,7 +1020,7 @@ types OCRTypes {
 
 							char_name = {
 								blockoverride "text" {
-									raw_text = "[CharacterWindow.GetSpouseText]: [Character.GetNameNoTooltip]."
+									raw_text = "[AddTextIf(CharacterWindow.GetSpouse.IsDeadAndValid, 'Dead ')][CharacterWindow.GetSpouseText]: [Character.GetNameNoTooltip]."
 									alwaystransparent = yes
 									max_width = 350
 								}
@@ -1258,7 +1310,7 @@ types OCRTypes {
 					}
 
 					text_single = {
-						raw_text = "[GetDataModelSize(Character.MakeScope.GetList('counties'))] Counties"
+						raw_text = "[GetDataModelSize(Character.MakeScope.GetList('counties'))] personal counties, [Character.RealmSize] total"
 						visible = "[GetVariableSystem.HasValue('expand_view', 'counties')]"
 					}
 
@@ -1330,13 +1382,8 @@ types OCRTypes {
 							spacing = 5
 							ignoreinvisible = yes
 							text_single = {
-								raw_text = "[Character.GetDomainSize] personal holdings. Limit: [Character.GetDomainLimit]."
-								visible = "[GetScriptedGui('realm_holdings').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-							}
-
-							text_single = {
-								raw_text = "[Character.RealmSize] realm holdings."
-								visible = "[GetScriptedGui('personal_holdings').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+								raw_text = "[Character.GetDomainSize] personal holdings. Limit: [Character.GetDomainLimit]. Total: [GuiScope.SetRoot(Character.MakeScope).ScriptValue('realm_holdings')]"
+								# visible = "[GetScriptedGui('realm_holdings').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 							}
 
 							# text_single = {
@@ -1345,37 +1392,93 @@ types OCRTypes {
 						}
 
 						char_expanded_list = {
-							visible = "[GetVariableSystem.HasValue('expand_view', 'holdings')]"
+							datamodel = "[Character.MakeScope.GetList('holdings')]"
+						}
+
+						widget = {
+							size = { 0 5 }
+						}
+						text_single = {
+							raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('vassal_holdings')] vassal holdings."
+						}
+						char_expanded_list = {
+							datamodel = "[Character.MakeScope.GetList('realm_holdings')]"
 						}
 					}
 
 					#counties
 					flowcontainer = {
-						visible = "[GetVariableSystem.HasValue('expand_view', 'counties')]"
-						datamodel = "[Character.MakeScope.GetList('counties')]"
+						ignoreinvisible = yes
 						direction = vertical
-						layoutpolicy_horizontal = expanding
-						item = {
-							button = {
-								onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetLandedTitle.GetProvince.GetId))]"
-								onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetLandedTitle.GetID)]"
+						visible = "[GetVariableSystem.HasValue('expand_view', 'counties')]"
 
-								flowcontainer = {
-									resizeparent = yes
-									ignoreinvisible = yes
-									spacing = 5
-									text_single = {
-										raw_text = "[Scope.GetLandedTitle.GetBaseNameNoTierNoTooltip],"
-									}
-									text_single = {
-										raw_text = "tax: [Scope.GetLandedTitle.MakeScope.Var('total_tax').GetValue|1],"
-									}
-									text_single = {
-										raw_text = "levies: [Scope.GetLandedTitle.MakeScope.Var('total_levies').GetValue|0]."
+						#counties
+						flowcontainer = {
+							datamodel = "[Character.MakeScope.GetList('counties')]"
+							direction = vertical
+							layoutpolicy_horizontal = expanding
+							item = {
+								button = {
+									onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetLandedTitle.GetProvince.GetId))]"
+									onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetLandedTitle.GetID)]"
+
+									flowcontainer = {
+										resizeparent = yes
+										ignoreinvisible = yes
+										spacing = 5
+										text_single = {
+											raw_text = "[Scope.GetLandedTitle.GetBaseNameNoTierNoTooltip],"
+										}
+										text_single = {
+											raw_text = "tax: [Scope.GetLandedTitle.MakeScope.Var('total_tax').GetValue|1],"
+										}
+										text_single = {
+											raw_text = "levies: [Scope.GetLandedTitle.MakeScope.Var('total_levies').GetValue|0]."
+										}
 									}
 								}
 							}
 						}
+
+						widget = {
+							size = { 0 5 }
+						}
+
+						text_single = {
+							raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('vassal_counties')] vassal counties."
+						}
+
+						divider_light = {
+							size = { 500 3 }
+						}
+						#counties
+						flowcontainer = {
+							datamodel = "[Character.MakeScope.GetList('vassal_counties')]"
+							direction = vertical
+							layoutpolicy_horizontal = expanding
+							item = {
+								button = {
+									onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetLandedTitle.GetProvince.GetId))]"
+									onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetLandedTitle.GetID)]"
+
+									flowcontainer = {
+										resizeparent = yes
+										ignoreinvisible = yes
+										spacing = 5
+										text_single = {
+											raw_text = "[Scope.GetLandedTitle.GetBaseNameNoTierNoTooltip],"
+										}
+										text_single = {
+											raw_text = "tax: [Scope.GetLandedTitle.MakeScope.Var('total_tax').GetValue|1],"
+										}
+										text_single = {
+											raw_text = "levies: [Scope.GetLandedTitle.MakeScope.Var('total_levies').GetValue|0]."
+										}
+									}
+								}
+							}
+						}
+
 					}
 
 					#titles
@@ -1489,8 +1592,8 @@ types OCRTypes {
 						item = {
 							button = {
 								onclick = "[DefaultOnCharacterClick(Scope.GetCharacter.GetID)]"
-								onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetCharacter.GetPrimaryTitle.GetPreferredCapital.GetID)]"
-								onrightclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetCharacter.GetPrimaryTitle.GetPreferredCapital.GetID)]"
+								onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetCharacter.GetCapitalLocation.GetCoATitle.GetID)]"
+								onrightclick = "[DefaultOnCharacterRightClick(Scope.GetCharacter.GetID)]"
 								button_ignore = none
 
 								flowcontainer = {
