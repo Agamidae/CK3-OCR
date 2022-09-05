@@ -64,6 +64,12 @@ sort_armies = {
 	# remove_variable = refresh_armies
 }
 
+clear_allied_units = {
+	effect = {
+		clear_variable_list = allied_units
+	}
+}
+
 clear_dead_armies = {
 	effect = {
 		if = {
@@ -71,7 +77,9 @@ clear_dead_armies = {
 			every_in_list = {
 				variable = allied_units
 				limit = {
-					NOT = { exists = this }
+					NOT = {
+						exists = this
+					}
 				}
 				root = {
 					remove_list_variable = {
@@ -135,6 +143,262 @@ clear_dead_armies = {
 		}
 	}
 }
+
+is_war_target = {
+	saved_scopes = {
+		target
+	}
+	is_shown = {
+		any_character_war = {
+			casus_belli = {
+				any_target_title = {
+					trigger_if = {
+						limit = {
+							exists = title_province
+						}
+						title_province = {
+							this = scope:target
+						}
+					}
+					trigger_else = {
+						always = no
+					}
+				}
+			}
+		}
+	}
+}
+
+adjacent_to_war_target = {
+	saved_scopes = {
+		target
+	}
+	is_shown = {
+		any_character_war = {
+			casus_belli = {
+				any_target_title = {
+					trigger_if = {
+						limit = {
+							exists = title_province
+						}
+						title_province = {
+							county = {
+								any_neighboring_county = {
+									title_province = {
+										this = scope:target
+									}
+								}
+							}
+						}
+					}
+					trigger_else = {
+						always = no
+					}
+				}
+			}
+		}
+	}
+}
+
+you_control = {
+	saved_scopes = {
+		target
+	}
+	is_shown = {
+		scope:target = {
+			barony_controller = {
+				NOT = {
+					is_at_war_with = root
+				}
+			}
+		}
+	}
+}
+
+hostile_forts = {
+	effect = {
+		clear_variable_list = adjacent_hostile_forts
+		clear_variable_list = war_targets
+		clear_variable_list = hostile_forts
+		clear_variable_list = your_hostile_forts
+
+		if = {
+			limit = {
+				is_at_war = yes
+			}
+			every_character_war = {
+				casus_belli = {
+					every_target_title = {
+						if = {
+							limit = {
+								exists = title_province
+							}
+							title_province = {
+								add_to_list = war_targets
+							}
+						}
+					}
+				}
+			}
+
+			every_war_enemy = {
+				every_realm_province = {
+					limit = {
+						fort_level > 0
+						barony_controller = {
+							is_at_war_with = root
+						}
+					}
+					add_to_list = hostile_forts
+				}
+			}
+
+			every_realm_province = {
+				limit = {
+					fort_level > 0
+					barony_controller = {
+						is_at_war_with = root
+					}
+					NOT = {
+						is_in_list = hostile_forts
+					}
+				}
+				add_to_list = your_hostile_forts
+			}
+
+			every_in_list = {
+				list = hostile_forts
+				limit = {
+					county = {
+						save_temporary_scope_as = county
+						any_neighboring_county = {
+							county_controller = {
+								#there's probably a trigger for this
+								OR = {
+									this = root
+									any_liege_or_above = {
+										this = root
+									}
+									any_vassal_or_below = {
+										this = root
+									}
+								}
+								NOT = {
+									is_at_war_with = root
+								}
+							}
+						}
+					}
+				}
+				root = {
+					add_to_variable_list = {
+						name = adjacent_hostile_forts
+						target = prev
+					}
+				}
+				remove_from_list = hostile_forts
+			}
+
+			every_in_list = {
+				list = your_hostile_forts
+				root = {
+					add_to_variable_list = {
+						name = your_hostile_forts
+						target = prev
+					}
+				}
+			}
+
+			every_in_list = {
+				list = hostile_forts
+				root = {
+					add_to_variable_list = {
+						name = hostile_forts
+						target = prev
+					}
+				}
+			}
+		}
+	}
+}
+
+
+#  = {
+# 	limit = {
+# 		is_at_war = yes
+# 	}
+# 	every_character_war = {
+# 		casus_belli = {
+# 			every_target_title = {
+# 				if = {
+# 					limit = {
+# 						exists = title_province
+# 					}
+# 					title_province = {
+# 						add_to_list = war_targets
+# 					}
+# 				}
+# 			}
+# 		}
+# 	}
+# 	every_realm_province = {
+# 		limit = {
+# 			fort_level > 0
+# 			barony_controller = {
+# 				is_at_war_with = root
+# 			}
+# 			NOT = {
+# 				is_in_list = war_targets
+# 			}
+# 		}
+# 		add_to_list = your_hostile_forts
+# 	}
+# 	every_war_enemy = {
+# 		every_realm_province = {
+# 			limit = {
+# 				fort_level > 0
+# 				barony_controller = {
+# 					is_at_war_with = root
+# 				}
+# 				NOT = {
+# 					is_in_list = war_targets
+# 				}
+# 				NOT = {
+# 					is_in_list = your_hostile_forts
+# 				}
+# 			}
+# 			add_to_list = hostile_forts
+# 		}
+# 	}
+#
+# 	every_in_list = {
+# 		list = war_targets
+# 		root = {
+# 			add_to_variable_list = {
+# 				name = war_targets
+# 				target = prev
+# 			}
+# 		}
+# 	}
+# 	every_in_list = {
+# 		list = hostile_forts
+# 		root = {
+# 			add_to_variable_list = {
+# 				name = hostile_forts
+# 				target = prev
+# 			}
+# 		}
+# 	}
+# 	every_in_list = {
+# 		list = your_hostile_forts
+# 		root = {
+# 			add_to_variable_list = {
+# 				name = your_hostile_forts
+# 				target = prev
+# 			}
+# 		}
+# 	}
+# }
 
 # sieges_and_battles = {
 # 	effect = {
