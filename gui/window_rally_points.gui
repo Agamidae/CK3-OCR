@@ -1,0 +1,452 @@
+window = {
+	name = "rally_point_window"
+	parentanchor = bottom|left
+	size = { 680 440 }
+	movable = no
+	layer = middle
+
+	datacontext = "[RallyPointWindow.GetSelectedRallyPoint]"
+
+	background = {
+		texture = "gfx/interface/component_tiles/tile_window_background_subwindow.dds"
+		spriteType = Corneredtiled
+		spriteborder = { 18 18 }
+		margin = { -23 -13 }
+		margin_left = 20
+		margin_bottom = 20
+		texture_density = 2
+
+		modify_texture = {
+			name = "overlay"
+			texture = "gfx/interface/component_overlay/overlay_effect.dds"
+			spriteType = Corneredstretched
+			spriteborder = { 0 0 }
+			blend_mode = overlay
+		}
+	}
+
+	state = {
+		name = _show
+		on_start = "[GetVariableSystem.Set( 'county_view_open', 'true' )]"
+		on_start = "[GetVariableSystem.Set( 'hide_bottom_left_HUD', 'true' )]"
+
+		using = Animation_FadeIn_Standard
+		using = Sound_WindowShow_Standard
+		using = Animation_FadeIn_BottomLeft
+	}
+
+	state = {
+		name = _hide
+		on_start = "[GetVariableSystem.Clear( 'county_view_open' )]"
+		on_start = "[GetVariableSystem.Clear( 'hide_bottom_left_HUD' )]"
+
+		using = Animation_FadeOut_Standard
+		using = Sound_WindowHide_Standard
+		using = Animation_FadeOut_BottomLeft
+	}
+
+	vbox = {
+		margin_right = 35
+		margin_top = 30
+		spacing = 5
+
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				# icon = {
+				# 	name = "rally_point_button"
+				# 	size = { 40 40 }
+				# 	texture = "gfx/interface/window_military/banner_icon.dds"
+				# 	tintcolor = "[RallyPoint.GetColor]"
+				# 	position = { 10 3 }
+				# }
+
+				blockoverride "header_text"
+				{
+					name = "title"
+					layoutpolicy_horizontal = expanding
+					text = "[RallyPointWindow.GetSelectedRallyPoint.GetName]"
+					parentanchor = left
+					position = { 55 3 }
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[RallyPointWindow.CloseAndDeselect]"
+				}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			margin = { 20 0 }
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					vbox = {
+						name = "local_levies_label"
+						layoutpolicy_horizontal = expanding
+						spacing = 5
+
+						text_label_left = {
+							name = "local_levies_label_text"
+							text = "RP_LOCAL_LEVIES_LABEL"
+							layoutpolicy_horizontal = expanding
+
+						}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						margin_bottom = 10
+
+						vbox = {
+							margin_top = 5
+
+							hbox = {
+								name = "local_levies"
+								spacing = 5
+
+								icon = {
+									name = "icon_soldier"
+									texture = "gfx/interface/icons/icon_soldier.dds"
+									size = { 40 40 }
+								}
+
+								text_single = {
+									name = "strength"
+									text = "[RallyPointWindow.GetUnraisedLocalLevies|V]"
+								}
+
+								expand = {
+									layoutpolicy_horizontal = expanding
+								}
+
+								tooltip = "RP_LOCAL_LEVIES_TOOLTIP"
+							}
+
+							widget = {
+								name = "local_levies_ratio"
+								size = { 120 10 }
+
+								background = {
+									using = Background_Area
+									margin = { 3 2 }
+								}
+
+								progressbar_standard_transparent = {
+									size = "[RallyPointWindow.GetRelativeSizeLocalLevies]"
+									minimumsize = { 10 0 }
+									min = 0
+									max = "[IntToFloat(RallyPointWindow.GetTotalLocalLevies)]"
+									value = "[IntToFloat(RallyPointWindow.GetUnraisedLocalLevies)]"
+								}
+
+								tooltip = "RP_LOCAL_LEVIES_TOOLTIP"
+							}
+
+							text_single = {
+								name = "quality_label"
+								align = left
+								text = "ARMY_QUALITY_LEVEL_1"
+							}
+						}
+
+						expand = {}
+
+						vbox = {
+							margin_right = 20
+							spacing = 5
+
+							expand = {}
+
+							button_standard = {
+								name = "raise_button"
+								onclick = "[RallyPointWindow.OnRaise]"
+								enabled = "[RallyPointWindow.CanRaise]"
+								tooltip = "[RallyPointWindow.GetRaiseTooltip]"
+
+								minimumsize = { 210 40 }
+
+								hbox = {
+									margin = { 5 0 }
+
+									button_army_raise_assigned = {}
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										align = nobaseline|center
+										text = "RP_RAISE"
+										default_format = "#clickable"
+										autoresize = no
+									}
+								}
+							}
+
+							button_standard = {
+								name = "raise_raid_button"
+								onclick = "[RallyPointWindow.OnRaiseRaid]"
+								visible = "[GetPlayer.CanRaid]"
+								enabled = "[And( GetPlayer.CanStartRaid, RallyPointWindow.CanRaise )]"
+								tooltip = "[RallyPointWindow.GetRaiseRaidTooltip]"
+								minimumsize = { 210 40 }
+
+								hbox = {
+									margin = { 5 0 }
+
+									button_army_toggle_raiding = {}
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										align = center
+										text = "RP_RAISE_RAID"
+										default_format = "#clickable"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 5
+					name = "all_troops_label"
+
+					text_label_left = {
+						name = "all_troops_label_text"
+						layoutpolicy_horizontal = expanding
+						text = "RP_ALL_SOLDIERS_LABEL"
+					}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					vbox = {
+						datacontext = "[RallyPointWindow.GetAllTroopsComposition]"
+
+						text_single = {
+							name = "all_levies"
+							layoutpolicy_horizontal = expanding
+							text = "RP_LEVIES_ENTRY"
+						}
+
+						text_single = {
+							name = "all_maa"
+							layoutpolicy_horizontal = expanding
+							text = "RP_MAA_ENTRY"
+						}
+
+						text_single = {
+							name = "all_knights"
+							datacontext = "[RallyPointWindow.GetSelectedRallyPoint]"
+							layoutpolicy_horizontal = expanding
+							text = "RP_KNIGHTS_ENTRY"
+							tooltip = "RP_KNIGHTS_TOOLTIP"
+						}
+
+						text_single = {
+							name = "all_troops_quality"
+							text = "[ArmyComposition.GetArmyQualityName]"
+						}
+					}
+
+					expand = {}
+
+					vbox = {
+						layoutpolicy_vertical = growing
+						margin_top = 15
+						margin_right = 20
+						spacing = 10
+
+						button_primary = {
+							name = "raise_all_button"
+							minimumsize = { 210 55 }
+
+							onclick = "[RallyPointWindow.OnRaiseAll]"
+							enabled = "[RallyPointWindow.CanRaiseAll]"
+							tooltip = "[RallyPointWindow.GetRaiseAllTooltip]"
+
+							text = "RP_RAISE_ALL"
+						}
+
+						button_standard = {
+							name = "raise_maa_button"
+							onclick = "[RallyPointWindow.OnRaiseMenAtArms]"
+							enabled = "[RallyPointWindow.CanRaiseMenAtArms]"
+							tooltip = "[RallyPointWindow.GetRaiseMenAtArmsTooltip]"
+							minimumsize = { 210 55 }
+
+							hbox = {
+								margin = { 5 0 }
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									multiline = yes
+									max_width = 190
+									align = nobaseline|hcenter
+									text = "RP_RAISE_MEN_AT_ARMS"
+									default_format = "#clickable"
+								}
+							}
+						}
+					}
+				}
+
+				expand = {
+					layoutpolicy_vertical = expanding
+				}
+			}
+			expand = {}
+
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			margin = { 20 10 }
+			background = {
+				using = Background_Area_Dark
+				alpha = 0.5
+			}
+
+			expand = {}
+
+			## Multi-selected
+			hbox = {
+				name = "rally_point_items_grid"
+				datamodel = "[RallyPointWindow.GetSelectedRallyPointItems]"
+				visible = "[GreaterThan_int32(GetDataModelSize(RallyPointWindow.GetSelectedRallyPointItems), '(int32)1')]"
+
+				item = {
+					container = {
+						name = "rally_point_item"
+						tooltip = "[SelectedRallyPointItem.GetTooltip]"
+						using = tooltip_ne
+
+						icon = {
+							name = "rally_point_selected_background"
+							visible = "[SelectedRallyPointItem.IsShown]"
+							size = { 45 45 }
+							texture = "gfx/interface/window_military/banner_icon_glow.dds"
+							position = { 0 -3 }
+							alwaystransparent = yes
+						}
+
+						button_normal = {
+							name = "rally_point_icon"
+							size = { 45 45 }
+							texture = "gfx/interface/window_military/banner_icon.dds"
+							tintcolor = "[SelectedRallyPointItem.GetRallyPoint.GetColor]"
+							onclick = "[SelectedRallyPointItem.OnClick]"
+							down = "[SelectedRallyPointItem.IsShown]"
+						}
+
+						# icon = {
+						# 	name = "banner_icon_raised_overlay"
+						# 	## MISSING ART // NOT FOR ALPHA
+						# 	texture = "gfx/interface/_debug/placeholder.dds"
+						# 	#texture = "gfx/interface/_debug/banner_raised_small.dds"
+						# 	size = { 50 50 }
+						# 	alwaystransparent = yes
+						# 	visible = "[SelectedRallyPointItem.IsRaised]"
+						# }
+					}
+				}
+			}
+
+			button_text = {
+			    blockoverride "text" {
+			        raw_text = "Move rally point."
+			    }
+				onclick = "[RallyPointWindow.OnMove]"
+			}
+
+			button_text = {
+			    blockoverride "text" {
+			        raw_text = "Delete rally point."
+			    }
+				onclick = "[RallyPointWindow.OnRemove]"
+				clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_unit_army_disband"
+				visible = "[RallyPointWindow.CanRemove]" #TODO
+				# tooltip = "[RallyPointWindow.GetRemoveTooltip]"
+			}
+		}
+	}
+}
+
+widget = {
+	name = "place_rally_point_window"
+	size = { 100% 100% }
+
+
+	flowcontainer = {
+		parentanchor = top|hcenter
+		direction = vertical
+
+		position = {0 100}
+
+		text_label_center = {
+			visible = "[PlaceRallyPoint.IsPlacingRallyPoint]"
+			text = "CREATE_RALLY_POINT"
+			parentanchor = hcenter
+			align = nobaseline
+			margin = { 10 4 }
+		}
+
+		text_label_center = {
+			visible = "[PlaceRallyPoint.IsMovingRallyPoint]"
+			text = "MOVE_RALLY_POINT"
+			parentanchor = hcenter
+			align = nobaseline
+			margin = { 10 4 }
+		}
+
+		text_label_center = {
+			text = "RALLY_POINT_CHOOSE_LOCATION"
+			default_format = "#high"
+			using = Font_Size_Medium
+			parentanchor = hcenter
+			align = nobaseline
+			margin = { 10 4 }
+		}
+
+		text_label_center = {
+			text = "RALLY_POINT_MAP_INSTRUCTION"
+			parentanchor = hcenter
+			align = nobaseline|hcenter
+			margin = { 50 4 }
+		}
+	}
+
+
+	button_primary_big = {
+		name = "close_assignment_window"
+		text = "BACK_LABEL"
+
+		parentanchor = bottom|hcenter
+		position = { 0 -50}
+
+		onclick = "[PlaceRallyPoint.Close]"
+		shortcut = "close_window"
+	}
+
+
+	#using = Background_Tooltip
+
+	vbox = {}
+}
