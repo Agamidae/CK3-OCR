@@ -2,42 +2,10 @@
 ##################### MY REALM #######################
 ######################################################
 
-window = {
-	name = "my_realm_window"
-	datacontext = "[GetVariableSystem]"
-	datacontext = "[GetPlayer]"
-	parentanchor = top|right
-	allow_outside = yes
-	movable = no
-	layer = windows_layer
-
-	using = Window_Size_MainTab
-
-	state = {
-		name = _show
-		using = Animation_FadeIn_Quick
-		using = Sound_WindowShow_Standard
-		using = Window_Position_MainTab
-	}
-
-	state = {
-		name = _hide
-		using = Animation_FadeOut_Quick
-		using = Sound_WindowHide_Standard
-		using = Window_Position_MainTab_Hide
-	}
-
-	state = {
-		name = dismiss
-		next = _hide
-
-		trigger_when = "[GetVariableSystem.Exists( 'hide_right_windows' )]"
-	}
-
-	margin_widget = {
-		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
+types OldWindows {
+	type window_realm_old = margin_widget {
 		size = { 100% 100% }
-		# margin = { 0 26 }
+		margin = { 0 26 }
 		margin_right = 13
 
 		widget = {
@@ -50,11 +18,10 @@ window = {
 				##### HEADER NO LIEGE TEXT #####
 				header_with_picture = {
 					layoutpolicy_horizontal = expanding
-					# minimumsize = { 0 200 }
+					minimumsize = { 0 180 }
 
 					blockoverride "header_text" {
-
-
+						text = "[GetPlayer.GetPrimaryTitle.GetNameNoTooltip|U]"
 					}
 
 					blockoverride "size" {
@@ -63,7 +30,6 @@ window = {
 
 					blockoverride "illustration_texture" {
 						texture = "gfx/interface/illustrations/window_headers/header_my_realm.dds"
-						alpha = 0.3
 					}
 
 					blockoverride "button_close"
@@ -72,23 +38,11 @@ window = {
 					}
 
 					vbox = {
-						resizeparent = yes
-						margin_top = 0
-						margin_left = 10
+						margin_top = 42
 						#margin_bottom = 5
 
 						hbox = {
-							layoutpolicy_horizontal = expanding
-							# spacing = 20
-
-							text_single = {
-								text = "[GetPlayer.GetPrimaryTitle.GetNameNoTooltip|U]"
-								tooltip = "[Character.GetDefaultRealmFlagTooltip]"
-							}
-
-							text_single = {
-								raw_text = ",  "
-							}
+							spacing = 20
 
 							text_single = {
 								name = "realm_type"
@@ -96,88 +50,256 @@ window = {
 							}
 
 							text_single = {
-								raw_text = ",  "
-							}
-
-							text_single = {
 								text = "REALM_WINDOW_SIZE"
 								tooltip = "REALM_WINDOW_SIZE_TT"
 							}
-
-							expand = { }
 						}
 
-						vbox = {
+						spacer = {
+							visible = "[GetPlayer.HasLiege]"
+							layoutpolicy_vertical = expanding
+						}
+
+						hbox = {
 							layoutpolicy_horizontal = expanding
-							# margin_top = 10
+							margin_top = 10
+
+							expand = {
+								visible = "[GetPlayer.HasLiege]"
+								size = { 90 5 }
+							}
 
 							hbox = {
 								name = "crown_authority"
 								datamodel = "[MyRealmWindow.GetRealmLaws]"
 								ignoreinvisible = yes
-
-								layoutpolicy_horizontal = expanding
-								# margin_left = 10
+								margin_left = 10
 
 								item = {
 									vbox = {
 										layoutpolicy_vertical = expanding
-										layoutpolicy_horizontal = expanding
 										datacontext = "[GuiLawGroup.GetLawGroup]"
 										visible = "[And( GuiLawGroup.GetLawGroup.HasFlag( 'realm_law' ), GuiLawGroup.IsAvailable )]"
 										ignoreinvisible = yes
 										spacing = 3
 
-										text_single = {
-											layoutpolicy_horizontal = expanding
-											raw_text = "[LawGroup.GetName]:"
+										text_label_center = {
+											visible = "[Not(GetPlayer.HasLiege)]"
+											text = "[LawGroup.GetName]"
 										}
 
-										flowcontainer = {
+										hbox = {
+											margin_left = 5
 											layoutpolicy_horizontal = expanding
-											direction = vertical
+
+											text_label_left = {
+												visible = "[GetPlayer.HasLiege]"
+												layoutpolicy_horizontal = expanding
+												text = "[LawGroup.GetName]"
+												margin_left = 10
+											}
+										}
+
+										# spacer = {
+										# 	visible = "[GetPlayer.HasLiege]"
+										# 	size = { 5 8 }
+										# }
+
+										hbox = {
 											datamodel = "[GuiLawGroup.GetLaws]"
+											visible = "[Not(GetPlayer.HasLiege)]"
+
+											background = {
+												texture = "gfx/lines/line_lifestyles_unavailable.dds"
+												margin = { -8 -12 }
+												tintcolor = { 0.7 0.5 0.25 1 }
+											}
 
 											item = {
-												button_text = {
+
+												icon_button_decorative = {
 													datacontext = "[GuiLaw.GetLaw]"
-													blockoverride "pre" {
-														text_single = {
-															raw_text = "Current:  "
-															align = nobaseline
-															visible = "[GuiLaw.IsEnacted]"
+													size = { 60 60 }
+													enabled = "[Or(GuiLaw.CanEnact, GuiLaw.IsEnacted)]"
+													down = "[GuiLaw.IsEnacted]"
+													alwaystransparent = "[GuiLaw.IsEnacted]"
+													onclick = "[GuiLaw.Enact]"
+													tooltipwidget = { pass_law_tooltip = {} }
+													using = tooltip_below
+
+													icon_button_decorative = {
+														size = { 54 54 }
+														parentanchor = center
+														alwaystransparent = yes
+													}
+
+													button_icon = {
+														visible = "[Not(GuiLaw.IsEnacted)]"
+														texture = "[Law.GetIcon]"
+														parentanchor = center
+														size = { 42 42 }
+														alwaystransparent = yes
+													}
+
+													icon = {
+														visible = "[And( GuiLaw.IsEnacted , Not( GuiLaw.CanEnact ) )]"
+														texture = "[Law.GetIcon]"
+														parentanchor = center
+														size = { 42 42 }
+														alwaystransparent = yes
+
+														using = Master_Button_Modify_Texture
+
+														blockoverride "master_color_frame" {
+															frame = 2
 														}
 													}
-												    blockoverride "text" {
-												        raw_text = "[GuiLaw.GetLaw.GetNameNoTooltip]"
-												    }
-
-													blockoverride "dot_nb" {
-														# visible = "[GuiLaw.IsEnacted]"
-													}
-													enabled = "[GuiLaw.CanEnact]"
-													onclick = "[GuiLaw.Enact]"
-
-													blockoverride "disabled" {
-														visible = "[And(Not(GuiLaw.CanEnact), Not(GuiLaw.IsEnacted))]"
-														align = nobaseline
-													}
-													tooltipwidget = { pass_law_tooltip = { } }
 												}
 											}
 										}
 
+										hbox = {
+											datamodel = "[GuiLawGroup.GetLaws]"
+											visible = "[GetPlayer.HasLiege]"
+											margin_left = 10
+
+											background = {
+												texture = "gfx/lines/line_lifestyles_unavailable.dds"
+												margin = { -16 -12 }
+												tintcolor = { 0.7 0.5 0.25 1 }
+											}
+
+											item = {
+												icon_button_decorative = {
+													datacontext = "[GuiLaw.GetLaw]"
+													size = { 50 50 }
+													enabled = "[Or(GuiLaw.CanEnact, GuiLaw.IsEnacted)]"
+													down = "[GuiLaw.IsEnacted]"
+													alwaystransparent = "[GuiLaw.IsEnacted]"
+													onclick = "[GuiLaw.Enact]"
+													tooltipwidget = { pass_law_tooltip = {} }
+													using = tooltip_below
+
+													icon_button_decorative = {
+														size = { 44 44 }
+														parentanchor = center
+														alwaystransparent = yes
+													}
+
+													button_icon = {
+														visible = "[Not(GuiLaw.IsEnacted)]"
+														texture = "[Law.GetIcon]"
+														parentanchor = center
+														size = { 32 32 }
+														alwaystransparent = yes
+													}
+
+													icon = {
+														visible = "[And( GuiLaw.IsEnacted , Not( GuiLaw.CanEnact ) )]"
+														texture = "[Law.GetIcon]"
+														parentanchor = center
+														size = { 42 42 }
+														alwaystransparent = yes
+
+														using = Master_Button_Modify_Texture
+
+														blockoverride "master_color_frame" {
+															frame = 2
+														}
+													}
+												}
+											}
+										}
+
+										expand = {
+											visible = "[GetPlayer.HasLiege]"
+											layoutpolicy_horizontal = expanding
+										}
 									}
 								}
 							}
 
-							text_single = {
+							spacer = {
+								visible = "[GetPlayer.HasLiege]"
+								size = { 15 5 }
+							}
+
+							## LIEGE INFO
+							vbox = {
+								name = "liege"
 								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+								margin_right = 10
 								datacontext = "[MyRealmWindow.GetCharacter.GetLiege]"
 								visible = "[GetPlayer.HasLiege]"
-								datacontext = "[Character.GetActiveLawInGroupWithFlag( 'realm_law' )]"
-								raw_text = "Liege's authority: [Law.GetName]."
+
+								text_label_left = {
+									text = "MY_REALM_WINDOW_MY_LIEGE"
+									layoutpolicy_horizontal = expanding
+									margin_left = 2
+								}
+
+								expand = {}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										text = "[Character.GetUIName]"
+										autoresize = no
+										align = left
+										max_width = 330
+									}
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+
+										widget = {
+											size = { 30 25 }
+
+											button_icon_highlight = {
+												datacontext = "[Character.GetActiveLawInGroupWithFlag( 'realm_law' )]"
+												size = { 35 35 }
+												parentanchor = center
+												texture = "[Law.GetIcon]"
+												tooltipwidget = { general_law_tooltip = {} }
+												using = tooltip_ws
+											}
+										}
+
+										text_single = {
+											text = "[Character.GetGovernment.GetName]"
+										}
+
+										expand = {}
+									}
+								}
+
+								expand = {}
 							}
+						}
+					}
+
+					widget = {
+						visible = "[GetPlayer.HasLiege]"
+						allow_outside = yes
+						size = { 55 80	}
+
+						coa_realm_small_crown = {
+							parentanchor = top|hcenter
+							position = { 10 5 }
+						}
+					}
+
+					widget = {
+						visible = "[Not(GetPlayer.HasLiege)]"
+						allow_outside = yes
+						size = { 89 98 }
+
+						coa_realm_big_crown = {
+							parentanchor = top|hcenter
+							position = { 5 5 }
 						}
 					}
 				}
@@ -288,7 +410,7 @@ window = {
 														margin_right = 10
 														spacing = 7
 
-														coa_title_tiny = { }
+														coa_title_tiny = {}
 
 														text_single = {
 															layoutpolicy_horizontal = expanding
@@ -343,7 +465,7 @@ window = {
 
 																	onclick = "[HoldingItem.OnClick]"
 
-																	tooltipwidget = { holding_tooltip_click = { } }
+																	tooltipwidget = { holding_tooltip_click = {} }
 
 																	background = {
 																		using = Background_Button_Illustration
@@ -398,7 +520,7 @@ window = {
 																				}
 																			}
 
-																			expand = { }
+																			expand = {}
 
 																			text_single = {
 																				alwaystransparent = yes
@@ -449,7 +571,7 @@ window = {
 																						direction = horizontal
 																					}
 
-																					expand = { }
+																					expand = {}
 																				}
 																			}
 
@@ -460,7 +582,7 @@ window = {
 																				default_format = "#P"
 																			}
 
-																			expand = { }
+																			expand = {}
 
 																		}
 																	}
@@ -500,7 +622,7 @@ window = {
 															}
 														}
 
-														expand = { }
+														expand = {}
 
 														vbox = {
 															datamodel = "[CountyGroup.GetEmptyHoldings]"
@@ -528,7 +650,7 @@ window = {
 																		using = Background_Vignette_Button
 
 																		tooltipwidget = {
-																			holding_tooltip_click = { }
+																			holding_tooltip_click = {}
 																		}
 																		using = tooltip_ne
 
@@ -564,10 +686,10 @@ window = {
 																					text = "[HoldingItem.GetBarony.GetNameNoTierNoTooltip]"
 																				}
 
-																				expand = { }
+																				expand = {}
 																			}
 
-																			expand = { }
+																			expand = {}
 
 																			vbox = {
 																				layoutpolicy_vertical = expanding
@@ -581,7 +703,7 @@ window = {
 																					align = nobaseline
 																				}
 
-																				expand = { }
+																				expand = {}
 
 																				hbox = {
 																					layoutpolicy_horizontal = expanding
@@ -608,7 +730,7 @@ window = {
 																					default_format = "#P"
 																				}
 
-																				expand = { }
+																				expand = {}
 																			}
 																		}
 																	}
@@ -617,7 +739,7 @@ window = {
 														}
 													}
 
-													expand = { }
+													expand = {}
 												}
 											}
 										}
@@ -735,7 +857,6 @@ window = {
 
 						blockoverride "scrollbox_margins" {
 							margin = { 5 5 }
-							margin_top = 20
 						}
 
 						blockoverride "scrollbox_content"
@@ -748,7 +869,7 @@ window = {
 								datamodel = "[CharacterSelectionList.GetList]"
 								visible = "[Not(CharacterSelectionList.IsBuildingList)]"
 								addcolumn = 545
-								addrow = 115
+								addrow = 185
 								setitemsizefromcell = yes
 
 								item = {
@@ -759,7 +880,7 @@ window = {
 
 										blockoverride "vassal_portrait"
 										{
-											portrait_shoulders = { }
+											portrait_shoulders = {}
 										}
 									}
 								}
@@ -771,7 +892,7 @@ window = {
 								datamodel = "[CharacterSelectionList.GetList]"
 								visible = "[Not(CharacterSelectionList.IsBuildingList)]"
 								addcolumn = 545
-								addrow = 115
+								addrow = 185
 								setitemsizefromcell = yes
 
 								item = {
@@ -782,7 +903,7 @@ window = {
 									}
 								}
 							}
-							expand = { }
+							expand = {}
 						}
 
 						vbox = {
@@ -797,12 +918,12 @@ window = {
 					vbox = {
 						layoutpolicy_horizontal = expanding
 						margin = { 15 0 }
-						# margin_top = 15
-						# margin_bottom = 15
+						margin_top = 15
+						margin_bottom = 15
 
 						vbox = {
 							layoutpolicy_horizontal = expanding
-							# margin = { 0 5 }
+							margin = { 0 5 }
 
 							background = {
 								using = Background_Area
@@ -812,7 +933,7 @@ window = {
 							}
 
 							hbox = {
-								layoutpolicy_horizontal = expanding
+								spacing = 20
 
 								text_single = {
 									default_format = "#high"
@@ -820,23 +941,21 @@ window = {
 									tooltip = "MY_REALM_WINDOW_VASSAL_OPINION_TT"
 								}
 
-								text_single = {
-									raw_text = ",  "
-								}
-
 								hbox = {
 
 									tooltip = "[GetPlayer.GetDreadBreakdown]"
+
+									icon = {
+										name = "dread_icon"
+										size = { 30 30 }
+										texture = "gfx/interface/icons/icon_dread.dds"
+									}
 
 									text_single = {
 										name = "dread_name"
 										text = "[dread|E]: [GetPlayer.GetDread|0]"
 										default_format = "#high"
 									}
-								}
-
-								text_single = {
-									raw_text = ",  "
 								}
 
 								hbox = {
@@ -849,6 +968,11 @@ window = {
 										using = Status_Bad
 									}
 
+									icon = {
+										size = { 30 30 }
+										texture = "gfx/interface/icons/icon_vassal.dds"
+									}
+
 									text_single = {
 										text = "MY_REALM_WINDOW_VASSAL_LIMIT"
 									}
@@ -858,10 +982,8 @@ window = {
 									}
 								}
 
-								text_single = {
-									raw_text = "."
-								}
-								expand = { }
+
+
 							}
 						}
 					}
@@ -1070,7 +1192,7 @@ window = {
 										}
 									}
 
-									expand = { }
+									expand = {}
 								}
 							}
 
@@ -1087,40 +1209,25 @@ window = {
 									hbox = {
 										layoutpolicy_horizontal = expanding
 
-										text_single = {
-											raw_text = "You will inherit,  "
-										}
-
-										text_single = {
-											# layoutpolicy_horizontal = expanding
+										text_label_left = {
+											layoutpolicy_horizontal = expanding
 											text = "MY_REALM_WINDOW_PARTITION_SHARE"
 										}
 
-										dot = { }
-
-										expand = { }
+										expand = {}
 									}
 
-									vbox = {
+									overlappingitembox = {
 										name = "partition_share_box"
 										datamodel = "[MyRealmWindow.GetMyPartitionShare]"
 										layoutpolicy_horizontal = expanding
-										# size = { 460 55 }
-										# spacing = 10
+										size = { 460 55 }
+										spacing = 10
 
 										item = {
-											button = {
-												onclick = "[DefaultOnCoatOfArmsClick(TitleItem.GetTitle.GetID)]"
-												onclick = "[DefaultOnCoatOfArmsRightClick(TitleItem.GetTitle.GetID)]"
-												button_ignore = none
-												layoutpolicy_horizontal = expanding
-
-												text_single = {
-													layoutpolicy_horizontal = expanding
-													raw_text = "[TitleItem.GetTitle.GetNameNoTooltip]."
-													resizeparent = yes
-													margin_left = 5
-												}
+											coa_title_tiny_crown = {
+												datacontext = "[TitleItem.GetTitle]"
+												using = tooltip_ne
 											}
 										}
 									}
@@ -1140,51 +1247,48 @@ window = {
 
 										flowcontainer = {
 											ignoreinvisible = yes
-											# spacing = 5
-											#
-											# widget = {
-											# 	size = { 18 22 }
-											#
-											# 	button_expand = {
-											# 		visible = "[Not(GetVariableSystem.Exists( 'expand_partition' ))]"
-											# 		parentanchor = center
-											# 		frame = 1
-											# 	}
-											#
-											# 	button_expand = {
-											# 		visible = "[GetVariableSystem.Exists( 'expand_partition' )]"
-											# 		parentanchor = center
-											# 		frame = 2
-											# 	}
-											# }
+											spacing = 5
+
+											widget = {
+												size = { 18 22 }
+
+												button_expand = {
+													visible = "[Not(GetVariableSystem.Exists( 'expand_partition' ))]"
+													parentanchor = center
+													frame = 1
+												}
+
+												button_expand = {
+													visible = "[GetVariableSystem.Exists( 'expand_partition' )]"
+													parentanchor = center
+													frame = 2
+												}
+											}
 
 											text_single = {
 												text = "MY_REALM_WINDOW_TITLES_LOST_ON_SUCCESSION"
 												align = nobaseline
 											}
-
-											dot = { }
 										}
 									}
 
-									expand = { }
+									expand = {}
 								}
 
 								spacer = {
-									# visible = "[GetVariableSystem.Exists( 'expand_partition' )]"
+									visible = "[GetVariableSystem.Exists( 'expand_partition' )]"
 									size = { 5 5 }
 								}
 
-								vbox = {
+								dynamicgridbox = {
 									name = "title_succession"
 									datamodel = "[MyRealmWindow.GetTitleSuccession]"
-									# visible = "[GetVariableSystem.Exists( 'expand_partition' )]"
+									visible = "[GetVariableSystem.Exists( 'expand_partition' )]"
 									layoutpolicy_horizontal = expanding
 
 									item = {
 										hbox = {
-											# maximumsize = { -1 100 }
-											layoutpolicy_horizontal = expanding
+											maximumsize = { -1 100 }
 											margin_left = 10
 											margin_bottom = 5
 											datacontext = "[TitleSuccessionItem.GetHeir]"
@@ -1196,28 +1300,20 @@ window = {
 											vbox = {
 												layoutpolicy_horizontal = expanding
 												layoutpolicy_vertical = growing
-												# margin_bottom = 5
+												margin_bottom = 5
 
-												button = {
-													onclick = "[DefaultOnCharacterClick(Character.GetID)]"
-													onclick = "[DefaultOnCharacterClick(Character.GetID)]"
-													# onclick = "[DefaultOnCoatOfArmsRightClick(Character.CapitalLocation.GetCoATitle.GetID)]"
-													onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
-													button_ignore = none
+												text_single = {
+													name = "heir_name"
+													text = "[Character.GetUINameNoTooltip]"
 													layoutpolicy_horizontal = expanding
-
-													text_single = {
-														name = "heir_name"
-														raw_text = "[Character.GetUINameNoTooltip],"
-														layoutpolicy_horizontal = expanding
-														margin_left = 5
-														resizeparent = yes
-														# using = Font_Size_Medium
-														# max_width = 400
-														# fontsize_min = 14
-													}
+													using = Font_Size_Medium
+													max_width = 400
+													fontsize_min = 14
 												}
 
+												spacer = {
+													size = { 10 5 }
+												}
 
 												text_single = {
 													name = "heir_not_your_dynasty"
@@ -1228,53 +1324,38 @@ window = {
 													using = Font_Size_Small
 												}
 
-												# text_single = {
-												# 	name = "heir_share"
-												# 	datacontext = "[GetPlayer]"
-												# 	visible = "[DataModelHasItems(TitleSuccessionItem.GetPartitionTitles)]"
-												# 	layoutpolicy_horizontal = expanding
-												#
-												# 	text = "MY_REALM_WINDOW_PARTITION_SHARE"
-												# }
-
-												vbox = {
-													name = "titles_box"
+												text_single = {
+													name = "heir_share"
+													datacontext = "[GetPlayer]"
+													visible = "[DataModelHasItems(TitleSuccessionItem.GetPartitionTitles)]"
 													layoutpolicy_horizontal = expanding
+
+													text = "MY_REALM_WINDOW_PARTITION_SHARE"
+												}
+
+												overlappingitembox = {
+													name = "titles_box"
 													datamodel = "[TitleSuccessionItem.GetPartitionTitles]"
 													visible = "[DataModelHasItems(TitleSuccessionItem.GetPartitionTitles)]"
-													# minimumsize = { 350 50 }
-													spacing = 0
+													minimumsize = { 350 50 }
+													spacing = 10
 
 													item = {
-														hbox = {
-															layoutpolicy_horizontal = expanding
+														container = {
 
-															button = {
-																onclick = "[DefaultOnCoatOfArmsClick(TitleItem.GetTitle.GetID)]"
-																onclick = "[DefaultOnCoatOfArmsRightClick(TitleItem.GetTitle.GetID)]"
-																button_ignore = none
-																layoutpolicy_horizontal = expanding
-																text_single = {
-																	layoutpolicy_horizontal = expanding
-																	raw_text = "[TitleItem.GetTitle.GetNameNoTooltip]."
-																	resizeparent = yes
-																	margin_left = 5
-																}
+															coa_title_tiny_crown = {
+																datacontext = "[TitleItem.GetTitle]"
+																using = tooltip_ne
 															}
 
-															# coa_title_tiny_crown = {
-															# 	datacontext = "[TitleItem.GetTitle]"
-															# 	using = tooltip_ne
-															# }
-
-															# icon = {
-															# 	name = "has_laws"
-															# 	visible = "[TitleItem.GetTitle.HasLaws]"
-															# 	parentanchor = bottom|right
-															# 	size = { 25 25 }
-															# 	position = { 5 0 }
-															# 	texture = "gfx/interface/icons/title_status/icon_title_law.dds"
-															# }
+															icon = {
+																name = "has_laws"
+																visible = "[TitleItem.GetTitle.HasLaws]"
+																parentanchor = bottom|right
+																size = { 25 25 }
+																position = { 5 0 }
+																texture = "gfx/interface/icons/title_status/icon_title_law.dds"
+															}
 														}
 													}
 												}
@@ -1287,42 +1368,44 @@ window = {
 													text = "MY_REALM_WINDOW_EXCEPTIONS"
 												}
 
-												vbox = {
-													layoutpolicy_horizontal = expanding
+												overlappingitembox = {
 													name = "exception_box"
 													datamodel = "[TitleSuccessionItem.GetExceptionTitles]"
 													visible = "[DataModelHasItems(TitleSuccessionItem.GetExceptionTitles)]"
-													# minimumsize = { 350 50 }
-													# spacing = 10
+													minimumsize = { 350 50 }
+													spacing = 10
 
 													item = {
-														button = {
-															onclick = "[DefaultOnCoatOfArmsClick(TitleItem.GetTitle.GetID)]"
-															onclick = "[DefaultOnCoatOfArmsRightClick(TitleItem.GetTitle.GetID)]"
-															button_ignore = none
-															layoutpolicy_horizontal = expanding
+														container = {
 
-															text_single = {
-																layoutpolicy_horizontal = expanding
-																raw_text = "[TitleItem.GetTitle.GetNameNoTooltip]."
-																resizeparent = yes
-																margin_left = 5
+															coa_title_tiny_crown = {
+																datacontext = "[TitleItem.GetTitle]"
+																using = tooltip_ne
+
+																icon = {
+																	name = "has_laws"
+																	visible = "[TitleItem.GetTitle.HasLaws]"
+																	parentanchor = bottom|right
+																	size = { 25 25 }
+																	position = { 5 0 }
+																	texture = "gfx/interface/icons/title_status/icon_title_law.dds"
+																}
 															}
 														}
 													}
 												}
 											}
 
-											# vbox = {
-											# 	portrait_head = {
-											# 		name = "primary_spouse_portrait"
-											# 		blockoverride "portrait_button" {
-											# 			using = tooltip_ws
-											# 		}
-											# 	}
-											#
-											# 	expand = { }
-											# }
+											vbox = {
+												portrait_head = {
+													name = "primary_spouse_portrait"
+													blockoverride "portrait_button" {
+														using = tooltip_ws
+													}
+												}
+
+												expand = {}
+											}
 										}
 									}
 								}
@@ -1344,29 +1427,22 @@ window = {
 										text = "MY_REALM_WINDOW_EXCEPTIONS"
 									}
 
-									expand = { }
+									expand = {}
 								}
 
-								vbox = {
+								overlappingitembox = {
 									name = "exceptions_box"
 									layoutpolicy_horizontal = expanding
-									# size = { 460 55 }
-									# spacing = 10
+									size = { 460 55 }
+									spacing = 10
 
 									datamodel = "[MyRealmWindow.GetSuccessionExceptions]"
 
 									item = {
-										button = {
-											onclick = "[DefaultOnCoatOfArmsClick(TitleItem.GetTitle.GetID)]"
-											onclick = "[DefaultOnCoatOfArmsRightClick(TitleItem.GetTitle.GetID)]"
-											button_ignore = none
-											layoutpolicy_horizontal = expanding
-
-											text_single = {
-												layoutpolicy_horizontal = expanding
-												raw_text = "[TitleItem.GetTitle.GetNameNoTooltip]."
-												resizeparent = yes
-												margin_left = 5
+										container = {
+											coa_title_tiny_crown = {
+												datacontext = "[TitleItem.GetTitle]"
+												using = tooltip_ne
 											}
 										}
 									}
@@ -1389,7 +1465,7 @@ window = {
 										text = "MY_REALM_WINDOW_LINE_OF_SUCCESSION"
 									}
 
-									expand = { }
+									expand = {}
 								}
 
 								flowcontainer = {
@@ -1422,7 +1498,7 @@ window = {
 										text = "MY_REALM_WINDOW_ELECTIONS"
 									}
 
-									expand = { }
+									expand = {}
 								}
 
 								flowcontainer = {
@@ -1471,11 +1547,11 @@ window = {
 																tooltip = "MY_REALM_WINDOW_VOTE_TOOLTIP"
 															}
 
-															expand = { }
+															expand = {}
 														}
 													}
 
-													expand = { }
+													expand = {}
 												}
 											}
 										}
@@ -1493,7 +1569,7 @@ window = {
 				vbox = {
 					visible = "[Or( MyRealmWindow.IsShowingDomain, MyRealmWindow.IsShowingVassals)]"
 					layoutpolicy_horizontal = expanding
-					margin = { 10 0 }
+					margin = { 15 5 }
 					margin_bottom = 15
 					spacing = 8
 
@@ -1506,6 +1582,10 @@ window = {
 							text = "[SelectLocalization(MyRealmWindow.IsOverDomainLimit, 'MY_REALM_WINDOW_DOMAIN_LIMIT_WARNING', 'MY_REALM_WINDOW_DOMAIN_LIMIT')]"
 						}
 
+						icon = {
+							size = { 35 35 }
+							texture = "gfx/interface/icons/icon_domain.dds"
+						}
 
 						text_single = {
 							text = "[SelectLocalization(MyRealmWindow.IsOverDomainLimit, 'MY_REALM_WINDOW_DOMAIN_LIMIT_VALUE_WARNING', 'MY_REALM_WINDOW_DOMAIN_LIMIT_VALUE')]"
@@ -1514,7 +1594,7 @@ window = {
 
 					vbox = {
 						layoutpolicy_horizontal = expanding
-						margin = { 10 0 }
+						margin = { 80 0 }
 
 						background = {
 							using = Background_Area
@@ -1523,38 +1603,66 @@ window = {
 							margin_top = 3
 						}
 
+						hbox = {
+							margin_bottom = 5
+							layoutpolicy_horizontal = expanding
+
+							expand = {
+								minimumsize = { 150 0 }
+							}
+
+							text_single = {
+								text = "MY_REALM_WINDOW_TAXES"
+								min_width = 100
+								max_width = 100
+								align = right
+							}
+
+							text_single = {
+								text = "MY_REALM_WINDOW_LEVIES"
+								minimumsize = { 100 0 }
+								maximumsize = { 100 40 }
+								align = right
+							}
+						}
+
+						divider_light = {
+							layoutpolicy_horizontal = expanding
+						}
 
 						hbox = {
 							name = "domain_income_row"
 							layoutpolicy_horizontal = expanding
 
-							# background = {
-							# 	visible = "[MyRealmWindow.IsShowingDomain]"
-							# 	using = Status_Highlight
-							# }
-							spacing = 5
+							background = {
+								visible = "[MyRealmWindow.IsShowingDomain]"
+								using = Status_Highlight
+							}
 
 							flowcontainer = {
+								spacing = 5
 
 								text_single = {
-									# layoutpolicy_horizontal = expanding
+									layoutpolicy_horizontal = expanding
 									text = "MY_REALM_WINDOW_FROM_HOLDINGS"
+									align = bottom
 								}
 
-
-								text_single = {
-									raw_text = ", Over the limit!"
+								warning_icon = {
 									visible = "[MyRealmWindow.IsOverDomainLimit]"
+									size = { 25 25 }
 									tooltip = "[Character.GetDomainLimitTooltip]"
 								}
 							}
 
+							expand = {}
+
 							text_single = {
 								datacontext = "[MyRealmWindow.GetDomainIncome]"
-								raw_text = "[ValueBreakdown.GetValue] gold,"
-								# min_width = 100
-								# max_width = 100
-								# align = right
+								text = "[ValueBreakdown.GetValue]"
+								min_width = 100
+								max_width = 100
+								align = right
 
 								tooltipwidget = {
 									widget_gold_breakdown_tooltip = {
@@ -1568,9 +1676,9 @@ window = {
 
 							text_single = {
 								datacontext = "[MyRealmWindow.GetDomainLevy]"
-								raw_text = "[ValueBreakdown.GetValue] levies."
-								# minimumsize = { 100 0 }
-								# align = right
+								text = "[ValueBreakdown.GetValue]"
+								minimumsize = { 100 0 }
+								align = right
 								tooltipwidget = {
 									widget_gold_breakdown_tooltip = {
 										blockoverride "income"
@@ -1580,38 +1688,41 @@ window = {
 									}
 								}
 							}
-
-							expand = { }
 						}
 
 						hbox = {
 							name = "vassals_income_row"
 							layoutpolicy_horizontal = expanding
 
-							# background = {
-							# 	visible = "[MyRealmWindow.IsShowingVassals]"
-							# 	using = Status_Highlight
-							# }
-							spacing = 5
+							background = {
+								visible = "[MyRealmWindow.IsShowingVassals]"
+								using = Status_Highlight
+							}
 
 							flowcontainer = {
+								spacing = 5
 
 								text_single = {
-									# layoutpolicy_horizontal = expanding
+									layoutpolicy_horizontal = expanding
 									text = "MY_REALM_WINDOW_FROM_VASSALS"
-									# align = bottom
+									align = bottom
 								}
 
-								text_single = {
-									raw_text = ", Over the limit!"
+								warning_icon = {
 									visible = "[GreaterThan_int32( Character.GetNumVassalsTowardsLimit, Character.GetVassalLimit )]"
+									size = { 25 25 }
 									tooltip = "[Character.GetVassalLimitTooltip]"
 								}
 							}
 
+							expand = {}
+
 							text_single = {
 								datacontext = "[MyRealmWindow.GetVassalsIncome]"
-								raw_text = "[ValueBreakdown.GetValue] gold,"
+								text = "[ValueBreakdown.GetValue]"
+								min_width = 100
+								max_width = 100
+								align = right
 
 								tooltipwidget = {
 									widget_gold_breakdown_tooltip = {
@@ -1625,7 +1736,10 @@ window = {
 
 							text_single = {
 								datacontext = "[MyRealmWindow.GetVassalsLevy]"
-								raw_text = "[ValueBreakdown.GetValue] levies."
+								text = "[ValueBreakdown.GetValue]"
+								min_width = 100
+								max_width = 100
+								align = right
 
 								tooltipwidget = {
 									widget_gold_breakdown_tooltip = {
@@ -1636,26 +1750,23 @@ window = {
 									}
 								}
 							}
-
-							expand = { }
 						}
 
 						hbox = {
 							layoutpolicy_horizontal = expanding
 							visible = "[GetPlayer.HasLiege]"
-							spacing = 5
 
 							text_single = {
-								# layoutpolicy_horizontal = expanding
+								layoutpolicy_horizontal = expanding
 								text = "MY_REALM_WINDOW_FROM_TO_LIEGE"
 							}
 
 							text_single = {
 								datacontext = "[MyRealmWindow.GetIncomeTax]"
-								raw_text = "[ValueBreakdown.GetValue] gold,"
-								# min_width = 100
-								# max_width = 100
-								# align = right
+								text = "[ValueBreakdown.GetValue]"
+								min_width = 100
+								max_width = 100
+								align = right
 
 								tooltipwidget = {
 									my_realm_window_contribution_tooltip = {
@@ -1664,17 +1775,17 @@ window = {
 										{
 											text = "MRW_TT_TAXES_TO_MY_LIEGE"
 										}
-										blockoverride "contribution_tooltip_content_suffix" { }
+										blockoverride "contribution_tooltip_content_suffix" {}
 									}
 								}
 							}
 
 							text_single = {
 								datacontext = "[MyRealmWindow.GetLevyTax]"
-								raw_text = "[ValueBreakdown.GetValue] levies."
-								# min_width = 100
-								# max_width = 100
-								# align = right
+								text = "[ValueBreakdown.GetValue]"
+								min_width = 100
+								max_width = 100
+								align = right
 
 								tooltipwidget = {
 									my_realm_window_contribution_tooltip = {
@@ -1683,12 +1794,10 @@ window = {
 										{
 											text = "MRW_TT_LEVIES_TO_MY_LIEGE"
 										}
-										blockoverride "contribution_tooltip_content_suffix" { }
+										blockoverride "contribution_tooltip_content_suffix" {}
 									}
 								}
 							}
-
-							expand = { }
 						}
 
 						hbox = {
@@ -1712,91 +1821,11 @@ window = {
 								text = "MY_REALM_WINDOW_MY_OBLIGATIONS"
 							}
 
-							vassal_contract_not_default_icon = { }
+							vassal_contract_not_default_icon = {}
 						}
 					}
 				}
 			}
 		}
-	}
-
-	window_realm_old = {
-		visible = "[GetVariableSystem.Exists('ocr')]"
-	}
-}
-
-######################################################
-################ TYPES AND TEMPLATES #################
-######################################################
-
-types MyRealmWindow
-{
-	type my_realm_window_contribution_tooltip = container {
-		alwaystransparent = no
-		widget = {
-			name = "background"
-			using = Background_Tooltip
-			size = { 100% 100% }
-			alwaystransparent = no
-		}
-
-		flowcontainer = {
-			margin = { 10 0 }
-			margin_top = 10
-			spacing = 15
-			direction = vertical
-			ignoreinvisible = yes
-
-			text_single = {
-				margin = { 5 0 }
-				block "contribution_tooltip_header" { }
-			}
-
-			widget_gold_breakdown_tooltip = {
-				layoutpolicy_horizontal = expanding
-				blockoverride "income"
-				{
-					visible = no
-				}
-
-				blockoverride "background" { }
-			}
-
-			block "contribution_tooltip_content_suffix" {
-				text_single = {
-					multiline = yes
-					maximumsize = { 250 -1 }
-					text = "MY_REALM_WINDOW_CONTRIBUTION_TO_THEOCRATIC_LIEGE"
-					visible = "[Character.IsTheocraticLessee]"
-				}
-			}
-
-			flowcontainer = {
-				spacing = 15
-				direction = vertical
-				ignoreinvisible = yes
-				block "tax_info_visible" { }
-				block "tax_info" { }
-			}
-
-			flowcontainer = {
-				spacing = 15
-				direction = vertical
-				ignoreinvisible = yes
-				block "levy_info_visible" { }
-				block "levy_info" { }
-			}
-		}
-	}
-
-	type vassal_contract_not_default_icon = icon
-	{
-		texture = "gfx/interface/icons/icon_contract_modification.dds"
-		framesize = { 60 60 }
-		frame = 1
-		name = "vassal_contract_not_default"
-		size = { 25 25 }
-		visible = "[Not( VassalContract.IsContractDefault )]"
-		tooltip = "VASSAL_CONTRACT_NOT_DEFAULT"
 	}
 }
