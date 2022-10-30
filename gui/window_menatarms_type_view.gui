@@ -1,0 +1,758 @@
+
+######################################################
+################# ADD MEN-AT-ARMS ####################
+######################################################
+
+window = {
+	name = "menatarmstype_view"
+	parentanchor = top|right
+	position = { -30 0 }
+	size = { 620 100% }
+	movable = no
+	layer = middle
+
+	using = Window_Background
+	using = Window_Decoration
+	# using = TooltipFocus
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		# position_x = -610
+		on_start = "[GetVariableSystem.Set( 'menatarms_details_open', 'true'  )]"
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		# position_x = -580
+		on_start = "[GetVariableSystem.Clear( 'menatarms_details_open' )]"
+	}
+
+	vbox = {
+		using = Window_Margins
+		margin_top = 10
+		# margin_bottom = 40
+		# set_parent_size_to_minimum = yes
+
+		state = {
+			name = "menatarms_details_refresh"
+			alpha = 0
+			duration = 0.2
+			next = "b"
+			using = Animation_Curve_Default
+		}
+
+		state = {
+			name = "b"
+			alpha = 1
+			duration = 0.2
+			using = Animation_Curve_Default
+		}
+
+		header_pattern = {
+			layoutpolicy_horizontal = expanding
+			blockoverride "header_text"
+			{
+				text = "ADD_MEN_AT_ARMS_LABEL"
+
+			}
+
+			blockoverride "button_close"
+			{
+				onclick = "[MenAtArmsTypeView.Close]"
+
+			}
+		}
+		widget = {
+			name = "selected_maa"
+			datacontext = "[MenAtArmsTypeView.GetSelectedMenAtArmsType]"
+			visible = "[MenAtArmsTypeView.IsAnyMenAtArmsTypeSelected]"
+			layoutpolicy_horizontal = expanding
+			size = { 0 0 }
+			scissor = yes
+
+			widget = {
+				visible = "[MenAtArmsTypeView.IsAnyMenAtArmsTypeSelected]"
+				parentanchor = bottom
+				size = { 100% 250 }
+
+				background = {
+					texture = "[MenAtArmsType.GetHorizontalImage]"
+					alpha = 0.8
+					margin = { -4 0 }
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
+						blend_mode = alphamultiply
+						mirror = vertical
+					}
+				}
+			}
+
+			state = {
+				name = _show
+
+				#using = Animation_FadeIn_Standard
+				duration = 0.2
+
+				animation = {
+					size = { 0 540 }
+					bezier = { 0 0.5 0.5 1 }
+				}
+
+				animation = {
+					alpha = 1
+					bezier = { 0.5 0 1 0.5 }
+				}
+			}
+
+			state = {
+				name = _hide
+				size = { 0 0 }
+				alpha = 0
+			}
+
+			state = {
+				name = "add_maa_change"
+				alpha = 0
+				duration = 0.2
+				next = "b"
+				using = Animation_Curve_Default
+			}
+
+			state = {
+				name = "b"
+				alpha = 1
+				duration = 0.2
+				using = Animation_Curve_Default
+			}
+
+			widget = {
+				size = { 100% 100% }
+
+				state = {
+					name = "add_maa_change"
+					next = "b"
+					position_x = 200
+					duration = 0.2
+					using = Animation_Transition_Start
+				}
+
+				state = {
+					name = "b"
+					next = "c"
+					position_x = -200
+					duration = 0
+				}
+
+				state = {
+					name = "c"
+					position_x = -0
+					duration = 0.2
+					using = Animation_Transition_End
+				}
+
+				vbox = {
+					button_primary_text = {
+						layoutpolicy_horizontal = expanding
+						size = { 200 40 }
+						blockoverride "disabled" {
+							visible = "[Not(MenAtArmsTypeView.CanCreate)]"
+						}
+						blockoverride "text" {
+							text = "[MenAtArmsTypeView.GetCostString( GetPlayer )]"
+
+						}
+						onclick = "[MenAtArmsTypeView.Create]"
+						enabled = "[MenAtArmsTypeView.CanCreate]"
+						tooltip = "[MenAtArmsTypeView.GetCreateTooltip]"
+
+						background = {
+							using = Background_Area
+						}
+					}
+
+					maa_regiment_info_ocr = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "start" {
+							text_single = {
+								margin_left = 5
+								layoutpolicy_horizontal = expanding
+								text = "MV_REGIMENT_START_SIZE"
+							}
+						}
+					}
+
+					expand = { }
+
+				}
+			}
+		}
+
+		scrollbox = {
+			name = "attending_scrollarea"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			size = { 430 0 }
+			# maximumsize = { -1 600 }
+			autoresizescrollarea = yes
+
+			blockoverride "scrollbox_content"
+			{
+				vbox = {
+					name = "types_grid"
+					datamodel = "[MenAtArmsTypeView.GetMenAtArmsTypes]"
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					item = {
+						button_standard = {
+							name = "select"
+							datacontext = "[MenAtArmsTypeViewTypeItem.GetMenAtArmsType]"
+							layoutpolicy_horizontal = expanding
+							size = { 0 42 }
+
+							down = "[MenAtArmsTypeViewTypeItem.IsSelected]"
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									text_single = {
+										margin_left = 5
+										margin_top = 1
+										name = "men_at_arms_name"
+										text = "[MenAtArmsType.GetNameNoTooltip]"
+										default_format = "#high"
+									}
+
+									text_single = {
+										name = "men_at_arms_cost"
+										text = "[MenAtArmsType.GetCostString( GetPlayer )]"
+									}
+
+									text_single = {
+										tooltip = "[MenAtArmsTypeViewTypeItem.GetCreateWarning]"
+										raw_text = ", not enough"
+										visible = "[Not(MenAtArmsTypeViewTypeItem.CanCreate)]"
+									}
+
+									dot = { }
+									expand = { }
+								}
+
+								siege_stat = {
+								}
+
+								hbox_maa_stats = {
+								}
+							}
+
+
+							button_normal = {
+								visible = "[Not(MenAtArmsTypeView.IsAnyMenAtArmsTypeSelected)]"
+								size = { 100% 100% }
+								onclick = "[MenAtArmsTypeViewTypeItem.OnClick]"
+							}
+
+							button_normal = {
+								visible = "[MenAtArmsTypeView.IsAnyMenAtArmsTypeSelected]"
+								size = { 100% 100% }
+								onclick = "[PdxGuiTriggerAllAnimations('add_maa_change')]"
+
+								state = {
+									name = _mouse_click
+									delay = 0.2
+									on_finish = "[MenAtArmsTypeViewTypeItem.OnClick]"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+	}
+}
+
+######################################################
+################ TYPES AND TEMPLATES #################
+######################################################
+
+types MenAtArms
+{
+	type vbox_maa_stats_numbers = vbox {
+		vbox = {
+			visible = "[Not( MenAtArmsType.FightsInMainPhase )]"
+			layoutpolicy_horizontal = expanding
+			margin = { 5 0 }
+
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				block "siege_tt"
+				{
+					tooltip = "REGIMENT_SIEGE_TT"
+				}
+				using = tooltip_se
+
+				text_single = {
+					raw_text = "Siege progress"
+				}
+
+				space = { }
+
+				text_single = {
+					block "siege_stat"
+					{
+						text = "REGIMENT_SIEGE"
+					}
+				}
+
+				dot = { }
+
+				expand = { }
+			}
+
+			hbox = {
+			    layoutpolicy_horizontal = expanding
+
+				text_single = {
+					name = "siege_tier"
+					text = "REGIMENT_SIEGE_MAX_FORT_LEVEL"
+					align = left
+				}
+
+				dot = { }
+
+			    expand = { }
+			}
+		}
+
+		hbox_maa_stats = { }
+	}
+
+	type siege_stat = hbox {
+		margin = { 5 0 }
+		visible = "[Not( MenAtArmsType.FightsInMainPhase )]"
+		layoutpolicy_horizontal = expanding
+		block "siege_tt"
+		{
+			tooltip = "REGIMENT_SIEGE_TT"
+		}
+		using = tooltip_se
+
+		text_single = {
+			raw_text = "Siege progress"
+		}
+
+		space = { }
+
+		text_single = {
+			block "siege_stat"
+			{
+				text = "REGIMENT_SIEGE"
+			}
+		}
+
+		dot = { }
+
+		expand = { }
+	}
+
+	type hbox_maa_stats = hbox {
+		name = "stats"
+		layoutpolicy_horizontal = expanding
+		margin = { 5 0 }
+		spacing = 3
+		visible = "[MenAtArmsType.FightsInMainPhase]"
+
+		hbox = {
+			block "damage_tt"
+			{
+				tooltip = "REGIMENT_DAMAGE_TT"
+			}
+			using = tooltip_se
+			spacing = 3
+			text_single = {
+				name = "label"
+				block "damage_stat"
+				{
+					raw_text = "[MenAtArmsType.GetStat( GetPlayer, 'damage' )|0]"
+				}
+			}
+
+			text_single = {
+				raw_text = "damage,"
+			}
+
+		}
+
+		hbox = {
+			block "toughness_tt"
+			{
+				tooltip = "REGIMENT_TOUGHNESS_TT"
+			}
+			using = tooltip_se
+			spacing = 3
+			text_single = {
+				name = "label"
+				block "toughness_stat"
+				{
+					raw_text = "[MenAtArmsType.GetStat( GetPlayer, 'toughness' )|0]"
+				}
+			}
+
+			text_single = {
+				raw_text = "toughness,"
+			}
+
+		}
+
+		hbox = {
+			block "pursuit_tt"
+			{
+				tooltip = "REGIMENT_PURSUIT_TT"
+				# fade out if 0
+				# alpha = "[Select_float(GreaterThan_CFixedPoint(MenAtArmsType.GetStat( GetPlayer, 'pursuit' ),'(CFixedPoint)0'), '(float)1.0','(float)0.4'))]"
+			}
+			using = tooltip_se
+			spacing = 3
+
+			text_single = {
+				name = "label"
+				block "pursuit_stat"
+				{
+					raw_text = "[MenAtArmsType.GetStat( GetPlayer, 'pursuit' )|0],"
+				}
+			}
+
+			text_single = {
+				raw_text = "pursuit,"
+			}
+
+		}
+
+		hbox = {
+			block "screen_tt"
+			{
+				tooltip = "REGIMENT_SCREEN_TT"
+				# fade out if 0
+				# alpha = "[Select_float(GreaterThan_CFixedPoint(MenAtArmsType.GetStat( GetPlayer, 'screen' ),'(CFixedPoint)0'), '(float)1.0','(float)0.4'))]"
+			}
+			using = tooltip_se
+			spacing = 3
+
+			text_single = {
+				name = "label"
+				block "screen_stat"
+				{
+					raw_text = "[MenAtArmsType.GetStat( GetPlayer, 'screen' )|0]"
+				}
+			}
+
+			text_single = {
+				raw_text = "screen."
+			}
+
+		}
+
+		expand = { }
+	}
+
+	type hbox_maa_type_text = hbox {
+		margin = { 5 0 }
+		text_single = {
+			name = "type"
+			text = "MEN_AT_ARMS_TYPE_NAME"
+		}
+
+		dot = { }
+
+		expand = { }
+	}
+
+	type vbox_maa_stats = vbox {
+		margin_bottom = 5
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			margin =  { 5 0 }
+
+			text_single = {
+				name = "title"
+				raw_text = "[MenAtArmsType.GetNameNoTooltip],"
+				using = Font_Size_Medium
+
+			}
+			space = { }
+
+			hbox = {
+				tooltip = "MV_CREATE_REGIMENT_MAX_SIZE_TT"
+				using = tooltip_ne
+
+				text_single = {
+					name = "soldier count"
+					text = "MV_CREATE_REGIMENT_SIZE"
+				}
+			}
+
+			dot = { }
+
+			expand = { }
+		}
+
+		vbox_maa_stats_numbers = {
+			layoutpolicy_horizontal = expanding
+		}
+
+		block "type_text"
+		{
+			hbox_maa_type_text = {
+				layoutpolicy_horizontal = expanding
+			}
+		}
+	}
+
+	type vbox_maa_info = vbox {
+		visible = "[MenAtArmsType.FightsInMainPhase]"
+		margin = { 5 0 }
+
+		text_multi = {
+			name = "counters"
+			visible = "[MenAtArmsType.FightsInMainPhase]"
+			layoutpolicy_horizontal = growing
+			autoresize = yes
+			max_width = 520
+			text = "MAA_COUNTERS_LABEL"
+		}
+
+		hbox = {
+		    layoutpolicy_horizontal = expanding
+			visible = "[Not(IsDataModelEmpty(MenAtArmsType.GetTerrainModifiers))]"
+
+			text_single = {
+				raw_text = "[GetDataModelSize(MenAtArmsType.GetTerrainModifiers)]"
+			}
+
+			space = { }
+
+			text_single = {
+				name = "terrain_label"
+				text = "REGIMENT_TERRAIN_BONUS_HEADER"
+			}
+
+		    expand = { }
+		}
+
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Not(IsDataModelEmpty(MenAtArmsType.GetTerrainModifiers))]"
+
+			vbox = {
+				name = "terrain_grid"
+				datamodel = "[MenAtArmsType.GetTerrainModifiers]"
+
+				item = {
+					hbox = {
+					    layoutpolicy_horizontal = expanding
+						tooltip = "REGIMENT_TERRAIN_MODIFIER_TOOLTIP"
+
+						text_single = {
+							raw_text = "Bonus in"
+							visible = "[RegimentTerrainModifier.IsPositive]"
+						}
+
+						text_single = {
+							raw_text = "Penalty in"
+							visible = "[Not( RegimentTerrainModifier.IsPositive )]"
+						}
+
+						space = { }
+
+					    text_single = {
+							raw_text = "[RegimentTerrainModifier.GetTerrain.GetNameNoTooltip]"
+						}
+
+						dot = { }
+
+					    expand = { }
+					}
+				}
+			}
+			expand = { }
+		}
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			name = "no_terrains"
+			visible = "[IsDataModelEmpty(MenAtArmsType.GetTerrainModifiers)]"
+
+			text = "REGIMENT_TERRAIN_BONUS_NONE"
+		}
+
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[MenAtArmsType.HasWinterHarshModifier]"
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[MenAtArmsType.HasWinterHarshModifier]"
+
+				tooltip = "REGIMENT_WINTER_HARSH_MODIFIER_TOOLTIP"
+
+				text_single = {
+					raw_text = "[Select_CString(MenAtArmsType.GetWinterHarshModifier.IsPositive, 'Bonus', 'Penalty')] in"
+				}
+
+				space = { }
+
+				text_single = {
+					raw_text = "harsh winter"
+				}
+
+				dot = { }
+
+				expand = { }
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[MenAtArmsType.HasWinterNormalModifier]"
+
+				tooltip = "REGIMENT_WINTER_NORMAL_MODIFIER_TOOLTIP"
+
+				text_single = {
+					raw_text = "[Select_CString(MenAtArmsType.GetWinterNormalModifier.IsPositive, 'Bonus', 'Penalty')] in"
+				}
+
+				space = { }
+
+				text_single = {
+					raw_text = "normal winter"
+				}
+
+				dot = { }
+
+				expand = { }
+			}
+
+			expand = { }
+		}
+	}
+
+	type maa_regiment_info = widget {
+		# Needs a MenAtArmsType Datacontext
+		size = { 380 410 }
+
+		vbox = {
+			margin = { 10 3 }
+			spacing = 5
+
+			vbox_maa_stats = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			vbox_maa_info = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			text_multi = {
+				layoutpolicy_horizontal = expanding
+				size = { 0 75 }
+				text = "[MenAtArmsType.GetFlavorString]"
+				margin = { 15 5 }
+			}
+
+			expand = { }
+
+			vbox = {
+				margin_bottom = 15
+
+				text_label_center = {
+					text = "[MenAtArmsType.GetReinforcementCostString( GetPlayer )]"
+				}
+
+				text_label_center = {
+					text = "[MenAtArmsType.GetFullStrengthMaintenanceCostForPlayerString]"
+				}
+			}
+		}
+	}
+
+	type maa_regiment_info_ocr = widget {
+		# Needs a MenAtArmsType Datacontext
+		size = { 380 410 }
+
+		vbox = {
+			set_parent_size_to_minimum = yes
+			margin = { 5 0 }
+
+			vbox_maa_stats = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			vbox_maa_info = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			vbox = {
+				margin = { 5 0 }
+				layoutpolicy_horizontal = expanding
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					text = "[MenAtArmsType.GetReinforcementCostString( GetPlayer )]"
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					text = "[MenAtArmsType.GetFullStrengthMaintenanceCostForPlayerString]"
+				}
+			}
+
+			block "start" { }
+
+			text_multi = {
+				max_width = 530
+				autoresize = yes
+				text = "[MenAtArmsType.GetFlavorString]"
+				margin = { 5 0 }
+			}
+
+			expand = { }
+		}
+	}
+
+	type maa_winter_effects_icon = hbox {
+		block "maa_has_winter_modifier" { }
+		icon = {
+			block "maa_has_winter_effect" { }
+			size = { 40 40 }
+			using = tooltip_below
+
+			icon = {
+				block "maa_winter_modifier_icon" { }
+				parentanchor = bottom|right
+				position = { 0 5 }
+				size = { 25 25 }
+			}
+		}
+	}
+
+	type maa_winter_effects_positive_icon = maa_winter_effects_icon {
+		blockoverride "maa_winter_modifier_icon" {
+			texture = "gfx/interface/icons/symbols/icon_plus_small.dds"
+		}
+	}
+
+	type maa_winter_effects_negative_icon = maa_winter_effects_icon {
+		blockoverride "maa_winter_modifier_icon" {
+			texture = "gfx/interface/icons/symbols/icon_minus_small.dds"
+		}
+	}
+
+}

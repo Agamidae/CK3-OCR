@@ -41,6 +41,7 @@ window = {
 		on_start = "[GetVariableSystem.Set( 'hide_bottom_left_HUD', 'true' )]"
 		on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 		on_start = "[DefaultOnCoatOfArmsRightClick(HoldingView.GetProvince.GetCoATitle.GetID)]"
+		# on_start = "[GetScriptedGui('county_controller').Execute( GuiScope.SetRoot( HoldingView.GetProvince.MakeScope ).End )]"
 
 		using = Animation_FadeIn_Standard
 		using = Sound_WindowShow_Standard
@@ -108,11 +109,21 @@ window = {
 
 			#title
 			vbox = {
+				button_text = {
+					# visible = no
+					datacontext = "[GetScriptedGui('county_controller')]"
+					onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( HoldingView.GetProvince.MakeScope ).End )]"
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "Controller: [HoldingView.GetProvince.MakeScope.Var('controller').GetCharacter.GetNameNoTooltip]"
+					}
+				}
+
 				hbox = {
 					layoutpolicy_horizontal = expanding
 					ignoreinvisible = yes
 
-					margin_left = 3
+					margin_left = 5
 
 					text_single = {
 						raw_text = "[AddTextIf(HoldingView.GetHolding.IsEmpty, HoldingView.GetProvince.GetTerrain.GetNameNoTooltip)][AddTextIf(Not(HoldingView.GetHolding.IsEmpty), HoldingView.GetHolding.GetPrimaryBuildingType.GetTypeName)] of [HoldingView.GetHolding.GetNameNoTooltip] in [HoldingView.GetCountyTitle.GetNameNoTooltip]."
@@ -149,6 +160,34 @@ window = {
 				}
 
 				hbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					text_single = {
+						margin_left = 5
+						raw_text = "Hostile county!"
+						visible = "[GetScriptedGui('is_he_at_war').IsShown( GuiScope.SetRoot( HoldingView.GetProvince.MakeScope ).AddScope( 'me', GetPlayer.MakeScope ).End )]"
+					}
+
+					# text_single = {
+					# 	raw_text = "Adjacent to an allied county."
+					# 	visible = "[GetScriptedGui('adjacent_to_ally').IsShown( GuiScope.SetRoot( HoldingView.GetProvince.MakeScope ).AddScope( 'me', GetPlayer.MakeScope ).End )]"
+					# }
+
+					button_text = {
+						visible = "[County.IsFullyOccupied]"
+						datacontext = "[County.GetCountyOccupant]"
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							align = left
+							raw_text = "Occupied by: [Character.GetNameOrMeNoTooltip]."
+						}
+						using = char_click
+					}
+					expand = { }
+				}
+
+				hbox = {
 					datacontext = "[HoldingView.GetCountyTitle.GetHolder]"
 					layoutpolicy_horizontal = expanding
 
@@ -178,6 +217,12 @@ window = {
 
 					text_single = {
 						raw_text = "."
+					}
+
+					text_single = {
+						raw_text = " Your capital."
+						layoutpolicy_horizontal = expanding
+						visible = "[ObjectsEqual(HoldingView.GetProvince, GetPlayer.GetCapitalLocation)]"
 					}
 
 					vbox = {
@@ -243,6 +288,31 @@ window = {
 				blockoverride "tooltip" { }
 			}
 		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			text_single = {
+				margin_left = 5
+				raw_text = "[GuiScope.SetRoot(HoldingView.GetProvince.MakeScope).ScriptValue('distance_to_player')|0] points [HoldingView.GetProvince.Custom('county_direction_from_capital')] from your capital."
+				# layoutpolicy_horizontal = expanding
+				visible = "[Not(ObjectsEqual(HoldingView.GetProvince, GetPlayer.GetCapitalLocation))]"
+			}
+
+			text_single = {
+				margin_left = 5
+				raw_text = "Coastal county."
+				visible = "[GetScriptedGui('is_coastal_or_river').IsShown( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
+			}
+
+			text_single = {
+				margin_left = 5
+				raw_text = "Riverside county."
+				visible = "[GetScriptedGui('is_riverside_county').IsShown( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
+			}
+			expand = { }
+		}
+
 
 		#navigation
 		vbox = {
@@ -451,6 +521,7 @@ window = {
 
 				expand = { }
 			}
+
 			hbox = {
 				layoutpolicy_horizontal = expanding
 				margin_left = 10
@@ -483,19 +554,6 @@ window = {
 				}
 
 				expand = { }
-			}
-
-			hbox = {
-				layoutpolicy_vertical = expanding
-				visible = "[County.IsFullyOccupied]"
-				datacontext = "[County.GetCountyOccupant]"
-
-				button_text = {
-				    blockoverride "text" {
-				        raw_text = "Occupied by: [Character.GetNameNoTooltip]."
-				    }
-					using = char_click
-				}
 			}
 
 			hbox = {
@@ -980,11 +1038,13 @@ window = {
 							direction = vertical
 							ignoreinvisible = yes
 
+							#grant to
 							button_text = {
-							    blockoverride "text" {
-							        raw_text = "FIND_VASSAL_HEADER"
-									onclick = "[HoldingView.ToggleFindVassalListWindow]"
-							    }
+								blockoverride "text" {
+									raw_text = "Grant holding, hotkey G."
+								}
+								shortcut = "army_merge"
+								onclick = "[HoldingView.ToggleFindVassalListWindow]"
 								visible = "[And( And( ObjectsEqual( HoldingView.GetTitle.GetHolder, GetPlayer ), HoldingView.GetTitle.CanUseFindVassal( GetPlayer ) ), Not(HoldingView.GetTitle.IsLeasedOut))]"
 								# tooltip = "FIND_VASSAL_BUTTON_HOLDING_VIEW_TOOLTIP"
 							}
@@ -995,6 +1055,7 @@ window = {
 								# layoutpolicy_vertical = expanding
 								margin_left = 2
 								spacing = 3
+								ignoreinvisible = yes
 
 								text_single = {
 									datacontext = "[HoldingView.GetTitle]"

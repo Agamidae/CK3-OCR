@@ -1,0 +1,247 @@
+window = {
+	name = "find_vassal_list_window"
+	layer = middle
+	allow_outside = yes
+
+	# using = title_view_window_side_pop_out
+	# using = Window_Position_CharacterList
+	using = Window_Movable
+	using = Window_Size_CharacterList
+	using = Window_Background
+	using = Window_Decoration
+	position = { -20 0 }
+
+	datacontext = "[FindVassalListWindow.GetFindVassalList]"
+
+	vbox = {
+		margin = { 40 20 }
+		# spacing = 10
+
+		header_pattern = {
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "header_text"
+			{
+				text = "FIND_VASSAL_HEADER"
+			}
+
+			blockoverride "button_close"
+			{
+				onclick = "[FindVassalListWindow.Close]"
+			}
+		}
+
+		vbox = {
+			visible = "[Or(FindVassalListWindow.GetTitle.IsBarony,FindVassalListWindow.GetTitle.IsCounty)]"
+			layoutpolicy_horizontal = expanding
+
+			button_standard_clean = {
+				name = "grant_to_same_culture_noble"
+				onclick = "[FindVassalListWindow.GetTitle.CreateHolderForTitle]"
+				onclick = "[FindVassalListWindow.Close]"
+				using = tooltip_se
+				tooltip = "GRANT_TO_SAME_CULTURE_NOBLE_BUTTON_HOLDING_VIEW_TOOLTIP"
+
+				layoutpolicy_horizontal = expanding
+				size = { 0 50 }
+
+				background = {
+					texture = "gfx/interface/illustrations/decisions/decision_recruitment.dds"
+					alpha = 0.3
+				}
+
+				background = {
+					texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
+					spriteType = Corneredtiled
+					spriteborder = { 5 5 }
+					margin = { -2 -2 }
+				}
+
+				using = Background_Vignette_Button
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					margin = { 5 3 }
+					background = {
+						using = Background_Area_Dark
+					}
+					text_single = {
+						min_width = 230
+						max_width = 600
+						layoutpolicy_horizontal = expanding
+						text = "GRANT_TO_SAME_CULTURE_NOBLE_HEADER"
+						default_format = "#clickable"
+						align = nobaseline
+					}
+					text_multi = {
+						min_width = 600
+						max_width = 600
+						layoutpolicy_horizontal = expanding
+						text = "GRANT_TO_SAME_CULTURE_NOBLE_INFO"
+						default_format = "#low"
+						align = nobaseline
+						autoresize = yes
+					}
+					expand = { }
+				}
+			}
+
+			button_standard_clean = {
+				name = "grant_to_local_culture_noble"
+				visible = "[Not( ObjectsEqual( FindVassalListWindow.GetTitle.GetProvince.GetCulture, GetPlayer.GetCulture ) )]"
+				onclick = "[FindVassalListWindow.GetTitle.CreateLocalHolderForTitle]"
+				onclick = "[FindVassalListWindow.Close]"
+				using = tooltip_se
+				tooltip = "[FindVassalListWindow.GetTitle.GetAutoGrantTitleToLocalRulerDesc]"
+
+				layoutpolicy_horizontal = expanding
+				size = { 0 50 }
+
+				background = {
+					texture = "gfx/interface/illustrations/decisions/decision_destiny_goal.dds"
+					alpha = 0.3
+				}
+
+				background = {
+					texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
+					spriteType = Corneredtiled
+					spriteborder = { 5 5 }
+					margin = { -2 -2 }
+				}
+
+				using = Background_Vignette_Button
+
+				vbox = {
+					margin = { 5 3 }
+					background = {
+						using = Background_Area_Dark
+					}
+					text_single = {
+						min_width = 600
+						max_width = 600
+						layoutpolicy_horizontal = expanding
+						text = "GRANT_TO_LOCAL_CULTURE_NOBLE_HEADER"
+						default_format = "#clickable"
+						align = nobaseline
+					}
+					text_multi = {
+						min_width = 600
+						max_width = 600
+						layoutpolicy_horizontal = expanding
+						text = "GRANT_TO_LOCAL_CULTURE_NOBLE_INFO"
+						default_format = "#low"
+						align = nobaseline
+						autoresize = yes
+					}
+					expand = { }
+				}
+			}
+		}
+
+		text_single = {
+			visible = "[Or(FindVassalListWindow.GetTitle.IsBarony,FindVassalListWindow.GetTitle.IsCounty)]"
+			text = grant_title_info_text
+			default_format = "#I"
+			layoutpolicy_horizontal = expanding
+			margin_left = 5
+		}
+
+		vbox_character_list = {
+			name = "find_vassal_list"
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "container_implementation"
+			{
+				fixedgridbox = {
+					addcolumn = 650
+					addrow = 65
+
+					name = "characters_grid"
+					datamodel = "[CharacterSelectionList.GetList]"
+					visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+
+					item = {
+						widget_character_list_item_finder = {
+							size = { 650 65 }
+							blockoverride "click" {
+								# onclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+								onclick = "[CharacterListItem.OnClick('character')]"
+								onclick = "[CloseGameView('holding_view')]"
+								onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+							}
+							text_single = {
+								parentanchor = right
+								position = { -10 0 }
+								name = "debug_relevance_score"
+								raw_text = "Relevance: [FindVassalListWindow.GetRelevance( CharacterListItem.Self )]"
+								default_format = "D"
+								visible = "[InDebugMode]"
+
+								tooltipwidget = {
+									widget_value_breakdown_tooltip = {
+										datacontext = "[FindVassalListWindow.GetRelevanceBreakdown( CharacterListItem.GetCharacter )]"
+									}
+								}
+							}
+						}
+					}
+				}
+				blockoverride "scrollbox_empty_visibility"
+                {
+					visible = "[Not(CharacterSelectionList.HasItems)]"
+					layoutpolicy_vertical = expanding
+					text = "CHARACTER_FINDER_NO_MATCH"
+                }
+			}
+		}
+	}
+
+	window_character_filter = {
+		parentanchor = top
+		size = { 700 100% }
+		position = { 20 0 }
+		blockoverride "addition_filter" {
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('relation_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('gender_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('adult_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('age_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('ruler_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('religion_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('culture_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('hook_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('claim_filter')]"
+			}
+		}
+	}
+}

@@ -1,26 +1,43 @@
-is_army_in_combat = {
+﻿is_army_in_combat = {
 	is_shown = {
 		is_army_in_combat = yes
 	}
 }
 
+
 add_from_map_outliner = {
 	saved_scopes = { target }
 
 	effect = {
+		scope:target = {
+			save_scope_as = army
+			army_owner = {
+				trigger_event = {
+					on_action = outliner_armies
+				}
+			}
+		}
+
 		if = {
 			limit = {
-				NOT = {
+				NOR = {
 					is_target_in_variable_list = {
 						name = hostiles_inside
 						target = scope:target
 					}
-				}
-				any_player = {
-					any_war_enemy = {
+					is_target_in_variable_list = {
+						name = allied_units
+						target = scope:target
+					}
+					any_player = {
 						this = scope:target.army_owner
 					}
 				}
+				# any_player = {
+				# 	any_war_enemy = {
+				# 		this = scope:target.army_owner
+				# 	}
+				# }
 			}
 			add_to_variable_list = {
 				name = hostile_armies_temp
@@ -37,7 +54,10 @@ sort_armies = {
 		ordered_in_list = {
 			variable = hostile_armies_temp
 			min = 0
-			order_by = army_size
+			order_by = {
+				value = location.distance_to_player
+				multiply = -1
+			}
 			root = {
 				add_to_variable_list = {
 					name = hostiles_outside
@@ -76,33 +96,42 @@ clear_dead_armies = {
 			limit = { has_variable_list = allied_units }
 			every_in_list = {
 				variable = allied_units
-				limit = {
-					NOT = {
-						exists = this
-					}
-				}
+				add_to_list = allied_check
+			}
+
+			clear_variable_list = allied_units
+
+			every_in_list = {
+				list = allied_check
 				root = {
-					remove_list_variable = {
+					add_to_variable_list = {
 						name = allied_units
 						target = prev
 					}
 				}
 			}
 		}
+
 		if = {
 			limit = { has_variable_list = hostiles_inside }
+
 			every_in_list = {
 				variable = hostiles_inside
-				limit = {
-					NOT = { exists = this }
-				}
+				add_to_list = hostiles_check
+			}
+
+			clear_variable_list = hostiles_inside
+
+			every_in_list = {
+				list = hostiles_check
 				root = {
-					remove_list_variable = {
+					add_to_variable_list = {
 						name = hostiles_inside
 						target = prev
 					}
 				}
 			}
+
 			every_in_list = {
 				variable = hostiles_inside
 				save_scope_as = army
@@ -111,14 +140,24 @@ clear_dead_armies = {
 					limit = {
 						NOT = {
 							any_player = {
+								# if we aren't at war with them anymore
 								OR = {
 									any_war_enemy = {
 										this = scope:army.army_owner
+									}
+									AND = {
+										exists = liege
+										liege = {
+											any_war_enemy = {
+												this = scope:army.army_owner
+											}
+										}
 									}
 									any_hostile_raider = {
 										this = scope:army.army_owner
 									}
 								}
+								# and they aren't in out land anymore
 								OR = {
 									any_realm_province = {
 										this = scope:army.location
@@ -132,6 +171,7 @@ clear_dead_armies = {
 							}
 						}
 					}
+					# we remove them from the list
 					root = {
 						remove_list_variable = {
 							name = hostiles_inside
@@ -205,12 +245,8 @@ you_control = {
 		target
 	}
 	is_shown = {
-		scope:target = {
-			barony_controller = {
-				NOT = {
-					is_at_war_with = root
-				}
-			}
+		any_sub_realm_county = {
+			this = scope:target.county
 		}
 	}
 }
@@ -218,7 +254,9 @@ you_control = {
 hostile_forts = {
 	effect = {
 		clear_variable_list = adjacent_hostile_forts
+		clear_variable_list = adjacent_across_water_hostile_forts
 		clear_variable_list = war_targets
+		clear_variable_list = personal_forts
 		clear_variable_list = hostile_forts
 		clear_variable_list = your_hostile_forts
 
@@ -226,6 +264,9 @@ hostile_forts = {
 			limit = {
 				is_at_war = yes
 			}
+
+			# add target titles
+			# I forgot why I don't use this
 			every_character_war = {
 				casus_belli = {
 					every_target_title = {
@@ -241,50 +282,105 @@ hostile_forts = {
 				}
 			}
 
+			# add all enemy holdings
 			every_war_enemy = {
 				every_realm_province = {
+					save_scope_as = test
 					limit = {
 						fort_level > 0
 						barony_controller = {
-							is_at_war_with = root
+							OR = {
+								is_at_war_with = root
+								AND = {
+									any_liege_or_above = {
+										is_at_war_with = root
+									}
+									NOT = {
+										any_liege_or_above = {
+											this = root
+										}
+									}
+									NOT = {
+										this = root
+									}
+								}
+								AND = {
+									any_liege_or_above = {
+										is_at_war_with = root
+										is_vassal_or_below_of = root
+									}
+									NOT = {
+										this = root
+									}
+								}
+							}
 						}
 					}
-					add_to_list = hostile_forts
+					add_to_list = hostile_forts_unsorted
 				}
 			}
 
+			# sort them all
+			ordered_in_list = {
+				list = hostile_forts_unsorted
+				order_by = {
+					value = distance_to_player
+					multiply = -1
+				}
+				min = 0
+				add_to_list = hostile_forts
+			}
+
+			# add your captured holdings
 			every_realm_province = {
 				limit = {
 					fort_level > 0
 					barony_controller = {
-						is_at_war_with = root
+						OR = {
+							is_at_war_with = root
+							any_liege_or_above = {
+								is_at_war_with = root
+								NOT = {
+									is_liege_or_above_of = root
+								}
+							}
+						}
 					}
 					NOT = {
 						is_in_list = hostile_forts
 					}
 				}
-				add_to_list = your_hostile_forts
+				add_to_list = hostile_forts
 			}
 
-			every_in_list = {
+			# find adjacents first
+			ordered_in_list = {
 				list = hostile_forts
+				order_by = {
+					value = distance_to_player
+					multiply = -1
+				}
+				min = 0
 				limit = {
 					county = {
 						save_temporary_scope_as = county
 						any_neighboring_county = {
+							NOT = {
+								any_county_province = {
+									is_in_list = hostile_forts
+								}
+							}
 							county_controller = {
-								#there's probably a trigger for this
 								OR = {
 									this = root
-									any_liege_or_above = {
-										this = root
+									AND = {
+										any_liege_or_above = {
+											OR = {
+												this = root
+												is_allied_to = root
+											}
+										}
 									}
-									any_vassal_or_below = {
-										this = root
-									}
-								}
-								NOT = {
-									is_at_war_with = root
 								}
 							}
 						}
@@ -299,16 +395,74 @@ hostile_forts = {
 				remove_from_list = hostile_forts
 			}
 
-			every_in_list = {
-				list = your_hostile_forts
-				root = {
-					add_to_variable_list = {
-						name = your_hostile_forts
-						target = prev
-					}
-				}
-			}
+			# # find adjacent across water
+			# every_in_list = {
+			# 	list = hostile_forts
+			# 	limit = {
+			# 		county = {
+			# 			save_temporary_scope_as = county
+			# 			any_title_to_title_neighboring_and_across_water_county = {
+			# 				county_controller = {
+			# 					#there's probably a trigger for this
+			# 					OR = {
+			# 						this = root
+			# 						any_liege_or_above = {
+			# 							this = root
+			# 						}
+			# 						any_vassal_or_below = {
+			# 							this = root
+			# 						}
+			# 					}
+			# 					NOT = {
+			# 						is_at_war_with = root
+			# 					}
+			# 				}
+			# 			}
+			# 		}
+			# 	}
+			# 	root = {
+			# 		add_to_variable_list = {
+			# 			name = adjacent_across_water_hostile_forts
+			# 			target = prev
+			# 		}
+			# 	}
+			# 	remove_from_list = hostile_forts
+			# }
 
+			# show your captured forts
+			# every_in_list = {
+			# 	list = your_hostile_forts
+			# 	root = {
+			# 		add_to_variable_list = {
+			# 			name = your_hostile_forts
+			# 			target = prev
+			# 		}
+			# 	}
+			# }
+
+			# find personal holdings
+			# ordered_in_list = {
+			# 	list = hostile_forts
+			# 	order_by = {
+			# 		value = distance_to_player
+			# 		multiply = -1
+			# 	}
+			# 	min = 0
+			# 	limit = {
+			# 		county_controller = {
+			# 			is_at_war_with = root
+			# 		}
+			# 	}
+			# 	root = {
+			# 		add_to_variable_list = {
+			# 			name = personal_forts
+			# 			target = prev
+			# 		}
+			# 	}
+			# 	remove_from_list = hostile_forts
+			# }
+
+			# add the rest
 			every_in_list = {
 				list = hostile_forts
 				root = {
@@ -447,3 +601,36 @@ hostile_forts = {
 # 		}
 # 	}
 # }
+
+adjacent_to_ally = {
+	saved_scopes = { me }
+
+	is_shown = {
+		county = {
+			save_temporary_scope_as = county
+			any_neighboring_county = {
+				NOT = {
+					ROOT = {
+						is_target_in_variable_list = {
+							name = hostile_forts
+							target = prev
+						}
+					}
+				}
+				county_controller = {
+					OR = {
+						this = scope:me
+						AND = {
+							any_liege_or_above = {
+								OR = {
+									this = scope:me
+									is_allied_to = scope:me
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

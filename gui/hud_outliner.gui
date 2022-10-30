@@ -1,7 +1,7 @@
 widget = {
 	name = "outliner_window"
 	parentanchor = top|right
-	position = { -35 0 }
+	position = { 0 0 }
 	alwaystransparent = no
 	filter_mouse = all
 	layer = bottom
@@ -29,8 +29,13 @@ widget = {
 	state = {
 		name = daily_tick
 
+		# fires an animation on all armies in map_icon_layer_templates, which fires a scripted gui add_from_map_outliner in sgui_hostile_outliner. This adds it to a temp list.
 		on_start = "[PdxGuiTriggerAllAnimations('add_from_map')]"
+
+
+		# we then sort armies in the list by strength and add to the outliner
 		on_start = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		# remove units that are not hostile to us anymore
 		on_start = "[GetScriptedGui('clear_dead_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 		# on_start = "[GetScriptedGui('sieges_and_battles').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 		# trigger_when = "[GetPlayer.MakeScope.]"
@@ -98,8 +103,11 @@ widget = {
 			margin_right = -20
 		}
 
+
+		# this sets the normal width for the outliner
+		# can be used to force-update the list
 		button = {
-			size = { 400 20 }
+			size = { 640 20 }
 			onclick = "[PdxGuiTriggerAllAnimations('add_from_map')]"
 			onclick = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 			onclick = "[GetScriptedGui('clear_dead_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
@@ -115,24 +123,24 @@ widget = {
 				on_start = "[PdxGuiWidget.FindChild('cover').Hide]"
 			}
 
-			widget = {
-				visible = "[Not(GetVariableSystem.Exists('window_focus'))]"
-				size = { 100% 100% }
-				widget = {
-					name = "cover"
-					visible = no
-					size = { 1920 1080 }
-					background = {
-						margin = { 1920 1080 }
-						using = Background_Area_Solid
-					}
-				}
-			}
+			# widget = {
+			# 	visible = "[Not(GetVariableSystem.Exists('window_focus'))]"
+			# 	size = { 100% 100% }
+			# 	widget = {
+			# 		name = "cover"
+			# 		visible = no
+			# 		size = { 1920 1080 }
+			# 		background = {
+			# 			margin = { 1920 1080 }
+			# 			using = Background_Area_Solid
+			# 		}
+			# 	}
+			# }
 
 
 			text_single = {
 				margin = { 20 0 }
-				raw_text = "Outliner, hotkey O."
+				raw_text = "Outliner, hotkey O. Click here to refresh the list or unpause for 1 day."
 				layoutpolicy_horizontal = expanding
 			}
 		}
@@ -140,8 +148,8 @@ widget = {
 		scrollarea = {
 			autoresizescrollarea = yes
 			scrollbarpolicy_horizontal = always_off
-			maximumsize = { 420 920 }
-			size = { 420 0 }
+			maximumsize = { 620 920 }
+			minimumsize = { 620 0 }
 
 			scrollbar_vertical = {
 				using = Scrollbar_Vertical
@@ -161,7 +169,7 @@ widget = {
 			scrollwidget = {
 				vbox = {
 					set_parent_size_to_minimum = yes
-					min_width = 400
+					min_width = 600
 					margin = { 10 0 }
 					margin_right = 15
 					margin_top = 20
@@ -423,69 +431,6 @@ widget = {
 						layoutpolicy_horizontal = expanding
 						visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(Outliner.GetUnitItems)))]"
 
-						tooltipwidget = {
-							outliner_tooltip = {
-								blockoverride "datamodel" {
-									datamodel = "[Outliner.GetUnitItems]"
-								}
-								blockoverride "button" {
-									army_button_o = {
-										blockoverride "size" {
-											size = { 400 40 }
-										}
-										blockoverride "context" {
-											datacontext = "[UnitItem.GetArmy]"
-										}
-										blockoverride "click" {
-											onclick = "[UnitItem.SelectAndPanUnit]"
-											onrightclick = "[UnitItem.PanToUnit]"
-											down = "[UnitItem.IsSelected]"
-										}
-										button_ignore = none
-
-										tooltipwidget = {
-											using = unit_icon_item_tooltip
-
-											blockoverride "extra_unit_info"
-											{
-												vbox = {
-													name = "army_extra_info"
-													layoutpolicy_horizontal = expanding
-													ignoreinvisible = yes
-													margin = { 5 0 }
-
-													text_single = {
-														name = "status_info"
-														layoutpolicy_horizontal = expanding
-														text = "[UnitItem.GetStatusDescription]"
-														align = left
-													}
-
-													text_single = {
-														name = "warning_info"
-														text = "[UnitItem.GetOutlinerWarning]"
-														margin = { 10 5 }
-													}
-
-													text_single = {
-														name = "click_info"
-														text = "[SelectLocalization(UnitItem.IsSelectedOnArmyWindow, 'OUTLINER_ARMY_CLICK_TO_PAN', 'OUTLINER_ARMY_CLICK_TO_SELECT')]"
-														margin = { 10 5 }
-													}
-
-													text_single = {
-														name = "right_click_info"
-														text = "OUTLINER_ARMY_RIGHT_CLICK_TO_PAN"
-														margin = { 10 5 }
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-
 						blockoverride "button_expand_frame"
 						{
 							frame = "[BoolTo1And2(Outliner.IsCategoryShown('unit'))]"
@@ -494,7 +439,8 @@ widget = {
 						blockoverride "oh_button"
 						{
 							onclick = "[Outliner.ToggleCategory('unit')]"
-							tooltip = "[SelectLocalization( Outliner.IsCategoryShown('unit'), 'OUTLINER_COLLAPSE', 'OUTLINER_EXPAND' )]"
+							# tooltip = "[SelectLocalization( Outliner.IsCategoryShown('unit'), 'OUTLINER_COLLAPSE', 'OUTLINER_EXPAND' )]"
+							# onclick = "[PdGUIInn('select_armies')]"
 							oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
 							clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
 						}
@@ -539,50 +485,11 @@ widget = {
 								}
 								blockoverride "click" {
 									onclick = "[UnitItem.SelectAndPanUnit]"
-									onrightclick = "[UnitItem.PanToUnit]"
+									onrightclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+									# onrightclick = "[UnitItem.PanToUnit]"
 									down = "[UnitItem.IsSelected]"
 								}
 								button_ignore = none
-
-								tooltipwidget = {
-									using = unit_icon_item_tooltip
-
-									blockoverride "extra_unit_info"
-									{
-										visible = no
-										vbox = {
-											name = "army_extra_info"
-											layoutpolicy_horizontal = expanding
-											ignoreinvisible = yes
-											margin = { 5 0 }
-
-											text_single = {
-												name = "status_info"
-												layoutpolicy_horizontal = expanding
-												text = "[UnitItem.GetStatusDescription]"
-												align = left
-											}
-
-											text_single = {
-												name = "warning_info"
-												text = "[UnitItem.GetOutlinerWarning]"
-												margin = { 10 5 }
-											}
-
-											text_single = {
-												name = "click_info"
-												text = "[SelectLocalization(UnitItem.IsSelectedOnArmyWindow, 'OUTLINER_ARMY_CLICK_TO_PAN', 'OUTLINER_ARMY_CLICK_TO_SELECT')]"
-												margin = { 10 5 }
-											}
-
-											text_single = {
-												name = "right_click_info"
-												text = "OUTLINER_ARMY_RIGHT_CLICK_TO_PAN"
-												margin = { 10 5 }
-											}
-										}
-									}
-								}
 							}
 						}
 					}
@@ -1059,27 +966,63 @@ types Outliner {
 		}
 		button_ignore = none
 		scissor = yes
+		minimumsize = { 600 -1 }
 
 		vbox = {
 			resizeparent = yes
 			margin = { 5 0 }
 			margin_bottom = 10
 			# max_width = 350
-			maximumsize = { 360 -1 }
+			maximumsize = { 600 -1 }
 			layoutpolicy_horizontal = expanding
 			spacing = -5
 
 			hbox = {
 				layoutpolicy_horizontal = expanding
+				spacing = 3
 
 				text_single = {
-					raw_text = "[Army.GetSoldierCountString].  "
+					raw_text = "[Army.GetSoldierCountString]."
 				}
-
 				text_single = {
-					layoutpolicy_horizontal = expanding
-					raw_text = "[Army.GetNameNoTooltip]. "
-					max_width = 280
+					raw_text = "[Army.GetNameNoTooltip],"
+					max_width = 190
+					fontsize_min = 14
+				}
+				text_single = {
+					raw_text = "[Army.GetOwner.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+					max_width = 190
+					fontsize_min = 14
+				}
+				text_single = {
+					raw_text = "View composition."
+
+					tooltipwidget = {
+						using = unit_icon_item_tooltip
+
+						blockoverride "extra_unit_info"
+						{
+							vbox = {
+								name = "army_extra_info"
+								layoutpolicy_horizontal = expanding
+								ignoreinvisible = yes
+								margin = { 5 0 }
+
+								text_single = {
+									name = "status_info"
+									layoutpolicy_horizontal = expanding
+									text = "[UnitItem.GetStatusDescription]"
+									align = left
+								}
+
+								text_single = {
+									name = "warning_info"
+									text = "[UnitItem.GetOutlinerWarning]"
+									margin = { 10 5 }
+								}
+							}
+						}
+					}
 				}
 
 				expand = { }
@@ -1087,13 +1030,18 @@ types Outliner {
 
 			hbox = {
 				layoutpolicy_horizontal = expanding
+				spacing = 3
 
 				text_single = {
-					raw_text = "in [Army.GetLocation.GetHolding.GetName], [Army.GetLocation.GetCounty.GetName][AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.IsValid, '. ')][Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.GetBaseNameNoTierNoTooltip][AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.IsValid, ', ')][Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.GetBaseNameNoTierNoTooltip]."
-					layoutpolicy_horizontal = expanding
-					min_width = 360
-					max_width = 360
+					raw_text = "[GuiScope.SetRoot(Army.GetLocation.MakeScope).ScriptValue('distance_to_player')|0] points [Army.GetLocation.Custom('county_direction_from_capital')],"
 				}
+
+				text_single = {
+					raw_text = "in [Army.GetLocation.GetHolding.GetNameNoTooltip], [Army.GetLocation.GetCounty.GetName][AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.IsValid, '. ')][Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.GetBaseNameNoTierNoTooltip][AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.IsValid, ', ')][Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.GetBaseNameNoTierNoTooltip]."
+					min_width = 500
+					max_width = 500
+				}
+
 				expand = { }
 			}
 
@@ -1114,7 +1062,6 @@ types Outliner {
 					raw_text = "Sailing to  "
 					visible = "[Army.IsEmbarked]"
 				}
-
 
 				text_single = {
 					raw_text = "[Army.GetMovementInfoForTooltip]."
