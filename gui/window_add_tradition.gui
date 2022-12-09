@@ -1,0 +1,308 @@
+######################################################
+################## CULTURE ADD TRADITION #############
+######################################################
+
+window = {
+	name = "add_tradition_window"
+	parentanchor = center
+	size = { 100% 100% }
+	layer = windows_layer
+
+	datacontext = "[GetPlayer.GetCulture]"
+
+	using = Window_Background_No_Edge
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		on_start = "[AddTraditionWindow.SetTraditionCategory( 'realm' )]"
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+	}
+
+	vbox = {
+		using = Window_Margins
+		minimumsize = { 600 0 }
+
+		header_pattern = {
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "header_text"
+			{
+				raw_text = "[SelectLocalization(AddTraditionWindow.IsReplacing, 'REPLACE_TRADITION_WINDOW_TITLE', 'ADD_TRADITION_WINDOW_TITLE')] window."
+			}
+
+			blockoverride "button_close"
+			{
+				onclick = "[AddTraditionWindow.Close]"
+			}
+		}
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			raw_text = "Selected [AddTraditionWindow.GetSelectedTradition.GetNameNoTooltip] tradition."
+			visible = "[AddTraditionWindow.GetSelectedTradition.IsValid]"
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			name = "cost"
+			datacontext = "[AddTraditionWindow.GetSelectedTradition]"
+			visible = "[CultureTradition.IsValid]"
+			tooltip = "[SelectLocalization(AddTraditionWindow.IsReplacing, 'REPLACE_TRADITION_COST_TOOLTIP', 'ADD_TRADITION_COST_TOOLTIP')]"
+
+			text_single = {
+				raw_text = "[SelectLocalization(AddTraditionWindow.IsReplacing, 'REPLACE_TRADITION_TOTAL_COST', 'ADD_TRADITION_TOTAL_COST')]."
+				default_format = "#high"
+				using = Font_Size_Medium
+
+				background = {
+					visible = "[Not( AddTraditionWindow.CanPayCost )]"
+					margin = { 5 0 }
+					using = Status_Bad
+				}
+			}
+			expand = { }
+		}
+
+
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			blockoverride "text" {
+				text = "CANCEL_BUTTON"
+				align = left
+			}
+			name = "decline_button"
+			onclick = [AddTraditionWindow.Close]
+			shortcut = "close_window"
+			blockoverride "dot" {
+			}
+		}
+
+		button_primary_text = {
+			name = "done"
+			layoutpolicy_horizontal = expanding
+			onclick = "[AddTraditionWindow.AddTradition]"
+			onclick = "[AddTraditionWindow.Close]"
+			enabled = "[AddTraditionWindow.CanAddTradition]"
+			default_format = "#high"
+			blockoverride "disabled" {
+				visible = "[Not(AddTraditionWindow.CanAddTradition)]"
+			}
+
+			blockoverride "text" {
+				text = "[SelectLocalization(AddTraditionWindow.IsReplacing, 'REPLACE_TRADITION_EXECUTE_LABEL', 'ADD_TRADITION_EXECUTE_LABEL')]"
+				align = left
+			}
+
+			blockoverride "dot" {
+
+			}
+
+			tooltip = "[SelectLocalization(AddTraditionWindow.IsReplacing, 'REPLACE_TRADITION_EXECUTE_TOOLTIP', 'ADD_TRADITION_EXECUTE_TOOLTIP')]"
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			add_tradition_category = {
+				datacontext = "[AddTraditionWindow.GetTraditionGrouping( 'realm' )]"
+			}
+			add_tradition_category = {
+				datacontext = "[AddTraditionWindow.GetTraditionGrouping( 'combat' )]"
+			}
+			add_tradition_category = {
+				datacontext = "[AddTraditionWindow.GetTraditionGrouping( 'societal' )]"
+			}
+
+			add_tradition_category = {
+				datacontext = "[AddTraditionWindow.GetTraditionGrouping( 'ritual' )]"
+			}
+			add_tradition_category = {
+				datacontext = "[AddTraditionWindow.GetTraditionGrouping( 'regional' )]"
+			}
+			expand = { }
+		}
+
+		button_text = {
+			layoutpolicy_horizontal = expanding
+		    blockoverride "text" {
+		        raw_text = "[Select_CString(Not(GetVariableSystem.Exists('cheap_traditions')), 'Showing available first, click to reset', 'Showing all alphabetically, click to show available first')]."
+		    }
+			onclick = "[GetVariableSystem.Toggle('cheap_traditions')]"
+		}
+
+		vbox = {
+			name = "tradition_selection"
+			margin = { 0 8 }
+			spacing = 6
+
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+
+			vbox_traditions_list = {
+				datacontext = "[AddTraditionWindow.GetTraditionGrouping( 'realm' )]"
+			}
+
+			vbox_traditions_list = {
+				datacontext = "[AddTraditionWindow.GetTraditionGrouping( 'combat' )]"
+			}
+
+			vbox_traditions_list = {
+				datacontext = "[AddTraditionWindow.GetTraditionGrouping( 'societal' )]"
+			}
+
+			vbox_traditions_list = {
+				datacontext = "[AddTraditionWindow.GetTraditionGrouping( 'ritual' )]"
+			}
+
+			vbox_traditions_list = {
+				datacontext = "[AddTraditionWindow.GetTraditionGrouping( 'regional' )]"
+			}
+
+		}
+	}
+}
+
+types CultureAddTraditionTypes
+{
+	type widget_tradition_item = button_text {
+		layoutpolicy_horizontal = expanding
+		tooltipwidget = {
+			using = culture_tradition_tooltip_clickable
+
+			blockoverride "above_description_text" {
+				text = "[AddTraditionWindow.GetPickTraditionBlockers( CultureTradition.Self )]"
+			}
+		}
+
+		blockoverride "pre" {
+			text_single = {
+				raw_text = "Selected  "
+				visible = "[ObjectsEqual( AddTraditionWindow.GetSelectedTradition, CultureTradition.Self )]"
+			}
+
+			text_single = {
+				raw_text = "Can't select  "
+				visible = "[Not(AddTraditionWindow.CanPickTradition( CultureTradition.Self ))]"
+			}
+		}
+		blockoverride "text" {
+			raw_text = "[CultureTradition.GetNameNoTooltip]"
+			align = left
+		}
+
+		blockoverride "extra" {
+
+			text_single = {
+				name = "cost"
+				raw_text = ", [AddTraditionWindow.GetTraditionCost( CultureTradition.Self )]"
+				tooltip = "[AddTraditionWindow.GetTraditionCostBreakdown( CultureTradition.Self )]"
+				using = tooltip_se
+			}
+
+			text_single = {
+				raw_text = ", not enough"
+				visible = "[Not( AddTraditionWindow.CanBuyTradition( CultureTradition.Self ) )]"
+				tooltip = "[AddTraditionWindow.GetPickTraditionBlockers( CultureTradition.Self )]"
+			}
+
+			text_single = {
+				name = "time"
+				raw_text = ", [SelectLocalization(AddTraditionWindow.IsReplacing, Culture.GetTotalReformTimeForReplacingTradition, Culture.GetTotalReformTimeForNewTradition)]"
+				tooltip = "[SelectLocalization(AddTraditionWindow.IsReplacing, 'ESTABLISHMENT_TIME_TOOLTIP_REPLACING_TRADITION', 'ESTABLISHMENT_TIME_TOOLTIP_NEW_TRADITION')]"
+				using = tooltip_se
+			}
+		}
+		blockoverride "dot" {
+
+		}
+		enabled = "[AddTraditionWindow.CanPickTradition( CultureTradition.Self )]"
+		onclick = "[AddTraditionWindow.SetSelectedTradition( CultureTradition.Self )]"
+	}
+
+	type add_tradition_category = button_text {
+		# layoutpolicy_horizontal = expanding
+		onclick = "[AddTraditionWindow.SetTraditionCategory( TraditionGrouping.GetGroupingKey ))]"
+		down = "[AddTraditionWindow.HasTraditionCategory( TraditionGrouping.GetGroupingKey )]"
+
+		blockoverride "text" {
+			text = "[TraditionGrouping.GetGroupingName]"
+			align = left
+		}
+
+		blockoverride "extra" {
+			space = { }
+
+			text_single = {
+				raw_text = "Selected  "
+				visible = "[AddTraditionWindow.HasTraditionCategory( TraditionGrouping.GetGroupingKey )]"
+			}
+
+			text_single = {
+				text = "TRADITION_CATEGORY_COUNT"
+			}
+
+			text_single = {
+				raw_text = ", "
+			}
+
+		}
+	}
+
+	# Needs a wrapping vbox as otherwise the blockoverride for the scrollbox_content doesn't work
+	type vbox_traditions_list = vbox {
+		visible = "[AddTraditionWindow.HasTraditionCategory( TraditionGrouping.GetGroupingKey )]"
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+
+		using = Animation_Tab_Switch
+
+		scrollbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			blockoverride "scrollbox_content"
+			{
+				vbox = {
+					visible = "[Not(GetVariableSystem.Exists('cheap_traditions'))]"
+					layoutpolicy_horizontal = expanding
+					datamodel = "[TraditionGrouping.GetPossibleTraditions]"
+
+					item = {
+						widget_tradition_item = {
+							visible = "[AddTraditionWindow.CanBuyTradition( CultureTradition.Self )]"
+						}
+					}
+				}
+
+				vbox = {
+					visible = "[Not(GetVariableSystem.Exists('cheap_traditions'))]"
+					layoutpolicy_horizontal = expanding
+					datamodel = "[TraditionGrouping.GetPossibleTraditions]"
+
+					item = {
+						widget_tradition_item = {
+							visible = "[Not(AddTraditionWindow.CanBuyTradition( CultureTradition.Self ))]"
+						}
+					}
+				}
+
+				vbox = {
+					visible = "[GetVariableSystem.Exists('cheap_traditions')]"
+					layoutpolicy_horizontal = expanding
+					datamodel = "[TraditionGrouping.GetPossibleTraditions]"
+
+					item = {
+						widget_tradition_item = {
+						}
+					}
+				}
+			}
+		}
+	}
+}
