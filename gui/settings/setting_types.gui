@@ -8,6 +8,7 @@ types Settings
 
 		using = Animation_ShowHide_Quick
 		using = Background_Full_Dim
+		using = TooltipFocus
 
 		button_normal = {
 			size = { 100% 100% }
@@ -15,7 +16,7 @@ types Settings
 		}
 
 		widget = {
-			parentanchor = center
+			# parentanchor = center
 			size = { 970 100% }
 			alwaystransparent = no
 
@@ -24,12 +25,13 @@ types Settings
 
 			vbox = {
 				using = Window_Margins
+				margin_bottom = 12
 
 				header_pattern = {
 					layoutpolicy_horizontal = expanding
 
 					blockoverride "header_text" {
-						text = "SETTINGS"
+						raw_text = "Setttings window."
 					}
 
 					blockoverride "button_close"
@@ -40,27 +42,30 @@ types Settings
 				}
 
 				## CONTENT WINDOW ##
-				hbox = {
+				vbox = {
 					layoutpolicy_vertical = expanding
 					layoutpolicy_horizontal = expanding
 
 					vbox = {
-						layoutpolicy_vertical = expanding
-						margin_left = 20
-						margin_right = -3
+						layoutpolicy_horizontal = expanding
+						# layoutpolicy_vertical = expanding
 
 						vbox = {
+							layoutpolicy_horizontal = expanding
 							datamodel = "[JominiSettingsWindow.AccessPages]"
 
 							item = {
 								widget = {
-									size = { 200 48 }
+									size = { 200 25 }
+									layoutpolicy_horizontal = expanding
 
 									button = {
-										size = { 200 48 }
+										size = { 200 25 }
 										visible = "[ScopedJominiSettingsPage.GetPage.IsSelected]"
-										text = "[ScopedJominiSettingsPage.GetPage.GetName]"
+										raw_text = "[ScopedJominiSettingsPage.GetPage.GetName] tab, selected."
 										default_format = "#low"
+										align = left
+										margin_left = 10
 
 										frame = 4
 										alwaystransparent = yes
@@ -73,9 +78,10 @@ types Settings
 
 									button_tab_vertical = {
 										visible = "[Not(ScopedJominiSettingsPage.GetPage.IsSelected)]"
-										size = { 200 48 }
+										size = { 200 25 }
+										align = left
 
-										text = "[ScopedJominiSettingsPage.GetPage.GetName]"
+										raw_text = "[ScopedJominiSettingsPage.GetPage.GetName] tab."
 										onclick = "[ScopedJominiSettingsPage.AccessPage.OnClick]"
 										upframe = "[Select_int32(ScopedJominiSettingsPage.GetPage.IsSelected,'(int32)2','(int32)1')]"
 									}
@@ -83,7 +89,47 @@ types Settings
 							}
 						}
 
-						expand = {}
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									text = "SETTINGS_DISCARD_CHANGES"
+								}
+								blockoverride "dot_nb" {
+
+								}
+								onclick = "[JominiSettingsWindow.Restore]"
+								enabled = "[JominiSettingsWindow.HasChanged]"
+								alpha = "[Select_float(JominiSettingsWindow.HasChanged, '(float)1.0', '(float)0.1' )]"
+								min_width = 200
+							}
+
+							text_multi= {
+								layoutpolicy_horizontal = expanding
+								visible = "[JominiSettingsWindow.RequireRestart]"
+								margin_right = 10
+								autoresize = yes
+								max_width = 200
+								margin_left = 10
+								margin_top = 5
+								text = "REQUIRE_RESTART_DESCRIPTION"
+								block "require_restart_description" { }
+							}
+
+							button_primary_text = {
+								blockoverride "text" {
+									text = "SAVE_AND_CLOSE"
+								}
+								onclick = "[JominiSettingsWindow.SaveAndClose]"
+								enabled = "[Not( HasOpenResetReactiveTutorialPopup )]"
+								shortcut = close_window
+								layoutpolicy_horizontal = expanding
+							}
+						}
+
+						expand = { }
 					}
 
 					scrollbox = {
@@ -103,55 +149,6 @@ types Settings
 								layoutpolicy_horizontal = expanding
 							}
 						}
-					}
-				}
-
-				hbox = {
-					layoutpolicy_horizontal = expanding
-					margin = { 15 10 }
-					spacing = 5
-
-					# jomini_settings_restart_required_indicator = {
-					# 	tooltip = "REQUIRES_RESTART"
-					# 	visible = "[JominiSettingsWindow.RequireRestart]"
-					# }
-
-					button_tertiary = {
-						text = "SETTINGS_DISCARD_CHANGES"
-						onclick = "[JominiSettingsWindow.Restore]"
-						visible = "[JominiSettingsWindow.HasChanged]"
-						min_width = 200
-					}
-
-					expand = {
-						visible = "[Not(JominiSettingsWindow.RequireRestart)]"
-					}
-
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						visible = "[JominiSettingsWindow.RequireRestart]"
-						margin_right = 10
-						autoresize = yes
-						align = nobaseline|right
-						text = "REQUIRE_RESTART_DESCRIPTION"
-						block "require_restart_description" {}
-					}
-
-
-
-					# This button is hidden, it is just a trap that resets your settings
-					#button_standard = {
-					#	text = "CANCEL"
-					#	onclick = [JominiSettingsWindow.Hide]
-					#	onclick = "[ClearResetReactiveTutorialPopup]"
-					#	default_format = "#low"
-					#}
-
-					button_primary = {
-						text = "SAVE_AND_CLOSE"
-						onclick = "[JominiSettingsWindow.SaveAndClose]"
-						enabled = "[Not( HasOpenResetReactiveTutorialPopup )]"
-						shortcut = close_window
 					}
 				}
 			}
@@ -184,21 +181,22 @@ types Settings
 		text = "[JominiGUISetting.GetDesc]"
 		default_format = "#low"
 		fontsize = 16
-		max_width = 300
-		size = { 200 20 }
-		margin = { 20 5 }
+		# max_width = 300
+		size = { -1 20 }
+		# margin = { 20 5 }
 	}
 
 	type jomini_setting_title = text_single {
 		name = "setting_title"
-		visible = "[JominiGUISetting.ShouldShow]"
-		text = "[PdxSetting.GetTitle]"
-		align = nobaseline
-		min_width = 250
-		max_width = 250
-		tooltip = "[PdxSetting.GetTooltip]"
+		visible = no#"[JominiGUISetting.ShouldShow]"
+		# raw_text = "[PdxSetting.GetTitle], "
+		autoresize = yes
+		# min_width = 250
+		max_width = 100
+		fontsize_min = 14
+		# tooltip = "[PdxSetting.GetTooltip]"
 		using = tooltip_ws
-		margin = { 20 6 }
+		margin = { 5 0 }
 		block "setting_title" {}
 		jomini_settings_restart_required_indicator = {
 			visible = "[And(And(JominiGUISetting.ShouldShow,PdxSetting.HasChanged),PdxSetting.GetSettingPromoted.RequireRestart)]"
@@ -264,63 +262,92 @@ types Settings
 
 	type jomini_setting_value_scrollbar = container {
 		name = "setting_value"
-		minimumsize = { 460 30 }
+		# minimumsize = { 460 30 }
 		visible = "[JominiGUISetting.ShouldShow]"
 
-		scrollbar = {
-			name = "setting_value_scrollbar"
-			direction = horizontal
-			parentanchor = left|vcenter
-			size = { 300 20 }
-			minimumsize = { -1 14 }
-			value = "[PdxValueSetting.GetValue(PdxSetting.GetSetting)]"
-			block "setting_value_scrollbar" {}
+		flowcontainer = {
+			spacing = 3
 
-			track = {
-				using = SettingsValueTrack
+			text_single = {
+				raw_text = "[PdxSetting.GetTitle],"
 			}
 
-			slider = {
-				using = SettingsValueSlider
+			text_single = {
+				# autoresize = yes
+				raw_text = "[PdxValueSetting.GetFormatedValue(PdxSetting.GetSetting)],"
+				default_format = "#low"
+				alwaystransparent = no
+				size = { 80 20 }
+				fontsize_min = 12
+				block "setting_value_eb" { }
 			}
 
-			dec_button = {
-				using = SettingsValueDecButton
-			}
+			scrollbar = {
+				name = "setting_value_scrollbar"
+				direction = horizontal
+				parentanchor = left|vcenter
+				size = { 135 20 }
+				minimumsize = { -1 14 }
+				value = "[PdxValueSetting.GetValue(PdxSetting.GetSetting)]"
+				block "setting_value_scrollbar" {}
 
-			inc_button = {
-				using = SettingsValueIncButton
-			}
-		}
+					track = {
+						button = { }
+					}
 
-		text_single = {
-			position = { 310 3 }
-			autoresize = yes
-			text = "[PdxValueSetting.GetFormatedValue(PdxSetting.GetSetting)]"
-			default_format = "#low"
-			alwaystransparent = no
-			max_width = 80
-			fontsize_min = 12
-			block "setting_value_eb" {}
+					slider = {
+						button = { }
+					}
+
+					dec_button = {
+						button = {
+							size = { 65 30 }
+							text_single = {
+								autoresize = yes
+								raw_text = " Decrease,"
+							}
+						}
+					}
+
+					inc_button = {
+						button = {
+							size = { 65 30 }
+							text_single = {
+								autoresize = yes
+								raw_text = " Increase."
+							}
+						}
+					}
+				}
+
 		}
 	}
 
-	type jomini_setting_bool = widget {
+	type jomini_setting_bool = button {
 		name = "setting_bool"
 		size = { 220 30 }
-		block "setting_bool" {}
+		block "setting_bool" { }
 
-		hbox = {
-			margin_left = 5
-
-			button_checkbox = {
-				size = { 24 24 }
-				name = "setting_bool_cb"
-				checked = "[GetIsChecked(PdxSetting.GetSetting)]"
-				block "setting_bool_cb" {}
+		button_text = {
+			# name = "setting_bool_cb"
+			block "setting_bool_cb" { }
+			blockoverride "text" {
+				raw_text = "[PdxSetting.GetTitle],"
+				align = left
 			}
+			blockoverride "extra" {
+				text_single = {
+					raw_text = " [Select_CString(GetIsChecked(PdxSetting.GetSetting), 'Enabled', 'Disabled')]."
+				}
+			}
+		}
 
-			expand = {}
+		button_checkbox = {
+			size = { 100% 24 }
+			alpha = 0
+			name = "setting_bool_cb"
+			checked = "[GetIsChecked(PdxSetting.GetSetting)]"
+			block "setting_bool_cb" {}
 		}
 	}
 
@@ -360,8 +387,14 @@ types Settings
 
 		name = "setting_enum"
 		visible = "[JominiGUISetting.ShouldShow]"
-		direction = vertical
+		# direction = vertical
 		ignoreinvisible = yes
+
+		text_single = {
+			raw_text = "[PdxSetting.GetTitle],"
+			margin_top = 4
+			margin_right = -5
+		}
 
 		dropdown_menu_standard =
 		{
@@ -375,16 +408,15 @@ types Settings
 
 			blockoverride "dropdown_active_item_properties"
 			{
-				text = "[EnumSettingEntry.GetGUIName]"
-				tooltip = "[EnumSettingEntry.GetTooltip]"
+				raw_text = "[EnumSettingEntry.GetGUIName]."
+				# tooltip = "[EnumSettingEntry.GetTooltip]"
 			}
 
 			blockoverride "dropdown_item_properties"
 			{
-				text = "[EnumSettingEntry.GetGUIName]"
-				tooltip = "[EnumSettingEntry.GetTooltip]"
+				raw_text = "[EnumSettingEntry.GetGUIName]."
+				# tooltip = "[EnumSettingEntry.GetTooltip]"
 			}
-
 		}
 
 

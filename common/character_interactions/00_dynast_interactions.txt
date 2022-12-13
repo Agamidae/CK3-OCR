@@ -8,10 +8,10 @@ disinherit_interaction = {
 
 	desc = disinherit_interaction_desc
 	use_diplomatic_range = no
-	
+
 	is_shown = {
-		NOT = { 
-			scope:recipient = scope:actor 
+		NOT = {
+			scope:recipient = scope:actor
 
 			AND = { # Explicit AND to ensure no funny business
 				scope:recipient = { is_child_of = scope:actor }
@@ -44,9 +44,26 @@ disinherit_interaction = {
 	}
 
 	is_valid_showing_failures_only = {
-		scope:actor.dynasty = {
-			dynasty_prestige >= medium_dynasty_prestige_value
+		trigger_if = {
+			limit = {
+				NOT = { # in such cases, it will be free so no need to check for Renown
+					scope:recipient = {
+						OR = {
+							has_trait = disputed_heritage
+							any_secret = {
+								secret_type = secret_disputed_heritage
+								is_known_by = scope:actor
+							}
+							has_trait = bastard
+						}
+					}
+				}
+			}
+			scope:actor.dynasty = {
+				dynasty_prestige >= medium_dynasty_prestige_value
+			}
 		}
+
 		scope:recipient = { is_busy_in_events_localised = yes }
 		scope:recipient = { NOT = { has_strong_hook = scope:actor } }
 		trigger_if = {
@@ -71,18 +88,24 @@ disinherit_interaction = {
 			trigger_event = char_interaction.0020
 		}
 	}
-	
+
 	on_accept = {
 		scope:actor = {
 			stress_impact = {
 				forgiving = minor_stress_impact_gain
 				compassionate = minor_stress_impact_gain
 			}
+
+			add_character_modifier = {
+				modifier = parent_disinherited_child_modifier
+				years = 5
+			}
+
 			hidden_effect = {
 				send_interface_toast = {
 					title = disinherit_interaction_notification
 
-					left_icon = scope:actor					
+					left_icon = scope:actor
 					right_icon = scope:recipient
 
 					scope:recipient = {
@@ -97,8 +120,28 @@ disinherit_interaction = {
 		scope:recipient = {
 			disinherit_effect = { DISINHERITOR = scope:actor }
 		}
+
+		if = {
+			limit = {
+				scope:recipient = {
+					any_secret = {
+						secret_type = secret_disputed_heritage
+						is_known_by = scope:actor
+						save_temporary_scope_as = secret_to_reveal
+					}
+				}
+			}
+
+			scope:secret_to_reveal = {
+				expose_secret = scope:recipient.mother
+			}
+
+			scope:recipient = {
+				add_trait = disputed_heritage
+			}
+		}
 	}
-	
+
 	cost = {
 		renown = {
 			value = {
@@ -121,6 +164,21 @@ disinherit_interaction = {
 						}
 					}
 					add = medium_dynasty_prestige_value
+				}
+				if = {
+					limit = {
+						scope:recipient = {
+							OR = {
+								has_trait = disputed_heritage
+								any_secret = {
+									secret_type = secret_disputed_heritage
+									is_known_by = scope:actor
+								}
+								has_trait = bastard
+							}
+						}
+					}
+					multiply = 0
 				}
 			}
 		}
@@ -146,10 +204,25 @@ disinherit_interaction = {
 					}
 					add = medium_prestige_value
 				}
+				if = {
+					limit = {
+						scope:recipient = {
+							OR = {
+								has_trait = disputed_heritage
+								any_secret = {
+									secret_type = secret_disputed_heritage
+									is_known_by = scope:actor
+								}
+								has_trait = bastard
+							}
+						}
+					}
+					multiply = 0
+				}
 			}
 		}
 	}
-	
+
 	auto_accept = yes
 
 	ai_potential = {
@@ -158,17 +231,17 @@ disinherit_interaction = {
 			has_trait = forgiving
 		}
 	}
-	
+
 	ai_targets = {
 		ai_recipients = dynasty
 		max = 20
 	}
-	
+
 	ai_frequency = 96
-	
+
 	ai_will_do = {
 		base = 0
-		
+
 		modifier = {
 			add = 100
 			scope:recipient = {
@@ -178,7 +251,7 @@ disinherit_interaction = {
 				}
 			}
 		}
-		
+
 		modifier = {
 			add = 100
 			scope:recipient = {
@@ -190,7 +263,7 @@ disinherit_interaction = {
 				}
 			}
 		}
-		
+
 		modifier = {
 			add = 5
 			ai_vengefulness >= medium_positive_ai_value
@@ -272,7 +345,7 @@ disinherit_interaction = {
 				}
 			}
 		}
-		
+
 		modifier = {
 			factor = 0
 			scope:recipient = {
@@ -282,7 +355,7 @@ disinherit_interaction = {
 				}
 			}
 		}
-		
+
 		modifier = {
 			factor = 0
 			scope:recipient = {
@@ -587,7 +660,7 @@ restore_inheritance_interaction = {
 			trigger_event = char_interaction.0030
 		}
 	}
-	
+
 	on_accept = {
 		scope:actor = {
 			stress_impact = {
@@ -618,23 +691,23 @@ restore_inheritance_interaction = {
 			value = medium_dynasty_prestige_value
 		}
 	}
-	
+
 	auto_accept = yes
 
 	ai_potential = {
 		is_at_war = no
 	}
-	
+
 	ai_targets = {
 		ai_recipients = dynasty
 		max = 20
 	}
-	
+
 	ai_frequency = 120
-	
+
 	ai_will_do = {
 		base = 0
-		
+
 		modifier = {
 			add = 100
 			scope:recipient = {
@@ -644,17 +717,17 @@ restore_inheritance_interaction = {
 				}
 			}
 		}
-		
+
 		modifier = {
 			add = 5
 			ai_vengefulness <= medium_negative_ai_value
 		}
-		
+
 		modifier = {
 			add = 100
 			scope:recipient = scope:actor
 		}
-		
+
 		modifier = {
 			factor = 0
 			scope:recipient = {
@@ -674,7 +747,7 @@ denounce_interaction = {
 	interface_priority = 60
 
 	desc = denounce_interaction_desc
-	
+
 	is_shown = {
 		NOT = { scope:recipient = scope:actor }
 
@@ -702,7 +775,7 @@ denounce_interaction = {
 			trigger_event = char_interaction.0040
 		}
 	}
-	
+
 	on_accept = {
 		scope:actor = {
 			stress_impact = {
@@ -714,7 +787,7 @@ denounce_interaction = {
 				send_interface_toast = {
 					title = denounce_interaction_notification
 
-					left_icon = scope:actor					
+					left_icon = scope:actor
 					right_icon = scope:recipient
 
 					scope:recipient = {
@@ -781,7 +854,7 @@ denounce_interaction = {
 			}
 		}
 	}
-	
+
 	auto_accept = yes
 
 	ai_potential = {
@@ -790,17 +863,17 @@ denounce_interaction = {
 			has_trait = forgiving
 		}
 	}
-	
+
 	ai_targets = {
 		ai_recipients = dynasty
 		max = 20
 	}
-	
+
 	ai_frequency = 96
-	
+
 	ai_will_do = {
 		base = 0
-		
+
 		modifier = {
 			add = 100
 			scope:recipient = {
@@ -810,7 +883,7 @@ denounce_interaction = {
 				}
 			}
 		}
-		
+
 		modifier = {
 			add = 5
 			ai_vengefulness >= medium_positive_ai_value
@@ -889,7 +962,7 @@ denounce_interaction = {
 				}
 			}
 		}
-		
+
 		modifier = {
 			factor = 0
 			scope:recipient = {
@@ -909,7 +982,7 @@ forgive_interaction = {
 	interface_priority = 60
 
 	desc = forgive_interaction_desc
-	
+
 	is_shown = {
 		NOT = { scope:recipient = scope:actor }
 
@@ -965,23 +1038,23 @@ forgive_interaction = {
 			value = miniscule_dynasty_prestige_value
 		}
 	}
-	
+
 	auto_accept = yes
 
 	ai_potential = {
 		is_at_war = no
 	}
-	
+
 	ai_targets = {
 		ai_recipients = dynasty
 		max = 20
 	}
-	
+
 	ai_frequency = 120
-	
+
 	ai_will_do = {
 		base = 0
-		
+
 		modifier = {
 			add = 100
 			scope:recipient = {
@@ -991,17 +1064,17 @@ forgive_interaction = {
 				}
 			}
 		}
-		
+
 		modifier = {
 			add = 5
 			ai_vengefulness <= medium_negative_ai_value
 		}
-		
+
 		modifier = {
 			add = 100
 			scope:recipient = scope:actor
 		}
-		
+
 		modifier = {
 			factor = 0
 			scope:recipient = {
@@ -1021,15 +1094,15 @@ call_dynasty_member_to_war_interaction = {
 	interface_priority = 60
 
 	desc = call_dynasty_member_to_war_interaction_desc
-	
+
 	interface = call_ally
 	special_interaction = call_ally_interaction
 	popup_on_receive = yes
 	pause_on_receive = yes
-	
+
 	greeting = positive
 	notification_text = CALL_DYNASTY_MEMBER_NOTIFICATION
-	
+
 	is_shown = {
 		NOT = { scope:recipient = scope:actor }
 
@@ -1052,7 +1125,7 @@ call_dynasty_member_to_war_interaction = {
 			}
 		}
 	}
-	
+
 	has_valid_target = {
 		exists = scope:target
 	}
@@ -1099,7 +1172,7 @@ call_dynasty_member_to_war_interaction = {
 			trigger_event = call_ally.0001
 		}
 	}
-		
+
 	on_accept = {
 		call_dynasty_member_to_war_interaction_effect = yes
 
@@ -1117,7 +1190,7 @@ call_dynasty_member_to_war_interaction = {
 			}
 		}
 	}
-	
+
 	on_decline = {
 		#The war could theoretically end on the day the decline is sent
 		if = {
@@ -1167,7 +1240,7 @@ call_dynasty_member_to_war_interaction = {
 			}
 		}
 	}
-	
+
 	ai_accept = {
 		base = 20
 
@@ -1214,11 +1287,11 @@ call_dynasty_member_to_war_interaction = {
 						this = scope:target.casus_belli.primary_defender
 					}
 				}
-				
+
 			}
 			desc = WONT_FIGHT_SPOUSE_REASON
 		}
-		
+
 		modifier = {  # Reluctant when already at war
 			add = -50
 			scope:recipient = {
@@ -1365,7 +1438,7 @@ dynast_claim_title_interaction = {
 			is_landed = yes
 		}
 	}
-	
+
 	can_be_picked = {
 		custom_description = {
 			scope:target = { NOT = { any_claimant = { this = scope:actor } } }
@@ -1379,7 +1452,7 @@ dynast_claim_title_interaction = {
 				any_held_title = {
 					tier >= tier_county
 					NOT = { any_claimant = { this = scope:actor } }
-				} 
+				}
 			}
 
 			object = scope:recipient
@@ -1392,7 +1465,7 @@ dynast_claim_title_interaction = {
 			trigger_event = char_interaction.0060
 		}
 	}
-	
+
 	on_accept = {
 		dynast_claim_title_effect = yes
 		scope:actor = {
@@ -1400,7 +1473,7 @@ dynast_claim_title_interaction = {
 				send_interface_toast = {
 					title = dynast_claim_title_interaction_notification
 
-					left_icon = scope:actor					
+					left_icon = scope:actor
 					right_icon = scope:recipient
 
 					show_as_tooltip = {
@@ -1422,7 +1495,7 @@ dynast_end_dynasty_wars_interaction = {
 
 	is_shown = {
 		NOT = { scope:actor = scope:recipient }
-		
+
 		scope:actor = {
 			is_dynast = yes
 			religion = scope:recipient.religion
@@ -1508,7 +1581,7 @@ dynast_legitimize_bastard_interaction = {
 	cost = {
 		renown = medium_dynasty_prestige_value
 	}
-	
+
 	on_accept = {
 		scope:actor = {
 			stress_impact = {
@@ -1529,7 +1602,7 @@ dynast_legitimize_bastard_interaction = {
 				}
 			}
 		}
-		
+
 		hidden_effect = {
 			scope:recipient = {
 				trigger_event = bastard_interaction.0009
@@ -1570,19 +1643,19 @@ send_to_varangian_guard_interaction = {
 
 	desc = send_to_varangian_guard_interaction_desc
 	use_diplomatic_range = no
-	
-	
+
+
 	is_shown = {
 		NOT = { scope:recipient = scope:actor }
 
 		scope:actor = {
 			is_dynast = yes
 			dynasty = scope:recipient.dynasty
-			
+
 			dynasty = {
 				has_dynasty_perk = fp1_adventure_legacy_1
 			}
-			
+
 			exists = title:e_byzantium.holder
 			NOR = {
 				faith = {
@@ -1594,7 +1667,7 @@ send_to_varangian_guard_interaction = {
 			}
 		}
 	}
-	
+
 	cooldown = { years = 2 }
 
 	is_valid_showing_failures_only = {
@@ -1649,7 +1722,7 @@ send_to_varangian_guard_interaction = {
 			}
 		}
 	}
-	
+
 	on_accept = {
 
 		title:e_byzantium.holder = {
@@ -1662,7 +1735,7 @@ send_to_varangian_guard_interaction = {
 				}
 			}
 		}
-		
+
 		scope:actor = {
 			stress_impact = {
 				paranoid = minor_stress_impact_gain
@@ -1671,9 +1744,9 @@ send_to_varangian_guard_interaction = {
 				send_interface_toast = {
 					title = send_to_varangian_guard_interaction_toast
 
-					left_icon = scope:recipient					
+					left_icon = scope:recipient
 					right_icon = scope:emperor
-					
+
 					custom_tooltip = send_to_varangian_guard_interaction_toast_desc
 				}
 			}
@@ -1681,9 +1754,9 @@ send_to_varangian_guard_interaction = {
 
 		scope:recipient = {
 			save_scope_as = varangian_candidate
-			
+
 		}
-		
+
 		show_as_tooltip = {
 			scope:varangian_candidate = {
 				visit_court_of = scope:emperor
@@ -1698,25 +1771,25 @@ send_to_varangian_guard_interaction = {
 				trigger_event = varangian.0003
 			}
 		}
-		
+
 	}
-	
+
 	cost = {
 		prestige = {
 			value = 350
 		}
 	}
-	
+
 	auto_accept = yes
 
 	ai_potential = {
 		is_at_war = no
 		is_dynast = yes
-		
+
 		dynasty = {
 			has_dynasty_perk = fp1_adventure_legacy_1
 		}
-		
+
 		exists = title:e_byzantium.holder
 		NOR = {
 			faith = {
@@ -1727,14 +1800,14 @@ send_to_varangian_guard_interaction = {
 			is_at_war_with = title:e_byzantium.holder
 		}
 	}
-	
+
 	ai_targets = {
 		ai_recipients = children
 		max = 10
 	}
-	
+
 	ai_frequency = 120
-	
+
 	ai_will_do = {
 		base = 100
 	}

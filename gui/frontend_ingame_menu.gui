@@ -50,6 +50,7 @@ window = {
 
 		@button_height = 58
 
+
 		widget = {
 			parentanchor = vcenter
 			position = { 172 -50 }
@@ -61,21 +62,43 @@ window = {
 					margin = { 30 10 }
 					# spacing = 10
 
-					# icon = {
-					# 	# texture = "gfx/interface/component_masks/ck3_logo.dds"
-					# 	size = { 256 232 }
-					#
-					# 	using = Master_Button_Modify_Texture
-					#
-					# 	blockoverride "master_color_frame" {
-					# 		frame = 4
-					# 	}
-					# }
+					text_single = {
+						background = { using = Background_Area_Border_Solid }
+						margin_left = 5
+						layoutpolicy_horizontal = expanding
+						name = "player_observer_indication"
+						visible = "[And(GetPlayer.IsValid, IsObserver)]"
+						raw_text = "Observing as [GetPlayer.GetShortUINameNotMeNoTooltip]."
+					}
 
 					spacer = {
 						size = { 30 15 }
 					}
 
+					flowcontainer = {
+					    direction = vertical
+						layoutpolicy_horizontal = expanding
+
+					    ignoreinvisible = yes
+
+						button_text = {
+							blockoverride "text" {
+								raw_text = "Observe as [Character.GetFirstNameNoTooltip]. Click this with Control F."
+							}
+							onclick = "[DefaultOnCharacterClick( Character.GetID)]"
+							visible = "[And(And(GetGlobalVariable('player').IsSet, IsObserver), Not(GetPlayer.IsValid))]"
+							datacontext = "[GetGlobalVariable('player').GetCharacter]"
+						}
+
+						button_text = {
+							visible = "[And(IsObserver, GetPlayer.IsValid)]"
+							blockoverride "text" {
+								raw_text = "Exit observer mode."
+							}
+
+							onclick = "[ExecuteConsoleCommand('ob')]"
+						}
+					}
 
 					button_frontend = {
 						size = { 332 @button_height }
@@ -242,6 +265,29 @@ window = {
 						}
 					}
 
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not(IsObserver)]"
+						blockoverride "text" {
+							raw_text = "Switch to observer mode."
+						}
+						# onclick = "[GetVariableSystem.Set('player', GetPlayer.GetID)]"
+						onclick = "[ExecuteConsoleCommand('effect set_global_variable = { name = player value = root }')]"
+						onclick = "[PdxGuiWidget.TriggerAnimation('next')]"
+
+						state = {
+							name = next
+							duration = 0.1
+							next = b
+							alpha = 1
+						}
+						state = {
+							alpha = 1
+							name = b
+							on_finish = "[ExecuteConsoleCommand('ob')]"
+						}
+					}
+
 					vbox = {
 						margin_top = 15
 						spacing = 2
@@ -345,10 +391,10 @@ window = {
 
 					button_standard = {
 						size = { 332 @height }
-						raw_text = "Map tooltips [Select_CString(GetVariableSystem.Exists('hide_tooltips'), 'Hidden', 'Visible')], hotkey Y."
-						down = "[Not(GetVariableSystem.Exists('close_char'))]"
+						raw_text = "Map tooltips [Select_CString(Not(GetVariableSystem.Exists('hide_tooltips')), 'Hidden', 'Visible')], hotkey Y."
+						down = "[GetVariableSystem.Exists('hide_tooltips')]"
 
-						onclick = "[GetVariableSystem.Toggle('close_char')]"
+						onclick = "[GetVariableSystem.Toggle('hide_tooltips')]"
 					}
 
 					button_standard = {
