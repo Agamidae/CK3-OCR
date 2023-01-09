@@ -3,7 +3,7 @@ types OCRTypes {
 	type ocr_character_vbox = vbox {
 		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
 		name = "main_content_ocr"
-		using = Window_Margins_Sidebar
+		# using = Window_Margins_Sidebar
 		# alpha = "[Select_float(  ), '(float)1.0', '(float)0.5' )]"
 
 		widget = {
@@ -95,7 +95,7 @@ types OCRTypes {
 
 				background = {
 					using = Background_Area_Dark
-					margin_left = 5
+					margin_left = 3
 				}
 
 				#name
@@ -107,12 +107,12 @@ types OCRTypes {
 					text_single = {
 						visible = "[Character.IsDeadAndValid]"
 						raw_text = "Dead."
-						margin_right = -5
+						margin_right = -3
 					}
 					text_single = {
 						visible = "[Character.IsImprisoned]"
 						raw_text = "In prison."
-						margin_right = -5
+						margin_right = -3
 					}
 
 					button = {
@@ -162,20 +162,30 @@ types OCRTypes {
 						text_single = {
 							margin_left = 2
 							resizeparent = yes
-							raw_text = "[AddTextIf(Character.IsPinned, 'Un')]pin button."
+							raw_text = "[AddTextIf(Character.IsPinned, 'Un')]pin [Select_CString(Character.IsPinned, 'from', 'to')] outliner."
 						}
 					}
+
+					# button_text = {
+					#     blockoverride "text" {
+					#         raw_text = "Interact, Enter."
+					# 		align = left
+					#     }
+					# 	onclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
+					# 	shortcut = confirm
+					# }
 
 					expand = { }
 				}
 
 				text_single = {
-					margin_left = 5
+					margin_left = 3
 					layoutpolicy_horizontal = expanding
 					raw_text = "Debug ID: [Character.GetID]."
 					visible = "[InDebugMode]"
 				}
 
+				# ruler
 				button_text = {
 					layoutpolicy_horizontal = expanding
 					visible = "[Character.HasLandedTitles]"
@@ -195,6 +205,7 @@ types OCRTypes {
 						}
 
 						text_single = {
+							visible = "[Character.IsAlive]"
 							name = "character_title"
 							raw_text = " [Character.GetGovernment.GetAdjective]"
 							max_width = 330
@@ -204,61 +215,32 @@ types OCRTypes {
 							raw_text = " [Character.GetPrimaryTitle.GetRankConcept]."
 							max_width = 330
 						}
+
+						button_text = {
+							visible = "[Character.IsAlive]"
+						    blockoverride "text" {
+						    	raw_text = " [Character.RealmSize] counties."
+								align = left
+								margin_left = -3
+						    }
+							onclick = "[GetVariableSystem.Set('expand_view', 'counties')]"
+							onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+						}
 					}
 					datacontext = "[Character.GetPrimaryTitle]"
 					using = title_click
 				}
-				#realm type
-				hbox = {
+
+				# vassal
+				realm_name_and_type_vbox_ocr = {
 					layoutpolicy_horizontal = expanding
-
-					realm_name_and_type_vbox_ocr = {
-						visible = "[And(And(Character.HasLandedTitles, Not(GetVariableSystem.Exists('expand_view'))), Character.IsAlive)]"
-						datacontext = "[Character.GetPrimaryTitle]"
-						# max_width = 250
-						margin_right = -5
-					}
-
-					button = {
-						visible = "[Not(GetVariableSystem.Exists('expand_view'))]"
-						datacontext = "[Character.GetHouse]"
-						onclick = "[OpenGameViewData('dynasty_house_view', Character.GetHouse.GetID))]"
-						enabled = "[DynastyHouse.IsValid]"
-
-						flowcontainer = {
-							resizeparent = yes
-							margin_left = 5
-							margin_top = 1
-							spacing = 4
-							ignoreinvisible = yes
-
-							text_single = {
-								visible = "[DynastyHouse.IsValid]"
-								raw_text = "House [DynastyHouse.GetBaseNameNoTooltip]."
-							}
-
-							text_single = {
-								visible = "[Not(DynastyHouse.IsValid)]"
-								raw_text = "[lowborn|E]."
-							}
-
-							text_single = {
-								visible = "[Not(Character.IsLegitimateMemberOfHouse)]"
-								raw_text = "Bastard."
-								tooltip = "CV_TT_BASTARD"
-							}
-
-							text_single = {
-								visible = "[LessThan_int32(Character.GetDynastyHeadRelationFrame('(bool)no'), '(int32)9')]"
-								tooltip = "[Character.GetDynastyHeadTooltip]"
-								raw_text = "Head of House."
-							}
-						}
-					}
-
-					expand = { }
+					visible = "[And(And(Character.HasLandedTitles, Not(GetVariableSystem.Exists('expand_view'))), Character.IsAlive)]"
+					datacontext = "[Character.GetPrimaryTitle]"
+					# max_width = 250
+					margin_right = -5
 				}
 
+				# imprisoned
 				hbox = {
 					layoutpolicy_horizontal = expanding
 					visible = "[And(Character.IsImprisoned, Not(GetVariableSystem.Exists('expand_view')))]"
@@ -271,28 +253,26 @@ types OCRTypes {
 					}
 					expand = { }
 				}
-
-				# relation
-				vbox = {
-					visible = "[And(CharacterWindow.AreNoneExpanded, Not(GetVariableSystem.Exists('expand_view')))]"
-					name = "name_etc"
+				## dead
+				hbox = {
 					layoutpolicy_horizontal = expanding
+					visible = "[Character.IsDeadAndValid]"
 
-					## Name
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						visible = "[Character.IsDeadAndValid]"
-
-						text_single = {
-							raw_text = "CHARACTER_DEAD_TOOLTIP"
-							tooltip = "CHARACTER_DEAD_TOOLTIP"
-							max_width = 480
-							fontsize_min = 14
-						}
-						expand = { }
+					text_single = {
+						raw_text = "CHARACTER_DEAD_TOOLTIP"
+						max_width = 600
+						fontsize_min = 14
 					}
 
+					dot = { }
+					expand = { }
+				}
+
+				vbox = {
+					margin_left = 5
+					layoutpolicy_horizontal = expanding
+					visible = "[And(CharacterWindow.AreNoneExpanded, Not(GetVariableSystem.Exists('expand_view')))]"
+					# opinion
 					hbox = {
 						name = "AI_personality"
 						layoutpolicy_horizontal = expanding
@@ -382,6 +362,7 @@ types OCRTypes {
 							visible = "[And( Character.HasLandedTitles, Character.IsAlive )]"
 							onclick = "[GetVariableSystem.Set('expand_view', 'diplomacy')]"
 							using = expanded_view
+							shortcut = mapmode_house_secondary
 
 							flowcontainer = {
 								margin = { 3 1 }
@@ -424,84 +405,384 @@ types OCRTypes {
 								}
 
 								text_single = {
-									raw_text = ", click for details"
+									raw_text = ", hotkey Shift D"
 								}
 								visible = "[DataModelHasItems(CharacterWindow.GetDiplomacyItems)]"
 								dot = { }
 							}
 						}
 
-						button = {
-							visible = "[And( Character.HasLandedTitles, Character.IsAlive )]"
-							onclick = "[GetVariableSystem.Set('expand_view', 'neighbours')]"
-							using = expanded_view
-							shortcut = map_mode_6
+						expand = { }
+					}
 
-							text_single = {
-								resizeparent = yes
-								raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_rulers'))] Neighbours, Control A."
-								margin_left = 3
+					# skills
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 5
+
+						hbox = {
+							name = "skills_grid"
+							datamodel = "[CharacterWindow.GetSkills]"
+							spacing = 5
+							item = {
+								container = {
+									text_single = {
+										raw_text = "[SkillItem.GetName] [SkillItem.GetValue|+],"
+										alwaystransparent = yes
+										default_format = "#high"
+									}
+
+									widget = {
+										size = { 100% 100% }
+										tooltip = "SKILL_ITEM_TOOLTIP"
+									}
+								}
 							}
+						}
+
+						text_single = {
+							using = tooltip_ne
+							tooltip = "[CharacterWindow.GetCharacter.GetProwessBreakdown]"
+							raw_text = "Prowess [CharacterWindow.GetCharacter.GetProwess|0]."
+							default_format = "#high"
 						}
 
 						expand = { }
 					}
 
-					#location
-					widget = {
-						size = { 0 20 }
+					# Traits
+					vbox = {
 						layoutpolicy_horizontal = expanding
-
 
 						hbox = {
 							layoutpolicy_horizontal = expanding
 
 							hbox = {
-								visible = "[Character.HasLandedTitles]"
+								datamodel = "[CharacterWindow.GetPersonalityTraits]"
+								# layoutpolicy_horizontal = expanding
+								spacing = 5
+
+								text_single = {
+									raw_text = "Personality:"
+								}
+
+								item = {
+									text_single = {
+										# layoutpolicy_horizontal = expanding
+										datacontext = "[Character.GetFaith]"
+										raw_text = "[Trait.GetName(Character.Self)][AddTextIf(Faith.IsTraitVirtue( Trait.Self ), ' (virtue)')][AddTextIf(Faith.IsTraitSin( Trait.Self ), ' (sin)')]."
+									}
+								}
+							}
+							expand = { }
+						}
+
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "[GetDataModelSize(CharacterWindow.GetTraits)] traits:"
+							visible = "[DataModelHasItems(CharacterWindow.GetTraits)]"
+						}
+
+						dynamicgridbox = {
+							datamodel = "[CharacterWindow.GetTraits]"
+							layoutpolicy_horizontal = expanding
+							size = { 380 0 }
+							# max_width = 380
+							# spacing = 10
+							datamodel_wrap = 4
+							# flipdirection = yes
+
+							item = {
+								text_single = {
+									# layoutpolicy_horizontal = expanding
+									raw_text = "[Trait.GetName(Character.Self)]."
+									margin_right = 10
+									max_width = 170
+								}
+							}
+						}
+					}
+
+					#faith
+					flowcontainer = {
+						spacing = 5
+						layoutpolicy_horizontal = expanding
+						button = {
+							datacontext = "[Character.GetFaith]"
+							# layoutpolicy_horizontal = expanding
+							size = { 0 25 }
+							onclick = "[DefaultOnFaithClick(Faith.GetID)]"
+							shortcut = army_split_half
+
+							text_single = {
+								raw_text = "Faith: [Faith.GetName], Hotkey F."
+								resizeparent = yes
+								default_format = "#high"
+								margin_left = 0
+								align = left
+							}
+
+							tooltipwidget = { faith_tooltip_click = { } }
+						}
+
+						button = {
+							datacontext = "[Character.GetCulture]"
+							# layoutpolicy_horizontal = expanding
+							size = { 0 25 }
+							onclick = "[DefaultOnCultureClick(Culture.GetID)]"
+							shortcut = character_finder
+
+
+							text_single = {
+								raw_text = "Culture: [Culture.GetName], hotkey C."
+								resizeparent = yes
+								margin_left = 0
+								align = left
+								default_format = "#high"
+							}
+
+							tooltipwidget = {
+								culture_tooltip_click = { }
+							}
+						}
+					}
+
+					# spouse, liege, heir
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						# liege block
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							vbox = {
+								visible = "[CharacterWindow.ShouldShowSpouses]"
 								layoutpolicy_horizontal = expanding
 
-								button = {
-									size = { 0 0 }
-									onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Character.GetCapitalLocation.GetId))]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCapitalLocation.GetCoATitle.GetID)]"
+								hbox = {
+									spacing = 5
+									visible = "[CharacterWindow.GetSpouse.IsValid]"
+									datacontext = "[CharacterWindow.GetSpouse]"
+									layoutpolicy_horizontal = expanding
+
+
+									char_name = {
+										blockoverride "text" {
+											raw_text = "[AddTextIf(CharacterWindow.GetSpouse.IsDeadAndValid, 'Dead ')][CharacterWindow.GetSpouseText]: [Character.GetNameNoTooltip]."
+											alwaystransparent = yes
+											max_width = 550
+										}
+									}
+
 									text_single = {
-										resizeparent = yes
-										margin_left = 5
-										raw_text = "Capital: [Character.GetCapitalLocation.GetNameNoTooltip]."
+										align = nobaseline
+										visible = "[Character.IsAlive]"
+										raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
+										tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+									}
+
+									expand = { }
+								}
+
+								hbox = { #TODO
+								# visible = "[CharacterWindow.ShouldShowSpouseButtons]"
+									spacing = 10
+									layoutpolicy_horizontal = expanding
+									visible = no
+
+									button = {
+										enabled = "[CharacterWindow.IsShowPrevious]"
+										onclick = "[CharacterWindow.PreviousSpouse]"
+										onclick = "[PdxGuiTriggerAllAnimations('cw_spouse_cycle')]"
+										tooltip = "[CharacterWindow.GetPreviousSpouseTooltip]"
+										raw_text = "#high Click to show previous spouse."
+										align = left
+										size = { 0 22 }
+										layoutpolicy_horizontal = expanding
+										alpha = "[Select_float( CharacterWindow.IsShowPrevious, '(float)1.0', '(float)0.0' )]"
+									}
+
+
+									button = {
+										enabled = "[CharacterWindow.IsShowNext]"
+										onclick = "[CharacterWindow.NextSpouse]"
+										onclick = "[PdxGuiTriggerAllAnimations('cw_spouse_cycle')]"
+										raw_text = "#high Click to show next spouse."
+										tooltip = "[CharacterWindow.GetNextSpouseTooltip]"
+										align = left
+										size = { 0 22 }
+										layoutpolicy_horizontal = expanding
+										alpha = "[Select_float( CharacterWindow.IsShowNext, '(float)1.0', '(float)0.0' )]"
 									}
 								}
 
 								text_single = {
-									margin_left = 3
-									raw_text = "[GuiScope.SetRoot(Character.GetCapitalLocation.MakeScope).ScriptValue('distance_to_player')|0] points [Character.GetCapitalLocation.Custom('county_direction_from_capital')] from your capital."
 									layoutpolicy_horizontal = expanding
-									visible = "[Not(ObjectsEqual(Character.Self, GetPlayer))]"
+									raw_text = "No spouse."
+									visible = "[And(Not(Character.IsPlayerInteractionValid('marry_off_interaction')), Not(CharacterWindow.GetSpouse.IsValid))]"
+								}
+
+								# button = {
+								# 	name = "marry_off_button"
+								# 	layoutpolicy_horizontal = expanding
+								# 	# visible = "[And(And( Not( ObjectsEqual( GetPlayer, Character.Self ) ), CharacterWindow.ShouldShowFindSpouse ), Not(Character.IsConcubine))]"
+								# 	visible = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
+								#
+								# 	onclick = "[Character.OpenPlayerInteraction('marry_off_interaction')]"
+								# 	onclick = "[CharacterWindow.Close]"
+								# 	tooltip = "CHARACTER_WINDOW_FIND_SPOUSE"
+								# 	# enabled = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
+								# 	size = { 0 22 }
+								#
+								# 	raw_text = "Click to find Spouse."
+								# 	align = left
+								# 	default_format = "#high"
+								# }
+
+								expand = { }
+							}
+						}
+
+						#liege
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[CharacterWindow.GetCharacter.GetLiegeEvenWhenDead]"
+							visible = "[CharacterWindow.HasLiegeEvenWhenDead]"
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 5
+
+								char_name = {
+									blockoverride "text" {
+										raw_text = "Liege: [Character.GetNameNoTooltip]."
+									}
+								}
+
+								text_single = {
+									align = nobaseline
+									visible = "[Not(Character.IsLocalPlayer)]"
+									raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
+									tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+								}
+
+								expand = { }
+							}
+
+							#liege opinion
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 5
+								datacontext = "[CharacterWindow.GetCharacter]"
+								visible = "[And( Character.GetLiege.IsValid, And( Character.IsAlive, Not(Character.IsLocalPlayer ) ) )]"
+
+								text_single = {
+									raw_text = "[Character.GetHerHis|U] opinion of liege: [Character.GetOpinionOf( Character.GetLiege )]."
+									tooltip = "[Character.GetOpinionBreakdownText( CharacterWindow.GetCharacter.GetLiege )]"
+								}
+
+								text_single = {
+									visible = "[Character.ShouldShowDreadEffectIconFor( Character.GetLiege )]"
+									raw_text = "[CharacterWindow.GetCharacter.GetSheHe|U] is intimidated."
+									tooltip = "[Character.GetDreadEffectTooltipFor( Character.GetLiege )]"
+								}
+
+								expand = { }
+							}
+
+						}
+
+						#host
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[CharacterWindow.GetCourtOwner]"
+							visible = "[And( Not( CharacterWindow.HasLiegeEvenWhenDead ), And( CharacterWindow.GetCourtOwner.IsValid, Not( CharacterWindow.GetCharacter.IsRuler ) ) )]"
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 5
+
+								char_name = {
+									blockoverride "text" {
+										raw_text = "Host: [Character.GetNameNoTooltip]."
+										max_width = 450
+									}
+								}
+
+								text_single = {
+									visible = "[Not(Character.IsLocalPlayer)]"
+									raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
+									tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
 								}
 								expand = { }
 							}
 
+							#liege opinion
 							hbox = {
-								visible = "[Not(Character.HasLandedTitles)]"
 								layoutpolicy_horizontal = expanding
-								button = {
-									size = { 0 0 }
-									onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Character.GetCurrentLocation.GetId))]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCurrentLocation.GetCoATitle.GetID)]"
-									visible = "[And(Not(Character.HasLandedTitles), Character.HasLocation)]"
-									text_single = {
-										resizeparent = yes
-										margin_left = 5
-										raw_text = "Location: [Character.GetCurrentLocation.GetNameNoTooltip]."
-									}
+								spacing = 5
+								datacontext = "[CharacterWindow.GetCharacter]"
+								visible = "[And(Character.IsAlive, Not(Character.IsLocalPlayer))]"
+
+								text_single = {
+									raw_text = "[Character.GetHerHis|U] opinion of host: [Character.GetOpinionOf( CharacterWindow.GetCourtOwner )]."
+									tooltip = "[Character.GetOpinionBreakdownText( CharacterWindow.GetCourtOwner )]"
 								}
 
 								text_single = {
-									margin_left = 3
-									raw_text = "[GuiScope.SetRoot(Character.GetCurrentLocation.MakeScope).ScriptValue('distance_to_player')|0] points [Character.GetCurrentLocation.Custom('county_direction_from_capital')] from your capital."
-									layoutpolicy_horizontal = expanding
-									visible = "[Not(ObjectsEqual(Character.GetCurrentLocation, GetPlayer.GetCapitalLocation))]"
+									visible = "[Character.ShouldShowDreadEffectIconFor( CharacterWindow.GetCourtOwner )]"
+									raw_text = "[CharacterWindow.GetCharacter.GetSheHe|U] is intimidated."
+									tooltip = "[Character.GetDreadEffectTooltipFor( CharacterWindow.GetCourtOwner )]"
 								}
+
 								expand = { }
+							}
+						}
+
+						#heir
+						hbox = {
+							datacontext = "[CharacterWindow.GetCharacter.GetPlayerHeir]"
+							visible = "[And( Character.IsValid, CharacterWindow.GetCharacter.IsLocalPlayer )]"
+							layoutpolicy_horizontal = expanding
+							spacing = 5
+
+							char_name = {
+								blockoverride "text" {
+									raw_text = "[player_heir|E]: [Character.GetNameNoTooltip]."
+									max_width = 450
+								}
+							}
+
+							text_single = {
+								align = nobaseline
+								visible = "[Not(Character.IsLocalPlayer)]"
+								raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
+								tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+							}
+							expand = { }
+						}
+
+						#heir 2
+						hbox = {
+							datacontext = "[CharacterWindow.GetCharacter.GetPrimaryTitle.GetHeir]"
+							visible = "[And( And( Character.IsValid, Not(CharacterWindow.GetCharacter.IsLocalPlayer) ), CharacterWindow.GetCharacter.IsAlive )]"
+							layoutpolicy_horizontal = expanding
+							spacing = 5
+
+
+							char_name = {
+								blockoverride "text" {
+									alwaystransparent = yes
+									raw_text = "[primary_heir|E]: [Character.GetNameNoTooltip]."
+									max_width = 450
+								}
+							}
+
+							text_single = {
+								align = nobaseline
+								visible = "[Not(Character.IsLocalPlayer)]"
+								raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
+								tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
 							}
 							expand = { }
 						}
@@ -539,244 +820,128 @@ types OCRTypes {
 						expand = { }
 					}
 
-					divider_light = {
+					# house
+					hbox = {
 						layoutpolicy_horizontal = expanding
-					}
 
-					# liege block
-					vbox = {
+						button = {
+							visible = "[Not(GetVariableSystem.Exists('expand_view'))]"
+							datacontext = "[Character.GetHouse]"
+							onclick = "[OpenGameViewData('dynasty_house_view', Character.GetHouse.GetID))]"
+							enabled = "[DynastyHouse.IsValid]"
+							shortcut = "army_create_new"
+
+							flowcontainer = {
+								resizeparent = yes
+								spacing = 3
+								ignoreinvisible = yes
+
+								text_single = {
+									visible = "[DynastyHouse.IsValid]"
+									raw_text = "House [DynastyHouse.GetBaseNameNoTooltip],"
+								}
+
+								text_single = {
+									visible = "[Not(DynastyHouse.IsValid)]"
+									raw_text = "[lowborn|E]."
+								}
+
+								text_single = {
+									visible = "[Not(Character.IsLegitimateMemberOfHouse)]"
+									raw_text = "Bastard."
+									tooltip = "CV_TT_BASTARD"
+								}
+
+								text_single = {
+									visible = "[LessThan_int32(Character.GetDynastyHeadRelationFrame('(bool)no'), '(int32)9')]"
+									tooltip = "[Character.GetDynastyHeadTooltip]"
+									raw_text = "Head of House."
+								}
+
+								text_single = {
+									raw_text = "Hotkey H."
+								}
+							}
+						}
+
+						expand = { }
+					}
+				}
+
+
+				# relation
+				vbox = {
+					visible = "[And(CharacterWindow.AreNoneExpanded, Not(GetVariableSystem.Exists('expand_view')))]"
+					name = "name_etc"
+					layoutpolicy_horizontal = expanding
+
+					#location
+					widget = {
+						size = { 0 20 }
 						layoutpolicy_horizontal = expanding
-						vbox = {
-							visible = "[CharacterWindow.ShouldShowSpouses]"
+
+
+						hbox = {
 							layoutpolicy_horizontal = expanding
+							spacing = 5
 
 							hbox = {
-								spacing = 5
-								visible = "[CharacterWindow.GetSpouse.IsValid]"
-								datacontext = "[CharacterWindow.GetSpouse]"
-								layoutpolicy_horizontal = expanding
+								visible = "[Character.HasLandedTitles]"
 
-
-								char_name = {
-									blockoverride "text" {
-										raw_text = "[AddTextIf(CharacterWindow.GetSpouse.IsDeadAndValid, 'Dead ')][CharacterWindow.GetSpouseText]: [Character.GetNameNoTooltip]."
-										alwaystransparent = yes
-										max_width = 550
+								button = {
+									size = { 0 0 }
+									onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Character.GetCapitalLocation.GetId))]"
+									onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCapitalLocation.GetCoATitle.GetID)]"
+									shortcut = map_mode_9
+									text_single = {
+										resizeparent = yes
+										margin_left = 3
+										raw_text = "Capital: [Character.GetCapitalLocation.GetNameNoTooltip]."
 									}
 								}
 
 								text_single = {
-									visible = "[Character.IsAlive]"
-									raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
-									tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
-								}
-
-								expand = { }
-							}
-
-							hbox = { #TODO
-								# visible = "[CharacterWindow.ShouldShowSpouseButtons]"
-								spacing = 10
-								layoutpolicy_horizontal = expanding
-								visible = no
-
-								button = {
-									enabled = "[CharacterWindow.IsShowPrevious]"
-									onclick = "[CharacterWindow.PreviousSpouse]"
-									onclick = "[PdxGuiTriggerAllAnimations('cw_spouse_cycle')]"
-									tooltip = "[CharacterWindow.GetPreviousSpouseTooltip]"
-									raw_text = "#high Click to show previous spouse."
-									align = left
-									size = { 0 22 }
+									margin_left = 3
+									raw_text = "[GuiScope.SetRoot(Character.GetCapitalLocation.MakeScope).ScriptValue('distance_to_player')|0] points [Character.GetCapitalLocation.Custom('county_direction_from_capital')] from your capital."
 									layoutpolicy_horizontal = expanding
-									alpha = "[Select_float( CharacterWindow.IsShowPrevious, '(float)1.0', '(float)0.0' )]"
+									visible = "[Not(ObjectsEqual(Character.Self, GetPlayer))]"
 								}
+							}
 
-
+							hbox = {
+								visible = "[Not(Character.HasLandedTitles)]"
 								button = {
-									enabled = "[CharacterWindow.IsShowNext]"
-									onclick = "[CharacterWindow.NextSpouse]"
-									onclick = "[PdxGuiTriggerAllAnimations('cw_spouse_cycle')]"
-									raw_text = "#high Click to show next spouse."
-									tooltip = "[CharacterWindow.GetNextSpouseTooltip]"
-									align = left
-									size = { 0 22 }
+									size = { 0 0 }
+									onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Character.GetCurrentLocation.GetId))]"
+									onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCurrentLocation.GetCoATitle.GetID)]"
+									visible = "[And(Not(Character.HasLandedTitles), Character.HasLocation)]"
+									shortcut = map_mode_9
+									text_single = {
+										resizeparent = yes
+										margin_left = 3
+										raw_text = "Location: [Character.GetCurrentLocation.GetNameNoTooltip]."
+									}
+								}
+
+								text_single = {
+									margin_left = 3
+									raw_text = "[GuiScope.SetRoot(Character.GetCurrentLocation.MakeScope).ScriptValue('distance_to_player')|0] points [Character.GetCurrentLocation.Custom('county_direction_from_capital')] from your capital."
 									layoutpolicy_horizontal = expanding
-									alpha = "[Select_float( CharacterWindow.IsShowNext, '(float)1.0', '(float)0.0' )]"
+									visible = "[Not(ObjectsEqual(Character.GetCurrentLocation, GetPlayer.GetCapitalLocation))]"
 								}
 							}
 
 							text_single = {
-								layoutpolicy_horizontal = expanding
-								raw_text = "No spouse."
-								visible = "[And(Not(Character.IsPlayerInteractionValid('marry_off_interaction')), Not(CharacterWindow.GetSpouse.IsValid))]"
-							}
-
-							# button = {
-							# 	name = "marry_off_button"
-							# 	layoutpolicy_horizontal = expanding
-							# 	# visible = "[And(And( Not( ObjectsEqual( GetPlayer, Character.Self ) ), CharacterWindow.ShouldShowFindSpouse ), Not(Character.IsConcubine))]"
-							# 	visible = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
-							#
-							# 	onclick = "[Character.OpenPlayerInteraction('marry_off_interaction')]"
-							# 	onclick = "[CharacterWindow.Close]"
-							# 	tooltip = "CHARACTER_WINDOW_FIND_SPOUSE"
-							# 	# enabled = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
-							# 	size = { 0 22 }
-							#
-							# 	raw_text = "Click to find Spouse."
-							# 	align = left
-							# 	default_format = "#high"
-							# }
-
-							expand = { }
-						}
-					}
-
-					#liege
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						datacontext = "[CharacterWindow.GetCharacter.GetLiegeEvenWhenDead]"
-						visible = "[CharacterWindow.HasLiegeEvenWhenDead]"
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							spacing = 5
-
-							char_name = {
-								blockoverride "text" {
-									raw_text = "Liege: [Character.GetNameNoTooltip]."
-								}
-							}
-
-							text_single = {
-								visible = "[Not(Character.IsLocalPlayer)]"
-								raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
-								tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+								raw_text = "Shift Q."
 							}
 
 							expand = { }
 						}
-
-						#liege opinion
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							spacing = 5
-							datacontext = "[CharacterWindow.GetCharacter]"
-							visible = "[And( Character.GetLiege.IsValid, And( Character.IsAlive, Not(Character.IsLocalPlayer ) ) )]"
-
-							text_single = {
-								raw_text = "[Character.GetHerHis|U] opinion of liege: [Character.GetOpinionOf( Character.GetLiege )]."
-								tooltip = "[Character.GetOpinionBreakdownText( CharacterWindow.GetCharacter.GetLiege )]"
-							}
-
-							text_single = {
-								visible = "[Character.ShouldShowDreadEffectIconFor( Character.GetLiege )]"
-								raw_text = "[CharacterWindow.GetCharacter.GetSheHe|U] is intimidated."
-								tooltip = "[Character.GetDreadEffectTooltipFor( Character.GetLiege )]"
-							}
-
-							expand = { }
-						}
-
-					}
-
-					#host
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						datacontext = "[CharacterWindow.GetCourtOwner]"
-						visible = "[And( Not( CharacterWindow.HasLiegeEvenWhenDead ), And( CharacterWindow.GetCourtOwner.IsValid, Not( CharacterWindow.GetCharacter.IsRuler ) ) )]"
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							spacing = 5
-
-							char_name = {
-								blockoverride "text" {
-									raw_text = "Host: [Character.GetNameNoTooltip]."
-									max_width = 450
-								}
-							}
-
-							text_single = {
-								visible = "[Not(Character.IsLocalPlayer)]"
-								raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
-								tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
-							}
-							expand = { }
-						}
-
-						#liege opinion
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							spacing = 5
-							datacontext = "[CharacterWindow.GetCharacter]"
-							visible = "[And(Character.IsAlive, Not(Character.IsLocalPlayer))]"
-
-							text_single = {
-								raw_text = "[Character.GetHerHis|U] opinion of host: [Character.GetOpinionOf( CharacterWindow.GetCourtOwner )]."
-								tooltip = "[Character.GetOpinionBreakdownText( CharacterWindow.GetCourtOwner )]"
-							}
-
-							text_single = {
-								visible = "[Character.ShouldShowDreadEffectIconFor( CharacterWindow.GetCourtOwner )]"
-								raw_text = "[CharacterWindow.GetCharacter.GetSheHe|U] is intimidated."
-								tooltip = "[Character.GetDreadEffectTooltipFor( CharacterWindow.GetCourtOwner )]"
-							}
-
-							expand = { }
-						}
-					}
-
-					#heir
-					hbox = {
-						datacontext = "[CharacterWindow.GetCharacter.GetPlayerHeir]"
-						visible = "[And( Character.IsValid, CharacterWindow.GetCharacter.IsLocalPlayer )]"
-						layoutpolicy_horizontal = expanding
-						spacing = 5
-
-						char_name = {
-							blockoverride "text" {
-								raw_text = "[player_heir|E]: [Character.GetNameNoTooltip]."
-								max_width = 450
-							}
-						}
-
-						text_single = {
-							visible = "[Not(Character.IsLocalPlayer)]"
-							raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
-							tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
-						}
-						expand = { }
-					}
-
-					#heir 2
-					hbox = {
-						datacontext = "[CharacterWindow.GetCharacter.GetPrimaryTitle.GetHeir]"
-						visible = "[And( And( Character.IsValid, Not(CharacterWindow.GetCharacter.IsLocalPlayer) ), CharacterWindow.GetCharacter.IsAlive )]"
-						layoutpolicy_horizontal = expanding
-						spacing = 5
-
-
-						char_name = {
-							blockoverride "text" {
-								alwaystransparent = yes
-								raw_text = "[primary_heir|E]: [Character.GetNameNoTooltip]."
-								max_width = 450
-							}
-						}
-
-						text_single = {
-							visible = "[Not(Character.IsLocalPlayer)]"
-							raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
-							tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
-						}
-						expand = { }
 					}
 
 					#buttons
 					hbox = {
-						spacing = -2
+						spacing = 0
 						layoutpolicy_horizontal = expanding
 
 						hbox = {
@@ -796,7 +961,7 @@ types OCRTypes {
 										resizeparent = yes
 										name = "domain_limit"
 										raw_text = "[Character.GetDomainSize] holdings, [GuiScope.SetRoot(Character.MakeScope).ScriptValue('realm_holdings')] total."
-										margin_left = 5
+										margin_left = 3
 									}
 								}
 							}
@@ -807,31 +972,11 @@ types OCRTypes {
 								using = expanded_view
 								text_single = {
 									resizeparent = yes
-									raw_text = "[Character.RealmSize] counties total."
-									margin_left = 5
+									raw_text = "[Character.RealmSize] counties."
+									margin_left = 3
 									# [GuiScope.SetRoot(Character.MakeScope).ScriptValue('my_counties')]
 								}
 							}
-							# flowcontainer = {
-							# 	visible = "[Character.IsTheocraticLessee]"
-							# 	tooltip = "CV_THEOCRACY_LESSEE_TOOLTIP"
-							# 	spacing = -2
-							# 	direction = vertical
-							#
-							# 	text_single = {
-							# 		name = "domain_limit"
-							# 		parentanchor = hcenter
-							# 		text = "[Character.GetNumTitlesFromTheocraticLease]"
-							# 		default_format = "#high"
-							# 		align = center|nobaseline
-							# 	}
-							# }
-
-							# text_single = {
-							# 	visible = "[Character.IsReligiousHead]"
-							# 	raw_text = "  Income as a Head of Faith: [Character.GetIncomeAsReligiousHead|1+=]."
-							# 	raw_tooltip = "[Character.GetIncomeBreakdownAsReligiousHead]"
-							# }
 
 							expand = { }
 						}
@@ -847,7 +992,7 @@ types OCRTypes {
 								text_single = {
 									resizeparent = yes
 									raw_text = "[GetDataModelSize(CharacterWindow.GetTitles)] Titles."
-									margin_left = 5
+									margin_left = 3
 								}
 							}
 
@@ -858,7 +1003,7 @@ types OCRTypes {
 								text_single = {
 									resizeparent = yes
 									raw_text = "[GetDataModelSize(CharacterWindow.GetClaims)] Claims."
-									margin_left = 5
+									margin_left = 3
 								}
 							}
 
@@ -866,6 +1011,20 @@ types OCRTypes {
 						}
 
 						expand = { }
+					}
+
+					button = {
+						layoutpolicy_horizontal = expanding
+						visible = "[And( Character.HasLandedTitles, Character.IsAlive )]"
+						onclick = "[GetVariableSystem.Set('expand_view', 'neighbours')]"
+						using = expanded_view
+						shortcut = map_mode_6
+
+						text_single = {
+							resizeparent = yes
+							raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_rulers'))] Neighbours, Control A."
+							# margin_left = 3
+						}
 					}
 
 					hbox = {
@@ -876,22 +1035,28 @@ types OCRTypes {
 							visible = "[And(Or( Character.IsLocalPlayer, Or( Character.HasArtifacts, Character.HasAnyArtifactClaims ) ), Character.IsAlive)]"
 							enabled = "[Or(  Or( Character.IsLocalPlayer, Character.HasArtifacts), Character.HasAnyArtifactClaims )]"
 							onclick = "[ToggleGameViewData( 'inventory', Character.GetID )]"
-							tooltip = "[SelectLocalization( Or( Or( Character.IsLocalPlayer, Character.HasArtifacts), Character.HasAnyArtifactClaims ),'OPEN_INVENTORY_TOOLTIP','EMPTY_INVENTORY_TOOLTIP')]"
+							onclick = "[CloseGameView('character')]"
+
+							shortcut = mapmode_kingdoms_secondary
 
 							flowcontainer = {
 								ignoreinvisible = yes
 								resizeparent = yes
-								margin_left = 5
-								spacing = 5
+								margin_left = 3
+								spacing = 3
 
 								text_single = {
-									raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_artifacts')] Artifacts."
+									raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_artifacts')] Artifacts,"
 									visible = "[Character.HasArtifacts]"
 								}
 
 								text_single = {
-									raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_artifacts_claims')] Artifact claims."
+									raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_artifacts_claims')] Artifact claims,"
 									visible = "[Character.HasAnyArtifactClaims]"
+								}
+
+								text_single = {
+									raw_text = "Open Inventory, Hotkey I."
 								}
 							}
 						}
@@ -919,16 +1084,12 @@ types OCRTypes {
 
 							text_single = {
 								resizeparent = yes
-								raw_text = "Kills button."
-								margin_left = 5
+								raw_text = "[GetDataModelSize(Character.GetKills)] known kill[AddTextIf(GreaterThan_int32(GetDataModelSize(Character.GetKills), '(int32)1'), 's')]."
+								margin_left = 3
 							}
 						}
 
 						expand = { }
-					}
-
-					divider_light = {
-						layoutpolicy_horizontal = expanding
 					}
 				}
 
@@ -936,84 +1097,6 @@ types OCRTypes {
 				vbox = {
 					layoutpolicy_horizontal = expanding
 					visible = "[And(CharacterWindow.AreNoneExpanded, Not(GetVariableSystem.Exists('expand_view')))]"
-
-					# skills
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						spacing = 5
-
-						hbox = {
-							name = "skills_grid"
-							datamodel = "[CharacterWindow.GetSkills]"
-							spacing = 5
-							item = {
-								container = {
-									text_single = {
-										raw_text = "[SkillItem.GetName] [SkillItem.GetValue|+],"
-										alwaystransparent = yes
-										default_format = "#high"
-									}
-
-									widget = {
-										size = { 100% 100% }
-										tooltip = "SKILL_ITEM_TOOLTIP"
-									}
-								}
-							}
-						}
-
-						text_single = {
-							using = tooltip_ne
-							tooltip = "[CharacterWindow.GetCharacter.GetProwessBreakdown]"
-							raw_text = "Prowess [CharacterWindow.GetCharacter.GetProwess|0]."
-							default_format = "#high"
-						}
-
-						expand = { }
-					}
-
-					#faith
-					flowcontainer = {
-						spacing = 5
-						layoutpolicy_horizontal = expanding
-						button = {
-							datacontext = "[Character.GetFaith]"
-							# layoutpolicy_horizontal = expanding
-							size = { 0 25 }
-							onclick = "[DefaultOnFaithClick(Faith.GetID)]"
-
-
-							text_single = {
-								raw_text = "Faith: [Faith.GetName],"
-								resizeparent = yes
-								default_format = "#high"
-								margin_left = 0
-								align = left
-							}
-
-							tooltipwidget = { faith_tooltip_click = { } }
-						}
-
-						button = {
-							datacontext = "[Character.GetCulture]"
-							# layoutpolicy_horizontal = expanding
-							size = { 0 25 }
-							onclick = "[DefaultOnCultureClick(Culture.GetID)]"
-
-
-							text_single = {
-								raw_text = "Culture: [Culture.GetName]."
-								resizeparent = yes
-								margin_left = 0
-								align = left
-								default_format = "#high"
-							}
-
-							tooltipwidget = {
-								culture_tooltip_click = { }
-							}
-						}
-					}
 
 					# health
 					hbox = {
@@ -1041,59 +1124,6 @@ types OCRTypes {
 							raw_text = "[Character.GetSexuality]."
 						}
 						expand = { }
-					}
-
-					# Traits
-					vbox = {
-						layoutpolicy_horizontal = expanding
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-
-							hbox = {
-								datamodel = "[CharacterWindow.GetPersonalityTraits]"
-								# layoutpolicy_horizontal = expanding
-								spacing = 5
-
-								text_single = {
-									raw_text = "Personality:"
-								}
-
-								item = {
-									text_single = {
-										# layoutpolicy_horizontal = expanding
-										datacontext = "[Character.GetFaith]"
-										raw_text = "[Trait.GetName(Character.Self)][AddTextIf(Faith.IsTraitVirtue( Trait.Self ), ' (virtue)')][AddTextIf(Faith.IsTraitSin( Trait.Self ), ' (sin)')]."
-									}
-								}
-							}
-							expand = { }
-						}
-
-
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							raw_text = "[GetDataModelSize(CharacterWindow.GetTraits)] traits:"
-						}
-
-						dynamicgridbox = {
-							datamodel = "[CharacterWindow.GetTraits]"
-							layoutpolicy_horizontal = expanding
-							size = { 380 0 }
-							# max_width = 380
-							# spacing = 10
-							datamodel_wrap = 4
-							# flipdirection = yes
-
-							item = {
-								text_single = {
-									# layoutpolicy_horizontal = expanding
-									raw_text = "[Trait.GetName(Character.Self)]."
-									margin_right = 10
-									max_width = 170
-								}
-							}
-						}
 					}
 
 					#modiifers
@@ -1143,7 +1173,7 @@ types OCRTypes {
 							text_single = {
 								raw_text = "[AddTextIf(And(CharacterWindow.CanClickFocusButton, Not(Character.PlayerCanManageFocus)), 'Open ')][AddTextIf(Character.PlayerCanManageFocus, 'Change ')]Lifestyle: [CharacterWindow.GetCharacter.GetFocus.GetName]."
 								alwaystransparent = yes
-								margin_left = 5
+								margin_left = 3
 								resizeparent = yes
 							}
 						}
@@ -1211,6 +1241,7 @@ types OCRTypes {
 			onclick = "[GetVariableSystem.Clear('expand_view')]"
 			onclick = "[GetScriptedGui('close_expanded_view').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 			shortcut = "close_window"
+			shortcut = "map_mode_1"
 			layoutpolicy_horizontal = expanding
 			minimumsize = { 600 25 }
 
@@ -1222,9 +1253,15 @@ types OCRTypes {
 				margin_left = 10
 
 				flowcontainer = {
-					margin = { 5 0 }
+					margin = { 3 0 }
 					ignoreinvisible = yes
 					layoutpolicy_horizontal = expanding
+
+					text_single = {
+						raw_text = "Expanded"
+					}
+
+					space = { }
 
 					text_single = {
 						raw_text = "Holdings"
@@ -1260,9 +1297,18 @@ types OCRTypes {
 					}
 
 					text_single = {
-						raw_text = ", close with Escape."
+						raw_text = ", close with Escape or E."
 					}
 
+					button_text = {
+					    blockoverride "text" {
+							align = left
+					        raw_text = "Refresh list, hotkey Shift E."
+					    }
+						shortcut = map_mode_11
+						onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+						visible = "[Or(Or(GetVariableSystem.HasValue('expand_view', 'holdings'), GetVariableSystem.HasValue('expand_view', 'counties')), GetVariableSystem.HasValue('expand_view', 'neighbours'))]"
+					}
 					button_text = {
 						blockoverride "text" {
 							raw_text = "[Select_CString(GetVariableSystem.Exists('show_diplo_descriptions'), 'Hide', 'Show')] detailed descriptions."
@@ -1725,7 +1771,7 @@ types OCRTypes {
 													text = "CLAIM_TITLE_HOLDER"
 													max_width = 500
 													resizeparent = yes
-													margin_left = 5
+													margin_left = 3
 													# autoresize = yes
 												}
 
@@ -1755,13 +1801,11 @@ types OCRTypes {
 			# visible = "[And(CharacterWindow.AreNoneExpanded, Not(GetVariableSystem.Exists('expand_view')))]"
 			visible = "[Or(Not(GetVariableSystem.Exists('expand_view')), GetVariableSystem.HasValue('expand_view', 'family'))]"
 			layoutpolicy_horizontal = expanding
-			margin_left = 10
-
-			text_single = {
-				raw_text = "Tabs: "
-			}
+			margin_left = 3
+			spacing = 3
 
 			button_tab = {
+				shortcut = speed_1
 				name = "family_button"
 				datacontext = "[CharacterWindow.GetCharacter]"
 				# layoutpolicy_horizontal = expanding
@@ -1774,13 +1818,16 @@ types OCRTypes {
 				flowcontainer = {
 					resizeparent = yes
 					ignoreinvisible = yes
-					# spacing = 5
-					margin_left = 10
+
+					text_single = {
+						raw_text = "Tab 1,"
+						margin_right = 3
+					}
 					text_single = {
 						# layoutpolicy_horizontal = expanding
 						text = "CV_TAB_FAMILY"
 						default_format = "#low"
-						margin_right = 5
+						margin_right = 3
 					}
 
 					text_single = {
@@ -1798,6 +1845,7 @@ types OCRTypes {
 			}
 
 			button_tab = {
+				shortcut = speed_2
 				name = "relations_button"
 				datacontext = "[CharacterWindow.GetCharacter]"
 				# layoutpolicy_horizontal = expanding
@@ -1810,10 +1858,14 @@ types OCRTypes {
 				flowcontainer = {
 					resizeparent = yes
 					ignoreinvisible = yes
-					margin_left = 10
+
+					text_single = {
+						raw_text = "Tab 2, "
+						margin_right = 3
+					}
 					text_single = {
 						text = "CV_TAB_RELATIONS"
-						margin_right = 5
+						margin_right = 3
 					}
 
 					text_single = {
@@ -1832,6 +1884,7 @@ types OCRTypes {
 
 			button_tab = {
 				name = "court_button"
+				shortcut = speed_3
 				datacontext = "[CharacterWindow.GetCharacter]"
 				#	visible = "[Not(Character.IsPlayer)]"
 				# layoutpolicy_horizontal = expanding
@@ -1844,10 +1897,14 @@ types OCRTypes {
 				flowcontainer = {
 					resizeparent = yes
 					ignoreinvisible = yes
-					margin_left = 10
+					text_single = {
+						raw_text = "Tab 3, "
+						margin_right = 3
+					}
+
 					text_single = {
 						text = "CV_TAB_COURT"
-						margin_right = 5
+						margin_right = 3
 					}
 					text_single = {
 						text = "[CharacterWindow.GetTabItemsCount('court')]"
@@ -1863,6 +1920,7 @@ types OCRTypes {
 			}
 
 			button_tab = {
+				shortcut = speed_4
 				name = "vassals_button"
 				datacontext = "[CharacterWindow.GetCharacter]"
 				visible = "[Character.IsRuler]"
@@ -1877,10 +1935,13 @@ types OCRTypes {
 				flowcontainer = {
 					ignoreinvisible = yes
 					resizeparent = yes
-					margin_left = 10
+					text_single = {
+						raw_text = "Tab 4, "
+						margin_right = 3
+					}
 					text_single = {
 						text = "CV_TAB_VASSALS"
-						margin_right = 5
+						margin_right = 3
 					}
 					text_single = {
 						text = "[CharacterWindow.GetTabItemsCount('vassals')]"
@@ -1910,7 +1971,7 @@ types OCRTypes {
 				visible = "[Not(GetVariableSystem.Exists('expand_view'))]"
 				layoutpolicy_horizontal = expanding
 				text_single = {
-					margin_left = 5
+					margin_left = 3
 					resizeparent = yes
 					raw_text = " Expand this view, Shortcut E."
 					layoutpolicy_horizontal = expanding
@@ -2001,7 +2062,7 @@ types OCRTypes {
 									spacing = 5
 
 									text_single = {
-										margin_left = 5
+										margin_left = 3
 										raw_text = "[Character.CalcUnusedSecondarySpouseSlots] more slots. "
 									}
 
@@ -2047,7 +2108,7 @@ types OCRTypes {
 									spacing = 5
 
 									text_single = {
-										margin_left = 5
+										margin_left = 3
 										raw_text = "[Character.CalcUnusedConsortSlots] more slots. "
 									}
 
@@ -2187,7 +2248,7 @@ types OCRTypes {
 
 
 									text_single = {
-										margin_left = 5
+										margin_left = 3
 										raw_text = "[CharacterWindow.CalcUnusedRelationSlots( GetRelation( 'ward' ), '(int32)2' )] more slots. "
 									}
 
@@ -2290,7 +2351,7 @@ types OCRTypes {
 
 
 										text_single = {
-											margin_left = 5
+											margin_left = 3
 											raw_text = "[CharacterWindow.CalcUnusedRelationSlots( GetRelation( 'guardian' ), '(int32)1' )] more slots. "
 										}
 
@@ -2325,7 +2386,7 @@ types OCRTypes {
 
 
 										text_single = {
-											margin_left = 5
+											margin_left = 3
 											raw_text = "[CharacterWindow.CalcUnusedRelationSlots( GetRelation( 'guardian' ), '(int32)1' )] more slots. "
 										}
 
@@ -2957,7 +3018,7 @@ types OCRTypes {
 	type realm_name_and_type_vbox_ocr = hbox {
 		# layoutpolicy_horizontal = expanding
 		spacing = 5
-		margin_left = 5
+		margin_left = 3
 
 		text_single = {
 			name = "faction"

@@ -29,6 +29,11 @@ types Notifications {
                         button_ignore = none
 
                         state = {
+                            name = "dismiss_alert"
+                            on_finish = "[GUIAlertItem.OnRightClick]"
+                        }
+
+                        state = {
                             name = "when_added"
                             next = e
                             position_y = 0
@@ -331,17 +336,6 @@ types Notifications {
         # visible = "[Not(SinglePlayerShowingPausedSuccession)]"
         direction = horizontal
         margin = { 0 5 }
-
-        state = {
-            name = _show
-            using = Animation_FadeIn_Quick
-        }
-
-        state = {
-            name = _hide
-            using = Animation_FadeOut_Quick
-        }
-
         button = {
             size = { 0 0 }
             onclick = "[GetVariableSystem.Toggle('hide_alerts')]"
@@ -352,27 +346,40 @@ types Notifications {
             visible = "[Not(GetVariableSystem.Exists('hide_alerts'))]"
 
             flowcontainer = {
+
+
                 background = { using = Background_Area_Light margin = { 10 10 } }
                 direction = vertical
                 ignoreinvisible = yes
                 alwaystransparent = no
-                # visible = "[Or(Not(IsDataModelEmpty(InGameTopbar.GetAlertItems)), Not(IsDataModelEmpty(InGameTopbar.GetDiplomaticItems)))]"
+                visible = "[Or( DataModelHasItems(InGameTopbar.GetAlertItems), DataModelHasItems(InGameTopbar.GetDiplomaticItems) )]"
+
 
                 flowcontainer = {
                     spacing = 5
 
                     text_single = {
                         raw_text = "[Add_int32(GetDataModelSize(InGameTopbar.GetAlertItems), GetDataModelSize(InGameTopbar.GetDiplomaticItems))] alerts."
+                        align = nobaseline
                         # visible = "[Not(IsDataModelEmpty(InGameTopbar.GetAlertItems))]"
                     }
 
                     button_text = {
                         onclick = "[GetVariableSystem.Toggle('hide_alerts')]"
                         blockoverride "text" {
-                            raw_text = "Hide all alerts, hotkey Shift+A."
+                            raw_text = "Hide alerts, Shift A."
                         }
                     }
+
+                    button_text = {
+                        blockoverride "text" {
+                            raw_text = "Dismiss all, Control A."
+                        }
+                        shortcut = map_mode_6
+                        onclick = "[PdxGuiTriggerAllAnimations('dismiss_alert')]"
+                    }
                 }
+
                 flowcontainer = {
                     ignoreinvisible = yes
                     spacing = 5
@@ -388,7 +395,7 @@ types Notifications {
 
                     text_single = {
                         visible = "[Or(Not(IsDataModelEmpty(InGameTopbar.GetAlertItems)), Not(IsDataModelEmpty(InGameTopbar.GetDiplomaticItems)))]"
-                        raw_text = "Click to open an alert, right-click to dismiss."
+                        raw_text = "Click to open, right-click to dismiss."
                     }
                 }
 
@@ -415,6 +422,7 @@ types Notifications {
 
         scrollbox = {
             autoresizescrollarea = yes
+            visible = "[Or( DataModelHasItems(InGameTopbar.GetAlertItems), DataModelHasItems(InGameTopbar.GetDiplomaticItems) )]"
             maximumsize = { 700 500 } #TODO
             blockoverride "scrollbox_margins" {
                 margin_top = 20
@@ -779,8 +787,6 @@ types Notifications {
         visible = "[And(ToastMessageHandler.HasMessage, Not(SinglePlayerShowingPausedSuccession))]"
         visible_at_creation = no
         allow_outside = yes
-
-
 
         ### CONTENT ###
         widget = {

@@ -1,0 +1,570 @@
+### DYNASTY LEGACIES WINDOW
+
+window = {
+	name = "dynasty_view"
+	widgetid = "dynasty_view"
+	datacontext = "[DynastyView.GetDynasty]"
+	size = { 100% 100% }
+	parentanchor = center|hcenter
+	movable = no
+	filter_mouse = all
+	layer = middle
+
+	using = Window_Background_No_Edge
+
+	background = {
+		using = Background_Bottom_Fade
+		alpha = 0.5
+	}
+
+	state = {
+		name = _show
+
+		using = Animation_FadeIn_Standard
+	}
+
+	state = {
+		name = _hide
+
+		using = Animation_FadeOut_Standard
+	}
+
+	vbox = {
+
+		header_standard = {
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "header_text"
+			{
+				text = ""
+			}
+
+			blockoverride "button_close"
+			{
+				name = "button_close"
+				onclick = "[DynastyView.Close]"
+				shortcut = "close_window"
+				tooltip = "CLOSE_TOOLTIP"
+			}
+
+			flowcontainer = {
+			    ignoreinvisible = yes
+				layoutpolicy_horizontal = expanding
+				margin_left = 10
+
+				text_single = {
+					raw_text = "[DynastyView.GetDynasty.GetNameNoTooltip]"
+				}
+
+				space = { }
+
+				text_single = {
+					raw_text = "DYNASTY_VIEW_SHOW_LEGACIES"
+				}
+
+				dot = { }
+
+			}
+
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				margin = { 15 0 }
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						text_single = {
+							raw_text = "Perk"
+						}
+						space = { }
+
+						text_single = {
+							text = "DYNASTY_VIEW_SHOW_LEGACY_COST"
+						}
+
+						dot = { }
+
+						space = { }
+
+						text_single = {
+							raw_text = "You have [GetPlayer.GetDynasty.GetPrestige|0]"
+						}
+						dot = { }
+						expand = { }
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					shortcut = mapmode_duchies_secondary
+					visible = "[Or(GetVariableSystem.Exists('unlock_legacy'), Dynasty.CanUnlockRelevantPerk)]"
+				    blockoverride "text" {
+				        raw_text = "[AddTextIf(GetVariableSystem.Exists('unlock_legacy'), 'Don\'t ')]Show only unlockable perks, hotkey U."
+				    }
+					onclick = "[GetVariableSystem.Toggle('unlock_legacy')]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[GetVariableSystem.Toggle('legacy_desc')]"
+				    blockoverride "text" {
+				        raw_text = "[Select_CString(GetVariableSystem.Exists('legacy_desc'), 'Hide descriptions, Hotkey E.', 'Show descriptions, Hotkey E. Otherwise, see tooltips.')]"
+				    }
+					shortcut = map_mode_1
+				}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_background_fade" { }
+
+				blockoverride "scrollbox_background" { }
+				blockoverride "scrollbox_content"
+				{
+
+					dynamicgridbox = {
+						datamodel = "[DynastyView.GetLegacies]"
+						layoutpolicy_horizontal = expanding
+						datamodel_wrap = 8
+						flipdirection = yes
+						visible = "[Not(GetVariableSystem.Exists('legacy_desc'))]"
+
+						item = {
+							flowcontainer = {
+								margin_right = 40
+								margin_bottom = 10
+								direction = vertical
+								text_single = {
+									raw_text = "[DynastyLegacy.GetName] legacy."
+								}
+
+								flowcontainer = {
+								    ignoreinvisible = yes
+
+								    direction = vertical
+									datamodel = "[DynastyLegacy.GetPerks]"
+
+									item = {
+										button_text = {
+											visible = "[Or(Not(GetVariableSystem.Exists('unlock_legacy')), And(GetVariableSystem.Exists('unlock_legacy'), DynastyView.CanSelectPerk( DynastyPerk.Self )))]"
+											blockoverride "pre" {
+												text_single = {
+													raw_text = "Unlock"
+													align = nobaseline
+													visible = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+												}
+												space = { visible = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]" }
+											}
+										    blockoverride "text" {
+										        raw_text = "[DynastyPerk.GetNameNoTooltip]."
+										    }
+											blockoverride "extra" {
+												text_single = {
+													raw_text = " Unlocked."
+													visible = "[Dynasty.HasPerk( DynastyPerk.Self )]"
+													align = nobaseline
+												}
+											}
+											enabled = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+											onclick = "[DynastyView.SelectPerk( DynastyPerk.Self )]"
+											tooltip = "DYNASTY_PERK_TOOLTIP"
+											using = tooltip_se
+										}
+									}
+								}
+							}
+						}
+					}
+
+					dynamicgridbox = {
+						datamodel = "[DynastyView.GetLegacies]"
+						layoutpolicy_horizontal = expanding
+						datamodel_wrap = 4
+						flipdirection = yes
+						visible = "[GetVariableSystem.Exists('legacy_desc')]"
+
+						item = {
+							flowcontainer = {
+								margin_right = 30
+								margin_bottom = 10
+								direction = vertical
+								text_single = {
+									raw_text = "[DynastyLegacy.GetName] legacy."
+								}
+
+								ignoreinvisible = yes
+
+								text_multi = {
+									raw_text = "[DynastyLegacy.GetDesc]."
+									autoresize = yes
+									max_width = 450
+									visible = "[Not(GetVariableSystem.Exists('unlock_legacy'))]"
+								}
+
+								flowcontainer = {
+								    ignoreinvisible = yes
+
+								    direction = vertical
+									datamodel = "[DynastyLegacy.GetPerks]"
+
+									item = {
+										button = {
+											visible = "[Or(Not(GetVariableSystem.Exists('unlock_legacy')), And(GetVariableSystem.Exists('unlock_legacy'), DynastyView.CanSelectPerk( DynastyPerk.Self )))]"
+											enabled = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+											onclick = "[DynastyView.SelectPerk( DynastyPerk.Self )]"
+											background = { using = Background_Area_Border_Solid }
+											text_multi = {
+												margin_left = 5
+												text = DYNASTY_PERK_TOOLTIP
+												autoresize = yes
+												max_width = 450
+												resizeparent = yes
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+base_dialog = {
+	name = "dynasty_perk_confirmation_popup"
+
+	blockoverride "bd_buttons" {
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			margin_left = 10
+			datamodel = "[DynastyPerkConfirmation.GetAssociatedTraits]"
+
+			item = {
+				button_text = {
+					layoutpolicy_horizontal = expanding
+				    blockoverride "text" {
+				        raw_text = "[Trait.GetNameNoTooltip(GetPlayer)]"
+						align = left
+				    }
+					blockoverride "extra" {
+						text_single = {
+							raw_text = ", Selected"
+							visible = "[EqualTo_string( Trait.GetKey, DynastyPerkConfirmation.GetSelectedTrait.GetKey ) ]"
+						}
+					}
+					blockoverride "dot" {
+					}
+					onclick = "[DynastyPerkConfirmation.SelectTrait( Trait.Self )]"
+
+					datacontext = "[GetPlayer]"
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 10
+
+			button_standard = {
+				text = "CANCEL_BUTTON"
+				onclick = [GameDialog.Decline]
+			}
+
+			button_primary = {
+				text = "[GameDialog.GetAcceptText]"
+				shortcut = "confirm"
+				onclick = [GameDialog.Accept]
+			}
+		}
+	}
+}
+
+types DynastyLegacies {
+	type hbox_legacy_item = hbox {
+		expand = { }
+
+		### TEXT ###
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			max_width = 330
+			margin_right = 10
+
+			background = {
+				layoutpolicy_horizontal = expanding
+				margin_right = 5
+				using = Background_Area
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+
+					background = {
+						using = Background_Area
+					}
+
+					icon_doctrine = {
+						size = { 80 80 }
+						texture = "[DynastyLegacy.GetIcon]"
+					}
+
+					expand = { }
+				}
+
+				vbox = {
+					margin = { 5 5 }
+					spacing = 2
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						text = "[DynastyLegacy.GetName]"
+						default_format = "#high"
+						using = Font_Size_Medium
+						fontsize_min = 14
+					}
+
+					text_multi = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						text = "[DynastyLegacy.GetDesc]"
+						maximumsize = { -1 90 }
+						fontsize_min = 14
+					}
+
+					expand = { }
+				}
+			}
+		}
+
+		#### ILLUSTRATION ####
+		hbox = {
+			background = {
+				texture = "[DynastyLegacy.GetTrackIcon]"
+
+				modify_texture = {
+					texture = "gfx/interface/component_tiles/tile_frame_thin_02.dds"
+					spriteType = Corneredtiled
+					spriteborder = { 50 50 }
+					blend_mode = alphamultiply
+					texture_density = 2
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_legacy_track.dds"
+					spriteType = Corneredtiled
+					spriteborder = { 50 50 }
+					blend_mode = alphamultiply
+				}
+			}
+
+			background = {
+				texture = "[DynastyLegacy.GetTrackIcon]"
+
+				modify_texture = {
+					texture = "gfx/interface/component_tiles/tile_frame_thin_02.dds"
+					spriteType = Corneredtiled
+					spriteborder = { 50 50 }
+					blend_mode = alphamultiply
+					texture_density = 2
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_legacy_track.dds"
+					spriteType = Corneredtiled
+					spriteborder = { 50 50 }
+					blend_mode = alphamultiply
+				}
+			}
+
+			hbox = {
+				datamodel = "[DynastyLegacy.GetPerks]"
+
+				item = {
+					widget = {
+						size = { 296 128 }
+
+						button = {
+							size = { 296 128 }
+							visible = "[Not( Dynasty.HasPerk( DynastyPerk.Self ) )]"
+							enabled = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+							onclick = "[DynastyView.SelectPerk( DynastyPerk.Self )]"
+
+							background = {
+								size = { 100% 100% }
+								texture = "gfx/interface/component_masks/mask_frame_horizontal.dds"
+								tintcolor = { 0 0 0 0.7 }
+								alpha = 0.9
+							}
+
+							background = {
+								visible = "[Not(DynastyView.CanSelectPerk( DynastyPerk.Self ))]"
+								size = { 100% 100% }
+								texture = "gfx/interface/component_masks/mask_frame_horizontal.dds"
+								tintcolor = { 0 0 0 0.8 }
+
+								modify_texture = {
+									texture = "gfx/interface/component_tiles/tile_frame_thin_02.dds"
+									spriteType = Corneredtiled
+									spriteborder = { 50 50 }
+									blend_mode = alphamultiply
+									alpha = 0.2
+									texture_density = 2
+								}
+							}
+
+							vbox = {
+								visible = "[Not(And(Dynasty.GetDynast.IsLocalPlayer, DynastyView.IsNextUnlockablePerk( DynastyPerk.Self )))]"
+								margin = { 10 5 }
+								margin_top = 18
+
+								text_multi = {
+									text = "[DynastyPerk.GetNameNoTooltip]"
+									autoresize = yes
+									max_width = 296
+									fontsize_min = 14
+									default_format = "#low"
+								}
+							}
+
+							### TEXT ###
+							vbox = {
+								visible = "[And(Dynasty.GetDynast.IsLocalPlayer, DynastyView.IsNextUnlockablePerk( DynastyPerk.Self ))]"
+
+								vbox = {
+									layoutpolicy_vertical = expanding
+									margin = { 10 5 }
+									margin_top = 18
+
+									text_multi = {
+										text = "[DynastyPerk.GetNameNoTooltip]"
+										autoresize = yes
+										max_width = 296
+										fontsize_min = 14
+										default_format = "#high"
+									}
+
+									text_single = {
+										visible = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+										text = "DYNASTY_VIEW_SHOW_UNLOCK"
+										default_format = "#I"
+									}
+								}
+
+								tooltip_enabled = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+								tooltip = "UNLOCK_DYNASTY_PERK_TOOLTIP"
+								using = tooltip_se
+							}
+
+							button_standard_clean = {
+								visible = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+								size = { 100% 100% }
+								alwaystransparent = yes
+
+								animation_attention_text = { }
+
+								background = {
+									texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
+									spriteType = Corneredtiled
+									spriteborder = { 5 5 }
+									margin = { -2 -2 }
+								}
+							}
+
+							tooltip = "LOCKED_DYNASTY_PERK_TOOLTIP"
+							using = tooltip_se
+						}
+
+						widget = {
+							size = { 296 128 }
+
+							vbox = {
+								tooltip = "DYNASTY_PERK_TOOLTIP"
+								using = tooltip_se
+							}
+						}
+					}
+				}
+			}
+		}
+
+		expand = { }
+	}
+
+	type hbox_legacy_item_ocr = vbox {
+
+		### TEXT ###
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				text_single = {
+					raw_text = "[DynastyLegacy.GetName]."
+				}
+
+				text_single = {
+					raw_text = " [DynastyLegacy.GetDesc]."
+				}
+
+				expand = { }
+			}
+		}
+
+		#### ILLUSTRATION ####
+
+		vbox = {
+			datamodel = "[DynastyLegacy.GetPerks]"
+			layoutpolicy_horizontal = expanding
+
+			item = {
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "Unlock "
+							visible = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+						}
+					}
+				    blockoverride "text" {
+				        raw_text = "[DynastyPerk.GetNameNoTooltip]"
+				    }
+					visible = "[Not( Dynasty.HasPerk( DynastyPerk.Self ) )]"
+					enabled = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+					onclick = "[DynastyView.SelectPerk( DynastyPerk.Self )]"
+					tooltip = "DYNASTY_PERK_TOOLTIP"
+					using = tooltip_se
+				}
+			}
+		}
+
+		expand = { }
+	}
+}
