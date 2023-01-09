@@ -1,0 +1,196 @@
+window = {
+	name = "save_game_window"
+	size = { 100% 100% }
+	movable = no
+	layer = confirmation
+
+	using = Animation_ShowHide_Quick
+	using = Background_Full_Dim
+
+	button_normal = {
+		size = { 100% 100% }
+		onclick = "[SaveGameWindow.Cancel]"
+		onclick = "[PdxGuiTriggerAllAnimations('bookmarks_reset')]"
+	}
+
+	widget = {
+		size = { 490 100% }
+		parentanchor = center
+		alwaystransparent = no
+
+		using = Window_Background
+		using = Window_Decoration_Frontend_Spike
+
+		vbox = {
+			using = Window_Margins
+			spacing = 5
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "SAVE_GAME"
+				}
+
+				blockoverride "button_close" {
+					onclick = "[SaveGameWindow.Cancel]"
+					onclick = "[PdxGuiTriggerAllAnimations('bookmarks_reset')]"
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				margin = { 15 0 }
+
+				spacing = 2
+
+				editbox_standard_with_label = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "editbox_label"
+					{
+						text = "SAVE_NAME_LABEL"
+						layoutpolicy_horizontal = expanding
+					}
+					blockoverride "editbox_properties" {
+		                name = "save_name"
+						margin_left = 5
+		                text = "[SaveGameWindow.GetDefaultSaveName]"
+		            	ontextedited = "[SaveGameWindow.UpdateSaveName]"
+						onreturnpressed = "[SaveGameWindow.Save]"
+		            }
+				}
+
+				text_single = {
+					text = "FILE_NAME_INVALID"
+					alwaystransparent = yes
+					layoutpolicy_horizontal = expanding
+					visible = "[Not(SaveGameWindow.IsSaveNameOk)]"
+				}
+
+				button_primary_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						text = "SAVE_WINDOW_SAVE"
+					}
+					blockoverride "disabled" {
+						visible = "[Not(And(SaveGameWindow.IsSaveNameOk, Not(SaveGameWindow.IsSaving)))]"
+					}
+					name = "save_button"
+					onclick = "[SaveGameWindow.Save]"
+					enabled = "[And(SaveGameWindow.IsSaveNameOk, Not(SaveGameWindow.IsSaving))]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						align = left
+						text = "CANCEL"
+					}
+					blockoverride "dot" {
+
+					}
+					onclick = "[SaveGameWindow.Cancel]"
+					onclick = "[PdxGuiTriggerAllAnimations('bookmarks_reset')]"
+					enabled = "[Not(SaveGameWindow.IsSaving)]"
+					shortcut = "close_window"
+				}
+
+				widget = {
+					size = { 0 5 }
+				}
+
+
+				hbox = {
+					name = "cloud_save_area"
+					layoutpolicy_horizontal = expanding
+
+					button_checked_text = {
+						blockoverride "text" {
+							text = "SAVE_TO_CLOUD_LABEL"
+
+						}
+						blockoverride "visible" {
+							visible = "[Not(CloudSaveData.ShouldSaveToCloud)]"
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = " Disabled"
+								align = nobaseline
+								visible = "[Not(CloudSaveData.AreCloudSavesAvailable)]"
+							}
+							dot_nb = { }
+						}
+						datacontext = "[SaveGameWindow.AccessCloudData]"
+						tooltip = "[CloudSaveData.GetCloudSaveTooltip]"
+						onclick = "[CloudSaveData.OnCloudSaveClick]"
+						enabled = "[CloudSaveData.AreCloudSavesAvailable]"
+					}
+
+					expand = {}
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				margin = { 15 5 }
+				spacing = 10
+
+				hbox = {
+					spacing = 2
+					layoutpolicy_horizontal = expanding
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[SaveGameWindow.ToggleShowInvalid]"
+
+						blockoverride "visible"
+						{
+							visible = "[Not(SaveGameWindow.IsShowInvalid)]"
+						}
+
+						blockoverride "text"
+						{
+							raw_text = "Show invalid saves."
+						}
+					}
+				}
+			}
+
+			text_single = {
+				margin_left = 5
+				layoutpolicy_horizontal = expanding
+				raw_text = "[GetDataModelSize(SaveGameWindow.GetSaveGames)] previous saves:"
+			}
+
+			scrollbox = {
+				layoutpolicy_horizontal = growing
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						datamodel = "[SaveGameWindow.GetSaveGames]"
+
+						item = {
+							button_saved_games = {
+								size = { 390 65 }
+								visible = "[Or( SaveGameItem.IsValid, SaveGameWindow.IsShowInvalid )]"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	container_saving_indicator = {
+		parentanchor = center
+		visible = "[SaveGameWindow.IsSaving]"
+
+		blockoverride "csi_text"
+		{
+			text = "SAVE_IN_PROGRESS"
+		}
+	}
+}
