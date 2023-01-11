@@ -13,6 +13,7 @@ window = {
 	movable = no
 
 	using = Window_Size_MainTab
+	using = Window_Background_No_Edge
 
 	state = {
 		name = _show
@@ -20,6 +21,11 @@ window = {
 		using = Sound_WindowShow_Standard
 		using = Window_Position_MainTab
 
+	}
+
+	state = {
+		name = tabs
+		trigger_when = "[Not(GetVariableSystem.Exists('military_view_tabs'))]"
 		on_start = "[GetVariableSystem.Set( 'military_view_tabs', 'troops' )]"
 	}
 
@@ -33,14 +39,14 @@ window = {
 	margin_widget = {
 		size = { 100% 100% }
 		margin = { 0 0 }
-		margin_right = 13
 
 		widget = {
 			size = { 100% 100% }
 
 			### WINDOW CONTENT
 			vbox = {
-				using = Window_Margins
+				# using = Window_Margins
+				margin_bottom = 30
 
 				header_pattern = {
 					layoutpolicy_horizontal = expanding
@@ -74,6 +80,8 @@ window = {
 					layoutpolicy_horizontal = expanding
 					spacing = 3
 					direction = vertical
+					visible = "[GetVariableSystem.HasValue( 'military_view_tabs', 'troops' )]"
+
 
 					ignoreinvisible = yes
 
@@ -141,11 +149,10 @@ window = {
 					}
 				}
 
-				vbox = {
+				hbox = {
 					layoutpolicy_horizontal = expanding
 
 					button_text = {
-						layoutpolicy_horizontal = expanding
 						onclick = "[GetVariableSystem.Set( 'military_view_tabs', 'troops' )]"
 						shortcut = speed_1
 
@@ -162,7 +169,6 @@ window = {
 					}
 
 					button_text = {
-						layoutpolicy_horizontal = expanding
 						onclick = "[GetVariableSystem.Set( 'military_view_tabs', 'mercenaries' )]"
 						shortcut = speed_2
 
@@ -179,7 +185,6 @@ window = {
 					}
 
 					button_text = {
-						layoutpolicy_horizontal = expanding
 						onclick = "[GetVariableSystem.Set( 'military_view_tabs', 'holy_orders' )]"
 						shortcut = speed_3
 
@@ -201,6 +206,29 @@ window = {
 							dot = { }
 						}
 					}
+					expand = { }
+				}
+
+				button_text = {
+					onclick = "[GetVariableSystem.Set( 'military_view_tabs', 'ongoing_wars' )]"
+					shortcut = speed_4
+					layoutpolicy_horizontal = expanding
+
+					blockoverride "text" {
+						raw_text = "All ongoing wars"
+						align = left
+					}
+					blockoverride "extra" {
+						text_single = {
+							raw_text = ", tab 4[Select_CString(GetVariableSystem.HasValue('military_view_tabs', 'ongoing_wars'), ', Selected', '')]"
+						}
+						dot = { }
+					}
+					onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				}
+
+				widget = {
+					size = { 0 5 }
 				}
 
 				vbox = {
@@ -264,7 +292,7 @@ window = {
 											}
 
 											text_single = {
-												text = "[ArmyComposition.GetSoldierCountString]"
+												raw_text = "[ArmyComposition.GetSoldierCountString]"
 											}
 
 											text_single = {
@@ -606,19 +634,30 @@ window = {
 								vbox = {
 									visible = "[Not(IsDataModelEmpty(MilitaryView.GetEventTroops))]"
 									layoutpolicy_horizontal = expanding
-									margin = { 0 5 }
-									spacing = 5
 
-									text_single = {
-										layoutpolicy_horizontal = expanding
-										text = "MILITARY_VIEW_EVENT_TROOPS"
-									}
 
-									divider_light = {
+									button_text = {
 										layoutpolicy_horizontal = expanding
+										blockoverride "pre" {
+											text_single = {
+												raw_text = "[GetDataModelSize(MilitaryView.GetEventTroops)]"
+												margin_right = 3
+											}
+										}
+										blockoverride "extra" {
+											text_single = {
+												raw_text = ", click to [Select_CString(GetVariableSystem.Exists('special_troops'), 'Show', 'Hide')]."
+											}
+										}
+									    blockoverride "text" {
+									        raw_text = "MILITARY_VIEW_EVENT_TROOPS"
+											align = left
+									    }
+										onclick = "[GetVariableSystem.Toggle('special_troops')]"
 									}
 
 									vbox = {
+										visible = "[Not(GetVariableSystem.Exists('special_troops'))]"
 										datamodel = "[MilitaryView.GetEventTroops]"
 										layoutpolicy_horizontal = expanding
 
@@ -633,27 +672,19 @@ window = {
 								vbox = {
 									visible = "[Or( Not(IsDataModelEmpty(MilitaryView.GetHiredMercenaries)), Not(IsDataModelEmpty(MilitaryView.GetHiredHolyOrders)) )]"
 									layoutpolicy_horizontal = expanding
-									margin = { 0 5 }
-									spacing = 5
 
 									text_single = {
 										layoutpolicy_horizontal = expanding
 										text = "MILITARY_VIEW_HIRED_TROOPS"
 									}
 
-									divider_light = {
-										layoutpolicy_horizontal = expanding
-									}
-
 									vbox = {
 										datamodel = "[MilitaryView.GetHiredMercenaries]"
 										layoutpolicy_horizontal = expanding
-										spacing = 5
-										margin = { 10 0 }
-										margin_top = 5
 
 										item = {
 											button_mercenary_list_item = {
+												blockoverride "your" { }
 												datacontext = "[HiredTroopItem.GetMercenaryCompany]"
 												layoutpolicy_horizontal = expanding
 
@@ -666,26 +697,14 @@ window = {
 									}
 
 									vbox = {
-										layoutpolicy_horizontal = expanding
-										margin = { 10 20 }
-										visible = "[Not(IsDataModelEmpty(MilitaryView.GetHiredHolyOrders))]"
-
-										divider_light = {
-											layoutpolicy_horizontal = expanding
-
-										}
-									}
-
-									vbox = {
 										datamodel = "[MilitaryView.GetHiredHolyOrders]"
 										layoutpolicy_horizontal = expanding
-										spacing = 5
-										margin = { 10 0 }
 
 										item = {
 											button_holyorder_list_item = {
 												datacontext = "[HiredTroopItem.GetHolyOrder]"
 												layoutpolicy_horizontal = expanding
+												blockoverride "your" { }
 
 												blockoverride "HiredTroopMenAtArmsTypesDataModel"
 												{
@@ -938,6 +957,15 @@ window = {
 					}
 				}
 
+				button_text = {
+					visible = "[GetVariableSystem.HasValue( 'military_view_tabs', 'mercenaries' )]"
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "In [Select_CString(GetVariableSystem.Exists('merc_sorting'), 'descending', 'ascending')] order."
+					}
+					onclick = "[GetVariableSystem.Toggle('merc_sorting')]"
+				}
+
 				scrollbox = {
 					name = "tab_mercenaries"
 					visible = "[GetVariableSystem.HasValue( 'military_view_tabs', 'mercenaries' )]"
@@ -954,32 +982,12 @@ window = {
 						alpha = 0
 					}
 
-					background = {
-						texture = "gfx/interface/illustrations/event_scenes/genericcamp.dds"
-						margin = { -5 0 }
-						fittype = end
-						alpha = 0.3
-						framesize = { 1200 848 }
-
-						modify_texture = {
-							texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
-							blend_mode = alphamultiply
-							mirror = vertical
-						}
-					}
-
 					blockoverride "scrollbox_content" {
 						vbox = {
 							name = "tutorial_highlight_mercenary_list_item"
 							datamodel = "[MilitaryView.GetAllMercenaries]"
+							visible = "[Not(GetVariableSystem.Exists('merc_sorting'))]"
 							layoutpolicy_horizontal = expanding
-							spacing = 3
-							margin = { 10 0 }
-
-							spacer = {
-								size = { 7 7 }
-							}
-
 							item = {
 								vbox = {
 									layoutpolicy_horizontal = expanding
@@ -988,7 +996,7 @@ window = {
 										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
 										visible = "[MercenaryCompany.IsHired]"
 										layoutpolicy_horizontal = expanding
-										size = { 430 110 }
+										size = { 600 60 }
 
 										blockoverride "HiredTroopMenAtArmsTypesDataModel"
 										{
@@ -1000,7 +1008,42 @@ window = {
 										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
 										visible = "[Not(MercenaryCompany.IsHired)]"
 										layoutpolicy_horizontal = expanding
-										size = { 430 90 }
+										size = { 600 60 }
+
+										blockoverride "HiredTroopMenAtArmsTypesDataModel"
+										{
+											datamodel = "[HiredTroopItem.GetRegiments]"
+										}
+									}
+								}
+							}
+						}
+						vbox = {
+							datamodel = "[MilitaryView.GetAllMercenaries]"
+							visible = "[GetVariableSystem.Exists('merc_sorting')]"
+							layoutpolicy_horizontal = expanding
+							bottomtotop = yes
+							item = {
+								vbox = {
+									layoutpolicy_horizontal = expanding
+
+									button_mercenary_list_item = {
+										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
+										visible = "[MercenaryCompany.IsHired]"
+										layoutpolicy_horizontal = expanding
+										size = { 600 60 }
+
+										blockoverride "HiredTroopMenAtArmsTypesDataModel"
+										{
+											datamodel = "[HiredTroopItem.GetRegiments]"
+										}
+									}
+
+									button_mercenary_list_item = {
+										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
+										visible = "[Not(MercenaryCompany.IsHired)]"
+										layoutpolicy_horizontal = expanding
+										size = { 600 60 }
 
 										blockoverride "HiredTroopMenAtArmsTypesDataModel"
 										{
@@ -1029,47 +1072,33 @@ window = {
 						alpha = 0
 					}
 
-					background = {
-						texture = "gfx/interface/skinned/illustrations/holy_order_bg.dds"
-						margin = { -5 0 }
-						fittype = centercrop
-						alpha = 0.3
-
-						modify_texture = {
-							texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
-							blend_mode = alphamultiply
-							mirror = vertical
-						}
-					}
 
 					blockoverride "scrollbox_content" {
 						vbox = {
 							datamodel = "[MilitaryView.GetAllHolyOrders]"
 							layoutpolicy_horizontal = expanding
-							spacing = 3
-							margin = { 10 0 }
 
-							text_label_center = {
+							text_single = {
+								layoutpolicy_horizontal = expanding
 								name = "hired_troops_view_holy_orders_header_item"
 								text = "HIRED_TROOPS_VIEW_LIST_HO_HEADER"
 							}
 
 							text_single = {
+								layoutpolicy_horizontal = expanding
 								visible = "[And( Not(MilitaryView.CanUseAnyHolyOrder), DataModelHasItems(MilitaryView.GetAllHolyOrders))]"
 								text = "HOLY_ORDER_MUST_BE_AT_WAR_WITH_BAD_FAITH"
 							}
 
 							hbox = {
 								visible = "[Not(DataModelHasItems(MilitaryView.GetAllHolyOrders ))]"
+								layoutpolicy_horizontal = expanding
 
 								text_single = {
+									layoutpolicy_horizontal = expanding
 									text = "HIRED_TROOPS_VIEW_LIST_HO_NO_HOS"
 									default_format = "#weak"
 								}
-							}
-
-							spacer = {
-								size = { 7 7 }
 							}
 
 							button_decision_entry = {
@@ -1113,6 +1142,346 @@ window = {
 						}
 					}
 				}
+
+				#wars
+				vbox = {
+					visible = "[GetVariableSystem.HasValue( 'military_view_tabs', 'ongoing_wars' )]"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					state = {
+						name = _show
+						using = Animation_FadeIn_Quick
+					}
+
+					state = {
+						name = _hide
+						alpha = 0
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "Sorted by [GetPlayer.MakeScope.Var('sort_wars').GetFlagName]. Change, hotkey T."
+								}
+								shortcut = map_mode_2
+								onclick = "[GetVariableSystem.Set('war_sorting', 'yes')]"
+							}
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							button_text = {
+							    blockoverride "text" {
+							        raw_text = "Showing [GetPlayer.MakeScope.Var('filter_wars').GetFlagName]. Filter, hotkey F."
+							    }
+								shortcut = army_split_half
+								onclick = "[GetVariableSystem.Set('war_filters', 'yes')]"
+							}
+							expand = { }
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+						    blockoverride "text" {
+						        raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('ongoing_wars'))] wars. Refresh the list, Shift E."
+						    }
+							shortcut = map_mode_11
+							onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						}
+
+						scrollbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+							blockoverride "scrollbox_margins" {
+								margin_top = 20
+							}
+
+							blockoverride "scrollbox_content" {
+								fixedgridbox = {
+									addcolumn = 600
+									addrow = 40
+									layoutpolicy_horizontal = expanding
+									# layoutpolicy_vertical = expanding
+
+									datamodel = "[GetPlayer.MakeScope.GetList('ongoing_wars')]"
+
+									item = {
+										widget = {
+											datacontext = "[Scope.War]"
+											size = { 600 40 }
+
+											vbox = {
+												margin_left = 5
+												layoutpolicy_horizontal = expanding
+												spacing = -6
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+
+													text_single = {
+														max_width = 450
+														text = "[War.GetName]"
+													}
+
+													text_single = {
+														raw_text = ", started [GuiScope.SetRoot(War.MakeScope).ScriptValue('war_days_sval')] days ago."
+													}
+													#
+													# text_single = {
+													# 	raw_text = "[War.GetStartDate.GetStringShort]."
+													# }
+
+													expand = { }
+												}
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													spacing = 3
+
+
+													text_single = {
+														raw_text = "[GuiScope.SetRoot(War.MakeScope).ScriptValue('attacker_war_score_sval')|+=0]%,"
+													}
+
+													text_single = {
+														raw_text = "[GuiScope.SetRoot(War.MakeScope).ScriptValue('total_war_attackers')|0]"
+													}
+
+													text_single = {
+														raw_text = "versus"
+													}
+
+													text_single = {
+														raw_text = "[GuiScope.SetRoot(War.MakeScope).ScriptValue('total_war_defenders')|0]"
+													}
+
+													text_single = {
+														raw_text = "men."
+													}
+
+													expand = { }
+												}
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													spacing = 3
+													visible = no
+
+
+													block "attackers" {
+														widget = {
+															size = { 200 22 }
+															scissor = yes
+
+															flowcontainer = {
+																datamodel = "[War.MakeScope.GetList('allies')]"
+																item = {
+																	char_name_extra = {
+																		datacontext = "[Scope.GetCharacter]"
+																		blockoverride "text" {
+																			raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+																		}
+																		blockoverride "extra" {
+																			text_single = {
+																				raw_text = "[Character.GetMilitaryStrengthText]."
+																			}
+																		}
+																	}
+																}
+															}
+														}
+													}
+
+
+													expand = { }
+												}
+											}
+
+											button = {
+												size = { 100% 100% }
+												onclick = "[OpenGameViewData( 'war_overview',  War.GetID )]"
+											}
+										}
+									}
+								}
+							}
+						}
+
+						expand = { }
+					}
+				}
+			}
+
+			vbox = {
+				using = Window_Background_No_Edge
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+				visible = "[GetVariableSystem.Exists('war_sorting')]"
+				margin = { 5 0 }
+				alwaystransparent = no
+
+				button = {
+					onclick = "[GetVariableSystem.Clear('war_sorting')]"
+					shortcut = close_window
+					shortcut = map_mode_2
+				}
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Sort by:"
+						margin_bottom = 5
+						background = { using = Background_Area_Border_Solid }
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "Total soldiers."
+						}
+						onclick = "[GetScriptedGui('sort_wars_total').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetVariableSystem.Clear('war_sorting')]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+					        raw_text = "Sort by date."
+					    }
+						onclick = "[GetScriptedGui('sort_wars_time').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetVariableSystem.Clear('war_sorting')]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+					        raw_text = "Amount of attackers."
+					    }
+						onclick = "[GetScriptedGui('sort_wars_attackers').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetVariableSystem.Clear('war_sorting')]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+					        raw_text = "Amount of defenders."
+					    }
+						onclick = "[GetScriptedGui('sort_wars_defenders').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetVariableSystem.Clear('war_sorting')]"
+					}
+
+					expand = { }
+				}
+			}
+
+			vbox = {
+				using = Window_Background_No_Edge
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+				visible = "[GetVariableSystem.Exists('war_filters')]"
+				margin = { 5 5 }
+				alwaystransparent = no
+
+				button = {
+					onclick = "[GetVariableSystem.Clear('war_filters')]"
+					shortcut = close_window
+					shortcut = army_split_half
+				}
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Filter by:"
+						margin_bottom = 5
+						background = { using = Background_Area_Border_Solid }
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "Show all."
+						}
+
+						onclick = "[GetScriptedGui('filter_wars_all').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetVariableSystem.Clear('war_filters')]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+					        raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('vassal_wars')] Vassal wars."
+					    }
+						onclick = "[GetScriptedGui('filter_wars_your_realm').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetVariableSystem.Clear('war_filters')]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not(GetPlayer.IsIndependentRuler)]"
+					    blockoverride "text" {
+					        raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('realm_wars')] wars in your realm."
+					    }
+						onclick = "[GetScriptedGui('filter_wars_top_liege_realm').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetVariableSystem.Clear('war_filters')]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+					        raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('holy_wars')] Holy wars."
+					    }
+						onclick = "[GetScriptedGui('filter_wars_holy_wars').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetVariableSystem.Clear('war_filters')]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+					        raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('great_holy_wars')] Crusades."
+					    }
+						onclick = "[GetScriptedGui('filter_wars_great_holy_wars').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetVariableSystem.Clear('war_filters')]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('civil_wars')] Civil wars."
+						}
+						onclick = "[GetScriptedGui('filter_wars_civil_wars').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						onclick = "[GetVariableSystem.Clear('war_filters')]"
+					}
+
+					expand = { }
+
+				}
 			}
 		}
 	}
@@ -1125,10 +1494,10 @@ window = {
 types MilitaryView
 {
 	type hbox_event_troop_item = vbox {
+		spacing = -6
 		background = {
 			using = Background_Area
 		}
-		margin = { 5 5 }
 
 		hbox  = {
 			name = "header"
@@ -1139,25 +1508,20 @@ types MilitaryView
 			}
 
 			hbox = {
-				margin = { 5 5 }
 				layoutpolicy_horizontal = expanding
+				spacing = 2
 
-				icon = {
-					name = "event_troops"
-					texture = "gfx/interface/icons/icon_special_troops.dds"
-					size = { 36 36 }
+				button_text = {
+					blockoverride "text" {
+						raw_text = "MILITARY_VIEW_EVENT_TROOPS_RAISE"
+						align = left
+					}
+					onclick = "[OnRaiseEventTroops(MilitaryViewEventTroop.Self)]"
+					# visible = "[MilitaryViewEventTroop.CanBeRaised]"
 				}
 
-				spacer = { size = { 5 0 }}
-
-				text_single = {
-					text = "[MilitaryViewEventTroop.GetName]"
-					default_format = "#high"
-				}
-
-				expand = { }
-
-				soldiers_and_quality_small = {
+				soldiers_and_quality_small_text = {
+					margin_top = 1
 					datacontext = "[MilitaryViewEventTroop.GetComposition]"
 					blockoverride "background" {
 						background = {
@@ -1166,121 +1530,75 @@ types MilitaryView
 						}
 					}
 				}
-			}
-		}
 
-		hbox = {
-			layoutpolicy_horizontal = expanding
-
-			vbox = {
-				margin = { 5 5 }
-				layoutpolicy_horizontal = expanding
-
-				hbox = {
-					name = "menatarms"
-					layoutpolicy_horizontal = expanding
-
-					text_single = {
-						raw_text = "[men_at_arms|E]:"
-					}
-
-					text_single = {
-						text = MV_MEN_AT_ARMS_NONE
-						default_format = "#weak"
-						visible = "[IsDataModelEmpty(MilitaryViewEventTroop.GetRegiments)]"
-					}
-
-					spacer = {
-						size = { 10 5 }
-					}
-
-					hbox = {
-						name = "regiment_types"
-						datamodel = "[MilitaryViewEventTroop.GetRegiments]"
-						layoutpolicy_vertical = expanding
-						margin_top = 5
-
-						background = {
-							using = Background_Area
-							margin = { 10 2 }
-						}
-
-						item = {
-							container = {
-								highlight_icon = {
-									size = { 40 40 }
-									texture = "[Regiment.GetMAAType.GetIcon]"
-									tooltipwidget = regiment_container_tooltip
-									using = tooltip_se
-								}
-							}
-						}
-					}
-
-					expand = { }
+				text_single = {
+					raw_text = "Levies."
+					visible = "[IsDataModelEmpty(MilitaryViewEventTroop.GetRegiments)]"
 				}
 
 				text_single = {
+					raw_text = "[MilitaryViewEventTroop.GetName]."
+				}
+
+				expand = { }
+			}
+		}
+
+		vbox = {
+			margin = { 5 5 }
+			layoutpolicy_horizontal = expanding
+
+			hbox = {
+				name = "menatarms"
+				layoutpolicy_horizontal = expanding
+				hbox = {
+					name = "regiment_types"
+					datamodel = "[MilitaryViewEventTroop.GetRegiments]"
+					layoutpolicy_vertical = expanding
+					margin_left = 5
+					spacing = 3
+					item = {
+						text_single = {
+							raw_text = "[Regiment.GetMAAType.GetName], "
+						}
+					}
+				}
+
+				expand = { }
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				text_single = {
 					visible = "[Not(MilitaryViewEventTroop.IsInheritable)]"
 
-					layoutpolicy_horizontal = expanding
 					text = "MILITARY_VIEW_EVENT_TROOPS_NOT_INHERITABLE"
 				}
 
 				text_single = {
 					visible = "[MilitaryViewEventTroop.IsInheritable]"
 
-					layoutpolicy_horizontal = expanding
 					text = "MILITARY_VIEW_EVENT_TROOPS_INHERITABLE"
 				}
-
-				hbox = {
-					datacontext = "[MilitaryViewEventTroop.GetAssociatedWar]"
-					visible = "[War.IsValid]"
-
-					layoutpolicy_horizontal = expanding
-
-					text_single = {
-						visible = "[MilitaryViewEventTroop.IsInheritable]"
-						text = "MILITARY_VIEW_EVENT_TROOPS_ASSOCIATED_WAR"
-						max_width = 450
-						multiline = yes
-					}
-
-					expand = { }
-				}
+				dot = { }
+				expand = { }
 			}
 
-			vbox = {
-				layoutpolicy_vertical = growing
 
-				expand = {
-					layoutpolicy_vertical = growing
+			hbox = {
+				datacontext = "[MilitaryViewEventTroop.GetAssociatedWar]"
+				visible = "[War.IsValid]"
+
+				layoutpolicy_horizontal = expanding
+
+				text_single = {
+					visible = "[MilitaryViewEventTroop.IsInheritable]"
+					text = "MILITARY_VIEW_EVENT_TROOPS_ASSOCIATED_WAR"
+					max_width = 450
+					multiline = yes
 				}
 
-				button_standard = {
-					name = "raise"
-					size = { 100 32 }
-					onclick = "[OnRaiseEventTroops(MilitaryViewEventTroop.Self)]"
-					visible = "[MilitaryViewEventTroop.CanBeRaised]"
-					tooltip = "MILITARY_VIEW_EVENT_TROOPS_RAISE_TT"
-
-					hbox = {
-						margin = { 5 0 }
-
-						button_army_details = {
-							size = { 28 28 }
-							alwaystransparent = yes
-						}
-
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							align = center|nobaseline
-							text = "MILITARY_VIEW_EVENT_TROOPS_RAISE"
-							default_format = "#clickable"
-						}
-					}
-				}
+				expand = { }
 			}
 		}
 	}
@@ -1361,13 +1679,20 @@ types HiredTroops
 
 					hbox = {
 						layoutpolicy_horizontal = expanding
+						block "your" {
+							text_single = {
+								raw_text = "Hire"
+								margin_right = 3
+								visible = "[Or(Not(MercenaryCompany.IsHired), MercenaryCompany.IsHiredByLocalPlayer)]"
+							}
 
-						text_single = {
-							name = "cost_label"
-							raw_text = "[MercenaryCompany.GetCostDesc],"
+							text_single = {
+								name = "cost_label"
+								raw_text = "[MercenaryCompany.GetCostDesc],"
+							}
+
+							space = { }
 						}
-
-						space = { }
 
 						text_single = {
 							datacontext = "[MercenaryCompany.GetComposition]"
@@ -1377,15 +1702,9 @@ types HiredTroops
 						}
 
 						char_name_extra = {
-							layoutpolicy_horizontal = expanding
 							datacontext = "[MercenaryCompany.GetTitle.GetHolder]"
 							blockoverride "text" {
-								raw_text = "[Character.GetShortUINameNoTooltip], "
-							}
-							blockoverride "extra" {
-								text_single = {
-									raw_text = "[Character.GetSkill('martial')] Martial."
-								}
+								raw_text = "[Character.GetSkill('martial')] Martial leader."
 							}
 						}
 
@@ -1413,11 +1732,10 @@ types HiredTroops
 
 			hbox = {
 				layoutpolicy_horizontal = expanding
-				margin = { 5 0 }
-				spacing = 5
+				spacing = 3
 
 				text_single = {
-					raw_text = "Has"
+					raw_text = "View details. Has"
 				}
 
 				flowcontainer = {
@@ -1441,25 +1759,25 @@ types HiredTroops
 		}
 	}
 
-	type button_holyorder_list_item = button_standard_clean {
-		size = { 430 110 }
+	type button_holyorder_list_item = button {
+		size = { 430 45 }
 
 		background = {
 			using = Background_Area
 		}
 
-		tooltip = "HIRED_TROOPS_VIEW_LIST_HO_BUTTON_TOOLTIP"
+		# tooltip = "HIRED_TROOPS_VIEW_LIST_HO_BUTTON_TOOLTIP"
 
 		down = "[IsHolyOrderDetailViewShown(HolyOrder.Self)]"
 
-		button_standard_clean = {
+		button = {
 			visible = "[Not(GetVariableSystem.Exists( 'hired_troop_detail_view_open' ))]"
 			size = { 100% 100% }
 			enabled = "[Or(Not(HolyOrder.IsHired), Or(HolyOrder.IsHiredByLocalPlayer, HolyOrder.IsPlayerPatron))]"
 			onclick = "[OpenHolyOrderDetailView(HolyOrder.Self)]"
 		}
 
-		button_normal = {
+		button = {
 			visible = "[GetVariableSystem.Exists( 'hired_troop_detail_view_open' )]"
 			size = { 100% 100% }
 			onclick = "[PdxGuiTriggerAllAnimations('mercenary_details_refresh')]"
@@ -1472,6 +1790,7 @@ types HiredTroops
 		}
 
 		vbox = {
+			resizeparent = yes
 			margin = { 5 5 }
 
 			hbox = {
@@ -1480,115 +1799,84 @@ types HiredTroops
 				minimumsize = { 80 0 }
 				allow_outside = yes
 
-				widget = {
-					size = { 60 60 }
-					allow_outside = yes
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					block "your" {
+						text_single = {
+							raw_text = "Hire"
+							margin_right = 3
+							visible = "[Not(HolyOrder.IsHired)]"
+						}
 
-					vbox = {
-						coa_realm_small = {
-							name = "realm_flag"
-							datacontext = "[HolyOrder.GetTitle.GetHolder]"
+						text_single = {
+							raw_text = "Already hired."
+							margin_right = 3
+							visible = "[HolyOrder.IsHired]"
 						}
 					}
-				}
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
-					margin_top = 10
-					ignoreinvisible = yes
 
 					text_single = {
-						layoutpolicy_horizontal = expanding
-						text = "[HolyOrder.GetName]"
-						default_format = "#high"
+						datacontext = "[HolyOrder.GetComposition]"
+						tooltip = "[ArmyComposition.GetArmyCompositionTooltip]"
+						name = "strength"
+						raw_text = "[ArmyComposition.GetSoldierCountString] men."
 					}
 
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						visible = "[HolyOrder.IsHired]"
-						name = "hired_by_label"
-						text = "[SelectLocalization( HolyOrder.IsHiredByLocalPlayer, 'HIRED_TROOPS_VIEW_HIRED_BY_ME', 'HIRED_TROOPS_VIEW_NOT_AVAILABLE' )]"
+					char_name_extra = {
+						datacontext = "[HolyOrder.GetTitle.GetHolder]"
+						blockoverride "text" {
+							raw_text = "[Character.GetSkill('martial')] Martial leader."
+						}
 					}
 
+					space = { }
+
 					text_single = {
-						layoutpolicy_horizontal = expanding
-						visible = "[And(HolyOrder.IsHired, HolyOrder.IsPledgedToGreatHolyWar)]"
-						text = "HIRED_TROOPS_VIEW_PLEDGED_TO_GREAT_HOLY_WAR"
-						default_format = "#low"
+						raw_text = "[HolyOrder.GetName]."
+						max_width = 280
+					}
+
+					block "your" {
+						text_single = {
+							name = "cost_label"
+							raw_text = " Cost: [HolyOrder.GetCostDescForPlayer]."
+						}
 					}
 
 					expand = { }
-				}
-
-				expand = {
-					layoutpolicy_horizontal = expanding
-				}
-
-				vbox = {
-					soldiers_and_quality_small = {
-						datacontext = "[HolyOrder.GetComposition]"
-						blockoverride "background" {
-							background = {
-								using = Background_Area
-								margin = { 3 0 }
-							}
-						}
-					}
-
-					spacer = {
-						size = { 10 15 }
-					}
 				}
 			}
 
 			hbox = {
 				layoutpolicy_horizontal = expanding
-				margin = { 10 5 }
-				margin_bottom = 0
-				spacing = 5
+				spacing = 3
 
 				text_single = {
-					name = "maa_type"
-					align = left
-					raw_text = "[men_at_arms|E]:"
+					raw_text = "View details. Has"
 				}
 
-				spacer = {
-					size = { 2 2 }
-				}
-
-				overlappingitembox = {
+				flowcontainer = {
 					name = "regiment_types"
 					layoutpolicy_horizontal = expanding
-					size = { -1 35 }
-
-					background = {
-						using = Background_Area
-						margin = { 10 2 }
-					}
 
 					block "HiredTroopMenAtArmsTypesDataModel" { }
 
 					item = {
-
-						icon = {
-							datacontext = "[Regiment.GetMAAType]"
-							name = "men_at_arms_icon"
-							size = { 35 35 }
-							texture = "[MenAtArmsType.GetIcon]"
-							tooltipwidget = regiment_container_tooltip
-
+						text_single = {
+							margin_right = 5
+							raw_text = "[Regiment.GetMAAType.GetName],"
 						}
 					}
 				}
 
 				expand = { }
+			}
 
-				text_single = {
-					name = "cost_label"
-					text = "[HolyOrder.GetCostDescForPlayer]"
-				}
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				visible = "[And(HolyOrder.IsHired, HolyOrder.IsPledgedToGreatHolyWar)]"
+				text = "HIRED_TROOPS_VIEW_PLEDGED_TO_GREAT_HOLY_WAR"
+				default_format = "#low"
 			}
 		}
 	}
