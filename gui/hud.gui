@@ -23,11 +23,40 @@ widget = {
 		max_width = 300
 	}
 
-	error_horse = {
+	flowcontainer = {
 		parentanchor = bottom|left
-		position = { 610 -10 }
+		ignoreinvisible = yes
+		position = { 10 -10 }
 		visible = "[And( Not( IsPauseMenuShown ), Not(ReleaseMode) )]"
+
+		container = {
+			ignoreinvisible = yes
+			visible = "[GetVariableSystem.Exists('ocr')]"
+
+			widget = {
+				size = { 150 0 }
+			}
+
+			widget = {
+				size = { 450 0 }
+				visible = "[Or(IsLeftWindowOpen, IsBottomLeftWindowOpen)]"
+			}
+		}
+
+		container = {
+			ignoreinvisible = yes
+			visible = "[Not(GetVariableSystem.Exists('ocr'))]"
+
+			widget = {
+				size = { 630 0 }
+				visible = "[Or(IsLeftWindowOpen, IsBottomLeftWindowOpen)]"
+			}
+		}
+
+
+		error_horse = { }
 	}
+
 
 	# loaded_mods_icon = {
 	# 	parentanchor = bottom|left
@@ -1225,7 +1254,7 @@ icon = {
 		}
 
 		container = {
-			visible = "[Not(Or(IsLeftWindowOpen, IsRightWindowOpen))]"
+			visible = "[Not(Or(Or(IsLeftWindowOpen, IsRightWindowOpen), IsBottomLeftWindowOpen))]"
 			button = {
 				shortcut = speed_1
 				onclick = "[SetGameSpeed('(int32)0')]"
@@ -1324,10 +1353,11 @@ widget = {
 	layer = bottom
 	datacontext = "[GetPlayer]"
 
+
 	using = Animation_ShowHide_Quick
 
 	icon = {
-		visible = "[And(GetPlayer.IsValid, Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD')))]"
+		visible = "[And(And(GetPlayer.IsValid, Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD'))), GetVariableSystem.Exists( 'ocr'))]"
 		parentanchor = bottom|left
 		size = { 462 64 }
 		texture = "gfx/interface/skinned/hud_bg_character_bar.dds"
@@ -1401,9 +1431,10 @@ widget = {
 
 	## Bottom left CoA
 	coa_realm_medium_crown = {
-		visible = "[And(And(IsDefaultGUIMode, GetPlayer.IsRuler), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD'))))]"
+		visible = "[And(And(And(IsDefaultGUIMode, GetPlayer.IsRuler), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD'))), GetVariableSystem.Exists( 'ocr'))]"
 		visible_at_creation = no
 		parentanchor = bottom|left
+
 
 		state = {
 			name = _show
@@ -1433,11 +1464,12 @@ widget = {
 	### Lifestyle
 	flowcontainer = {
 		name = "bottom_left_bar"
-		visible = "[And( Not( IsPauseMenuShown ), And(And(IsDefaultGUIMode, GetPlayer.IsValid), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD')))))]"
+		visible = "[And(And( Not( IsPauseMenuShown ), And(And(IsDefaultGUIMode, GetPlayer.IsValid), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD')))), GetVariableSystem.Exists('ocr'))]"
 		parentanchor = bottom|left
 		position = { 66 0 }
 		ignoreinvisible = yes
 		alwaystransparent = no
+
 
 		state = {
 			name = _show
@@ -2392,11 +2424,17 @@ widget = {
 			    direction = vertical
 				ignoreinvisible = yes
 
-				button_text = {
+				button_primary_text = {
 					background = { using = Background_Area_Solid margin = { 5 3 } }
 					datacontext = "[GetPlayer]"
 					blockoverride "text" {
 						text = "RAISE_ALL"
+					}
+					blockoverride "disabled" {
+						visible = "[Not(PlayerCanRaiseAnyRallyPoint)]"
+					}
+					blockoverride "hotkey" {
+						visible = "[PlayerCanRaiseAnyRallyPoint]"
 					}
 					blockoverride "dot_nb" { }
 					visible = "[And( Character.IsAtWar, Not(Character.HasRaisedRegiments)))]"
@@ -2404,11 +2442,13 @@ widget = {
 
 					enabled = "[PlayerCanRaiseAnyRallyPoint]"
 					onclick = "[PlayerRaiseAllRegiments]"
+					onclick = "[OpenGameView('outliner')]"
 					clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_raise_army"
 
 					onclick = "[PdxGuiTriggerAllAnimations('button_army')]"
 
 					tooltip = "[GetPlayerRaiseAllTooltip]"
+					shortcut = confirm
 				}
 
 				button_text = {
@@ -2420,6 +2460,7 @@ widget = {
 					blockoverride "dot_nb" { }
 					visible = "[And( Character.IsAtWar, Not(Character.HasRaisedRegiments)))]"
 					visible_at_creation = no
+					onclick = "[OpenGameView('outliner')]"
 
 					enabled = "[PlayerCanRaiseAnyRallyPoint]"
 					onclick = "[PlayerRaiseAllRegiments]"
@@ -2440,6 +2481,7 @@ widget = {
 				enabled = "[PlayerCanDisbandAll]"
 				clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_unit_army_disband"
 				datacontext = "[GetPlayer]"
+				onclick = "[CloseGameView('outliner')]"
 
 				blockoverride "text" {
 					text = "DISBAND_ALL"
@@ -2520,6 +2562,7 @@ widget = {
 				flowcontainer = {
 					name = "raids_by_me"
 					datamodel = "[GetPlayer.GetRaidTargets]"
+					direction = vertical
 
 					item = {
 						button_text = {

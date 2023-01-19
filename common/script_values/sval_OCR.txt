@@ -25,16 +25,19 @@ ruler_direction_svalue = {
 	value = 0
 
 	if = {
+		#east
 		limit = {
 			x_difference > difference_margin_ruler
 		}
 		add = 3
+		# north-west, y2 is high enough
 		if = {
 			limit = {
 				y_difference > difference_margin_ruler
 			}
 			subtract = 1
 		}
+		# south-west if y2 is low enough
 		else_if = {
 			limit = {
 				y_difference < difference_margin_ruler_reverse
@@ -43,16 +46,19 @@ ruler_direction_svalue = {
 		}
 	}
 	else_if = {
+		# west
 		limit = {
 			x_difference < difference_margin_ruler_reverse
 		}
 		add = 7
+		# north-west
 		if = {
 			limit = {
 				y_difference > difference_margin_ruler
 			}
 			add = 1
 		}
+		# south-west
 		else_if = {
 			limit = {
 				y_difference < difference_margin_ruler_reverse
@@ -61,12 +67,14 @@ ruler_direction_svalue = {
 		}
 	}
 	else = {
+		# north
 		if = {
 			limit = {
 				y_difference > difference_margin_ruler
 			}
 			add = 1
 		}
+		# south
 		else_if = {
 			limit = {
 				y_difference < difference_margin_ruler_reverse
@@ -81,13 +89,35 @@ x_difference = {
 	value = var:pos_x
 	subtract = scope:origin.var:pos_x
 }
+x_difference_abs = {
+	value = x_difference
+	abs = yes
+}
+
+margin_factor = 0.2
+
+x_difference_margin = {
+	value = x_difference
+	abs = yes
+	multiply = margin_factor
+}
 
 y_difference = {
 	value = var:pos_y
 	subtract = scope:origin.var:pos_y
 }
+y_difference_abs = {
+	value = y_difference
+	abs = yes
+}
+y_difference_margin = {
+	value = y_difference
+	abs = yes
+	multiply = margin_factor
+}
 
 difference_margin = 10
+
 difference_margin_reverse = {
 	value = difference_margin
 	multiply = -1
@@ -97,51 +127,70 @@ direction_svalue_temp = {
 	value = 0
 
 	if = {
+		# east
 		limit = {
-			x_difference > difference_margin
+			x_difference > 0
+			x_difference_abs > y_difference_margin
 		}
 		add = 3
+		# north-east
 		if = {
 			limit = {
-				y_difference > difference_margin
+				# we check direction first
+				y_difference > 0
+				# we make sure the difference is big enough to warrant adding a second direction
+				# we compare to the other pair and increase the margin the further out we go
+				y_difference_abs > x_difference_margin
 			}
 			subtract = 1
 		}
+		# south-west
 		else_if = {
 			limit = {
-				y_difference < difference_margin_reverse
+				y_difference < 0
+				y_difference_abs > x_difference_margin
 			}
 			add = 1
 		}
 	}
+	# west
 	else_if = {
 		limit = {
-			x_difference < difference_margin_reverse
+			x_difference < 0
+			x_difference_abs > y_difference_margin
 		}
 		add = 7
+		# north-west
 		if = {
 			limit = {
-				y_difference > difference_margin
+				y_difference > 0
+				y_difference_abs > x_difference_margin
 			}
 			add = 1
 		}
+		# south-west
 		else_if = {
 			limit = {
-				y_difference < difference_margin_reverse
+				y_difference < -1
+				y_difference_abs > x_difference_margin
 			}
 			subtract = 1
 		}
 	}
 	else = {
+		# north
 		if = {
 			limit = {
-				y_difference > difference_margin
+				y_difference > 0
+				y_difference_abs > x_difference_margin
 			}
 			add = 1
 		}
+		# south
 		else_if = {
 			limit = {
-				y_difference < difference_margin_reverse
+				y_difference < 0
+				y_difference_abs > x_difference_margin
 			}
 			add = 5
 		}
@@ -318,6 +367,79 @@ distance_to_player = {
     }
 }
 
+distance_to_army = {
+    if = {
+        limit = {
+			any_player = {
+				exists = var:army_position
+				var:army_position = {
+					root = {
+						save_temporary_trigger_breakpoint_as = {
+							TRIGGER = rf_distance_to_prev_province
+							NAME = tmp
+						}
+					}
+				}
+			}
+        }
+        add = scope:tmp
+		divide = 1000
+		# multiply = 0.77
+    }
+}
+
+distance_to_army_target = {
+    if = {
+        limit = {
+			save_temporary_trigger_breakpoint_as = {
+				TRIGGER = rf_distance_to_army_province
+				NAME = tmp
+			}
+        }
+        add = scope:tmp
+		divide = 1000
+		# multiply = 0.77
+    }
+}
+
+distance_to_army_or_capital = {
+	if = {
+		limit = {
+			scope:player = {
+				exists = var:selected_army
+			}
+		}
+		if = {
+	        limit = {
+				save_temporary_trigger_breakpoint_as = {
+					TRIGGER = rf_distance_to_army_var
+					NAME = tmp
+				}
+	        }
+	        add = scope:tmp
+			divide = 1000
+			# multiply = 0.77
+	    }
+	}
+	else = {
+		if = {
+			limit = {
+				scope:player = {
+					capital_barony = {
+						save_temporary_scope_as = capital
+					}
+				}
+				save_temporary_trigger_breakpoint_as = {
+					TRIGGER = rf_distance_to_player
+					NAME = tmp
+				}
+			}
+			add = scope:tmp
+			divide = 1000
+		}
+	}
+}
+
 direction_from_capital = {
 	value = 0
 
@@ -325,6 +447,22 @@ direction_from_capital = {
 		limit = {
 			any_player = {
 				capital_province = {
+					save_temporary_scope_as = origin
+				}
+			}
+		}
+		add = direction_svalue
+	}
+}
+
+direction_from_army = {
+	value = 0
+
+	if = {
+		limit = {
+			any_player = {
+				exists = var:army_position
+				var:army_position = {
 					save_temporary_scope_as = origin
 				}
 			}
@@ -627,5 +765,61 @@ test_value = {
 	}
 	else = {
 		value = 2
+	}
+	# save_temporary_scope_value_as = me
+	# if = {
+	# 	limit = { scope:me = 1 }
+	# 	add = 3
+	# }
+}
+
+building_levies_sval = {
+	value = building_levies
+}
+
+
+current_military_strength_sval = {
+	value = current_military_strength
+}
+
+holding_order = {
+	value = 0
+	if = {
+		limit = {
+			is_county_capital = yes
+		}
+		add = 10
+	}
+	if = {
+		limit = {
+			has_holding = no
+		}
+		subtract = 10
+	}
+	else_if = {
+		limit = {
+			has_holding_type = castle_holding
+		}
+		add = 10
+	}
+	else_if = {
+		limit = {
+			has_holding_type = city_holding
+		}
+		add = 9
+	}
+	else_if = {
+		limit = {
+			has_holding_type = church_holding
+		}
+		add = 8
+	}
+	else_if = {
+		limit = {
+			has_holding_type = church_holding
+		}
+		add = 7
+	}
+	else = {
 	}
 }

@@ -18,6 +18,7 @@ window = {
 		using = Animation_FadeIn_Quick
 		using = Sound_WindowShow_Standard
 		using = Window_Position_MainTab
+		on_start = "[PdxGuiTriggerAllAnimations('refresh_holdings')]"
 	}
 
 	state = {
@@ -34,6 +35,15 @@ window = {
 		trigger_when = "[GetVariableSystem.Exists( 'hide_right_windows' )]"
 	}
 
+	widget = {
+		visible = "[And(GetVariableSystem.HasValue('realm_tabs', 'holdings'), IsDataModelEmpty(GetPlayer.MakeScope.GetList('special_buildings'))))]"
+
+		state = {
+			name = refresh_holdings
+			on_start = "[GetScriptedGui('special_buildings_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		}
+	}
+
 
 	margin_widget = {
 		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
@@ -47,6 +57,7 @@ window = {
 			### WINDOW CONTENT
 			vbox = {
 				using = Window_Margins
+				margin_bottom = 30
 
 				button_close = {
 					onclick = "[MyRealmWindow.Close]"
@@ -57,8 +68,18 @@ window = {
 				vbox = {
 					layoutpolicy_horizontal = expanding
 					#margin_bottom = 5
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('special_buildings'))] special [Select_CString(GetPlayer.MakeScope.Var('empty_sp_slots').IsSet, 'slots', 'buildings')] in the world, refresh list, Shift E."
+						}
+						shortcut = map_mode_11
+						onclick = "[GetScriptedGui('special_buildings_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						visible = "[GetVariableSystem.HasValue('realm_tabs', 'holdings')]"
+					}
 
 					hbox = {
+						visible = "[Not(GetVariableSystem.HasValue('realm_tabs', 'holdings'))]"
 						layoutpolicy_horizontal = expanding
 						# spacing = 20
 
@@ -92,6 +113,7 @@ window = {
 
 					vbox = {
 						layoutpolicy_horizontal = expanding
+						visible = "[Not(GetVariableSystem.HasValue('realm_tabs', 'holdings'))]"
 						# margin_top = 10
 
 						hbox = {
@@ -238,6 +260,27 @@ window = {
 							align = left
 					    }
 						shortcut = speed_3
+					}
+
+					button_text = {
+						# onclick = "[MyRealmWindow.ShowSuccession]"
+						onclick = "[GetVariableSystem.Set('realm_tabs', 'holdings')]"
+						onclick = "[GetScriptedGui('special_buildings_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						blockoverride "extra" {
+							text_single = {
+								raw_text = " tab 4"
+							}
+							text_single = {
+								raw_text = ", selected"
+								visible = "[GetVariableSystem.HasValue('realm_tabs', 'holdings')]"
+							}
+							dot = { }
+						}
+					    blockoverride "text" {
+					        raw_text = "Special buildings"
+							align = left
+					    }
+						shortcut = speed_4
 					}
 				}
 
@@ -1186,13 +1229,14 @@ window = {
 									name = "line_of_succession_box"
 									layoutpolicy_horizontal = expanding
 									spacing = 0
+									direction = vertical
 									margin_right = 10
 
 									datamodel = "[MyRealmWindow.GetLineOfSuccession]"
 
 									item = {
-										portrait_head = {
-											name = "heir_portrait"
+										char_name = {
+
 										}
 									}
 								}
@@ -1499,6 +1543,176 @@ window = {
 							vassal_contract_not_default_icon = { }
 						}
 					}
+				}
+
+				# special
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					visible = "[GetVariableSystem.HasValue('realm_tabs', 'holdings')]"
+
+					# button_text = {
+					# 	layoutpolicy_horizontal = expanding
+					# 	blockoverride "text" {
+					# 		raw_text = "Sorted by [GetPlayer.MakeScope.Var('sort_sp_buildings').GetFlagName]. Change, hotkey T."
+					# 	}
+					# 	shortcut = map_mode_2
+					# 	onclick = "[GetVariableSystem.Set('sp_sorting', 'yes')]"
+					# }
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						button_text = {
+							blockoverride "text" {
+							}
+							blockoverride "extra" {
+								text_single = {
+									raw_text = "[Select_CString(ScriptedGui.IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ), 'Sorted by distance, sort by tax', 'Sorted by tax, sort by distance')], hotkey T."
+								}
+							}
+							onclick = "[GetScriptedGui('sort_sp_tax').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							onclick = "[GetScriptedGui('special_buildings_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							# onclick = "[GetVariableSystem.Clear('sp_sorting')]"
+							datacontext = "[GetScriptedGui('sort_sp_tax')]"
+							shortcut = map_mode_2
+						}
+
+						button_text = {
+						    blockoverride "text" {
+						        raw_text = "[Select_CString(GetPlayer.MakeScope.Var('empty_sp_slots').IsSet, 'Show special buildings', 'Show empty special slots')] , hotkey E."
+								align = left
+						    }
+							shortcut = map_mode_1
+							onclick = "[GetScriptedGui('filter_sp_slots').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							onclick = "[GetScriptedGui('special_buildings_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						}
+
+						expand = { }
+					}
+
+					widget = {
+						size = { 0 5 }
+					}
+
+					scrollbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						blockoverride "scrollbox_margins" {
+							margin_top = 20
+						}
+
+						blockoverride "scrollbox_content" {
+							fixedgridbox = {
+								datamodel = "[GetPlayer.MakeScope.GetList('special_buildings')]"
+
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+
+								addrow = 25
+								addcolumn = 600
+
+								item = {
+									button_text = {
+										datacontext = "[Scope.GetProvince]"
+										onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.Province.GetId))]"
+										onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+
+										blockoverride "text" {
+										}
+
+										blockoverride "extra" {
+											text_single = {
+												max_width = 300
+												alwaystransparent = yes
+												raw_text = "[Localize(AddTextIf(Province.MakeScope.Var('special_building').IsSet, Concatenate( 'building_', Province.MakeScope.Var('special_building').GetFlagName)))]"
+												raw_tooltip = "[Localize(AddTextIf(Province.MakeScope.Var('special_building').IsSet, Concatenate( Concatenate( 'building_', Province.MakeScope.Var('special_building').GetFlagName), '_desc')))]"
+												tooltip_enabled = "[Not(IsGameViewOpen('holding_view'))]"
+											}
+
+											text_single = {
+												raw_text = "[AddTextIf(Not(Province.MakeScope.Var('special_building').IsSet), 'Empty slot')]"
+											}
+
+											text_single = {
+												raw_text = ", in [Province.GetNameNoTooltip]"
+											}
+
+											text_single = {
+												raw_text = ". Tax [Province.GetHolding.GetIncome|1=]"
+												tooltip = "[Province.GetHolding.GetTaxTooltip]"
+
+											}
+											text_single = {
+												raw_text = ", levies [Province.GetHolding.GetMaxLevySize|0]."
+												tooltip = "[Province.GetHolding.GetLeviesTooltip]"
+												# [GuiScope.SetRoot(Province.MakeScope).ScriptValue('building_levies')]
+											}
+
+											# text_single = {
+											# 	raw_text = "[Province.GetTitle.GetDeFactoTopLiege.GetNameNoTierNoTooltip]."
+											# }
+
+											# char_name_extra = {
+											# 	datacontext = "[Province.GetTitle.GetDeFactoTopLiege.GetHolder]"
+											# 	blockoverride "pre" {
+											# 		text_single = {
+											# 			raw_text = "Owner: "
+											# 		}
+											# 	}
+											#
+											# }
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			# sp sorting
+			vbox = {
+				using = Window_Background_No_Edge
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+				visible = no# "[GetVariableSystem.Exists('sp_sorting')]"
+				margin = { 5 0 }
+				alwaystransparent = no
+
+				button = {
+					onclick = "[GetVariableSystem.Clear('sp_sorting')]"
+					shortcut = close_window
+					shortcut = map_mode_2
+				}
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Sort buildings by:"
+						margin_bottom = 5
+						background = { using = Background_Area_Border_Solid }
+					}
+
+
+					# button_text = {
+					# 	layoutpolicy_horizontal = expanding
+					# 	blockoverride "text" {
+					# 		raw_text = "Levies."
+					# 	}
+					# 	onclick = "[GetScriptedGui('sort_sp_levies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					# 	onclick = "[GetScriptedGui('special_buildings_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					# 	onclick = "[GetVariableSystem.Clear('sp_sorting')]"
+					# }
+
+
+
+					expand = { }
 				}
 			}
 		}
