@@ -106,6 +106,65 @@ types OCRTypes {
 					using = Background_Area_Dark
 					margin_left = 3
 				}
+				# #
+				# text_single = {
+				# 	layoutpolicy_horizontal = expanding
+				# 	raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('height_value')]"
+				# }
+
+				# text_single = {
+				# 	layoutpolicy_horizontal = expanding
+				# 	raw_text = "teet"
+				# 	visible = "[GreaterThan_float(Character.CalcMorphGeneAttribute('gene_bs_nose_size', 'bs_nose_size_max'), '(float)0')]"
+				# }
+
+				# datacontext = "[GetIllustration( 'character_view_bg' )]"
+
+				widget = {
+					size = { 600 900 }
+					visible = no
+
+					portrait_button = {
+						size = { 700 900 }
+						using = portrait_base
+						position = { -400 0 }
+
+						portrait_texture = "[Character.GetAnimatedPortrait('environment_council', 'camera_main_menu_main', 'idle', PdxGetWidgetScreenSize(PdxGuiWidget.Self))]"
+						mask = "gfx/portraits/portrait_mask_council.dds"
+						effectname = "NoHighlight"
+
+						block "mask" {
+							mask = "gfx/portraits/portrait_mask_council.dds"
+						}
+
+						text_single = {
+							parentanchor = right
+							position = { -200 0 }
+							raw_text = "[Multiply_float( Add_float( Character.CalcMorphGeneAttribute('gene_height', 'body_height'), '(float)1' ), FixedPointToFloat(GuiScope.SetRoot(Character.MakeScope).ScriptValue('sex_height')) )|0],"
+						}
+					}
+
+					portrait_button = {
+						visible = "[Character.IsValid]"
+						position = { -200 0 }
+						datacontext = "[CharacterWindow.GetCharacter.GetPrimarySpouse]"
+						size = { 700 900 }
+						using = portrait_base
+
+						portrait_texture = "[Character.GetAnimatedPortrait('environment_council', 'camera_main_menu_main', 'idle', PdxGetWidgetScreenSize(PdxGuiWidget.Self))]"
+						mask = "gfx/portraits/portrait_mask_council.dds"
+						effectname = "NoHighlight"
+
+						block "mask" {
+							mask = "gfx/portraits/portrait_mask_council.dds"
+						}
+
+						text_single = {
+							parentanchor = hcenter
+							raw_text = "[Multiply_float( Add_float( Character.CalcMorphGeneAttribute('gene_height', 'body_height'), '(float)1' ), FixedPointToFloat(GuiScope.SetRoot(Character.MakeScope).ScriptValue('sex_height')) )|0],"
+						}
+					}
+				}
 
 				#name
 				hbox = {
@@ -129,7 +188,7 @@ types OCRTypes {
 						# raw_tooltip = "Click to pan camera. Right-click to open interactions."
 						button_ignore = none
 						using = tooltip_ne
-						onclick = "[DefaultOnCharacterClick(Character.GetID)]"
+						onclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
 						onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
 
 						flowcontainer = {
@@ -147,6 +206,7 @@ types OCRTypes {
 								name = "character_name"
 								raw_text = "[Character.GetTitledFirstNameNicknamedNoTooltipRegnal]." #Character.GetNameNicknamedNoTooltipRegnal
 								#GetUINameNotMeNoTooltip
+								# GetTitledFirstNameNicknamedNoTooltipRegnal
 								max_width = 370
 								fontsize_min = 14
 							}
@@ -162,7 +222,13 @@ types OCRTypes {
 					text_single = {
 						raw_text = "[Character.Custom('character_health')] health."
 						visible = "[Not(Character.IsDeadAndValid)]"
-						tooltip = "[Character.GetHealthInfo]"
+
+						tooltipwidget = {
+							health_tooltip = { }
+						}
+
+
+						# tooltip = "[Character.GetHealthInfo]"
 					}
 
 					button = {
@@ -201,7 +267,7 @@ types OCRTypes {
 					text_single = {
 						margin_left = 5
 						raw_text = "[Character.GetDebugTooltip]."
-						position = { 135 -21 }
+						position = { 145 -21 }
 					}
 
 					visible = "[InDebugMode]"
@@ -316,6 +382,47 @@ types OCRTypes {
 							alwaystransparent = yes
 						}
 						tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+						expand = { }
+					}
+
+					# status
+					hbox = {
+						visible = "[Character.IsValid]"
+						spacing = 3
+						layoutpolicy_horizontal = expanding
+
+						button_text = {
+						    blockoverride "text" {
+								raw_text = "Unmarried."
+								align = left
+						    }
+							visible = "[Not(Character.GetPrimarySpouseOrBetrothed.IsValid)]"
+							onclick = "[Character.OpenPlayerInteraction('marry_off_interaction')]"
+							onclick = "[CharacterWindow.Close]"
+							enabled = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
+						}
+
+						button = {
+							name = "marry_off_button"
+							layoutpolicy_horizontal = expanding
+							# visible = "[And(And( Not( ObjectsEqual( GetPlayer, Character.Self ) ), CharacterWindow.ShouldShowFindSpouse ), Not(Character.IsConcubine))]"
+							visible = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
+
+							onclick = "[Character.OpenPlayerInteraction('marry_off_interaction')]"
+							onclick = "[CharacterWindow.Close]"
+							tooltip = "CHARACTER_WINDOW_FIND_SPOUSE"
+							# enabled = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
+							size = { 0 22 }
+
+							raw_text = "Click to find Spouse."
+							align = left
+							default_format = "#high"
+						}
+
+						text_single = {
+							raw_text = "No heir."
+							visible = "[And(Not(Character.GetPrimaryTitle.GetHeir.IsValid), Character.HasLandedTitles)]"
+						}
 						expand = { }
 					}
 
@@ -457,6 +564,8 @@ types OCRTypes {
 									widget = {
 										size = { 100% 100% }
 										tooltip = "SKILL_ITEM_TOOLTIP"
+
+										block_tooltip = { }
 									}
 								}
 							}
@@ -472,32 +581,97 @@ types OCRTypes {
 						expand = { }
 					}
 
-					# Traits
-					vbox = {
+
+					hbox = {
 						layoutpolicy_horizontal = expanding
 
 						hbox = {
-							layoutpolicy_horizontal = expanding
+							datamodel = "[CharacterWindow.GetPersonalityTraits]"
+							# layoutpolicy_horizontal = expanding
+							spacing = 3
 
-							hbox = {
-								datamodel = "[CharacterWindow.GetPersonalityTraits]"
-								# layoutpolicy_horizontal = expanding
-								spacing = 3
+							text_single = {
+								raw_text = "Personality:"
+							}
 
+							item = {
 								text_single = {
-									raw_text = "Personality:"
-								}
-
-								item = {
-									text_single = {
-										# layoutpolicy_horizontal = expanding
-										datacontext = "[Character.GetFaith]"
-										raw_text = "[Trait.GetName(Character.Self)][AddTextIf(Faith.IsTraitVirtue( Trait.Self ), ' (virtue)')][AddTextIf(Faith.IsTraitSin( Trait.Self ), ' (sin)')]."
-									}
+									# layoutpolicy_horizontal = expanding
+									datacontext = "[Character.GetFaith]"
+									raw_text = "[Trait.GetName(Character.Self)][AddTextIf(Faith.IsTraitVirtue( Trait.Self ), ' (virtue)')][AddTextIf(Faith.IsTraitSin( Trait.Self ), ' (sin)')]."
 								}
 							}
-							expand = { }
 						}
+						expand = { }
+					}
+
+
+					#faith
+					flowcontainer = {
+						direction = vertical
+						layoutpolicy_horizontal = expanding
+
+						button_text = {
+							blockoverride "pre" {
+								text_single = {
+									raw_text = "Faith:"
+									margin_right = 3
+								}
+							}
+						    blockoverride "text" {
+								tooltipwidget = { faith_tooltip_click = { } }
+								raw_text = "[Faith.GetName], Hotkey F."
+								align = left
+						    }
+							datacontext = "[Character.GetFaith]"
+							shortcut = army_split_half
+							onclick = "[DefaultOnFaithClick(Faith.GetID)]"
+						}
+
+						button_text = {
+							datacontext = "[Character.GetCulture]"
+							blockoverride "pre" {
+								text_single = {
+									raw_text = "Culture:"
+									margin_right = 3
+								}
+							}
+						    blockoverride "text" {
+								raw_text = "[Culture.GetName]"
+								align = left
+								tooltipwidget = {
+									culture_tooltip_click = { }
+								}
+						    }
+							visible = "[IsGameViewOpen('character_finder')]"
+							onclick = "[DefaultOnCultureClick(Culture.GetID)]"
+						}
+
+
+						button_text = {
+							datacontext = "[Character.GetCulture]"
+							blockoverride "pre" {
+								text_single = {
+									raw_text = "Culture:"
+									margin_right = 3
+								}
+							}
+						    blockoverride "text" {
+								raw_text = "[Culture.GetName], hotkey C."
+								align = left
+								tooltipwidget = {
+									culture_tooltip_click = { }
+								}
+						    }
+							visible = "[Not(IsGameViewOpen('character_finder'))]"
+							shortcut = character_finder
+							onclick = "[DefaultOnCultureClick(Culture.GetID)]"
+						}
+					}
+
+					# Traits
+					vbox = {
+						layoutpolicy_horizontal = expanding
 
 
 						text_single = {
@@ -526,49 +700,6 @@ types OCRTypes {
 						}
 					}
 
-					#faith
-					flowcontainer = {
-						spacing = 3
-						layoutpolicy_horizontal = expanding
-						button = {
-							datacontext = "[Character.GetFaith]"
-							# layoutpolicy_horizontal = expanding
-							size = { 0 25 }
-							onclick = "[DefaultOnFaithClick(Faith.GetID)]"
-							shortcut = army_split_half
-
-							text_single = {
-								raw_text = "Faith: [Faith.GetName], Hotkey F."
-								resizeparent = yes
-								default_format = "#high"
-								margin_left = 0
-								align = left
-							}
-
-							tooltipwidget = { faith_tooltip_click = { } }
-						}
-
-						button = {
-							datacontext = "[Character.GetCulture]"
-							# layoutpolicy_horizontal = expanding
-							size = { 0 25 }
-							onclick = "[DefaultOnCultureClick(Culture.GetID)]"
-							shortcut = character_finder
-
-
-							text_single = {
-								raw_text = "Culture: [Culture.GetName], hotkey C."
-								resizeparent = yes
-								margin_left = 0
-								align = left
-								default_format = "#high"
-							}
-
-							tooltipwidget = {
-								culture_tooltip_click = { }
-							}
-						}
-					}
 
 					# spouse, liege, heir
 					vbox = {
@@ -590,7 +721,7 @@ types OCRTypes {
 
 									char_name = {
 										blockoverride "text" {
-											raw_text = "[AddTextIf(CharacterWindow.GetSpouse.IsDeadAndValid, 'Dead ')][CharacterWindow.GetSpouseText]: [Character.GetNameNoTooltip]."
+											raw_text = "[AddTextIf(CharacterWindow.GetSpouse.IsDeadAndValid, 'Dead ')]Spouse: [Character.GetNameNoTooltip]."
 											alwaystransparent = yes
 											max_width = 550
 										}
@@ -770,7 +901,7 @@ types OCRTypes {
 
 							char_name = {
 								blockoverride "text" {
-									raw_text = "[player_heir|E]: [Character.GetNameNoTooltip]."
+									raw_text = "Player heir: [Character.GetNameNoTooltip]."
 									max_width = 450
 								}
 							}
@@ -808,38 +939,6 @@ types OCRTypes {
 							}
 							expand = { }
 						}
-					}
-
-					# status
-					hbox = {
-						visible = "[Character.IsValid]"
-						spacing = 3
-						layoutpolicy_horizontal = expanding
-						text_single = {
-							raw_text = "Unmarried."
-							visible = "[Not(Character.GetPrimarySpouseOrBetrothed.IsValid)]"
-						}
-						button = {
-							name = "marry_off_button"
-							layoutpolicy_horizontal = expanding
-							# visible = "[And(And( Not( ObjectsEqual( GetPlayer, Character.Self ) ), CharacterWindow.ShouldShowFindSpouse ), Not(Character.IsConcubine))]"
-							visible = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
-
-							onclick = "[Character.OpenPlayerInteraction('marry_off_interaction')]"
-							onclick = "[CharacterWindow.Close]"
-							tooltip = "CHARACTER_WINDOW_FIND_SPOUSE"
-							# enabled = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
-							size = { 0 22 }
-
-							raw_text = "Click to find Spouse."
-							align = left
-							default_format = "#high"
-						}
-						text_single = {
-							raw_text = "No heir."
-							visible = "[And(Not(Character.GetPrimaryTitle.GetHeir.IsValid), Character.HasLandedTitles)]"
-						}
-						expand = { }
 					}
 
 					# house
@@ -1055,7 +1154,7 @@ types OCRTypes {
 
 						button = {
 							visible = "[And(Or( Character.IsLocalPlayer, Or( Character.HasArtifacts, Character.HasAnyArtifactClaims ) ), Character.IsAlive)]"
-							enabled = "[Or(  Or( Character.IsLocalPlayer, Character.HasArtifacts), Character.HasAnyArtifactClaims )]"
+							# enabled = "[Or(  Or( Character.IsLocalPlayer, Character.HasArtifacts), Character.HasAnyArtifactClaims )]"
 							onclick = "[ToggleGameViewData( 'inventory', Character.GetID )]"
 							onclick = "[CloseGameView('character')]"
 
@@ -1127,9 +1226,14 @@ types OCRTypes {
 						ignoreinvisible = yes
 
 						text_single = {
-							raw_text = "Stress level: [Character.GetStressLevel]."
+							raw_text = "Stress level: [Character.GetStressLevel],"
 							visible = "[And(Not(Character.IsDeadAndValid), GreaterThan_int32(Character.GetStress, '(int32)0'))]"
 							tooltip = "[Character.GetHealthInfo]"
+						}
+
+						text_single = {
+							visible = "[And(Not(Character.IsDeadAndValid), GreaterThan_int32(Character.GetStress, '(int32)0'))]"
+							raw_text = "[GetPlayer.GetStressProgress]% to next level."
 						}
 
 						text_single = {
@@ -1334,7 +1438,7 @@ types OCRTypes {
 					button_text = {
 						blockoverride "text" {
 							raw_text = "[Select_CString(GetVariableSystem.Exists('show_diplo_descriptions'), 'Hide', 'Show')] detailed descriptions."
-							align = left
+							# align = left
 						}
 						onclick = "[GetVariableSystem.Toggle('show_diplo_descriptions')]"
 						visible = "[GetVariableSystem.HasValue('expand_view', 'diplomacy')]"
@@ -3088,6 +3192,48 @@ types OCRTypes {
 
 		expand = { }
 	}
+
+	type health_tooltip = flowcontainer {
+		margin = { 15 10 }
+		using = DefaultTooltipBackground
+		ignoreinvisible = yes
+		direction = vertical
+
+		 text_single = {
+			raw_text = "[Character.GetHealthInfo]."
+		 }
+
+		 physical_appearance = { }
+	}
+
+	type physical_appearance = flowcontainer {
+		direction = vertical
+		ignoreinvisible = yes
+
+		flowcontainer = {
+			spacing = 3
+			text_single = {
+				raw_text = "Height, [Multiply_float( Add_float( Character.CalcMorphGeneAttribute('gene_height', 'body_height'), '(float)1' ), FixedPointToFloat(GuiScope.SetRoot(Character.MakeScope).ScriptValue('sex_height')) )|0] centimeters"
+			}
+
+			text_single = {
+				raw_text = "or [Multiply_float( Add_float( Character.CalcMorphGeneAttribute('gene_height', 'body_height'), '(float)1' ), FixedPointToFloat(GuiScope.SetRoot(Character.MakeScope).ScriptValue('height_feet')) )|1] feet,"
+			}
+
+			# text_single = {
+			# 	raw_text = "[Add_float(Character.CalcMorphGeneAttribute('gene_height', 'body_height'), '(float)1')|0%]."
+			# }
+		}
+
+		 text_single = {
+			raw_text = "Weight, [Character.GetCurrentWeight|=]% [Select_CString(GreaterThan_int32(Character.GetCurrentWeight, '(int32)0'), 'above', 'below')] average."
+		 }
+
+		 text_single = {
+			 visible = "[And(Character.IsFemale, Character.IsAdult)]"
+			 raw_text = "Breast size, [Multiply_float(Character.CalcMorphGeneAttribute('gene_bs_bust', 'bs_body_breast_size_2_max'), '(float)2')|0%]."
+		 }
+	 }
 
 	type vbox_character_row_item_ocr = vbox {
 		# spacing = -3

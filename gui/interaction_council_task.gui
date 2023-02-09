@@ -1,0 +1,285 @@
+window = {
+	name = "council_task_interaction_window"
+	size = { 650 875 }
+	datacontext = "[CouncilTaskInteractionWindow.GetCharacterInteractionConfirmationWindow]"
+	parentanchor = center
+	layer = middle
+
+	using = Window_Movable
+	using = Window_Background
+	using = Window_Decoration_Spike
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+	}
+
+	vbox = {
+		using = Window_Margins
+
+
+		hbox = {
+			margin_bottom = -10
+			layoutpolicy_horizontal = expanding
+
+			header_pattern_interaction = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "select_council_task_header"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[CouncilTaskInteractionWindow.Close]"
+				}
+
+				icon_character_interaction = {}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+
+			hbox = {
+				name = "portraits"
+				layoutpolicy_horizontal = expanding
+				size = { 0 160 }
+				margin = { 25 5 }
+				margin_top = 10
+
+				background = {
+					texture = "gfx/interface/illustrations/event_scenes/councilchamber.dds"
+					alpha = 0.5
+					fittype = centercrop
+					using = Mask_Rough_Edges
+				}
+
+				### LEFT ACTOR
+				portrait_shoulders = {
+					name = "left_background_portrait"
+					datacontext = "[CharacterInteractionConfirmationWindow.GetActor]"
+					visible = "[Character.IsValid]"
+					tooltip_enabled = "[Character.IsValid]"
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					size = { 330 160 }
+
+					expand = {}
+
+					text_multi = {
+						name = "select_position_label"
+						visible = "[Not( CouncilTaskInteractionWindow.HasSelectedTask )]"
+						layoutpolicy_horizontal = expanding
+						text = "COUNCIL_TASK_INTERACTION_WINDOW_SELECT_TASK"
+						autoresize = yes
+						max_width = 260
+						default_format = "#instruction"
+						align = center|nobaseline
+
+						background = {
+							using = Text_Label_Background
+							margin = { 0 3 }
+							margin_bottom = 5
+						}
+					}
+
+					text_multi = {
+						name = "selected_position_label"
+						visible = "[CouncilTaskInteractionWindow.HasSelectedTask]"
+						layoutpolicy_horizontal = expanding
+						autoresize = yes
+						max_width = 260
+						align = center|nobaseline
+						text = "COUNCIL_TASK_INTERACTION_WINDOW_SELECTED_TASK"
+
+						background = {
+							using = Text_Label_Background
+							margin = { 0 3 }
+							margin_bottom = 5
+						}
+					}
+				}
+
+				### RIGHT RECIPIENT
+				portrait_shoulders = {
+					name = "right_background_portrait"
+					datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+					visible = "[Character.IsValid]"
+					tooltip_enabled = "[Character.IsValid]"
+
+					blockoverride "portrait_transformation"
+					{
+						portrait_scale = { -1 1 }
+						portrait_offset = { 1 0 }
+					}
+				}
+			}
+		}
+
+		scrollbox = {
+			name = "council_positions"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			blockoverride "scrollbox_content" {
+				vbox = {
+					margin = { 10 0 }
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					vbox = {
+						datamodel = "[CouncilTaskInteractionWindow.AccessPositions]"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						ignoreinvisible = yes
+						spacing = 2
+						item = {
+							select_council_position_button = {}
+						}
+					}
+				}
+			}
+		}
+
+		divider = {
+			layoutpolicy_horizontal = expanding
+		}
+
+		hbox = {
+			margin = { 0 10 }
+			margin_bottom = 15
+
+			### SEND OFFER BUTTON
+			button_primary = {
+				name = "send_offer_button"
+				size = { 400 42 }
+				onclick = "[CouncilTaskInteractionWindow.Send]"
+				enabled = "[CouncilTaskInteractionWindow.CanSendOffer]"
+
+				text = "[CharacterInteractionConfirmationWindow.GetSendName]"
+				using = Font_Size_Medium
+
+				tooltip = "[CouncilTaskInteractionWindow.GetSendOfferTooltip]"
+			}
+		}
+	}
+}
+
+types CouncilPositionButton
+{
+	type select_council_position_button = button_standard_clean {
+		layoutpolicy_horizontal = expanding
+		datacontext = "[CouncilTaskInteractionItem.GetActiveCouncilTask]"
+		datacontext = "[ActiveCouncilTask.GetPositionType]"
+		datacontext = "[ActiveCouncilTask.GetCouncillor]"
+		datacontext = "[CouncilTaskInteractionWindow.GetSkillItemForPosition( CouncilPositionType.Self )]"
+
+
+		enabled = "[Not( ObjectsEqual( Character.Self, GetPlayer ) )]"
+		onclick = "[CouncilTaskInteractionItem.Select]"
+		down = "[ObjectsEqual( ActiveCouncilTask.Self, CouncilTaskInteractionWindow.GetSelectedTask )]"
+
+		vbox = {
+			name = "position"
+			margin = { 10 4 }
+			spacing = 4
+			set_parent_size_to_minimum = yes
+
+			spacer = {
+				size = {510 0 }
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 4
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+
+					text_single = {
+						name = "position_label"
+						text = "[ActiveCouncilTask.GetPositionName]"
+						using = Font_Size_Medium
+						align = nobaseline
+
+						background = {
+							name = "skill_icon_bg"
+							texture = "gfx/interface/window_character/character_view_skills_bg.dds"
+							framesize = { 70 26 }
+							spriteType = CorneredTiled
+							spriteborder = { 40 20 }
+							margin = { 12 3 }
+							margin_right = 100
+
+							block "bg"
+							{
+								frame = "[SkillItem.GetFrame]"
+							}
+
+							modify_texture = {
+								name = "mask"
+								texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
+								blend_mode = alphamultiply
+								mirror = horizontal
+							}
+						}
+					}
+
+					expand = {}
+
+					skill_icon_label = {
+						datacontext = "[CouncilTaskInteractionWindow.GetSkillItemForPosition( CouncilPositionType.Self )]"
+						visible = "[ActiveCouncilTask.HasMainSkill]"
+					}
+				}
+
+				text_single = {
+					name = "no_councillor"
+					visible = "[Not( Character.IsValid )]"
+					layoutpolicy_horizontal = expanding
+					text = "COUNCIL_TASK_INTERACTION_VACANT"
+				}
+				text_single = {
+					name = "current"
+					visible = "[And( Character.IsValid, Not( ObjectsEqual( GetPlayer, Character.Self ) ) )]"
+					layoutpolicy_horizontal = expanding
+					text = "COUNCIL_TASK_INTERACTION_CURRENT"
+					align = nobaseline
+				}
+
+				text_single = {
+					name = "current_you"
+					visible = "[ObjectsEqual( GetPlayer, Character.Self )]"
+					layoutpolicy_horizontal = expanding
+					text = "COUNCIL_TASK_INTERACTION_CURRENT_YOU"
+				}
+			}
+
+			divider_light = {
+				layoutpolicy_horizontal = growing
+			}
+
+			text_multi = {
+				text = "[CouncilPositionType.GetCouncillorModifierDescFor( GetPlayer )]"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				autoresize = yes
+				margin = { 0 5 }
+				margin_left = 20
+			}
+		}
+	}
+}

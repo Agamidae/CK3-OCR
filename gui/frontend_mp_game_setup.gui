@@ -1,0 +1,566 @@
+window = {
+	name = "mainmenu_mp_game_setup"
+	size = { 100% 100% }
+
+	movable = no
+
+	proportional_icon = {
+		parentanchor = center
+		size = { 100% 100% }
+		texture = "[GetRandomFrontendIllustration]"
+	}
+
+	state = {
+		name = _show
+		on_start = "[GetVariableSystem.Set( 'mp_host_tabs', 'game_setup'  )]"
+		on_start = "[GetVariableSystem.Clear('load_game_mp')]"
+
+		using = Animation_FadeIn_Standard
+		using = Sound_WindowShow_Standard
+	}
+
+	state = {
+		name = _hide
+		on_start = "[GetVariableSystem.Clear( 'tabs_open' )]"
+
+		using = Animation_FadeOut_Standard
+		using = Sound_WindowHide_Standard
+	}
+
+	vbox = {
+		layoutpolicy_horizontal = expanding
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			### BOOKMARKS
+
+			widget = {
+				size = { 650 0 }
+				layoutpolicy_vertical = expanding
+				using = Window_Background_Sidebar_Multiplayer_Left
+				background = {
+					using = Background_Area_Dark
+					margin_top = 5
+					margin_bottom = 5
+					margin_right = 5
+
+					modify_texture = {
+						blend_mode = alphamultiply
+						alpha = 0.8
+						mirror = vertical
+						texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
+					}
+				}
+
+				vbox = {
+					margin = { 10 10 }
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						margin = { 10 10 }
+
+						visible = "[Not(GetVariableSystem.Exists('game_info'))]"
+
+						#### CHARACTER #####
+						vbox = {
+							visible = "[GameMpSetup.IsSaveGameSelected]"
+							datacontext = "[GameMpSetup.GetSelectedSaveGame]"
+							layoutpolicy_horizontal = expanding
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "Selected save:"
+							}
+
+							vbox_save_preview = {
+								layoutpolicy_horizontal = expanding
+								minimumsize = { 600 0 }
+								blockoverride "controls" {
+									visible = no
+								}
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Not(GetVariableSystem.Exists('load_game_mp'))]"
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[Localize('FRONTEND_MP_GAME_SETUP_GAME_SETTINGS')]."
+								visible = "[Not(GameMpSetup.IsSaveGameSelected)]"
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								visible = "[GameMpSetup.IsSaveGameSelected]"
+								raw_text = "Or start a new game, by selecting a date:"
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Not(GameMpSetup.IsSaveGameSelected)]"
+								text = "Select starting date:"
+							}
+						}
+
+						scrollbox = {
+							visible = "[Not(GetVariableSystem.Exists('load_game_mp'))]"
+							name = "bookmarks"
+							minimumsize = { 600 0 }
+							maximumsize = { 600 600 }
+							autoresizescrollarea = yes
+							layoutpolicy_horizontal = expanding
+
+							background = {
+								using = Background_Area
+							}
+
+							blockoverride "scrollbox_content" {
+								vbox = {
+									name = "bookmarks_list"
+									datamodel = "[GameMpSetup.GetBookmarkItems]"
+									layoutpolicy_horizontal = expanding
+
+									item = {
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "[MpBookmarkItem.GetDate.GetStringLong]"
+											}
+											blockoverride "extra" {
+												text_single = {
+													raw_text = ", selected"
+													visible = "[MpBookmarkItem.IsSelected]"
+													align = nobaseline
+												}
+											}
+											blockoverride "dot_nb" {
+
+											}
+											onclick = "[MpBookmarkItem.Select]"
+											onclick = "[PdxGuiTriggerAllAnimations('loadsave_refresh')]"
+										}
+									}
+								}
+							}
+						}
+
+						# button_text = {
+						#     blockoverride "text" {
+						#         raw_text = "View date description"
+						#     }
+						# }
+						#
+						# text_multi = {
+						# 	raw_text = "[GameMpSetup.GetBookmarkDescription]"
+						# }
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "Or click here to load a save game."
+							}
+							visible = "[And(Not(GetVariableSystem.Exists('load_game_mp')), Not(GameMpSetup.IsSaveGameSelected))]"
+							onclick = "[GetVariableSystem.Toggle('load_game_mp')]"
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "[GetDataModelSize(GameMpSetup.GetSaveGames)] saves:"
+							visible = "[GetVariableSystem.Exists('load_game_mp')]"
+						}
+
+						scrollbox = {
+							visible = "[GetVariableSystem.Exists('load_game_mp')]"
+							name = "saved_games"
+							minimumsize = { 600 50% }
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = growing
+
+							background = {
+								using = Background_Area
+							}
+
+							blockoverride "scrollbox_content"
+							{
+								vbox = {
+									datamodel = "[GameMpSetup.GetSaveGames]"
+									spacing = 3
+
+									item = {
+										button_saved_games = {
+											size = { 370 70 }
+											onclick = "[GetVariableSystem.Clear('load_game_mp')]"
+
+											blockoverride "max_width_savegame" {
+												max_width = 305
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+					vbox = {
+						visible = "[Not(GetVariableSystem.Exists('game_info'))]"
+						layoutpolicy_horizontal = expanding
+						spacing = 5
+						margin = { 0 10 }
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "[Localize('JOMINI_MULTIPLAYER_GUI_VISIBILITY')]."
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							tooltip = JOMINI_MULTIPLAYER_GUI_PRIVATE_TT
+							blockoverride "text" {
+								raw_text = "JOMINI_MULTIPLAYER_GUI_PRIVATE"
+								align = left
+							}
+							blockoverride "extra" {
+								text_single = {
+									visible = "[GameMpSetup.IsInvite]"
+									raw_text = ", Selected"
+								}
+								dot = { }
+							}
+							onclick = "[GameMpSetup.SetVisibilityInvite]"
+						}
+
+						button_text = {
+							visible = "[JominiMultiplayerIsCrossplayFilterAvailable]"
+							tooltip = "MULTIPLAYER_GUI_PUBLIC_MICROSOFT_ONLY_TT"
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "MULTIPLAYER_GUI_PUBLIC_MICROSOFT_ONLY"
+								align = left
+							}
+							blockoverride "extra" {
+								text_single = {
+									raw_text = ", Selected"
+									visible = "[GameMpSetup.IsPublicNoCrossplay]"
+								}
+								dot = { }
+							}
+							onclick = "[GameMpSetup.SetVisibilityPublicNoCrossplay]"
+						}
+
+						button_text = {
+							tooltip = "JOMINI_MULTIPLAYER_GUI_PUBLIC_TT"
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "JOMINI_MULTIPLAYER_GUI_PUBLIC"
+								align = left
+							}
+							blockoverride "extra" {
+								text_single = {
+									raw_text = ", Selected"
+									visible = "[GameMpSetup.IsPublicCrossplay]"
+								}
+								dot = { }
+							}
+							onclick = "[GameMpSetup.SetVisibilityPublicCrossplay]"
+							enabled = "[Or(Not(JominiMultiplayerIsCrossplayFilterAvailable), JominiMultiplayerIsCrossplayEnabled)]"
+						}
+
+					}
+
+					vbox = {
+						visible = "[Not(GetVariableSystem.Exists('game_info'))]"
+						layoutpolicy_horizontal = expanding
+						spacing = 5
+
+						background = {
+							using = Background_Area_With_Header
+							margin_left = 15
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							margin_right = 15
+							spacing = 15
+
+							editbox_standard_with_label = {
+								layoutpolicy_horizontal = expanding
+
+								blockoverride "editbox_label"
+								{
+									raw_text = "[Localize('JOMINI_MULTIPLAYER_GUI_SERVER_NAME')], 64 characters max,"
+									layoutpolicy_horizontal = expanding
+								}
+
+								blockoverride "editbox_properties"
+								{
+								    name = "game_name" # widget name is referenced in code, please no duplicates in this window
+								    text = "[GetDefaultServerName]"
+								    maxcharacters = 64
+								    # tooltip = "FRONTEND_MP_SERVER_NAME_TOOLTIP"
+								}
+							}
+
+							editbox_standard_with_label = {
+								layoutpolicy_horizontal = expanding
+
+								blockoverride "editbox_label"
+								{
+									raw_text = "[Localize('JOMINI_MULTIPLAYER_GUI_SERVER_PASSWORD')], optional,"
+									layoutpolicy_horizontal = expanding
+								}
+
+								blockoverride "editbox_properties"
+								{
+								    name = "game_password" # widget name is referenced in code, please no duplicates in this window
+								    maxcharacters = 64
+								    tooltip = "FRONTEND_MP_SERVER_PASSWORD_TOOLTIP"
+									ontextedited = "[PdxGuiWidget.FindChild('pass').Hide]"
+
+									text_single = {
+										margin_left = 5
+										raw_text = "Enter password here."
+										name = pass
+									}
+								}
+							}
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "pre" {
+								text_single = {
+									raw_text = "Disabled"
+									margin_right = 3
+									visible = "[Not(GameMpSetup.IsAutoAccept)]"
+								}
+							}
+							blockoverride "text" {
+								raw_text = "JOMINI_MULTIPLAYER_GUI_AUTO_ACCEPT"
+								align = left
+							}
+							blockoverride "extra" {
+								text_single = {
+									raw_text = ", Enabled"
+									visible = "[GameMpSetup.IsAutoAccept]"
+								}
+								dot = { }
+							}
+							onclick = "[GameMpSetup.ToggleAutoAccept]"
+							tooltip = "JOMINI_MULTIPLAYER_GUI_AUTO_ACCEPT_TT"
+						}
+
+						button = {
+							shortcut = "close_window"
+							onclick = "[GameMpSetup.OnBack]"
+						}
+					}
+
+					vbox = {
+						name = "tab_game_info"
+						visible = "[GetVariableSystem.Exists('game_info')]"
+						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
+						margin = { 10 10 }
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							minimumsize = { 600 0 }
+							margin_left = 10
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								margin = { 0 5 }
+
+								text_single = {
+									raw_text = "[Localize('FRONTEND_MP_GAME_SETUP_VERSION')]."
+									align = left
+									layoutpolicy_horizontal = expanding
+									max_width = 600
+								}
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								margin = { 0 5 }
+
+								text_single = {
+									raw_text = "[Localize('JOMINI_MULTIPLAYER_GUI_CHECKSUM')]."
+									align = left
+									layoutpolicy_horizontal = expanding
+								}
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							minimumsize = { 600 0 }
+
+							hbox = {
+							    layoutpolicy_horizontal = expanding
+
+							    text_single = {
+							    	raw_text = "[GetDataModelSize(GameMpSetup.GetEnabledDLCs)]"
+							    }
+								space = { }
+								text_single = {
+									text = "JOMINI_MULTIPLAYER_GUI_ENABLED_DLCS"
+								}
+								dot = { }
+							    expand = { }
+							}
+
+							scrollbox = {
+								autoresizescrollarea = yes
+								maximumsize = { 600 600 }
+								layoutpolicy_horizontal = expanding
+
+								blockoverride "scrollbox_content" {
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										datamodel = "[GameMpSetup.GetEnabledDLCs]"
+										visible = "[DataModelHasItems( GameMpSetup.GetEnabledDLCs )]"
+
+										item = {
+											text_single = {
+												layoutpolicy_horizontal = expanding
+												raw_text = "[CString.GetString],"
+											}
+										}
+									}
+								}
+
+								blockoverride "scrollbox_empty"
+								{
+									visible = "[IsDataModelEmpty( GameMpSetup.GetEnabledDLCs )]"
+									text = "JOMINI_MULTIPLAYER_GUI_NO_DLCS"
+								}
+
+								blockoverride "scrollbox_expand"
+								{
+									expand = {
+										layoutpolicy_vertical = growing
+										visible = "[DataModelHasItems( GameMpSetup.GetEnabledDLCs )]"
+									}
+								}
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							hbox = {
+							    layoutpolicy_horizontal = expanding
+
+							    text_single = {
+							    	raw_text = "[GetDataModelSize(GameMpSetup.GetEnabledMods)]"
+							    }
+								space = { }
+								text_single = {
+									text = "JOMINI_MULTIPLAYER_GUI_ENABLED_MODS"
+								}
+								dot = { }
+							    expand = { }
+							}
+
+							scrollbox = {
+								autoresizescrollarea = yes
+								maximumsize = { 600 600 }
+								layoutpolicy_horizontal = expanding
+
+								blockoverride "scrollbox_content" {
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										datamodel = "[GameMpSetup.GetEnabledMods]"
+										visible = "[DataModelHasItems( GameMpSetup.GetEnabledMods )]"
+
+										item = {
+											text_single = {
+												layoutpolicy_horizontal = expanding
+												raw_text = "[CString.GetString],"
+											}
+										}
+									}
+								}
+
+								blockoverride "scrollbox_empty"
+								{
+									visible = "[IsDataModelEmpty( GameMpSetup.GetEnabledMods )]"
+									text = "JOMINI_MULTIPLAYER_GUI_NO_MODS"
+								}
+							}
+						}
+
+						text_single = {
+							visible = "[Not(GameMpSetup.IsSaveGameSelected)]"
+							raw_text = "Starting date description:"
+							layoutpolicy_horizontal = expanding
+						}
+
+						text_multi = {
+							visible = "[Not(GameMpSetup.IsSaveGameSelected)]"
+							autoresize = yes
+							max_width = 600
+							margin_right = 50
+							raw_text = "[GameMpSetup.GetBookmarkDescription]"
+						}
+
+						expand = { }
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+					        raw_text = "[Select_CString(GetVariableSystem.Exists('game_info'), 'Close', 'View')] game info, hotkey E."
+					    }
+						onclick = "[GetVariableSystem.Toggle('game_info')]"
+						shortcut = map_mode_1
+					}
+
+					button = {
+						shortcut = close_window
+						onclick = "[GetVariableSystem.Clear('game_info')]"
+						visible = "[GetVariableSystem.Exists('game_info')]"
+					}
+
+					expand = { }
+
+					button_primary_text = {
+						layoutpolicy_horizontal = expanding
+						name = "start_button"
+						blockoverride "text" {
+							text = "JOMINI_MULTIPLAYER_GUI_SERVER_BROWSER_HOST_BUTTON"
+						}
+						blockoverride "disabled" {
+							visible = "[Not(GameMpSetup.CanStart)]"
+						}
+						onclick = "[GameMpSetup.OnStart]"
+						enabled = "[GameMpSetup.CanStart]"
+						tooltip = "[GameMpSetup.StartTooltip]"
+						oversound = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
+
+						state = {
+							name = _mouse_press
+							start_sound = {
+								soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_press"
+							}
+						}
+
+						state = {
+							name = _mouse_release
+							start_sound = {
+								soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_start_game"
+							}
+						}
+					}
+				}
+			}
+
+			expand = { }
+		}
+	}
+}

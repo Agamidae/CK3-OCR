@@ -25,6 +25,7 @@ window = {
 		on_start = "[HoldingView.PanToCountyCapital]"
 		on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 		on_start = "[GetScriptedGui('county_holding_list').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
+		on_start = "[GetScriptedGui('find_closest').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 	}
 
 
@@ -35,6 +36,8 @@ window = {
 		on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 		on_start = "[DefaultOnCoatOfArmsRightClick(HoldingView.GetProvince.GetCoATitle.GetID)]"
 		on_start = "[GetScriptedGui('county_holding_list').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
+		on_start = "[GetScriptedGui('find_closest').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+
 		# on_start = "[GetScriptedGui('county_controller').Execute( GuiScope.SetRoot( HoldingView.GetProvince.MakeScope ).End )]"
 
 		using = Animation_FadeIn_Standard
@@ -48,6 +51,8 @@ window = {
 		trigger_on_create = yes
 		on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 		on_start = "[GetScriptedGui('county_holding_list').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
+		on_start = "[GetScriptedGui('find_closest').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+
 	}
 
 	state = {
@@ -194,7 +199,7 @@ window = {
 						layoutpolicy_horizontal = expanding
 						blockoverride "text" {
 							align = left
-							raw_text = "Occupied by: [Character.GetNameOrMeNoTooltip]."
+							raw_text = "Occupied by [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
 						}
 						using = char_click
 					}
@@ -291,20 +296,28 @@ window = {
 					}
 
 					button_text = {
+					    blockoverride "text" {
+					        raw_text = "Go to your closest county,"
+							align = left
+					    }
+						datacontext = "[HoldingView.GetProvince.MakeScope.Var('closest_county').Title]"
+						blockoverride "extra" {
+							text_single = {
+								raw_text = " [Title.GetNameNoTierNoTooltip], Shift E."
+								visible = "[HoldingView.GetProvince.MakeScope.Var('closest_county').IsSet]"
+							}
+						}
+						using = prov_click
+						visible = "[Not(Or(ObjectsEqual( Character.Self, GetPlayer ),Character.IsOtherLiegeOrAbove( GetPlayer )))]"
+						shortcut = map_mode_11
+					}
+
+					button_text = {
 						onclick = "[DefaultOnCoatOfArmsClick(HoldingView.GetCountyTitle.GetID)]"
 						blockoverride "text" {
 							raw_text = "Open title window."
 							align = left
 						}
-					}
-
-					button_text = {
-						onclick = "[DefaultOnCoatOfArmsRightClick(HoldingView.GetProvince.GetCoATitle.GetID)]"
-						blockoverride "text" {
-							raw_text = "Pan camera, Shift Q."
-							align = left
-						}
-						shortcut = map_mode_9
 					}
 
 					expand = { }
@@ -337,6 +350,15 @@ window = {
 
 			text_single = {
 				raw_text = "Coordinates: X [HoldingView.GetProvince.MakeScope.Var('pos_x').GetValue|0], Y [HoldingView.GetProvince.MakeScope.Var('pos_y').GetValue|0]."
+			}
+
+			button_text = {
+				onclick = "[DefaultOnCoatOfArmsRightClick(HoldingView.GetProvince.GetCoATitle.GetID)]"
+				blockoverride "text" {
+					raw_text = "Pan camera, Shift Q."
+					align = left
+				}
+				shortcut = map_mode_9
 			}
 
 			expand = { }
@@ -2485,7 +2507,7 @@ window = {
 	movable = yes
 	layer = top
 	parentanchor = bottom|hcenter
-	position = { 40 -50 } #40
+	position = { 40 0 } #40
 	using = Animation_ShowHide_Quick
 	using = TooltipFocus
 
@@ -2514,72 +2536,76 @@ window = {
 
 		building_in_vassal_warning_hbox = { }
 
-		vbox = {
+		flowcontainer = {
 			name = "holding_types"
 			datamodel = "[HoldingView.GetHoldingTypeItems]"
 			layoutpolicy_horizontal = expanding
+			ignoreinvisible = yes
+			direction = vertical
 			spacing = 5
+			margin_left = 5
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+			    blockoverride "text" {
+			        raw_text = "[Select_CString(GetVariableSystem.Exists('hide_holding_desc'), 'Hide', 'Show')] descriptions, Shift D."
+			    }
+				shortcut = mapmode_house_secondary
+				onclick = "[GetVariableSystem.Toggle('hide_holding_desc')]"
+			}
 			# margin = { 10 10 }
 
 			item = {
 				button_standard = {
-					size = { 250 148 }
+					size = { 600 148 }
 					enabled = "[HoldingTypeItem.CanConstructBuilding]"
 					onclick = "[HoldingTypeItem.OnClick]"
-					# tooltip = "[HoldingTypeItem.GetTooltip]"
 					datacontext = "[HoldingTypeItem.GetProvince]"
 
-					# widget = {
-					# 	scissor = yes
-					# 	size = { 247 146 }
-					#
-					# 	icon = {
-					# 		visible = "[HoldingTypeItem.CanConstructBuilding]"
-					# 		size = { 320 146 }
-					# 		texture = "[HoldingTypeItem.GetBuilding.GetIllustration(Province.Self)]"
-					# 		using = Mask_Rough_Edges
-					# 		alpha = 0.7
-					# 	}
-					#
-					# 	highlight_icon = {
-					# 		visible = "[Not(HoldingTypeItem.CanConstructBuilding)]"
-					# 		size = { 320 146 }
-					# 		texture = "[HoldingTypeItem.GetBuilding.GetIllustration(Province.Self)]"
-					# 		effectname = "GreyedOut"
-					# 		tintcolor = { 0.6 0.6 0.6 1 }
-					# 		using = Mask_Rough_Edges
-					# 	}
-					# }
-
 					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+						resizeparent = yes
 						margin = { 10 5 }
 						spacing = 5
-						ignoreinvisible = yes
-						resizeparent = yes
-						direction = vertical
-						# layoutpolicy_horizontal = expanding
 
-						text_multi = {
-							raw_text = "[HoldingTypeItem.GetTooltip]."
-							max_width = 400
-							min_width = 400
-							autoresize = yes
+						button_text_cant = {
+							tooltip = "[HoldingTypeItem.GetTooltip]"
 							alwaystransparent = yes
+
+						    blockoverride "text" {
+								raw_text = "Build [HoldingTypeItem.GetHoldingType.GetName]."
+						    }
+							blockoverride "disabled" {
+								visible = "[Not(HoldingTypeItem.CanConstructBuilding)]"
+							}
+							visible = "[Not(GetVariableSystem.Exists('hide_holding_desc'))]"
 						}
 
-						# text_single = {
-						# 	raw_text = "[AddTextIf(Not(HoldingTypeItem.CanConstructBuilding), 'Disabled. ')]Construct [HoldingTypeItem.GetHoldingType.GetName]."
-						# }
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							visible = "[GetVariableSystem.Exists('hide_holding_desc')]"
+							# layoutpolicy_horizontal = expanding
 
-						text_multi = {
-							name = "wrong_type"
-							max_width = 400
-							min_width = 400
-							autoresize = yes
-							visible = "[Not(HoldingTypeItem.IsValidForPlayer)]"
-							size = { 35 35 }
-							raw_text = "HOLDING_SELECTION_VIEW_WRONG_HOLDING_TYPE"
-							alwaystransparent = yes
+							text_multi = {
+								raw_text = "[HoldingTypeItem.GetTooltip]."
+								max_width = 700
+								min_width = 700
+								autoresize = yes
+								alwaystransparent = yes
+							}
+
+							text_multi = {
+								name = "wrong_type"
+								max_width = 700
+								min_width = 700
+								autoresize = yes
+								visible = "[Not(HoldingTypeItem.IsValidForPlayer)]"
+								size = { 35 35 }
+								raw_text = "HOLDING_SELECTION_VIEW_WRONG_HOLDING_TYPE"
+								alwaystransparent = yes
+							}
 						}
 					}
 				}

@@ -1,0 +1,191 @@
+######################################################
+#################### GRANT TITLES ####################
+######################################################
+window = {
+	name = "revoke_titles_interaction_window"
+	datacontext = "[RevokeTitlesInteractionWindow.GetCharacterInteractionConfirmationWindow]"
+	parentanchor = top|right
+	position = { 0 0 }
+	size = { 630 100% }
+	movable = no
+	layer = windows_layer
+
+	using = Window_Background_No_Edge
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+		on_start = "[GetVariableSystem.Clear('other_effects')]"
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+	}
+
+	vbox = {
+		margin_bottom = 30
+		layoutpolicy_vertical = expanding
+		button = {
+			onclick = "[RevokeTitlesInteractionWindow.Close]"
+			shortcut = close_window
+		}
+
+		char_name_extra = {
+			layoutpolicy_horizontal = expanding
+			datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+			blockoverride "pre" {
+				text_single = {
+					raw_text = "[Localize('revoke_title')] from"
+				}
+			}
+		}
+
+		text_single = {
+			margin_left = 3
+			layoutpolicy_horizontal = expanding
+			datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+			raw_text = "[Character.GetHerHis|U] opinion of you is [Character.GetOpinionOf( GetPlayer )]."
+			tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+		}
+
+		button_text = {
+			layoutpolicy_horizontal = expanding
+		    blockoverride "text" {
+		        raw_text = "Show selection and hide other effects, hotkey Tab."
+		    }
+			onclick = "[GetVariableSystem.Toggle('other_effects')]"
+			visible = "[GetVariableSystem.Exists('other_effects')]"
+			shortcut = action_list
+		}
+
+		scrollbox = {
+			visible = "[Not(GetVariableSystem.Exists('other_effects'))]"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			size = { -1 200 }
+			blockoverride "scrollbox_margins" {
+				margin_top = 20
+			}
+			# maximumsize = { -1 200 }
+			blockoverride "scrollbox_content"
+			{
+				vbox_list_interaction_title_selection = {
+					layoutpolicy_horizontal = expanding
+				}
+
+				blockoverride "extra_title_items" {
+					text_single = {
+						raw_text = "Wrong type for you!"
+						tooltip = "GRANT_REVOKE_VIEW_WRONG_HOLDING_TYPE"
+						visible = "[Not( Title.HoldingCanBeHeldBy( GetPlayer ) )]"
+					}
+				}
+			}
+		}
+
+		vbox = {
+			margin_left = 15 # to avoid accidental tooltips
+			spacing = 3
+			layoutpolicy_horizontal = expanding
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				tooltip = "[RevokeTitlesInteractionWindow.GetDomainLimitTooltip]"
+				using = tooltip_se
+
+				spacing = 3
+
+				text_single = {
+					raw_text = "Warning,"
+					visible = "[GreaterThan_int32(RevokeTitlesInteractionWindow.GetResultingDomainSize,CharacterInteractionConfirmationWindow.GetActor.GetDomainLimit)]"
+				}
+
+				### Effects on Domain Limit
+				text_single = {
+					name = "domain_limit_label"
+					text = "GRANT_REVOKE_TITLES_NEW_DOMAIN_LABEL"
+				}
+
+				text_single = {
+					name = "domain_limit_result"
+					raw_text = "[RevokeTitlesInteractionWindow.GetResultingDomainSize] out of [CharacterInteractionConfirmationWindow.GetActor.GetDomainLimit]."
+
+				}
+
+				expand = { }
+			}
+
+			vbox_interaction_options = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			hbox_character_interaction_acceptance = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			text_multi_on_decline_summary = {
+				max_width = 600
+			}
+
+			### SEND OFFER BUTTON
+			button_primary_text = {
+				layoutpolicy_horizontal = expanding
+				name = "send_offer_button"
+				enabled = "[RevokeTitlesInteractionWindow.CanSendOffer]"
+				onclick = "[RevokeTitlesInteractionWindow.Send]"
+				tooltip = "[RevokeTitlesInteractionWindow.GetSendOfferTooltip]"
+				blockoverride "text" {
+					raw_text = "[CharacterInteractionConfirmationWindow.GetSendName]"
+				}
+				blockoverride "disabled" {
+					visible = "[Not(RevokeTitlesInteractionWindow.CanSendOffer)]"
+				}
+				blockoverride "hotkey" {
+					visible = "[RevokeTitlesInteractionWindow.CanSendOffer]"
+				}
+			}
+		}
+
+		widget = {
+			size = { 0 5 }
+		}
+
+		### Other Effects
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = growing
+			name = "other_effects_list"
+			### label
+			button_text = {
+				layoutpolicy_horizontal = expanding
+			    blockoverride "text" {
+			        raw_text = "View other effects and hide selection, hotkey Tab."
+			    }
+				onclick = "[GetVariableSystem.Toggle('other_effects')]"
+				visible = "[Not(GetVariableSystem.Exists('other_effects'))]"
+				shortcut = action_list
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				visible = "[GetVariableSystem.Exists('other_effects')]"
+
+				### List
+				vbox_character_interaction_effects_simple = {
+					datacontext = "[CharacterInteractionConfirmationWindow.GetEffectsDescription]"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					blockoverride "width" {
+						max_width = 600
+					}
+				}
+			}
+		}
+
+		# expand = { }
+	}
+}

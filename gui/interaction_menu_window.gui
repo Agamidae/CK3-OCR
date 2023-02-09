@@ -10,11 +10,7 @@ window = {
 	layer = top
 	allow_outside = yes
 
-	background = {
-		using = Background_Area_Solid
-		margin = { 1920 1080 }
-		visible = "[Not(GetVariableSystem.Exists('window_focus'))]"
-	}
+	using = TooltipFocus
 	#
 	# button = {
 	# 	size = { 0 0 }
@@ -23,7 +19,7 @@ window = {
 	# }
 	state = {
 		name = _show
-		on_start = "[CloseGameView(AddTextIf(Not(GetVariableSystem.Exists('close_char')), 'character'))]"
+		on_start = "[CloseGameView(AddTextIf(GetScriptedGui('close_interactions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ), 'character'))]"
 	}
 
 	using = Animation_ShowHide_Quick
@@ -45,7 +41,7 @@ window = {
 			alwaystransparent = no
 			direction = vertical
 			ignoreinvisible = yes
-			min_width = 400
+			min_width = 500
 			margin_bottom = 10
 
 			background = {
@@ -61,12 +57,12 @@ window = {
 					blend_mode = overlay
 				}
 			}
+			datacontext = "[CharacterInteractionMenuWindow.GetCharacter]"
 
 			widget = {
 				datacontext = "[CharacterInteractionMenuWindow.GetCharacter]"
 				size = { 100% 25 }
 				name = "character_info"
-
 
 				hbox = {
 					margin = { 10 0 }
@@ -98,7 +94,6 @@ window = {
 					}
 
 					expand = { }
-
 				}
 			}
 
@@ -111,79 +106,43 @@ window = {
 				onclick = "[GetVariableSystem.Toggle('enabled_x')]"
 			}
 
-			widget = {
-				datacontext = "[CharacterInteractionMenuWindow.GetCharacter]"
-				size = { 100% 28 }
-				hbox = {
-					margin = { 10 0 }
-					layoutpolicy_horizontal = expanding
-					datacontext = "[CharacterInteractionMenuWindow.GetCharacter]"
+			flowcontainer = {
+				margin = { 10 0 }
+				ignoreinvisible = yes
+				direction = vertical
 
-					button_text = {
-						blockoverride "text" {
-							raw_text = "[AddTextIf(Character.IsPinned, 'Un')]pin [Select_CString(Character.IsPinned, 'from', 'to')] the outliner."
-						}
-						name = "button_pin"
-						# visible = "[Not(Character.IsPinned)]"
-						onclick = "[Character.ToggleCharacterPinned]"
-						size = { 25 25 }
-
-						# tooltip = "PIN_TT"
-						using = tooltip_se
+				button_text = {
+					blockoverride "text" {
+						raw_text = "[AddTextIf(Character.IsPinned, 'Un')]pin [Select_CString(Character.IsPinned, 'from', 'to')] the outliner."
 					}
+					name = "button_pin"
+					# visible = "[Not(Character.IsPinned)]"
+					onclick = "[Character.ToggleCharacterPinned]"
 
-					# button_barbershop = {
-					# 	name = "customize_portrait"
-					# 	visible = "[Character.CanCustomizePortrait]"
-					# 	onclick = "[Character.OnCustomizePortrait]"
-					# 	onclick = "[CharacterInteractionMenuWindow.Close]"
-					# 	size = { 25 25 }
-					#
-					# 	tooltip = "CV_CUSTOMIZE_PORTRAIT"
-					# 	using = tooltip_ne
-					# }
+					# tooltip = "PIN_TT"
+					using = tooltip_se
+				}
 
-					button_text = {
-						blockoverride "text" {
-							raw_text = "Rename."
-						}
-						name = "button_rename"
-						datacontext = "[GetScriptedGui( 'rename_character_after_birth' )]"
-						visible = "[Character.CanCharacterBeRenamed]"
-						onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'child', Character.MakeScope ).End  )]"
-						size = { 25 25 }
-
-						tooltip = "RENAME_CHARACTER"
-						using = tooltip_ne
+				button_text = {
+					blockoverride "text" {
+						raw_text = "Rename."
 					}
+					name = "button_rename"
+					datacontext = "[GetScriptedGui( 'rename_character_after_birth' )]"
+					visible = "[Character.CanCharacterBeRenamed]"
+					onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'child', Character.MakeScope ).End  )]"
 
-					# button_text = {
-					# 	blockoverride "text" {
-					# 		raw_text = "Go to location: [AddTextIf(Character.HasLocation, Character.GetCurrentLocation.GetNameNoTooltip)]."
-					# 	}
-					# 	name = "button_go_to_my_location"
-					# 	onclick = "[CharacterInteractionMenuWindow.GoToCharacter]"
-					# 	size = { 25 25 }
-					#
-					# 	tooltip = "GOTO_CHARACTER"
-					# 	using = tooltip_ne
-					# }
-
-					expand = { }
+					tooltip = "RENAME_CHARACTER"
+					using = tooltip_ne
 				}
 			}
 
-			widget = {
-				size = { 317 40 }
-				visible = [CharacterInteractionMenuWindow.OutsideDiplomaticRange]
+			text_single = {
+				visible = "[CharacterInteractionMenuWindow.OutsideDiplomaticRange]"
 				tooltip = OUT_OF_DIPLOMACY_RANGE_TOOLTIP
-
-				text_label_center = {
-					name = "label"
-					parentanchor = center
-					position = { 0 3 }
-					text = OUT_OF_DIPLOMACY_RANGE
-				}
+				name = "label"
+				text = OUT_OF_DIPLOMACY_RANGE
+				margin_left = 10
 			}
 
 			dynamicgridbox = {
@@ -193,6 +152,41 @@ window = {
 				item = {
 					flowcontainer_category_group = { }
 				}
+			}
+
+			button_text = {
+				name = "customize_portrait"
+				blockoverride "text" {
+					margin_left = 10
+					raw_text = "Open barbershop."
+				}
+				# visible = "[Character.CanCustomizePortrait]"
+				onclick = "[Character.OnCustomizePortrait]"
+				onclick = "[CharacterInteractionMenuWindow.Close]"
+				using = tooltip_ne
+			}
+
+			button_text = {
+				visible = "[GetPlayer.IsValid]"
+
+				blockoverride "text" {
+					margin_left = 10
+					raw_text = "Interactions close character,"
+				}
+				blockoverride "extra" {
+					text_single = {
+						raw_text = " Enabled."
+						visible = "[GetScriptedGui('close_interactions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						align = nobaseline
+					}
+					text_single = {
+						raw_text = " Disabled."
+						visible = "[Not(GetScriptedGui('close_interactions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ))]"
+						align = nobaseline
+					}
+				}
+
+				onclick = "[GetScriptedGui('close_interactions').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 			}
 		}
 

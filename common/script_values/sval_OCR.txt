@@ -132,7 +132,6 @@ direction_svalue_temp = {
 			x_difference > 0
 			x_difference_abs > y_difference_margin
 		}
-		add = 3
 		# north-east
 		if = {
 			limit = {
@@ -142,15 +141,27 @@ direction_svalue_temp = {
 				# we compare to the other pair and increase the margin the further out we go
 				y_difference_abs > x_difference_margin
 			}
-			subtract = 1
+			add = {
+				value = 2
+				desc = "northeast"
+			}
 		}
-		# south-west
+		# south-east
 		else_if = {
 			limit = {
 				y_difference < 0
 				y_difference_abs > x_difference_margin
 			}
-			add = 1
+			add = {
+				value = 4
+				desc = "southeast"
+			}
+		}
+		else = {
+			add = {
+				value = 3
+				desc = "east"
+			}
 		}
 	}
 	# west
@@ -159,14 +170,16 @@ direction_svalue_temp = {
 			x_difference < 0
 			x_difference_abs > y_difference_margin
 		}
-		add = 7
 		# north-west
 		if = {
 			limit = {
 				y_difference > 0
 				y_difference_abs > x_difference_margin
 			}
-			add = 1
+			add = {
+				value = 8
+				desc = "northwest"
+			}
 		}
 		# south-west
 		else_if = {
@@ -174,7 +187,16 @@ direction_svalue_temp = {
 				y_difference < -1
 				y_difference_abs > x_difference_margin
 			}
-			subtract = 1
+			add = {
+				value = 6
+				desc = "southwest"
+			}
+		}
+		else = {
+			add = {
+				value = 7
+				desc = "west"
+			}
 		}
 	}
 	else = {
@@ -184,7 +206,10 @@ direction_svalue_temp = {
 				y_difference > 0
 				y_difference_abs > x_difference_margin
 			}
-			add = 1
+			add = {
+				value = 1
+				desc = "north"
+			}
 		}
 		# south
 		else_if = {
@@ -192,7 +217,10 @@ direction_svalue_temp = {
 				y_difference < 0
 				y_difference_abs > x_difference_margin
 			}
-			add = 5
+			add = {
+				value = 5
+				desc = "south"
+			}
 		}
 	}
 }
@@ -346,6 +374,30 @@ distance_to_prev = {
         }
         add = scope:tmp
     }
+}
+
+distance_to_capital = {
+	if = {
+		limit = {
+            save_temporary_trigger_breakpoint_as = {
+                TRIGGER = rf_distance_to_player
+                NAME = tmp
+            }
+        }
+        add = scope:tmp
+	}
+}
+
+distance_to_target = {
+	if = {
+		limit = {
+            save_temporary_trigger_breakpoint_as = {
+                TRIGGER = rf_distance_to_target
+                NAME = tmp
+            }
+        }
+        add = scope:tmp
+	}
 }
 
 distance_to_player = {
@@ -792,9 +844,16 @@ holding_order = {
 	}
 	if = {
 		limit = {
+			exists = province_owner
+			province_owner = scope:this_county.holder
+		}
+		add = 10
+	}
+	if = {
+		limit = {
 			has_holding = no
 		}
-		subtract = 10
+		subtract = 20
 	}
 	else_if = {
 		limit = {
@@ -806,12 +865,6 @@ holding_order = {
 		limit = {
 			has_holding_type = city_holding
 		}
-		add = 9
-	}
-	else_if = {
-		limit = {
-			has_holding_type = church_holding
-		}
 		add = 8
 	}
 	else_if = {
@@ -822,4 +875,131 @@ holding_order = {
 	}
 	else = {
 	}
+}
+
+all_playable_rulers = {
+	every_independent_ruler = {
+		limit = {
+			sub_realm_size > 0
+			exists = capital_province
+			NOR = {
+				has_government = theocracy_government
+				has_government = republic_government
+				has_government = mercenary_government
+				has_government = holy_order_government
+			}
+		}
+		add = 1
+	}
+}
+
+all_landed_rulers = {
+	every_independent_ruler = {
+		limit = {
+			sub_realm_size > 0
+			exists = capital_province
+			# NOR = {
+			# 	has_government = theocracy_government
+			# 	has_government = republic_government
+			# 	has_government = mercenary_government
+			# 	has_government = holy_order_government
+			# }
+		}
+		add = 1
+	}
+}
+
+playable_vassals = {
+	every_vassal = {
+		limit = {
+			sub_realm_size > 0
+			exists = capital_province
+			NOR = {
+				has_government = theocracy_government
+				has_government = republic_government
+				has_government = mercenary_government
+				has_government = holy_order_government
+			}
+		}
+		add = 1
+	}
+}
+
+counties_in_title = {
+	every_in_de_jure_hierarchy = {
+		limit = {
+			tier = tier_county
+		}
+		add = 1
+	}
+}
+
+your_counties_in_title = {
+	every_in_de_jure_hierarchy = {
+		limit = {
+			tier = tier_county
+			holder = {
+				OR = {
+					this = scope:player
+					any_liege_or_above = {
+						this = scope:player
+					}
+				}
+			}
+		}
+		add = 1
+	}
+}
+
+height_value = {
+	# if = {
+	# 	limit = {
+	# 		morph_gene_value = {
+	# 			category = body_height
+	# 			value = 1
+	# 		}
+	# 	}
+	# 	add = 1
+	# }
+}
+
+age_height = {
+	value = 1
+	subtract = {
+		value = 17
+		subtract = age
+		multiply = 0.035
+	}
+	max = 1
+}
+
+sex_height = {
+	if = {
+		limit = {
+			is_female = yes
+		}
+		value = 161
+	}
+	else = {
+		value = 175
+	}
+	if = {
+		limit = {
+			has_trait = dwarf
+		}
+		multiply = 0.75
+	}
+	if = {
+		limit = {
+			has_trait = giant
+		}
+		multiply = 1.21
+	}
+	multiply = 0.99
+	multiply = age_height
+}
+
+height_feet = {
+	value = sex_height
+	divide = 30.48
 }

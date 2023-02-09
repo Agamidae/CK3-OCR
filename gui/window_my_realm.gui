@@ -19,6 +19,7 @@ window = {
 		using = Sound_WindowShow_Standard
 		using = Window_Position_MainTab
 		on_start = "[PdxGuiTriggerAllAnimations('refresh_holdings')]"
+		on_start = "[PdxGuiTriggerAllAnimations('refresh_rulers')]"
 	}
 
 	state = {
@@ -44,6 +45,15 @@ window = {
 		}
 	}
 
+	widget = {
+		visible = "[GetVariableSystem.HasValue('realm_tabs', 'rulers')]"
+
+		state = {
+			name = refresh_rulers
+			on_start = "[GetScriptedGui('all_rulers').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		}
+	}
+
 
 	margin_widget = {
 		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
@@ -62,9 +72,9 @@ window = {
 				button_close = {
 					onclick = "[MyRealmWindow.Close]"
 					shortcut = close_window
-
 				}
 
+				# header
 				vbox = {
 					layoutpolicy_horizontal = expanding
 					#margin_bottom = 5
@@ -79,12 +89,12 @@ window = {
 					}
 
 					hbox = {
-						visible = "[Not(GetVariableSystem.HasValue('realm_tabs', 'holdings'))]"
+						visible = "[Not(GetVariableSystem.Exists('realm_tabs'))]"
 						layoutpolicy_horizontal = expanding
 						# spacing = 20
 
 						text_single = {
-							text = "[GetPlayer.GetPrimaryTitle.GetNameNoTooltip|U]"
+							raw_text = "Realm: [GetPlayer.GetPrimaryTitle.GetNameNoTooltip|U]"
 							tooltip = "[Character.GetDefaultRealmFlagTooltip]"
 						}
 
@@ -95,7 +105,7 @@ window = {
 
 						text_single = {
 							name = "realm_type"
-							text = "MY_REALM_WINDOW_TYPE"
+							text = "[Character.GetGovernment.GetAdjective]"
 						}
 
 						text_single = {
@@ -111,9 +121,227 @@ window = {
 						expand = { }
 					}
 
+					hbox = {
+					    layoutpolicy_horizontal = expanding
+						visible = "[GetVariableSystem.HasValue('realm_tabs', 'vassals')]"
+
+						text_single = {
+							datacontext = "[MyRealmWindow.GetRegularVassals]"
+							raw_text = "[GetDataModelSize(CharacterSelectionList.GetList)] vassals."
+						}
+
+						hbox = {
+							space = { }
+							text_single = {
+								text = "MY_REALM_WINDOW_VASSAL_OPINION"
+								tooltip = "MY_REALM_WINDOW_VASSAL_OPINION_TT"
+							}
+
+							text_single = {
+								raw_text = ",  "
+							}
+
+							hbox = {
+
+								tooltip = "[GetPlayer.GetDreadBreakdown]"
+
+								text_single = {
+									name = "dread_name"
+									text = "[dread|E]: [GetPlayer.GetDread|0]"
+									default_format = "#high"
+								}
+							}
+
+							text_single = {
+								raw_text = ",  "
+							}
+
+							hbox = {
+								spacing = 2
+								tooltip = "[Character.GetVassalLimitTooltip]"
+								name = "tutorial_highlight_vassal_limit"
+
+								background = {
+									visible = "[GreaterThan_int32( Character.GetNumVassalsTowardsLimit, Character.GetVassalLimit )]"
+									using = Status_Bad
+								}
+
+								text_single = {
+									text = "MY_REALM_WINDOW_VASSAL_LIMIT"
+								}
+
+								text_single = {
+									text = "MY_REALM_WINDOW_VASSAL_LIMIT_VALUE"
+								}
+							}
+
+							text_single = {
+								raw_text = "."
+							}
+						}
+
+					    expand = { }
+					}
+
+				}
+
+				flowcontainer = {
+					visible = "[Not(GetVariableSystem.HasValue('realm_tabs', 'rulers'))]"
+					name = "vassals_succession_tabs"
+					layoutpolicy_horizontal = expanding
+					spacing = 2
+
+					text_single = {
+						raw_text = "Tabs:"
+						margin_top = 2
+					}
+
+					button_text = {
+						# onclick = "[MyRealmWindow.ShowDomain]"
+						onclick = "[GetVariableSystem.Clear('realm_tabs')]"
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "1,"
+							}
+							text_single = {
+								raw_text = " showing"
+								visible = "[Not(GetVariableSystem.Exists('realm_tabs'))]"
+							}
+							space = { }
+						}
+					    blockoverride "text" {
+					        text = "MY_REALM_WINDOW_DOMAIN_TAB"
+							align = left
+					    }
+						blockoverride "dot" {
+
+						}
+						shortcut = speed_1
+					}
+
+					button_text = {
+						# onclick = "[MyRealmWindow.ShowVassals]"
+						onclick = "[GetVariableSystem.Set('realm_tabs', 'vassals')]"
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "2, "
+							}
+							text_single = {
+								raw_text = " showing"
+								visible = "[GetVariableSystem.HasValue('realm_tabs', 'vassals')]"
+							}
+							space = { }
+						}
+					    blockoverride "text" {
+					        text = "MY_REALM_WINDOW_VASSALS_TAB"
+							align = left
+					    }
+						blockoverride "dot" {
+
+						}
+						shortcut = speed_2
+					}
+
+					button_text = {
+						# onclick = "[MyRealmWindow.ShowSuccession]"
+						onclick = "[GetVariableSystem.Set('realm_tabs', 'succession')]"
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "3,"
+							}
+							text_single = {
+								raw_text = " showing"
+								visible = "[GetVariableSystem.HasValue('realm_tabs', 'succession')]"
+							}
+							space = { }
+						}
+					    blockoverride "text" {
+					        text = "MY_REALM_WINDOW_SUCCESSION_TAB"
+							align = left
+					    }
+						blockoverride "dot" {
+
+						}
+						shortcut = speed_3
+					}
+
+					button_text = {
+						# onclick = "[MyRealmWindow.ShowSuccession]"
+						onclick = "[GetVariableSystem.Set('realm_tabs', 'holdings')]"
+						onclick = "[GetScriptedGui('special_buildings_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "4,"
+							}
+							text_single = {
+								raw_text = " showing"
+								visible = "[GetVariableSystem.HasValue('realm_tabs', 'holdings')]"
+							}
+							space = { }
+						}
+					    blockoverride "text" {
+					        raw_text = "Special buildings"
+							align = left
+					    }
+						blockoverride "dot" {
+
+						}
+						shortcut = speed_4
+					}
+				}
+
+				button_text = {
+					visible = "[Not(GetVariableSystem.HasValue('realm_tabs', 'rulers'))]"
+					layoutpolicy_horizontal = expanding
+					onclick = "[GetVariableSystem.Set('realm_tabs', 'rulers')]"
+					onclick = "[GetScriptedGui('all_rulers').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "G,"
+						}
+						text_single = {
+							raw_text = " showing"
+							visible = "[GetVariableSystem.HasValue('realm_tabs', 'rulers')]"
+						}
+						space = { }
+					}
+					blockoverride "text" {
+						raw_text = "Browse rulers by region"
+						align = left
+					}
+					blockoverride "dot" {
+
+					}
+					shortcut = army_merge
+				}
+
+				vbox = {
+					visible = "[Or( Not(GetVariableSystem.Exists('realm_tabs')), GetVariableSystem.HasValue('realm_tabs', 'vassals'))]"
+					layoutpolicy_horizontal = expanding
+					# margin_bottom = 15
+					spacing = 8
+
+					hbox = {
+						margin = { 10 0 }
+						visible = "[Not(GetVariableSystem.Exists('realm_tabs'))]"
+						tooltip = "[GetPlayer.GetDomainLimitTooltip]"
+						spacing = 2
+						layoutpolicy_horizontal = expanding
+
+						text_single = {
+							text = "[SelectLocalization(MyRealmWindow.IsOverDomainLimit, 'MY_REALM_WINDOW_DOMAIN_LIMIT_WARNING', 'MY_REALM_WINDOW_DOMAIN_LIMIT')]"
+						}
+
+						text_single = {
+							text = "[SelectLocalization(MyRealmWindow.IsOverDomainLimit, 'MY_REALM_WINDOW_DOMAIN_LIMIT_VALUE_WARNING', 'MY_REALM_WINDOW_DOMAIN_LIMIT_VALUE')]"
+						}
+						dot = { }
+						expand = { }
+					}
+
 					vbox = {
 						layoutpolicy_horizontal = expanding
-						visible = "[Not(GetVariableSystem.HasValue('realm_tabs', 'holdings'))]"
+						visible = "[GetVariableSystem.HasValue('realm_tabs', 'vassals')]"
 						# margin_top = 10
 
 						hbox = {
@@ -138,14 +366,14 @@ window = {
 									button_text = {
 										layoutpolicy_horizontal = expanding
 										blockoverride "text" {
-											raw_text = "[Select_CString(GetVariableSystem.Exists('crown_law'), 'Click to show', 'Showing')] [LawGroup.GetName].[Select_CString(GetVariableSystem.Exists('crown_law'), '', ' Click to hide.')]"
+											raw_text = "[Select_CString(Not(GetVariableSystem.Exists('crown_law')), 'Click to show', 'Showing')] [LawGroup.GetName].[Select_CString(Not(GetVariableSystem.Exists('crown_law')), '', ' Click to hide.')]"
 											alwaystransparent = yes
 										}
 										onclick = "[GetVariableSystem.Toggle('crown_law')]"
 									}
 
 									flowcontainer = {
-										visible = "[Not(GetVariableSystem.Exists('crown_law'))]"
+										visible = "[GetVariableSystem.Exists('crown_law')]"
 										layoutpolicy_horizontal = expanding
 										direction = vertical
 										datamodel = "[GuiLawGroup.GetLaws]"
@@ -195,92 +423,223 @@ window = {
 							raw_text = "Liege's authority: [Law.GetName]."
 						}
 					}
-				}
-
-				flowcontainer = {
-					name = "vassals_succession_tabs"
-					layoutpolicy_horizontal = expanding
-					spacing = 2
 
 					button_text = {
-						# onclick = "[MyRealmWindow.ShowDomain]"
-						onclick = "[GetVariableSystem.Clear('realm_tabs')]"
-						blockoverride "extra" {
-							text_single = {
-								raw_text = " tab 1"
-							}
-							text_single = {
-								raw_text = ", selected"
-								visible = "[Not(GetVariableSystem.Exists('realm_tabs'))]"
-							}
-							dot = { }
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "[Select_CString(GetVariableSystem.Exists('realm_income'), 'Show income', 'Income, click to hide')], hotkey E."
 						}
-					    blockoverride "text" {
-					        text = "MY_REALM_WINDOW_DOMAIN_TAB"
-							align = left
-					    }
-						shortcut = speed_1
+						onclick = "[GetVariableSystem.Toggle('realm_income')]"
+						shortcut = map_mode_1
 					}
 
-					button_text = {
-						# onclick = "[MyRealmWindow.ShowVassals]"
-						onclick = "[GetVariableSystem.Set('realm_tabs', 'vassals')]"
-						blockoverride "extra" {
-							text_single = {
-								raw_text = " tab 2"
-							}
-							text_single = {
-								raw_text = ", selected"
-								visible = "[GetVariableSystem.HasValue('realm_tabs', 'vassals')]"
-							}
-							dot = { }
-						}
-					    blockoverride "text" {
-					        text = "MY_REALM_WINDOW_VASSALS_TAB"
-							align = left
-					    }
-						shortcut = speed_2
-					}
+					vbox = {
+						visible = "[Not(GetVariableSystem.Exists('realm_income'))]"
+						layoutpolicy_horizontal = expanding
+						margin = { 10 0 }
 
-					button_text = {
-						# onclick = "[MyRealmWindow.ShowSuccession]"
-						onclick = "[GetVariableSystem.Set('realm_tabs', 'succession')]"
-						blockoverride "extra" {
-							text_single = {
-								raw_text = " tab 3"
-							}
-							text_single = {
-								raw_text = ", selected"
-								visible = "[GetVariableSystem.HasValue('realm_tabs', 'succession')]"
-							}
-							dot = { }
-						}
-					    blockoverride "text" {
-					        text = "MY_REALM_WINDOW_SUCCESSION_TAB"
-							align = left
-					    }
-						shortcut = speed_3
-					}
+						hbox = {
+							name = "domain_income_row"
+							layoutpolicy_horizontal = expanding
 
-					button_text = {
-						# onclick = "[MyRealmWindow.ShowSuccession]"
-						onclick = "[GetVariableSystem.Set('realm_tabs', 'holdings')]"
-						onclick = "[GetScriptedGui('special_buildings_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						blockoverride "extra" {
-							text_single = {
-								raw_text = " tab 4"
+							# background = {
+							# 	visible = "[Not(GetVariableSystem.Exists('realm_tabs'))]"
+							# 	using = Status_Highlight
+							# }
+							spacing = 5
+
+
+							flowcontainer = {
+
+								text_single = {
+									# layoutpolicy_horizontal = expanding
+									text = "MY_REALM_WINDOW_FROM_HOLDINGS"
+								}
+
+
+								text_single = {
+									raw_text = ", Over the limit!"
+									visible = "[MyRealmWindow.IsOverDomainLimit]"
+									tooltip = "[Character.GetDomainLimitTooltip]"
+								}
 							}
+
 							text_single = {
-								raw_text = ", selected"
-								visible = "[GetVariableSystem.HasValue('realm_tabs', 'holdings')]"
+								datacontext = "[MyRealmWindow.GetDomainIncome]"
+								raw_text = "[ValueBreakdown.GetValue] gold,"
+								# min_width = 100
+								# max_width = 100
+								# align = right
+
+								tooltipwidget = {
+									widget_gold_breakdown_tooltip = {
+										blockoverride "income"
+										{
+											visible = no
+										}
+									}
+								}
 							}
-							dot = { }
+
+							text_single = {
+								datacontext = "[MyRealmWindow.GetDomainLevy]"
+								raw_text = "[ValueBreakdown.GetValue] levies."
+								# minimumsize = { 100 0 }
+								# align = right
+								tooltipwidget = {
+									widget_gold_breakdown_tooltip = {
+										blockoverride "income"
+										{
+											visible = no
+										}
+									}
+								}
+							}
+
+							expand = { }
 						}
-					    blockoverride "text" {
-					        raw_text = "Special buildings"
-							align = left
-					    }
-						shortcut = speed_4
+
+						hbox = {
+							name = "vassals_income_row"
+							layoutpolicy_horizontal = expanding
+
+							# background = {
+							# 	visible = "[GetVariableSystem.HasValue('realm_tabs', 'vassals')]"
+							# 	using = Status_Highlight
+							# }
+							spacing = 5
+
+							flowcontainer = {
+
+								text_single = {
+									# layoutpolicy_horizontal = expanding
+									text = "MY_REALM_WINDOW_FROM_VASSALS"
+									# align = bottom
+								}
+
+								text_single = {
+									raw_text = ", Over the limit!"
+									visible = "[GreaterThan_int32( Character.GetNumVassalsTowardsLimit, Character.GetVassalLimit )]"
+									tooltip = "[Character.GetVassalLimitTooltip]"
+								}
+							}
+
+							text_single = {
+								datacontext = "[MyRealmWindow.GetVassalsIncome]"
+								raw_text = "[ValueBreakdown.GetValue] gold,"
+
+								tooltipwidget = {
+									widget_gold_breakdown_tooltip = {
+										blockoverride "income"
+										{
+											visible = no
+										}
+									}
+								}
+							}
+
+							text_single = {
+								datacontext = "[MyRealmWindow.GetVassalsLevy]"
+								raw_text = "[ValueBreakdown.GetValue] levies."
+
+								tooltipwidget = {
+									widget_gold_breakdown_tooltip = {
+										blockoverride "income"
+										{
+											visible = no
+										}
+									}
+								}
+							}
+
+							expand = { }
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[GetPlayer.HasLiege]"
+							spacing = 5
+
+							text_single = {
+								# layoutpolicy_horizontal = expanding
+								text = "MY_REALM_WINDOW_FROM_TO_LIEGE"
+							}
+
+							text_single = {
+								datacontext = "[MyRealmWindow.GetIncomeTax]"
+								raw_text = "[ValueBreakdown.GetValue] gold,"
+								# min_width = 100
+								# max_width = 100
+								# align = right
+
+								tooltipwidget = {
+									my_realm_window_contribution_tooltip = {
+										datacontext = "[MyRealmWindow.GetCharacter]"
+										blockoverride "contribution_tooltip_header"
+										{
+											text = "MRW_TT_TAXES_TO_MY_LIEGE"
+										}
+										blockoverride "contribution_tooltip_content_suffix" { }
+									}
+								}
+							}
+
+							text_single = {
+								datacontext = "[MyRealmWindow.GetLevyTax]"
+								raw_text = "[ValueBreakdown.GetValue] levies."
+								# min_width = 100
+								# max_width = 100
+								# align = right
+
+								tooltipwidget = {
+									my_realm_window_contribution_tooltip = {
+										datacontext = "[MyRealmWindow.GetCharacter]"
+										blockoverride "contribution_tooltip_header"
+										{
+											text = "MRW_TT_LEVIES_TO_MY_LIEGE"
+										}
+										blockoverride "contribution_tooltip_content_suffix" { }
+									}
+								}
+							}
+
+							expand = { }
+						}
+
+						vbox = {
+							name = "vassal_contract"
+							datacontext = "[MyRealmWindow.GetCharacter.GetLiege]"
+							datacontext = "[MyRealmWindow.GetCharacter.GetVassalContract]"
+							visible = "[Character.IsPlayerInteractionShown('vassal_modify_vassal_contract_interaction')]"
+							margin_left = 3
+							layoutpolicy_horizontal = expanding
+
+							text_single = {
+								visible = "[VassalContract.UsesObligationLevels]"
+								layoutpolicy_horizontal = expanding
+								text = "MY_REALM_WINDOW_MY_OBLIGATIONS"
+							}
+
+							button_text_cant = {
+								layoutpolicy_horizontal = expanding
+								# visible = "[VassalContract.IsContractDefault]"
+							    blockoverride "text" {
+							        raw_text = "Change contract."
+							    }
+								# blockoverride "disabled" {
+								# 	visible = "[Not(Character.IsPlayerInteractionValid('vassal_modify_vassal_contract_interaction'))]"
+								# }
+								onclick = "[Character.OpenPlayerInteraction('vassal_modify_vassal_contract_interaction')]"
+								tooltip = "[Character.GetPlayerInteractionTooltip('vassal_modify_vassal_contract_interaction')]"
+								# enabled = "[Character.IsPlayerInteractionValid('vassal_modify_vassal_contract_interaction')]"
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[Localize('VASSAL_CONTRACT_NOT_DEFAULT')]."
+								visible = "[Not( VassalContract.IsContractDefault )]"
+							}
+						}
 					}
 				}
 
@@ -667,78 +1026,6 @@ window = {
 							text_single = {
 								text = "NO_VASSALS_TO_DISPLAY"
 								default_format = "#weak"
-							}
-						}
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						margin = { 15 0 }
-						# margin_top = 15
-						# margin_bottom = 15
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							# margin = { 0 5 }
-
-							background = {
-								using = Background_Area
-								margin = { -20 0 }
-								margin_bottom = 10
-								margin_top = 3
-							}
-
-							hbox = {
-								layoutpolicy_horizontal = expanding
-
-								text_single = {
-									default_format = "#high"
-									text = "MY_REALM_WINDOW_VASSAL_OPINION"
-									tooltip = "MY_REALM_WINDOW_VASSAL_OPINION_TT"
-								}
-
-								text_single = {
-									raw_text = ",  "
-								}
-
-								hbox = {
-
-									tooltip = "[GetPlayer.GetDreadBreakdown]"
-
-									text_single = {
-										name = "dread_name"
-										text = "[dread|E]: [GetPlayer.GetDread|0]"
-										default_format = "#high"
-									}
-								}
-
-								text_single = {
-									raw_text = ",  "
-								}
-
-								hbox = {
-									spacing = 2
-									tooltip = "[Character.GetVassalLimitTooltip]"
-									name = "tutorial_highlight_vassal_limit"
-
-									background = {
-										visible = "[GreaterThan_int32( Character.GetNumVassalsTowardsLimit, Character.GetVassalLimit )]"
-										using = Status_Bad
-									}
-
-									text_single = {
-										text = "MY_REALM_WINDOW_VASSAL_LIMIT"
-									}
-
-									text_single = {
-										text = "MY_REALM_WINDOW_VASSAL_LIMIT_VALUE"
-									}
-								}
-
-								text_single = {
-									raw_text = "."
-								}
-								expand = { }
 							}
 						}
 					}
@@ -1316,235 +1603,6 @@ window = {
 					}
 				}
 
-				vbox = {
-					visible = "[Or( Not(GetVariableSystem.Exists('realm_tabs')), GetVariableSystem.HasValue('realm_tabs', 'vassals'))]"
-					layoutpolicy_horizontal = expanding
-					# margin_bottom = 15
-					spacing = 8
-
-					hbox = {
-						margin = { 10 0 }
-						visible = "[Not(GetVariableSystem.Exists('realm_tabs'))]"
-						tooltip = "[GetPlayer.GetDomainLimitTooltip]"
-						spacing = 2
-						layoutpolicy_horizontal = expanding
-
-						text_single = {
-							text = "[SelectLocalization(MyRealmWindow.IsOverDomainLimit, 'MY_REALM_WINDOW_DOMAIN_LIMIT_WARNING', 'MY_REALM_WINDOW_DOMAIN_LIMIT')]"
-						}
-
-						text_single = {
-							text = "[SelectLocalization(MyRealmWindow.IsOverDomainLimit, 'MY_REALM_WINDOW_DOMAIN_LIMIT_VALUE_WARNING', 'MY_REALM_WINDOW_DOMAIN_LIMIT_VALUE')]"
-						}
-						dot = { }
-						expand = { }
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						margin = { 10 0 }
-
-						background = {
-							using = Background_Area
-							margin = { -65 0 }
-							margin_bottom = 8
-							margin_top = 3
-						}
-
-
-						hbox = {
-							name = "domain_income_row"
-							layoutpolicy_horizontal = expanding
-
-							# background = {
-							# 	visible = "[Not(GetVariableSystem.Exists('realm_tabs'))]"
-							# 	using = Status_Highlight
-							# }
-							spacing = 5
-
-							flowcontainer = {
-
-								text_single = {
-									# layoutpolicy_horizontal = expanding
-									text = "MY_REALM_WINDOW_FROM_HOLDINGS"
-								}
-
-
-								text_single = {
-									raw_text = ", Over the limit!"
-									visible = "[MyRealmWindow.IsOverDomainLimit]"
-									tooltip = "[Character.GetDomainLimitTooltip]"
-								}
-							}
-
-							text_single = {
-								datacontext = "[MyRealmWindow.GetDomainIncome]"
-								raw_text = "[ValueBreakdown.GetValue] gold,"
-								# min_width = 100
-								# max_width = 100
-								# align = right
-
-								tooltipwidget = {
-									widget_gold_breakdown_tooltip = {
-										blockoverride "income"
-										{
-											visible = no
-										}
-									}
-								}
-							}
-
-							text_single = {
-								datacontext = "[MyRealmWindow.GetDomainLevy]"
-								raw_text = "[ValueBreakdown.GetValue] levies."
-								# minimumsize = { 100 0 }
-								# align = right
-								tooltipwidget = {
-									widget_gold_breakdown_tooltip = {
-										blockoverride "income"
-										{
-											visible = no
-										}
-									}
-								}
-							}
-
-							expand = { }
-						}
-
-						hbox = {
-							name = "vassals_income_row"
-							layoutpolicy_horizontal = expanding
-
-							# background = {
-							# 	visible = "[GetVariableSystem.HasValue('realm_tabs', 'vassals')]"
-							# 	using = Status_Highlight
-							# }
-							spacing = 5
-
-							flowcontainer = {
-
-								text_single = {
-									# layoutpolicy_horizontal = expanding
-									text = "MY_REALM_WINDOW_FROM_VASSALS"
-									# align = bottom
-								}
-
-								text_single = {
-									raw_text = ", Over the limit!"
-									visible = "[GreaterThan_int32( Character.GetNumVassalsTowardsLimit, Character.GetVassalLimit )]"
-									tooltip = "[Character.GetVassalLimitTooltip]"
-								}
-							}
-
-							text_single = {
-								datacontext = "[MyRealmWindow.GetVassalsIncome]"
-								raw_text = "[ValueBreakdown.GetValue] gold,"
-
-								tooltipwidget = {
-									widget_gold_breakdown_tooltip = {
-										blockoverride "income"
-										{
-											visible = no
-										}
-									}
-								}
-							}
-
-							text_single = {
-								datacontext = "[MyRealmWindow.GetVassalsLevy]"
-								raw_text = "[ValueBreakdown.GetValue] levies."
-
-								tooltipwidget = {
-									widget_gold_breakdown_tooltip = {
-										blockoverride "income"
-										{
-											visible = no
-										}
-									}
-								}
-							}
-
-							expand = { }
-						}
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							visible = "[GetPlayer.HasLiege]"
-							spacing = 5
-
-							text_single = {
-								# layoutpolicy_horizontal = expanding
-								text = "MY_REALM_WINDOW_FROM_TO_LIEGE"
-							}
-
-							text_single = {
-								datacontext = "[MyRealmWindow.GetIncomeTax]"
-								raw_text = "[ValueBreakdown.GetValue] gold,"
-								# min_width = 100
-								# max_width = 100
-								# align = right
-
-								tooltipwidget = {
-									my_realm_window_contribution_tooltip = {
-										datacontext = "[MyRealmWindow.GetCharacter]"
-										blockoverride "contribution_tooltip_header"
-										{
-											text = "MRW_TT_TAXES_TO_MY_LIEGE"
-										}
-										blockoverride "contribution_tooltip_content_suffix" { }
-									}
-								}
-							}
-
-							text_single = {
-								datacontext = "[MyRealmWindow.GetLevyTax]"
-								raw_text = "[ValueBreakdown.GetValue] levies."
-								# min_width = 100
-								# max_width = 100
-								# align = right
-
-								tooltipwidget = {
-									my_realm_window_contribution_tooltip = {
-										datacontext = "[MyRealmWindow.GetCharacter]"
-										blockoverride "contribution_tooltip_header"
-										{
-											text = "MRW_TT_LEVIES_TO_MY_LIEGE"
-										}
-										blockoverride "contribution_tooltip_content_suffix" { }
-									}
-								}
-							}
-
-							expand = { }
-						}
-
-						hbox = {
-							name = "vassal_contract"
-							datacontext = "[MyRealmWindow.GetCharacter.GetLiege]"
-							datacontext = "[MyRealmWindow.GetCharacter.GetVassalContract]"
-							visible = "[Character.IsPlayerInteractionShown('vassal_modify_vassal_contract_interaction')]"
-							margin_left = 3
-							spacing = 10
-
-							button_replace = {
-								enabled = "[Character.IsPlayerInteractionValid('vassal_modify_vassal_contract_interaction')]"
-								onclick = "[Character.OpenPlayerInteraction('vassal_modify_vassal_contract_interaction')]"
-								tooltip = "[Character.GetPlayerInteractionTooltip('vassal_modify_vassal_contract_interaction')]"
-							}
-
-							text_single = {
-								visible = "[VassalContract.UsesObligationLevels]"
-								layoutpolicy_horizontal = expanding
-								align = center
-								text = "MY_REALM_WINDOW_MY_OBLIGATIONS"
-							}
-
-							vassal_contract_not_default_icon = { }
-						}
-					}
-				}
-
 				# special
 				vbox = {
 					layoutpolicy_horizontal = expanding
@@ -1670,6 +1728,566 @@ window = {
 							}
 						}
 					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					#TODO show your own region
+
+					visible = "[GetVariableSystem.HasValue('realm_tabs', 'rulers')]"
+
+					# close
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "Ruler browser tab, close with G."
+						}
+						onclick = "[GetVariableSystem.Clear('realm_tabs')]"
+						shortcut = army_merge
+					}
+
+					scrollbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						blockoverride "scrollbox_margins" {
+							margin_top = 20
+						}
+						blockoverride "scrollbox_content" {
+
+							vbox = {
+								layoutpolicy_vertical = expanding
+								layoutpolicy_horizontal = expanding
+
+								vbox = {
+									visible = "[Not(GetVariableSystem.Exists('region'))]"
+									layoutpolicy_horizontal = expanding
+
+									vbox = {
+										visible = "[Not(Or(GetVariableSystem.Exists('major_region'), GetVariableSystem.Exists('second_region') ) )]"
+										layoutpolicy_horizontal = expanding
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											raw_text = "There are [GetGlobalVariable('all_landed_rulers').GetValue] independent rulers."
+										}
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											margin_left = 5
+											raw_text = "You can use number keys to select."
+										}
+										# major regions
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "1. [Localize('world_europe')], [GetDataModelSize(GetGlobalList('world_europe'))] rulers."
+											}
+											onclick = "[GetVariableSystem.Set('major_region', 'world_europe')]"
+											shortcut = speed_1
+										}
+
+										# region
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "2. [Localize('world_asia_minor')], [GetDataModelSize(GetGlobalList('world_asia_minor'))]."
+											}
+											onclick = "[GetVariableSystem.Set('region', 'world_asia_minor')]"
+											shortcut = speed_2
+										}
+
+										# major regions
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "3. [Localize('world_middle_east')], [GetDataModelSize(GetGlobalList('world_middle_east'))]."
+											}
+											onclick = "[GetVariableSystem.Set('major_region', 'world_middle_east')]"
+											shortcut = speed_3
+										}
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "4. [Localize('world_india')], [GetDataModelSize(GetGlobalList('world_india'))]."
+											}
+											onclick = "[GetVariableSystem.Set('major_region', 'world_india')]"
+											shortcut = speed_4
+										}
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "5. [Localize('world_africa')], [GetDataModelSize(GetGlobalList('world_africa'))]."
+											}
+											onclick = "[GetVariableSystem.Set('major_region', 'world_africa')]"
+											shortcut = speed_5
+										}
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "[Localize('world_steppe')], [GetDataModelSize(GetGlobalList('world_steppe'))]."
+											}
+											onclick = "[GetVariableSystem.Set('major_region', 'world_steppe')]"
+											shortcut = map_mode_2
+										}
+
+										# regions
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "[Localize('world_tibet')], [GetDataModelSize(GetGlobalList('world_tibet'))]."
+											}
+											onclick = "[GetVariableSystem.Set('region', 'world_tibet')]"
+											shortcut = map_mode_4
+										}
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "[Localize('world_burma')], [GetDataModelSize(GetGlobalList('world_burma'))]."
+											}
+											onclick = "[GetVariableSystem.Set('region', 'world_burma')]"
+											shortcut = mapmode_duchies_secondary
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+
+										visible = "[And(GetVariableSystem.Exists('major_region'), Not(GetVariableSystem.Exists('second_region')))]"
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "[Localize(GetVariableSystem.Get('major_region'))], [GetDataModelSize(GetGlobalList(GetVariableSystem.Get('major_region')))] rulers. Go back, hotkey B."
+											}
+											onclick = "[GetVariableSystem.Clear('major_region')]"
+											onclick = "[GetVariableSystem.Clear('second_region')]"
+											onclick = "[GetVariableSystem.Clear('region')]"
+											shortcut = go_back
+										}
+
+										# europe
+										vbox = {
+											visible = "[GetVariableSystem.HasValue('major_region', 'world_europe')]"
+											layoutpolicy_horizontal = expanding
+
+											vbox = {
+												layoutpolicy_horizontal = expanding
+
+												button_text = {
+													layoutpolicy_horizontal = expanding
+													blockoverride "text" {
+														raw_text = "1. [Localize('world_europe_west')], [GetDataModelSize(GetGlobalList('world_europe_west'))]."
+													}
+													onclick = "[GetVariableSystem.Set('second_region', 'world_europe_west')]"
+													shortcut = speed_1
+												}
+
+												button_text = {
+													layoutpolicy_horizontal = expanding
+													blockoverride "text" {
+														raw_text = "2. [Localize('world_europe_north')], [GetDataModelSize(GetGlobalList('world_europe_north'))]."
+													}
+													onclick = "[GetVariableSystem.Set('region', 'world_europe_north')]"
+													shortcut = speed_2
+												}
+
+												button_text = {
+													layoutpolicy_horizontal = expanding
+													blockoverride "text" {
+														raw_text = "3. [Localize('world_europe_east')], [GetDataModelSize(GetGlobalList('world_europe_east'))]."
+													}
+													onclick = "[GetVariableSystem.Set('region', 'world_europe_east')]"
+													shortcut = speed_3
+												}
+
+												button_text = {
+													layoutpolicy_horizontal = expanding
+													blockoverride "text" {
+														raw_text = "4. [Localize('world_europe_south_east')], [GetDataModelSize(GetGlobalList('world_europe_south_east'))]."
+													}
+													onclick = "[GetVariableSystem.Set('region', 'world_europe_south_east')]"
+													shortcut = speed_4
+												}
+
+												button_text = {
+													layoutpolicy_horizontal = expanding
+													blockoverride "text" {
+														raw_text = "5. [Localize('world_europe_south_italy')], [GetDataModelSize(GetGlobalList('world_europe_south_italy'))]."
+													}
+													onclick = "[GetVariableSystem.Set('region', 'world_europe_south_italy')]"
+													shortcut = speed_5
+												}
+											}
+										}
+
+										# ME
+										vbox = {
+											visible = "[GetVariableSystem.HasValue('major_region', 'world_middle_east')]"
+											layoutpolicy_horizontal = expanding
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "1. [Localize('world_middle_east_arabia')], [GetDataModelSize(GetGlobalList('world_middle_east_arabia'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_middle_east_arabia')]"
+												shortcut = speed_1
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "2. [Localize('world_middle_east_persia')], [GetDataModelSize(GetGlobalList('world_middle_east_persia'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_middle_east_persia')]"
+												shortcut = speed_2
+											}
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "3. [Localize('world_middle_east_jerusalem')], [GetDataModelSize(GetGlobalList('world_middle_east_jerusalem'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_middle_east_jerusalem')]"
+												shortcut = speed_3
+											}
+										}
+
+										# India
+										vbox = {
+											visible = "[GetVariableSystem.HasValue('major_region', 'world_india')]"
+											layoutpolicy_horizontal = expanding
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "1. [Localize('world_india_bengal')], [GetDataModelSize(GetGlobalList('world_india_bengal'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_india_bengal')]"
+												shortcut = speed_1
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "2. [Localize('world_india_rajastan')], [GetDataModelSize(GetGlobalList('world_india_rajastan'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_india_rajastan')]"
+												shortcut = speed_2
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "3. [Localize('world_india_deccan')], [GetDataModelSize(GetGlobalList('world_india_deccan'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_india_deccan')]"
+												shortcut = speed_3
+											}
+
+										}
+
+										# Africa
+										vbox = {
+											visible = "[GetVariableSystem.HasValue('major_region', 'world_africa')]"
+											layoutpolicy_horizontal = expanding
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "1. [Localize('world_africa_north_west')], [GetDataModelSize(GetGlobalList('world_africa_north_west'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_africa_north_west')]"
+												shortcut = speed_1
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "2. [Localize('world_africa_west')], [GetDataModelSize(GetGlobalList('world_africa_west'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_africa_west')]"
+												shortcut = speed_2
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "3. [Localize('world_africa_north_east')], [GetDataModelSize(GetGlobalList('world_africa_north_east'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_india_deccan')]"
+												shortcut = speed_3
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "4. [Localize('world_africa_east')], [GetDataModelSize(GetGlobalList('world_africa_east'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_africa_east')]"
+												shortcut = speed_4
+											}
+
+										}
+
+										# steppe
+										vbox = {
+											visible = "[GetVariableSystem.HasValue('major_region', 'world_steppe')]"
+											layoutpolicy_horizontal = expanding
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "1. [Localize('world_steppe_west')], [GetDataModelSize(GetGlobalList('world_steppe_west'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_steppe_west')]"
+												shortcut = speed_1
+											}
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "2. [Localize('world_steppe_east')], [GetDataModelSize(GetGlobalList('world_steppe_east'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_steppe_east')]"
+												shortcut = speed_2
+											}
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "3. [Localize('world_steppe_tarim')], [GetDataModelSize(GetGlobalList('world_steppe_tarim'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_steppe_tarim')]"
+												shortcut = speed_3
+											}
+
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+
+										visible = "[GetVariableSystem.Exists('second_region')]"
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "[Localize(GetVariableSystem.Get('second_region'))], [GetDataModelSize(GetGlobalList(GetVariableSystem.Get('second_region')))] rulers. Go back, hotkey B."
+											}
+											onclick = "[GetVariableSystem.Clear('second_region')]"
+											onclick = "[GetVariableSystem.Clear('region')]"
+											shortcut = go_back
+										}
+
+										# western europe
+										vbox = {
+											visible = "[GetVariableSystem.HasValue('second_region', 'world_europe_west')]"
+											layoutpolicy_horizontal = expanding
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "1. [Localize('world_europe_west_britannia')], [GetDataModelSize(GetGlobalList('world_europe_west_britannia'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_europe_west_britannia')]"
+												shortcut = speed_1
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "2. [Localize('world_europe_west_germania')], [GetDataModelSize(GetGlobalList('world_europe_west_germania'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_europe_west_germania')]"
+												shortcut = speed_2
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "3. [Localize('world_europe_west_francia')], [GetDataModelSize(GetGlobalList('world_europe_west_francia'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_europe_west_francia')]"
+												shortcut = speed_3
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "4. [Localize('world_europe_west_iberia')], [GetDataModelSize(GetGlobalList('world_europe_west_iberia'))]."
+												}
+												onclick = "[GetVariableSystem.Set('region', 'world_europe_west_iberia')]"
+												shortcut = speed_4
+											}
+										}
+									}
+								}
+
+								# list of regions
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[GetVariableSystem.Exists('region')]"
+
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										blockoverride "text" {
+											raw_text = "[Localize(GetVariableSystem.Get('region'))], [GetDataModelSize(GetGlobalList(GetVariableSystem.Get('region')))] rulers. Go back, hotkey B."
+										}
+										onclick = "[GetVariableSystem.Clear('region')]"
+										shortcut = go_back
+									}
+
+									### Europe ###
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_europe_west_britannia')]"
+										datamodel = "[GetGlobalList('world_europe_west_britannia')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_europe_west_germania')]"
+										datamodel = "[GetGlobalList('world_europe_west_germania')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_europe_west_francia')]"
+										datamodel = "[GetGlobalList('world_europe_west_francia')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_europe_west_iberia')]"
+										datamodel = "[GetGlobalList('world_europe_west_iberia')]"
+									}
+
+									#
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_europe_south_east')]"
+										datamodel = "[GetGlobalList('world_europe_south_east')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_europe_south_italy')]"
+										datamodel = "[GetGlobalList('world_europe_south_italy')]"
+									}
+
+
+									###
+
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_africa_north_west')]"
+										datamodel = "[GetGlobalList('world_africa_north_west')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_africa_north_east')]"
+										datamodel = "[GetGlobalList('world_africa_north_east')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_africa_west')]"
+										datamodel = "[GetGlobalList('world_africa_west')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_africa_east')]"
+										datamodel = "[GetGlobalList('world_africa_east')]"
+									}
+
+									###
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_middle_east_jerusalem')]"
+										datamodel = "[GetGlobalList('world_middle_east_jerusalem')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_middle_east_arabia')]"
+										datamodel = "[GetGlobalList('world_middle_east_arabia')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_middle_east_persia')]"
+										datamodel = "[GetGlobalList('world_middle_east_persia')]"
+									}
+
+
+									###
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_steppe_tarim')]"
+										datamodel = "[GetGlobalList('world_steppe_tarim')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_steppe_west')]"
+										datamodel = "[GetGlobalList('world_steppe_west')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_steppe_east')]"
+										datamodel = "[GetGlobalList('world_steppe_east')]"
+									}
+
+									###
+
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_india_deccan')]"
+										datamodel = "[GetGlobalList('world_india_deccan')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_india_bengal')]"
+										datamodel = "[GetGlobalList('world_india_bengal')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_india_rajastan')]"
+										datamodel = "[GetGlobalList('world_india_rajastan')]"
+									}
+
+									###
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_europe_north')]"
+										datamodel = "[GetGlobalList('world_europe_north')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_europe_east')]"
+										datamodel = "[GetGlobalList('world_europe_east')]"
+									}
+
+
+									###
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_asia_minor')]"
+										datamodel = "[GetGlobalList('world_asia_minor')]"
+									}
+
+									####
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_tibet')]"
+										datamodel = "[GetGlobalList('world_tibet')]"
+									}
+
+									region_list = {
+										visible = "[GetVariableSystem.HasValue('region', 'world_burma')]"
+										datamodel = "[GetGlobalList('world_burma')]"
+									}
+
+								}
+
+								expand = { }
+							}
+						}
+					}
+
+					expand = { }
 				}
 			}
 			# sp sorting

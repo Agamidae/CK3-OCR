@@ -17,7 +17,7 @@ JominiMultiplayerLobby = {
 
 	blockoverride "left_panel_properties"
 	{
-		size = { 390 100% }
+		size = { 500 100% }
 		widgetid = "left"
 		visible = "[GameIsMultiplayer]"
 	}
@@ -107,233 +107,453 @@ JominiMultiplayerLobby = {
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
 			visible = "[Character.IsValid]"
-			ignoreinvisible = yes
-
-			background = { using = Background_Area_Border_Solid }
-
-			#### MAIN PORTRAIT ###
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					raw_text = "[Character.GetUINameNoTooltip], [Character.GetAge] years."
-				}
-
-				text_single = {
-					datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter.GetLiege]"
-					visible = "[And(Character.IsValid, Not(Character.IsSelected))]"
-					raw_text = "Liege: [Character.GetUINameNoTooltip]."
-				}
-
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter.GetPlayerHeir]"
-					visible = "[Character.IsValid]"
-					raw_text = "Heir: [Character.GetUINameNoTooltip]."
-				}
-
-				text_single = {
-					visible = "[Character.HasLandedTitles]"
-					layoutpolicy_horizontal = expanding
-					raw_text = "[Character.GetMilitaryStrengthText] soldiers, [Character.RealmSize] counties."
-				}
-
-			}
 
 			vbox = {
 				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				ignoreinvisible = yes
 
+				visible = "[Not(GetVariableSystem.Exists('sub_selection'))]"
+
+				background = { using = Background_Area_Border_Solid }
+
+				#### MAIN PORTRAIT ###
 				vbox = {
 					layoutpolicy_horizontal = expanding
 
-					background = {
-						using = Background_Area_Dark
-						margin = { 5 0 }
+					button_primary_text = {
+						layoutpolicy_horizontal = expanding
+						visible = "[And(Not( IsPreparationLobby ), LobbyView.CanControlSelected)]"
+						blockoverride "text" {
+							raw_text = "Start game as [Character.GetUINameNoTooltip], [Character.GetAge] years"
+						}
+
+						blockoverride "disabled" {
+							visible = "[Not(LobbyView.CanControlSelected)]"
+						}
+
+						blockoverride "hotkey" {
+							visible = "[LobbyView.CanControlSelected]"
+						}
+
+						onclick = "[LobbyView.ControlSelected]"
+						onclick = "[LobbyView.Ready]"
+						enabled = "[LobbyView.CanControlSelected]"
+
+						tooltip = "[LobbyView.GetControlToolTip]"
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						name = "select_and_customize_character"
+						datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter]"
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							margin = { 10 10 }
+							visible = "[Not( Or( Character.IsOtherPlayer, Character.IsLocalPlayer ) )]"
+
+							button_primary_text = {
+								layoutpolicy_horizontal = expanding
+								visible = "[And( GameIsMultiplayer, IsPreparationLobby )]"
+								blockoverride "text" {
+									text = "JOMINI_MULTIPLAYER_GUI_SELECT"
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = " [Character.GetFirstNameNoTooltip]"
+									}
+								}
+								blockoverride "disabled" {
+									visible = "[Not(LobbyView.CanControlSelected)]"
+								}
+								blockoverride "hotkey" {
+									visible = "[LobbyView.CanControlSelected]"
+								}
+
+								onclick = "[LobbyView.ControlSelected]"
+								tooltip = "[LobbyView.GetControlToolTip]"
+								enabled = "[LobbyView.CanControlSelected]"
+							}
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter]"
+							blockoverride "text" {
+								raw_text = "[Localize('RULER_DESIGNER_OPEN')]."
+							}
+							onclick = "[LobbyView.UnReady]"
+							onclick = "[TryStartRulerDesigning( Character.Self )]"
+							visible = "[And(LobbyView.CanTryStartRulerDesigning( Character.Self ), IsPreparationLobby)]"
+							tooltip = "[LobbyView.GetTryStartRulerDesigningDesc( Character.Self )]"
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Or(Or(Character.IsOtherPlayer, Character.IsLocalPlayer), And(Not(Character.IsValid), IsObserver))]"
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_horizontal = expanding
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									name = "player"
+									visible = "[Character.IsOtherPlayer]"
+									raw_text = "[Localize('MULTIPLAYER_LOBBY_PLAYED_BY')]."
+									align = nobaseline
+									default_format = "#high"
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									name = "its_you"
+									visible = "[Character.IsLocalPlayer]"
+									raw_text = "[Localize('MULTIPLAYER_LOBBY_PLAYED_BY_YOU')]."
+									align = nobaseline
+									default_format = "#high"
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									visible = "[And(Not(Character.IsValid), IsObserver)]"
+									size = { 380 100 }
+									raw_text = "[Localize('MULTIPLAYER_LOBBY_PLAY_OBSERVER')]."
+								}
+							}
+						}
 					}
 
 					hbox = {
 						layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						hbox = {
+							spacing = 3
+							datamodel = "[Character.GetTraitIndices]"
+
+							item = {
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									datacontext = "[GetTraitForIndex(int32.GetInt)]"
+									visible = "[Trait.IsPersonality]"
+									raw_text = "[Trait.GetName( GetNullCharacter )],"
+								}
+							}
+						}
+
+						hbox = {
+							text_single = {
+								datacontext = "[Character.GetFaith]"
+								text = "FAITH_LOBBY_WINDOW"
+								max_width = 220
+
+								tooltipwidget = { faith_tooltip_core_tenents = { } }
+
+								using = tooltip_ws
+							}
+
+							text_single = {
+								raw_text = ","
+							}
+
+							space = { }
+
+							text_single = {
+								datacontext = "[Character.GetCulture]"
+								text = "CULTURE_LOBBY_WINDOW"
+								max_width = 220
+
+								tooltipwidget = { ruler_designer_culture_tooltip = { } }
+
+								using = tooltip_ws
+							}
+
+							dot = { }
+						}
+
+						text_single = {
+							datacontext = "[Character.GetHouse]"
+							visible = "[Character.HasDynasty]"
+							raw_text = "House [DynastyHouse.GetBaseNameNoTooltip]."
+						}
+
+						expand = { }
+					}
+
+					hbox = {
+					    layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						text_single = {
+							visible = "[Character.HasLandedTitles]"
+							raw_text = "[Character.GetMilitaryStrengthText] soldiers, [Character.RealmSize] counties."
+						}
+
+					    text_single = {
+							visible = "[Character.HasLandedTitles]"
+							name = "government_type"
+							raw_text = "[Character.GetGovernment.GetName] [Character.GetPrimaryTitle.GetRankConcept]."
+						}
+
+					    expand = { }
+					}
+
+					realm_name = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter.GetLiege]"
+						visible = "[And(Character.IsValid, Not(Character.IsSelected))]"
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "Liege:"
+							}
+						}
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter.GetPlayerHeir]"
+						visible = "[Character.IsValid]"
+						raw_text = "Heir: [Character.GetUINameNoTooltip]."
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('playable_vassals')] playable vassals, hotkey E."
+					}
+					shortcut = map_mode_1
+					visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(Character.MakeScope).ScriptValue('playable_vassals'), '(CFixedPoint)0')]"
+					onclick = "[GetVariableSystem.Set('sub_selection', 'playable_vassals')]"
+					onclick = "[GetScriptedGui('playable_vassals').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "View playable neighbours, hotkey Control A."
+					}
+					shortcut = map_mode_6
+					onclick = "[GetVariableSystem.Set('sub_selection', 'playable_neighbours')]"
+					onclick = "[GetScriptedGui('playable_neighbours').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "Select another, hotkey B or Escape."
+					}
+					onclick = "[GetVariableSystem.Set('selected_character', 'yes')]"
+					shortcut = go_back
+					shortcut = close_window
+				}
+
+				button_text_cant = {
+					datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter]"
+					layoutpolicy_horizontal = expanding
+
+
+					visible = "[Not( IsPreparationLobby )]"
+					onclick = "[TryStartRulerDesigning( Character.Self )]"
+					enabled = "[LobbyView.CanTryStartRulerDesigning( Character.Self )]"
+					# tooltip = "[LobbyView.GetTryStartRulerDesigningDesc( Character.Self )]"
+
+					blockoverride "text" {
+						text = "RULER_DESIGNER_OPEN"
+					}
+					blockoverride "disabled" {
+						visible = "[Not(LobbyView.CanTryStartRulerDesigning( Character.Self ))]"
+					}
+
+					blockoverride "extra" {
+						visible = "[LobbyView.CanTryStartRulerDesigning( Character.Self )]"
+						text_single = {
+							raw_text = " and replace [Character.GetFirstNameNoTooltip]"
+							align = nobaseline
+						}
+						text_single = {
+							raw_text = ", hotkey Tab"
+							align = nobaseline
+						}
+					}
+					blockoverride "dot_nb" {
+					}
+					shortcut = action_list
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					### REALM ###
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						visible = no
+
+						# visible = "[Character.HasLandedTitles]"
 
 						vbox = {
 							layoutpolicy_horizontal = expanding
-							layoutpolicy_vertical = expanding
 
-							hbox = {
-							    layoutpolicy_horizontal = expanding
-
-								hbox = {
-									spacing = 3
-									datamodel = "[Character.GetTraitIndices]"
-
-									item = {
-
-										text_single = {
-											layoutpolicy_horizontal = expanding
-											datacontext = "[GetTraitForIndex(int32.GetInt)]"
-											visible = "[Trait.IsPersonality]"
-											raw_text = "[Trait.GetName( GetNullCharacter )],"
-										}
-									}
-								}
-
-							    expand = { }
-							}
-
-
-							hbox = {
+							text_single = {
 								layoutpolicy_horizontal = expanding
-
-								hbox = {
-									name = "faith_and_culture"
-
-
-									hbox = {
-										text_single = {
-											datacontext = "[Character.GetFaith]"
-											layoutpolicy_horizontal = expanding
-											text = "FAITH_LOBBY_WINDOW"
-											default_format = "#clickable;italic"
-											align = nobaseline
-											max_width = 220
-
-											tooltipwidget = { faith_tooltip_core_tenents = { } }
-
-											using = tooltip_ws
-										}
-
-										text_single = {
-											raw_text = ","
-											align = nobaseline
-										}
-
-										space = { }
-
-										text_single = {
-											datacontext = "[Character.GetCulture]"
-											layoutpolicy_horizontal = expanding
-											text = "CULTURE_LOBBY_WINDOW"
-											default_format = "#clickable;italic"
-											align = nobaseline
-											max_width = 220
-
-											tooltipwidget = { ruler_designer_culture_tooltip = { } }
-
-											using = tooltip_ws
-										}
-										dot_nb = { }
-									}
-								}
-								expand = { }
+								raw_text = "Primary title:"
 							}
 
-							expand = { }
+							text_single = {
+								name = "character_title"
+								layoutpolicy_horizontal = expanding
+								raw_text = "[Character.GetPrimaryTitle.GetNameNoTooltip|U]."
+							}
 						}
-					}
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						datacontext = "[Character.GetHouse]"
-						visible = "[Character.HasDynasty]"
-						raw_text = "House [DynastyHouse.GetBaseNameNoTooltip]."
+
+						expand = { }
 					}
 				}
 
-				### REALM ###
-				hbox = {
+				spacer = {
+					size = { 10 5 }
+				}
+
+				scrollarea = {
 					layoutpolicy_horizontal = expanding
+					maximumsize = { -1 150 }
+					autoresizescrollarea = yes
+					scrollbarpolicy_horizontal = always_off
+					visible = "[Character.HasDifficultyInfo]"
 
-					visible = "[Character.HasLandedTitles]"
+					scrollwidget = {
+						### DIFFICULTY ###
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+							visible = "[Character.HasDifficultyInfo]"
 
-					vbox = {
+							text_single = {
+								name = "difficulty_label"
+								layoutpolicy_horizontal = expanding
+								text = "MULTIPLAYER_LOBBY_DIFFICULTY_HEADER"
+							}
+
+							text_multi = {
+								name = "difficulty"
+								layoutpolicy_horizontal = expanding
+								autoresize = yes
+								text = "MULTIPLAYER_LOBBY_DIFFICULTY_INFO_TEXT"
+								max_width = 680
+							}
+						}
+					}
+
+					scrollbar_vertical = {
+						using = Scrollbar_Vertical
+					}
+				}
+
+				expand = { }
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				visible = "[GetVariableSystem.Exists('sub_selection')]"
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					visible = "[GetVariableSystem.HasValue('sub_selection', 'playable_vassals')]"
+
+					button_text = {
 						layoutpolicy_horizontal = expanding
-
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							raw_text = "Primary title:"
+						blockoverride "text" {
+							raw_text = "Vassals of [Character.GetTitledFirstNameNoTooltip]. Close with Escape or E."
 						}
-
-						text_single = {
-							name = "character_title"
-							layoutpolicy_horizontal = expanding
-							raw_text = "[Character.GetPrimaryTitle.GetNameNoTooltip|U]."
-						}
-
-						text_single = {
-							name = "government_type"
-							layoutpolicy_horizontal = expanding
-							raw_text = "[Character.GetGovernment.GetName] [Character.GetPrimaryTitle.GetRankConcept]."
-						}
+						onclick = "[GetVariableSystem.Clear('sub_selection')]"
+						shortcut = map_mode_1
+						shortcut = close_window
 					}
 
-					expand = { }
-				}
-			}
-
-			spacer = {
-				size = { 10 5 }
-			}
-
-			scrollarea = {
-				layoutpolicy_horizontal = expanding
-				maximumsize = { -1 150 }
-				autoresizescrollarea = yes
-				scrollbarpolicy_horizontal = always_off
-				visible = "[Character.HasDifficultyInfo]"
-
-				scrollwidget = {
-					### DIFFICULTY ###
-					vbox = {
-						spacing = 5
-						margin_bottom = 10
-						visible = "[Character.HasDifficultyInfo]"
-
-						background = {
-							using = Background_Area
-							margin = { 10 0 }
+					scrollbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						blockoverride "scrollbox_margins" {
+							margin_top = 20
 						}
 
-						text_label_left = {
-							name = "difficulty_label"
-							layoutpolicy_horizontal = expanding
-							margin = { 10 5 }
-							text = "MULTIPLAYER_LOBBY_DIFFICULTY_HEADER"
-						}
-
-						text_multi = {
-							name = "difficulty"
-							layoutpolicy_horizontal = expanding
-							autoresize = yes
-							text = "MULTIPLAYER_LOBBY_DIFFICULTY_INFO_TEXT"
-							max_width = 380
+						blockoverride "scrollbox_content" {
+							region_list = {
+								datamodel = "[Character.MakeScope.GetList('playable_vassals')]"
+								blockoverride "extra_click" {
+									onclick = "[GetVariableSystem.Clear('sub_selection')]"
+								}
+							}
 						}
 					}
 				}
 
-				scrollbar_vertical = {
-					using = Scrollbar_Vertical
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					visible = "[GetVariableSystem.HasValue('sub_selection', 'playable_neighbours')]"
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "Neighbours of [Character.GetTitledFirstNameNoTooltip]. Close with Escape or Control A."
+						}
+						onclick = "[GetVariableSystem.Clear('sub_selection')]"
+						shortcut = map_mode_6
+						shortcut = close_window
+					}
+
+					scrollbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						blockoverride "scrollbox_margins" {
+							margin_top = 20
+						}
+
+						blockoverride "scrollbox_content" {
+							region_list = {
+								datamodel = "[Character.MakeScope.GetList('adjacent_rulers')]"
+								blockoverride "extra_click" {
+									onclick = "[GetVariableSystem.Clear('sub_selection')]"
+								}
+								blockoverride "direction" {
+									text_single = {
+										raw_text = "[Character.Custom('ruler_direction')]."
+									}
+								}
+							}
+							region_list = {
+								datamodel = "[Character.MakeScope.GetList('adjacent_vassals')]"
+								blockoverride "extra_click" {
+									onclick = "[GetVariableSystem.Clear('sub_selection')]"
+								}
+								blockoverride "direction" {
+									text_single = {
+										raw_text = "test [Character.Custom('ruler_direction')]."
+									}
+								}
+							}
+						}
+					}
 				}
 			}
-
-			spacer = {
-				size = { 10 5 }
-			}
-
-			expand = { }
-
-			divider_light = {
-				layoutpolicy_horizontal = expanding
-			}
-
-			spacer = { size = {0 8}}
 		}
 	}
 
 	blockoverride "game_rules" {
 		vbox = {
+			visible = "[Not(GetVariableSystem.Exists('sub_selection'))]"
 			layoutpolicy_horizontal = expanding
 			spacing = 5
 			margin_right = 10
 			margin_bottom = 15
-			
+
 			button_text = {
 				layoutpolicy_horizontal = expanding
 				blockoverride "pre" {
@@ -386,94 +606,6 @@ JominiMultiplayerLobby = {
 				name = "game_rules_mini"
 				margin_left = 5
 			}
-
-			vbox = {
-				name = "select_and_customize_character"
-				datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter]"
-
-				button_standard = {
-					name = "create_ruler"
-					size = { 380 45 }
-					# visible = "[IsPreparationLobby]"
-					datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter]"
-
-					button_edit_text = {
-						size = { 30 30 }
-						parentanchor = left|vcenter
-						position = { 5 0 }
-						alwaystransparent = yes
-					}
-
-					visible = "[And(LobbyView.CanTryStartRulerDesigning( Character.Self ), IsPreparationLobby)]"
-
-					tooltip = "[LobbyView.GetTryStartRulerDesigningDesc( Character.Self )]"
-					text = "RULER_DESIGNER_OPEN"
-
-					onclick = "[LobbyView.UnReady]"
-					onclick = "[TryStartRulerDesigning( Character.Self )]"
-				}
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					visible = "[Or(Or(Character.IsOtherPlayer, Character.IsLocalPlayer), And(Not(Character.IsValid), IsObserver))]"
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						margin = { 5 16 }
-
-						background = {
-							using = Background_Area_Dark
-						}
-
-						text_single = {
-							name = "player"
-							visible = "[Character.IsOtherPlayer]"
-							text = "MULTIPLAYER_LOBBY_PLAYED_BY"
-							align = nobaseline
-							default_format = "#high"
-						}
-
-						text_single = {
-							name = "its_you"
-							visible = "[Character.IsLocalPlayer]"
-							text = "MULTIPLAYER_LOBBY_PLAYED_BY_YOU"
-							align = nobaseline
-							default_format = "#high"
-						}
-
-						text_single = {
-							visible = "[And(Not(Character.IsValid), IsObserver)]"
-							size = { 380 100 }
-							align = center
-							text = "MULTIPLAYER_LOBBY_PLAY_OBSERVER"
-						}
-					}
-				}
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					margin = { 10 10 }
-					visible = "[Not( Or( Character.IsOtherPlayer, Character.IsLocalPlayer ) )]"
-
-					button_primary_text = {
-						layoutpolicy_horizontal = expanding
-						visible = "[And( GameIsMultiplayer, IsPreparationLobby )]"
-						blockoverride "text" {
-							text = "JOMINI_MULTIPLAYER_GUI_SELECT"
-						}
-						blockoverride "disabled" {
-							visible = "[Not(LobbyView.CanControlSelected)]"
-						}
-						blockoverride "hotkey" {
-							visible = "[LobbyView.CanControlSelected]"
-						}
-
-						onclick = "[LobbyView.ControlSelected]"
-						tooltip = "[LobbyView.GetControlToolTip]"
-						enabled = "[LobbyView.CanControlSelected]"
-					}
-				}
-			}
 		}
 	}
 
@@ -486,7 +618,7 @@ JominiMultiplayerLobby = {
 
 			text_multi = {
 				layoutpolicy_horizontal = expanding
-				text = "MULTIPLAYER_LOBBY_READY"
+				raw_text = "[Localize('MULTIPLAYER_LOBBY_READY')]."
 				visible = "[And( LobbyPlayer.HasPlayable, Not( LobbyPlayer.IsObserver ) )]"
 				max_width = 245
 				autoresize = yes
@@ -494,20 +626,20 @@ JominiMultiplayerLobby = {
 
 			text_single = {
 				layoutpolicy_horizontal = expanding
-				text = "[SelectLocalization( IsMachineRulerDesigning( LobbyPlayer.GetID ), 'MULTIPLAYER_LOBBY_RULER_DESIGNING', 'MULTIPLAYER_LOBBY_NOT_READY' )]"
+				raw_text = "[SelectLocalization( IsMachineRulerDesigning( LobbyPlayer.GetID ), 'MULTIPLAYER_LOBBY_RULER_DESIGNING', 'MULTIPLAYER_LOBBY_NOT_READY' )]."
 				visible = "[Not( Or( Or( LobbyPlayer.HasPlayable, LobbyPlayer.IsObserver ), LobbyPlayer.IsHotjoining ) )]"
 			}
 
 			text_single = {
 				layoutpolicy_horizontal = expanding
-				text = "JOMINI_MULTIPLAYER_GUI_OBSERVER"
+				raw_text = "[Localize('JOMINI_MULTIPLAYER_GUI_OBSERVER')]."
 				visible = "[LobbyPlayer.IsObserver]"
 			}
 
 			text_single = {
 				layoutpolicy_horizontal = expanding
 				visible = "[LobbyPlayer.IsHotjoining]"
-				text = "MULTIPLAYER_LOBBY_JOIN_PROGRESS"
+				raw_text = "[Localize('MULTIPLAYER_LOBBY_JOIN_PROGRESS')]."
 			}
 
 			expand = { }
@@ -521,6 +653,7 @@ JominiMultiplayerLobby = {
 		expand = { }
 
 		map_modes = {
+			visible = "[GetVariableSystem.Exists('ocr')]"
 			scale = 0.8
 			filter_mouse = all
 			alwaystransparent = no

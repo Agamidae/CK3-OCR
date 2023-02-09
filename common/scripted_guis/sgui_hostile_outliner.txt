@@ -6,6 +6,61 @@
 
 ###
 
+hide_units_in_war = {
+	saved_scopes = { target }
+
+	effect = {
+		if = {
+			limit = {
+				is_target_in_variable_list = {
+					name = hidden_wars
+					target = scope:target
+				}
+			}
+			remove_list_variable = {
+				name = hidden_wars
+				target = scope:target
+			}
+		}
+		else = {
+			add_to_variable_list = {
+				name = hidden_wars
+				target = scope:target
+			}
+		}
+	}
+	is_shown = {
+		is_target_in_variable_list = {
+			name = hidden_wars
+			target = scope:target
+		}
+	}
+}
+
+should_hide_army = {
+	saved_scopes = { target }
+
+	is_shown = {
+		NOT = {
+			any_in_list = {
+				variable = hidden_wars
+				save_temporary_scope_as = war
+				scope:target = {
+					army_owner = {
+						is_participant_in_war = scope:war
+					}
+				}
+			}
+		}
+	}
+}
+
+are_any_wars_hidden = {
+	is_shown = {
+		has_variable_list = hidden_wars
+	}
+}
+
 add_from_map_outliner = {
 	saved_scopes = { target }
 
@@ -78,12 +133,22 @@ add_from_map_outliner = {
 sort_armies = {
 
 	effect = {
+		clear_variable_list = wars_outliner
 		clear_variable_list = hostiles_inside
 		clear_variable_list = hostiles_outside
 		clear_variable_list = in_the_fog
 		clear_variable_list = allied_units
 		clear_variable_list = battles
 		save_scope_as = player
+
+		every_character_war = {
+			root = {
+				add_to_variable_list = {
+					name = wars_outliner
+					target = prev
+				}
+			}
+		}
 
 		every_war_ally = {
 			every_army = {
@@ -279,6 +344,7 @@ sort_armies = {
 					set_variable = {
 						name = enemy_here
 						value = prev
+						days = 1
 					}
 				}
 				if = {
@@ -450,7 +516,7 @@ sort_armies = {
 			limit = {
 				is_army_in_combat = yes
 			}
-			add_to_list = batles
+			add_to_list = battles
 			root = {
 				add_to_variable_list = {
 					name = battles
@@ -678,6 +744,43 @@ clear_dead_armies = {
 
 ####
 
+manual_zoom_out_ocr = {
+	effect = {
+		pan_camera_to_title = title:e_byzantium
+	}
+}
+
+manual_zoom_in_ocr = {
+	effect = {
+		if = {
+			limit = { root = { exists = var:selected_army } }
+			pan_camera_to_province = var:selected_army.location
+		}
+		else_if = {
+			limit = {
+				any_army = {
+					has_variable = last_selected_army
+				}
+			}
+			random_army = {
+				limit = { has_variable = last_selected_army }
+				pan_camera_to_province = location
+			}
+		}
+		else_if = {
+			limit = {
+				has_raised_armies = yes
+			}
+			random_army = {
+				pan_camera_to_province = location
+			}
+		}
+		else = {
+			pan_camera_to_title = root.capital_county
+		}
+	}
+}
+
 manual_zoom_out = {
 	effect = {
 		# clear_variable_list = hostiles_inside
@@ -847,6 +950,8 @@ hostile_forts = {
 		clear_variable_list = hostile_war_targets
 		clear_variable_list = enemy_capitals
 
+		save_scope_as = player
+
 		if = {
 			limit = {
 				is_at_war = yes
@@ -881,7 +986,7 @@ hostile_forts = {
 			ordered_in_list = {
 				list = enemy_capitals
 				order_by = {
-					value = distance_to_player
+					value = distance_to_army_or_capital
 					multiply = -1
 				}
 				min = 0
@@ -900,6 +1005,9 @@ hostile_forts = {
 						every_in_de_facto_hierarchy = {
 							limit = {
 								tier = tier_county
+								title_province = {
+									NOT = { is_in_list = enemy_capitals }
+								}
 							}
 							title_province = {
 								add_to_list = war_targets
@@ -928,6 +1036,7 @@ hostile_forts = {
 							}
 						}
 					}
+
 				}
 				add_to_list = hostile_war_targets
 				remove_from_list = war_targets
@@ -940,7 +1049,7 @@ hostile_forts = {
 			ordered_in_list = {
 				list = hostile_war_targets
 				order_by = {
-					value = distance_to_player
+					value = distance_to_army_or_capital
 					multiply = -1
 				}
 				min = 0
@@ -976,6 +1085,7 @@ hostile_forts = {
 					limit = {
 						fort_level > 0
 						NOR = {
+							is_in_list = enemy_capitals
 							is_in_list = war_targets
 							is_in_list = hostile_war_targets
 						}
@@ -1015,7 +1125,7 @@ hostile_forts = {
 			ordered_in_list = {
 				list = hostile_forts_unsorted
 				order_by = {
-					value = distance_to_player
+					value = distance_to_army_or_capital
 					multiply = -1
 				}
 				min = 0
@@ -1048,7 +1158,7 @@ hostile_forts = {
 			ordered_in_list = {
 				list = hostile_forts
 				order_by = {
-					value = distance_to_player
+					value = distance_to_army_or_capital
 					multiply = -1
 				}
 				min = 0
@@ -1155,8 +1265,13 @@ hostile_forts = {
 			# }
 
 			# add the rest
-			every_in_list = {
+			ordered_in_list = {
 				list = hostile_forts
+				order_by = {
+					value = distance_to_army_or_capital
+					multiply = -1
+				}
+				min = 0
 				root = {
 					add_to_variable_list = {
 						name = hostile_forts
@@ -1526,7 +1641,7 @@ save_army_position = {
 			set_variable = {
 				name = army_position
 				value = scope:target.location
-				days = 1
+				days = 15
 			}
 		}
 		else = {
@@ -1535,7 +1650,7 @@ save_army_position = {
 		set_variable = {
 			name = selected_army
 			value = scope:target
-			days = 1
+			days = 15
 		}
 
 		every_army = {
@@ -1555,7 +1670,7 @@ save_combat_position = {
 		set_variable = {
 			name = army_position
 			value = scope:target.location
-			days = 1
+			days = 15
 		}
 		every_army = {
 			remove_variable = last_selected_army
@@ -1599,6 +1714,7 @@ county_holding_list = {
 			name = order
 			value = 0
 		}
+		save_scope_as = this_county
 		clear_variable_list = county_holdings
 
 		ordered_county_province = {
@@ -1621,5 +1737,12 @@ county_holding_list = {
 				}
 			}
 		}
+	}
+}
+
+teleport_army = {
+	saved_scopes = { target }
+	effect = {
+		set_army_location = scope:target
 	}
 }

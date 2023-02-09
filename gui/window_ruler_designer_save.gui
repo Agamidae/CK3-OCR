@@ -1,0 +1,207 @@
+window = {
+	name = "save_ruler_window"
+	size = { 100% 100% }
+	movable = no
+	layer = confirmation
+	filter_mouse = all
+	using = TooltipFocus
+
+	background = {
+		texture = "gfx/interface/colors/black.dds"
+		alpha = 0.6
+	}
+
+	button_normal = {
+		size = { 100% 100% }
+		onclick = "[RulerDesignerSaveWindow.Cancel]"
+	}
+
+	widget = {
+		size = { 520 100% }
+		parentanchor = center
+		alwaystransparent = no
+
+		using = Window_Background_No_Edge
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				margin = { 5 5 }
+
+				spacer = {
+					size = { 444 0 }
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						editbox_standard_with_label = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "editbox_label"
+							{
+								text = "SAVE_NAME_LABEL"
+								layoutpolicy_horizontal = expanding
+							}
+
+							blockoverride "editbox_properties" {
+								name = "save_name"
+								text = "[RulerDesignerSaveWindow.GetDefaultSaveName]"
+								ontextedited = "[RulerDesignerSaveWindow.UpdateSaveName]"
+								onreturnpressed = "[RulerDesignerSaveWindow.Save]"
+								margin_left = 5
+
+								text_single = {
+									margin_left = 5
+									raw_text = "Enter name here."
+									visible = "[StringIsEmpty(RulerDesignerSaveWindow.GetDefaultSaveName)]"
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+							raw_text = "[Localize('CANCEL')], hotkey Escape."
+					    }
+						onclick = "[RulerDesignerSaveWindow.Cancel]"
+						shortcut = "close_window"
+					}
+
+					button_primary_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							text = "RULER_DESIGNER_SAVE_WINDOW_SAVE"
+						}
+						blockoverride "disabled" {
+							visible = "[Not(RulerDesignerSaveWindow.CanSaveInFile)]"
+						}
+						blockoverride "hotkey" {
+							visible = "[RulerDesignerSaveWindow.CanSaveInFile]"
+						}
+						name = "save_button"
+						enabled = "[RulerDesignerSaveWindow.CanSaveInFile]"
+						onclick = "[RulerDesignerSaveWindow.Save]"
+						tooltip = "[RulerDesignerSaveWindow.CanSaveInFileTooltip]"
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "Existing saves:"
+				}
+
+				scrollbox = {
+					layoutpolicy_horizontal = growing
+					layoutpolicy_vertical = expanding
+
+					blockoverride "scrollbox_content"
+					{
+						vbox = {
+							datamodel = "[RulerDesignerSaveWindow.GetSavedRulers]"
+
+							item = {
+
+								button_saved_rulers = {
+									size = { 480 48 }
+									blockoverride "down_state" {
+										down = "[RulerDesignerSaveWindow.IsSelectedItem(SaveRulerItem.Self)]"
+									}
+								}
+							}
+						}
+					}
+				}
+
+			}
+		}
+	}
+}
+
+
+types SaveLoadRulers
+{
+	type button_saved_rulers = button_standard_hover {
+		size = { 390 60 }
+		layoutpolicy_horizontal = expanding
+		onclick = "[SaveRulerItem.Select]"
+		down = "[RulerDesignerSaveWindow.IsSelectedItem(SaveRulerItem.Self)]"
+		block "down_state" {}
+
+		vbox = {
+			margin = { 10 5 }
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					vbox = {
+						layoutpolicy_vertical = expanding
+
+						hbox = {
+						    layoutpolicy_horizontal = expanding
+
+							text_single = {
+								name = "filename"
+								text = "[SaveRulerItem.GetFilename]"
+								max_width = 300
+							}
+
+							text_single = {
+								raw_text = ", Selected"
+								block "selected" {
+									visible = "[RulerDesignerSaveWindow.IsSelectedItem(SaveRulerItem.Self)]"
+								}
+							}
+
+							dot = { }
+
+						    expand = { }
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 5
+
+							text_single = {
+								text = "[SaveRulerItem.GetUsedPoints]"
+							}
+
+							text_single = {
+								name = "customisation_points"
+								text = "[Localize('RULER_DESIGNER_SAVE_LOAD_USED_POINTS_LABEL')]."
+							}
+
+							expand = { }
+						}
+
+						expand = { }
+					}
+
+					expand = { }
+				}
+			}
+		}
+	}
+}
+
+template ProgressBar_Achievements_Save
+{
+	size = { 250 20 }
+	value = "[CurrentAndMaxToProgressbarValueInt32( SaveRulerItem.GetUsedPoints, GetDefine( 'NRulerDesigner', 'IRONMAN_POINT_MAX' ) )]"
+}

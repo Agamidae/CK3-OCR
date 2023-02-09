@@ -37,16 +37,28 @@ widget = {
 		}
 	}
 
+	widget = {
+		visible = "[IsGamePaused]"
+
+	}
+
+	# state = {
+	# 	name = daily_tick
+	# 	trigger_on_create = yes
+	# }
+
 	state = {
-		name = daily_tick
-		on_start = "[GetScriptedGui('zoom_out').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		name = pause_update
+		trigger_when = "[IsGamePaused]"
+
+		on_finish = "[GetScriptedGui('zoom_out').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 
 		next = a
 	}
 
 	state = {
 		name = a
-		delay = 0.5
+		delay = 0.3
 		# fires an animation on all armies in map_icon_layer_templates, which fires a scripted gui add_from_map_outliner in sgui_hostile_outliner. This adds it to a temp list.
 		on_start = "[PdxGuiTriggerAllAnimations('add_from_map')]"
 
@@ -135,10 +147,11 @@ widget = {
 			onclick = "[PdxGuiTriggerAllAnimations('add_from_map')]"
 			# onclick = "[GetScriptedGui('zoom_out').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 			onclick = "[PdxGuiWidget.TriggerAnimation('a')]"
+			shortcut = map_mode_11
 
 			state = {
 				name = a
-				delay = 0.5
+				delay = 0.3
 				on_start = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 				on_start = "[GetScriptedGui('clear_dead_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 				on_start = "[GetScriptedGui('manual_zoom_in').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
@@ -156,7 +169,7 @@ widget = {
 
 			text_single = {
 				margin = { 20 0 }
-				raw_text = "Outliner, hotkey O. Reload with Shift E. Updates daily."
+				raw_text = "Outliner, hotkey O. Reload with Shift E. Updates on pause."
 				layoutpolicy_horizontal = expanding
 			}
 
@@ -164,7 +177,6 @@ widget = {
 				onclick = "[ToggleGameView('outliner')]"
 				shortcut = close_window
 			}
-			shortcut = map_mode_11
 		}
 
 
@@ -234,7 +246,7 @@ widget = {
 						blockoverride "oh_button"
 						{
 							onclick = "[Outliner.ToggleCategory('pinned_character')]"
-							tooltip = "[SelectLocalization( Outliner.IsCategoryShown('pinned_character'), 'OUTLINER_COLLAPSE', 'OUTLINER_EXPAND' )]"
+							# tooltip = "[SelectLocalization( Outliner.IsCategoryShown('pinned_character'), 'OUTLINER_COLLAPSE', 'OUTLINER_EXPAND' )]"
 						}
 
 						blockoverride "oh_toggle_frame"
@@ -255,6 +267,12 @@ widget = {
 						blockoverride "expanded"
 						{
 							frame = "[BoolTo1And2(Outliner.IsCategoryShown('pinned_character'))]"
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = ", [Select_CString(Outliner.IsCategoryShown('pinned_character'), 'Click to close', 'Click to expand')]"
+								align = nobaseline
+							}
 						}
 					}
 
@@ -481,31 +499,11 @@ widget = {
 						shortcut = map_mode_10
 					}
 
-
-					# text_single = {
-					# 	layoutpolicy_horizontal = expanding
-					# 	raw_text = "Seen on the map."
-					# }
-					#
-					# vbox = {
-					# 	datamodel = "[GetPlayer.MakeScope.GetList('hostile_armies_temp')]"
-					# 	layoutpolicy_horizontal = expanding
-					# 	margin = { 8 0 }
-					# 	spacing = -2
-					#
-					# 	item = {
-					# 		army_button_o = { }
-					# 	}
-					# }
-
-					# allied armies
+					# battles
 					button_outliner_header = {
 						layoutpolicy_horizontal = expanding
 						visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('battles'))))]"
 
-						# tooltipwidget = {
-						# 	outliner_tooltip = { }
-						# }
 
 						blockoverride "button_expand_frame"
 						{
@@ -560,6 +558,8 @@ widget = {
 
 							item = {
 								army_button_o = {
+									blockoverride "war_filter" {
+									}
 									visible = "[GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End )]"
 									blockoverride "context" {
 										datacontext = "[UnitItem.GetArmy]"
@@ -593,6 +593,8 @@ widget = {
 
 							item = {
 								army_button_o = {
+									blockoverride "war_filter" {
+									}
 									visible = "[GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End )]"
 									blockoverride "fighting" {
 									}
@@ -656,6 +658,8 @@ widget = {
 
 						item = {
 							army_button_o = {
+								blockoverride "war_filter" {
+								}
 								blockoverride "context" {
 									datacontext = "[UnitItem.GetArmy]"
 								}
@@ -680,61 +684,43 @@ widget = {
 						}
 					}
 
-					# # battles
-					# button_outliner_header = {
-					# 	layoutpolicy_horizontal = expanding
-					# 	visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('battles')))]"
-					#
-					# 	tooltipwidget = {
-					# 		outliner_tooltip = { }
-					# 	}
-					#
-					# 	blockoverride "button_expand_frame"
-					# 	{
-					# 		frame = "[BoolTo2And1(GetVariableSystem.Exists('battles'))]"
-					# 	}
-					#
-					# 	blockoverride "oh_button"
-					# 	{
-					# 		onclick = "[GetVariableSystem.Toggle('battles')]"
-					# 		oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
-					# 		clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
-					# 	}
-					#
-					# 	blockoverride "oh_toggle_frame"
-					# 	{
-					# 		frame = "[BoolTo2And1(GetVariableSystem.Exists('battles'))]"
-					# 	}
-					#
-					# 	blockoverride "oh_name"
-					# 	{
-					# 		raw_text = "Battles"
-					#
-					# 	}
-					#
-					# 	blockoverride "oh_count"
-					# 	{
-					# 		raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('battles'))]"
-					# 	}
-					# 	blockoverride "expanded"
-					# 	{
-					# 		frame = "[BoolTo2And1(GetVariableSystem.Exists('battles'))]"
-					# 	}
-					# }
-					#
-					# # battles
-					# vbox = {
-					# 	datamodel = "[GetPlayer.MakeScope.GetList('battles')]"
-					# 	visible = "[And(Not(GetVariableSystem.Exists('battles')), GetPlayer.IsValid)]"
-					# 	layoutpolicy_horizontal = expanding
-					# 	margin = { 8 0 }
-					# 	spacing = -2
-					#
-					# 	item = {
-					# 		army_button_o = { }
-					# 	}
-					# }
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						margin_top = 3
+						datamodel = "[GetPlayer.MakeScope.GetList('wars_outliner'))]"
+						visible = "[Or(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('wars_outliner')), '(int32)1'), GetScriptedGui('are_any_wars_hidden').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ))]"
+						item = {
+							hbox = {
+								margin = { 0 3 }
+								margin_left = 10
+								layoutpolicy_horizontal = expanding
+								datacontext = "[Scope.War]"
 
+								background = { using = Background_Area_Border_Solid }
+
+								button_text = {
+									blockoverride "pre" {
+										text_single = {
+											raw_text = "Not showing [War.GetPrimaryPlayerEnemy.GetPrimaryTitle.GetNameNoTierNoTooltip] war. Click to show"
+											visible = "[GetScriptedGui('hide_units_in_war').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', War.MakeScope).End )]"
+											align = nobaseline
+										}
+										text_single = {
+											raw_text = "Showing [War.GetPrimaryPlayerEnemy.GetPrimaryTitle.GetNameNoTierNoTooltip] war participants, click to hide"
+											visible = "[Not(GetScriptedGui('hide_units_in_war').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', War.MakeScope).End ))]"
+											align = nobaseline
+										}
+									}
+									blockoverride "text" {
+										raw_text = "."
+									}
+									onclick = "[GetScriptedGui('hide_units_in_war').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', War.MakeScope).End )]"
+								}
+
+								expand = { }
+							}
+						}
+					}
 
 					# hostiles in your land
 					button_outliner_header = {
@@ -919,7 +905,7 @@ widget = {
 						}
 					}
 
-					# hostiles outside your land
+					# hostiles in the fog
 					vbox = {
 						datamodel = "[GetPlayer.MakeScope.GetList('in_the_fog')]"
 						visible = "[And(Not(GetVariableSystem.Exists('in_the_fog')), GetPlayer.IsValid)]"
@@ -933,6 +919,9 @@ widget = {
 									text_single = {
 										raw_text = "Hidden,"
 									}
+								}
+								blockoverride "fog" {
+									visible = no
 								}
 							}
 						}
@@ -1140,7 +1129,7 @@ widget = {
 						}
 					}
 
-					expand = {}
+					expand = { }
 				}
 			}
 		}
@@ -1215,20 +1204,14 @@ types Outliner {
 			datacontext = "[Scope.Army]"
 		}
 		layoutpolicy_horizontal = expanding
-		# block "size" {
-		# 	size = { 0 44 }
-		# }
 
-		# button_ignore = none
-		# scissor = yes
-		# minimumsize = { 600 -1 }
+		block "war_filter" {
+			visible = "[GetScriptedGui('should_hide_army').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Army.MakeScope).End )]"
+		}
 
 		vbox = {
 			layoutpolicy_horizontal = expanding
-			# resizeparent = yes
-			# margin = { 5 0 }
-			# margin_bottom = 10
-			# max_width = 350W
+
 			spacing = -1
 			margin_bottom = 2
 			margin_left = 5
@@ -1342,8 +1325,10 @@ types Outliner {
 						}
 
 						flowcontainer = {
+							block "fog" {
+								visible = "[Army.MakeScope.Var('armies').IsSet]"
+							}
 							ignoreinvisible = yes
-							visible = "[Army.MakeScope.Var('armies').IsSet]"
 							datacontext = "[Army.MakeScope.Var('commander').GetCharacter]"
 
 							button_text = {
@@ -1352,14 +1337,14 @@ types Outliner {
 								}
 								using = char_click
 							    blockoverride "text" {
-									raw_text = "[Character.GetCommanderAdvantage] advantage leader"
+									raw_text = "[Character.GetCommanderAdvantage] advantage leader,"
 							    }
 								visible = "[Character.IsValid]"
 							}
 
 							text_single = {
 								visible = "[And(Character.IsValid, GetVariableSystem.Exists('compact_units'))]"
-								raw_text = ", [Character.GetShortUINameNoTooltip]."
+								raw_text = " [Character.GetShortUINameNoTooltip]."
 							}
 
 							text_single = {
@@ -1370,23 +1355,25 @@ types Outliner {
 
 						flowcontainer = {
 							ignoreinvisible = yes
-							visible = "[Not(Army.MakeScope.Var('armies').IsSet)]"
+							block "fog" {
+								visible = "[Not(Army.MakeScope.Var('armies').IsSet)]"
+							}
 
 							button_text = {
 								blockoverride "margins" {
-									margin_top = 2
+									margin_top = 3
 								}
 								datacontext = "[Army.GetCommander]"
 								using = char_click
 							    blockoverride "text" {
-									raw_text = "[Army.GetCommander.GetCommanderAdvantage] advantage leader"
+									raw_text = "[Army.GetCommander.GetCommanderAdvantage] advantage leader,"
 							    }
 								visible = "[Army.GetCommander.IsValid]"
 							}
 
 							text_single = {
 								visible = "[And(Army.GetCommander.IsValid, GetVariableSystem.Exists('compact_units'))]"
-								raw_text = ", [Army.GetCommander.GetShortUINameNoTooltip]."
+								raw_text = " [Army.GetCommander.GetShortUINameNoTooltip]."
 							}
 
 							text_single = {
@@ -1513,7 +1500,9 @@ types Outliner {
 			}
 
 			button_text = {
-				visible = "[GetVariableSystem.Exists('compact_units')]"
+				block "fog" {
+					visible = "[GetVariableSystem.Exists('compact_units')]"
+				}
 				layoutpolicy_horizontal = expanding
 				block "click" {
 					enabled = "[Army.GetLocation.GetCoATitle.IsValid]"
@@ -1595,6 +1584,7 @@ types Outliner {
 			}
 
 			button_text = {
+				block "fog" { }
 				layoutpolicy_horizontal = expanding
 				block "click" {
 					enabled = "[Army.GetLocation.GetCoATitle.IsValid]"
