@@ -33,6 +33,7 @@ types JominiServerBrowser {
 			on_start = "[GetVariableSystem.Clear('second_region')]"
 			on_start = "[GetVariableSystem.Clear('region')]"
 			on_start = "[GetVariableSystem.Clear('regions')]"
+			on_start = "[GetVariableSystem.Clear('server_ID')]"
 		}
 
 		state = {
@@ -42,7 +43,7 @@ types JominiServerBrowser {
 			using = Sound_WindowHide_Standard
 		}
 
-		block "serverbrowser_background" {}
+		block "serverbrowser_background" { }
 
 		vbox = {
 			spacing = 5
@@ -54,7 +55,7 @@ types JominiServerBrowser {
 
 				blockoverride "header_text"
 				{
-					text = "JOMINI_MULTIPLAYER_SERVER_BROWSER_HEADER"
+					raw_text = "[Localize('JOMINI_MULTIPLAYER_SERVER_BROWSER_HEADER')]."
 				}
 
 				blockoverride "button_close" {
@@ -67,7 +68,57 @@ types JominiServerBrowser {
 				layoutpolicy_vertical = expanding
 				margin_top = 15
 				margin_left = 10
-				spacing = 10
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[GetVariableSystem.Exists('server_ID')]"
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 10
+
+						JominiMultiplayerTextbox = {
+							text = "Review server id:"
+							autoresize = yes
+						}
+
+						editbox_standard = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "editbox_properties"
+							{
+								name = "server_id_editbox"
+							}
+						}
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							text = "Join the game using the id."
+						}
+						minimumsize = { 220 0 }
+						onclick = "[JominiServerBrowserGui.JoinServerWithId]"
+						block "serverbrowser_join_server" { }
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+					        raw_text = "Hide server id."
+					    }
+						onclick = "[GetVariableSystem.Clear('server_ID')]"
+					}
+				}
+
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+				    blockoverride "text" {
+				        raw_text = "Paste server id from clipboard if you were sent one."
+				    }
+					onclick = "[JominiServerBrowserGui.SetServerId]"
+					onclick = "[GetVariableSystem.Set('server_ID', 'yes')]"
+				}
 
 				### PUBLIC GAME ###
 				vbox = {
@@ -77,59 +128,248 @@ types JominiServerBrowser {
 					margin_right = 10
 
 					text_single = {
-						text = "JOMINI_MULTIPLAYER_PUBLIC_GAMES"
+						raw_text = "[GetDataModelSize(JominiServerBrowserGui.AccessServers)] [Localize('JOMINI_MULTIPLAYER_PUBLIC_GAMES')]."
 						layoutpolicy_horizontal = expanding
 						align = left
 						default_format = "#low"
 					}
 
-					hbox = {
+					vbox = {
+						#TODO
+						visible = "[GetVariableSystem.Exists('mp_sorting')]"
 						layoutpolicy_horizontal = expanding
-						spacing = 20
+						spacing = 5
+						margin_top = 20
+						margin_left = 10
 
-						JominiMultiplayerCheckbutton = {
-							blockoverride "checkbutton"
-							{
-								onclick = "[JominiServerBrowserGui.ToggleHasPasswordFilter]"
-								checked = "[Not( JominiServerBrowserGui.IsHasPasswordFilterSet )]"
-							}
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "Sort by:"
+						}
 
-							blockoverride "label"
-							{
-								text = "JOMINI_MULTIPLAYER_GUI_SERVER_FILTER_LABEL_HAS_PASSWORD"
-								align = nobaseline
+						### SERVER/GAME NAME ###
+						button_standard_list = {
+							size = { 260 33 }
+							layoutpolicy_horizontal = expanding
+							onclick = "[JominiServerBrowserGui.Sort( 'name' )]"
+							tooltip = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_TT_SERVER_NAME"
+							using = tooltip_ne
+
+							hbox = {
+								spacing = 5
+								margin_left = 10
+
+								text_single = {
+									layoutpolicy_vertical = expanding
+									align = nobaseline
+									text = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_LABEL_SERVER_NAME"
+									max_width = 250
+								}
+
+								expand = { }
+
+								vbox = {
+									layoutpolicy_vertical = expanding
+
+									JominiMultiplayerSortButtonAsc = {
+										visible = "[And( JominiServerBrowserGui.IsSortAscending, JominiServerBrowserGui.IsSortedBy( 'name' ) )]"
+									}
+
+									JominiMultiplayerSortButtonDesc = {
+										visible = "[And( Not( JominiServerBrowserGui.IsSortAscending ), JominiServerBrowserGui.IsSortedBy( 'name' ) )]"
+									}
+								}
 							}
 						}
 
-						JominiMultiplayerCheckbutton = {
-							blockoverride "checkbutton"
-							{
-								onclick = "[JominiServerBrowserGui.ToggleSameVersionFilter]"
-								checked = "[JominiServerBrowserGui.IsSameVersionFilterSet]"
-							}
+							### PLAYERS ###
+						button_standard_list = {
+							layoutpolicy_horizontal = expanding
+							size = { 140 33 }
+							onclick = "[JominiServerBrowserGui.Sort( 'players_count' )]"
+							tooltip = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_TT_PLAYERS"
+							using = tooltip_ne
 
-							blockoverride "label"
-							{
-								text = "TITUS_FILTER_SAME_VERSION"
-								align = nobaseline
+							hbox = {
+								spacing = 5
+								margin_left = 10
+
+								text_single = {
+									layoutpolicy_vertical = expanding
+									align = nobaseline
+									text = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_LABEL_PLAYERS"
+								}
+
+								expand = { }
+
+								vbox = {
+									layoutpolicy_vertical = expanding
+
+									JominiMultiplayerSortButtonAsc = {
+										visible = "[And( JominiServerBrowserGui.IsSortAscending, JominiServerBrowserGui.IsSortedBy( 'players_count' ) )]"
+									}
+
+									JominiMultiplayerSortButtonDesc = {
+										visible = "[And( Not( JominiServerBrowserGui.IsSortAscending ), JominiServerBrowserGui.IsSortedBy( 'players_count' ) )]"
+									}
+								}
 							}
 						}
 
-						JominiMultiplayerCheckbutton = {
+						### STATUS ###
+						button_standard_list = {
+							layoutpolicy_horizontal = expanding
+							size = { 150 33 }
+							onclick = "[JominiServerBrowserGui.Sort( 'status' )]"
+							tooltip = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_TT_STATUS"
+							using = tooltip_ne
+
+							hbox = {
+								spacing = 5
+								margin = { 5 0 }
+
+								text_single = {
+									layoutpolicy_vertical = expanding
+									align = nobaseline
+									text = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_LABEL_STATUS"
+								}
+
+								expand = { }
+
+								vbox = {
+									layoutpolicy_vertical = expanding
+
+									JominiMultiplayerSortButtonAsc = {
+										visible = "[And( JominiServerBrowserGui.IsSortAscending, JominiServerBrowserGui.IsSortedBy( 'status' ) )]"
+									}
+
+									JominiMultiplayerSortButtonDesc = {
+										visible = "[And( Not( JominiServerBrowserGui.IsSortAscending ), JominiServerBrowserGui.IsSortedBy( 'status' ) )]"
+									}
+								}
+							}
+						}
+
+						### CHECKSUM ###
+						button_standard_list = {
+							layoutpolicy_horizontal = expanding
+							size = { 145 33 }
+							onclick = "[JominiServerBrowserGui.Sort( 'version' )]"
+							tooltip = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_TT_VERSION"
+							using = tooltip_ne
+
+							hbox = {
+								spacing = 5
+								margin_left = 10
+
+								text_single = {
+									layoutpolicy_vertical = expanding
+									minimumsize = { 70 0 }
+									align = nobaseline
+									text = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_LABEL_VERSION"
+								}
+
+								expand = { }
+
+								vbox = {
+									layoutpolicy_vertical = expanding
+
+									JominiMultiplayerSortButtonAsc = {
+										visible = "[And( JominiServerBrowserGui.IsSortAscending, JominiServerBrowserGui.IsSortedBy( 'version' ) )]"
+									}
+
+									JominiMultiplayerSortButtonDesc = {
+										visible = "[And( Not( JominiServerBrowserGui.IsSortAscending ), JominiServerBrowserGui.IsSortedBy( 'version' ) )]"
+									}
+								}
+							}
+						}
+
+						### PASSWORD ###
+						button_standard_list = {
+							layoutpolicy_horizontal = expanding
+							size = { 80 33 }
+							onclick = "[JominiServerBrowserGui.Sort( 'has_password' )]"
+							tooltip = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_TT_PASSWORD"
+							using = tooltip_ne
+
+							hbox = {
+								margin_left = 10
+
+								text_single = {
+									raw_text = "Has password"
+								}
+
+								expand = { }
+
+								vbox = {
+									layoutpolicy_vertical = expanding
+
+									JominiMultiplayerSortButtonAsc = {
+										visible = "[And( JominiServerBrowserGui.IsSortAscending, JominiServerBrowserGui.IsSortedBy( 'has_password' ) )]"
+									}
+
+									JominiMultiplayerSortButtonDesc = {
+										visible = "[And( Not( JominiServerBrowserGui.IsSortAscending ), JominiServerBrowserGui.IsSortedBy( 'has_password' ) )]"
+									}
+								}
+							}
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "Filters:"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "pre" {
+								text_single = {
+									raw_text = "[Select_CString(JominiServerBrowserGui.IsHasPasswordFilterSet, 'Disabled', 'Enabled')],"
+								}
+								space = { }
+							}
+						    blockoverride "text" {
+								raw_text = "[Localize('JOMINI_MULTIPLAYER_GUI_SERVER_FILTER_LABEL_HAS_PASSWORD')]."
+								align = left
+						    }
+							onclick = "[JominiServerBrowserGui.ToggleHasPasswordFilter]"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+						    blockoverride "pre" {
+								text_single = {
+									raw_text = "[Select_CString(JominiServerBrowserGui.IsSameVersionFilterSet, 'Enabled', 'Disabled')],"
+								}
+								space = { }
+						    }
+							blockoverride "text" {
+								raw_text = "[Localize('TITUS_FILTER_SAME_VERSION')]"
+								align = left
+							}
+							onclick = "[JominiServerBrowserGui.ToggleSameVersionFilter]"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
 							visible = "[JominiMultiplayerIsCrossplayFilterAvailable]"
-
-							blockoverride "checkbutton"
-							{
-								onclick = "[JominiServerBrowserGui.ToggleCrossPlatformFilter]"
-								checked = "[Not(JominiServerBrowserGui.IsCrossPlatformFilterSet)]"
-								enabled = "[JominiMultiplayerIsCrossplayEnabled]"
+						    blockoverride "pre" {
+								text_single = {
+									raw_text = "[Select_CString(JominiServerBrowserGui.IsCrossPlatformFilterSet, 'Disabled', 'Enabled')],"
+								}
+								space = { }
+						    }
+							blockoverride "text" {
+								raw_text = "[Localize('MULTIPLAYER_GUI_PUBLIC_MICROSOFT_ONLY')]."
+								align = left
 							}
-
-							blockoverride "label"
-							{
-								text = "MULTIPLAYER_GUI_PUBLIC_MICROSOFT_ONLY"
-								align = nobaseline
-							}
+							onclick = "[JominiServerBrowserGui.ToggleCrossPlatformFilter]"
+							enabled = "[JominiMultiplayerIsCrossplayEnabled]"
 						}
 
 						editbox_search_field = {
@@ -138,198 +378,33 @@ types JominiServerBrowser {
 							{
 								name = "game_name_filter_editbox" #not used in code
 								ontextedited = "[JominiServerBrowserGui.OnFilterTextEdit]"
+								ontextedited = "[PdxGuiWidget.FindChild('text').Hide]"
+
+								text_single = {
+									margin_left = 5
+									name = "text"
+									raw_text = "Enter text here to filter by name."
+								}
 							}
 						}
 
-						button_group = {
+						button_text = {
+							layoutpolicy_horizontal = expanding
 							onclick = "[JominiServerBrowserGui.RefreshServers]"
-
-							hbox = {
-								spacing = 5
-								text_single = {
-									text = "REFRESH"
-									align = nobaseline
-								}
-
-								button_change = {
-									name = "scan_button"
-								}
-							}
+						    blockoverride "text" {
+								raw_text = "[Localize('REFRESH')]."
+						    }
 						}
 					}
 				}
 
-				hbox = {
+				button_text = {
 					layoutpolicy_horizontal = expanding
-					spacing = 5
-					margin_top = 20
-					margin_left = 10
-
-					### SERVER/GAME NAME ###
-					button_standard_list = {
-						size = { 260 33 }
-						onclick = "[JominiServerBrowserGui.Sort( 'name' )]"
-						tooltip = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_TT_SERVER_NAME"
-						using = tooltip_ne
-
-						hbox = {
-							spacing = 5
-							margin_left = 10
-
-							text_single = {
-								layoutpolicy_vertical = expanding
-								align = nobaseline
-								text = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_LABEL_SERVER_NAME"
-								max_width = 250
-							}
-
-							expand = {}
-
-							vbox = {
-								layoutpolicy_vertical = expanding
-
-								JominiMultiplayerSortButtonAsc = {
-									visible = "[And( JominiServerBrowserGui.IsSortAscending, JominiServerBrowserGui.IsSortedBy( 'name' ) )]"
-								}
-
-								JominiMultiplayerSortButtonDesc = {
-									visible = "[And( Not( JominiServerBrowserGui.IsSortAscending ), JominiServerBrowserGui.IsSortedBy( 'name' ) )]"
-								}
-							}
-						}
-					}
-
-					### PLAYERS ###
-					button_standard_list = {
-						size = { 140 33 }
-						onclick = "[JominiServerBrowserGui.Sort( 'players_count' )]"
-						tooltip = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_TT_PLAYERS"
-						using = tooltip_ne
-
-						hbox = {
-							spacing = 5
-							margin_left = 10
-
-							text_single = {
-								layoutpolicy_vertical = expanding
-								align = nobaseline
-								text = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_LABEL_PLAYERS"
-							}
-
-							expand = {}
-
-							vbox = {
-								layoutpolicy_vertical = expanding
-
-								JominiMultiplayerSortButtonAsc = {
-									visible = "[And( JominiServerBrowserGui.IsSortAscending, JominiServerBrowserGui.IsSortedBy( 'players_count' ) )]"
-								}
-
-								JominiMultiplayerSortButtonDesc = {
-									visible = "[And( Not( JominiServerBrowserGui.IsSortAscending ), JominiServerBrowserGui.IsSortedBy( 'players_count' ) )]"
-								}
-							}
-						}
-					}
-
-					### STATUS ###
-					button_standard_list = {
-						size = { 150 33 }
-						onclick = "[JominiServerBrowserGui.Sort( 'status' )]"
-						tooltip = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_TT_STATUS"
-						using = tooltip_ne
-
-						hbox = {
-							spacing = 5
-							margin = { 5 0 }
-
-							text_single = {
-								layoutpolicy_vertical = expanding
-								align = nobaseline
-								text = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_LABEL_STATUS"
-							}
-
-							expand = {}
-
-							vbox = {
-								layoutpolicy_vertical = expanding
-
-								JominiMultiplayerSortButtonAsc = {
-									visible = "[And( JominiServerBrowserGui.IsSortAscending, JominiServerBrowserGui.IsSortedBy( 'status' ) )]"
-								}
-
-								JominiMultiplayerSortButtonDesc = {
-									visible = "[And( Not( JominiServerBrowserGui.IsSortAscending ), JominiServerBrowserGui.IsSortedBy( 'status' ) )]"
-								}
-							}
-						}
-					}
-
-					### CHECKSUM ###
-					button_standard_list = {
-						size = { 145 33 }
-						onclick = "[JominiServerBrowserGui.Sort( 'version' )]"
-						tooltip = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_TT_VERSION"
-						using = tooltip_ne
-
-						hbox = {
-							spacing = 5
-							margin_left = 10
-
-							text_single = {
-								layoutpolicy_vertical = expanding
-								minimumsize = { 70 0 }
-								align = nobaseline
-								text = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_LABEL_VERSION"
-							}
-
-							expand = {}
-
-							vbox = {
-								layoutpolicy_vertical = expanding
-
-								JominiMultiplayerSortButtonAsc = {
-									visible = "[And( JominiServerBrowserGui.IsSortAscending, JominiServerBrowserGui.IsSortedBy( 'version' ) )]"
-								}
-
-								JominiMultiplayerSortButtonDesc = {
-									visible = "[And( Not( JominiServerBrowserGui.IsSortAscending ), JominiServerBrowserGui.IsSortedBy( 'version' ) )]"
-								}
-							}
-						}
-					}
-
-					### PASSWORD ###
-					button_standard_list = {
-						size = { 80 33 }
-						onclick = "[JominiServerBrowserGui.Sort( 'has_password' )]"
-						tooltip = "JOMINI_MULTIPLAYER_GUI_SERVER_SORT_TT_PASSWORD"
-						using = tooltip_ne
-
-						hbox = {
-							margin_left = 10
-
-							icon_has_password = {}
-
-							expand = {}
-
-							vbox = {
-								layoutpolicy_vertical = expanding
-
-								JominiMultiplayerSortButtonAsc = {
-									visible = "[And( JominiServerBrowserGui.IsSortAscending, JominiServerBrowserGui.IsSortedBy( 'has_password' ) )]"
-								}
-
-								JominiMultiplayerSortButtonDesc = {
-									visible = "[And( Not( JominiServerBrowserGui.IsSortAscending ), JominiServerBrowserGui.IsSortedBy( 'has_password' ) )]"
-								}
-							}
-						}
-					}
-
-					spacer = {
-						size = { 110 1 }
-					}
+				    blockoverride "text" {
+				        raw_text = "[Select_CString(GetVariableSystem.Exists('mp_sorting'), 'Hide', 'Show')] sorting options, Shift S."
+				    }
+					onclick = "[GetVariableSystem.Toggle('mp_sorting')]"
+					shortcut = mapmode_culture_secondary
 				}
 
 				scrollbox = {
@@ -347,7 +422,8 @@ types JominiServerBrowser {
 								hbox = {
 									layoutpolicy_horizontal = expanding
 
-									button_standard_clean = {
+									button = {
+										size = { 0 30 }
 										layoutpolicy_horizontal = expanding
 										onclick = "[JominiServer.Join]"
 										tooltip_enabled = "[Not(JominiServer.IsSameVersion)]"
@@ -362,106 +438,36 @@ types JominiServerBrowser {
 
 												hbox = {
 													margin_left = 10
+													spacing = 3
 
 													text_single = {
-														layoutpolicy_horizontal = expanding
-														autoresize = no
-														align = left|nobaseline
-														text = "[JominiServer.GetName]"
-														default_format = "#high"
+														raw_text = "Can't"
+														visible = "[Not(JominiServer.IsSameVersion)]"
+
 													}
-												}
-											}
-
-											widget = {
-												size = { 140 33 }
-
-												hbox = {
-													margin_left = 10
 
 													text_single = {
-														layoutpolicy_horizontal = expanding
-														autoresize = no
-														align = left|nobaseline
-														text = "[JominiServer.GetNumPlayers] / [JominiServer.GetMaxPlayers]"
-														default_format = "#high"
+														raw_text = "Join"
 													}
-												}
-											}
-
-											widget = {
-												size = { 140 33 }
-
-												hbox = {
-													margin_left = 10
 
 													text_single = {
-														layoutpolicy_horizontal = expanding
-														autoresize = no
-														align = left|nobaseline
-														text = "[JominiServer.GetStatus]"
-														default_format = "#high"
+														raw_text = "[JominiServer.GetName]."
 													}
-												}
-											}
-
-											### CHECKSUM ###
-											widget = {
-												size = { 150 33 }
-
-												hbox = {
-													margin_left = 10
 
 													text_single = {
-														layoutpolicy_horizontal = expanding
-														autoresize = no
-														align = left|nobaseline
-														text = "[JominiServer.GetVersion]"
-														default_format = "#high"
+														raw_text = "[JominiServer.GetNumPlayers] players out of [JominiServer.GetMaxPlayers],"
 													}
-												}
-											}
+													text_single = {
+														raw_text = "[JominiServer.GetStatus],"
+													}
 
-											widget = {
-												size = { 50 33 }
+													text_single = {
+														raw_text = "checksum: [JominiServer.GetVersion]"
+													}
 
-												hbox = {
-													margin_left = 10
-
-													icon_has_password = {
+													text_single = {
+														raw_text = "has password,"
 														visible = "[JominiServer.GetHasPassword]"
-														tooltip = "JOMINI_MULTIPLAYER_GUI_SERVER_PASSWORD_PROTECTED_TOOLTIP"
-													}
-
-													expand = {}
-												}
-											}
-
-											widget = {
-												size = { 115 33 }
-
-												hbox = {
-													margin_right = 5
-													margin_left = 10
-
-													expand = {}
-
-													text_single = {
-														align = left|nobaseline
-														max_width = 80
-
-														text = "JOMINI_MULTIPLAYER_GUI_SERVER_BROWSER_JOIN_BUTTON_IN_LIST"
-														default_format = "#high"
-													}
-
-													widget = {
-														size = { 20 20 }
-														allow_outside = yes
-
-														button_play = {
-															parentanchor = center
-															alwaystransparent = yes
-														}
 													}
 												}
 											}
@@ -482,52 +488,6 @@ types JominiServerBrowser {
 						layoutpolicy_vertical = expanding
 						visible = "[Or( IsDataModelEmpty( JominiServerBrowserGui.AccessServers ), JominiServerBrowserGui.IsRefreshing )]"
 					}
-				}
-
-				### PRIVATE GAME ####
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					spacing = 5
-					margin = { 5 0 }
-
-					text_single = {
-						text = "JOMINI_MULTIPLAYER_JOIN_PRIVATE_GAMES"
-						layoutpolicy_horizontal = expanding
-						align = left
-						default_format = "#low"
-					}
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						spacing = 10
-
-						JominiMultiplayerTextbox = {
-							text = "JOMINI_MULTIPLAYER_GUI_SERVER_BROWSER_ID_LABEL"
-							autoresize = yes
-							default_format = "#medium"
-						}
-
-						editbox_standard = {
-							layoutpolicy_horizontal = expanding
-							blockoverride "editbox_properties"
-							{
-								name = "server_id_editbox"
-							}
-						}
-
-						button_paste = {
-							onclick = "[JominiServerBrowserGui.SetServerId]"
-							tooltip = "MULTIPLAYER_GUI_SERVER_BROWSER_PASTE_ID"
-						}
-
-						button_standard = {
-							text = "JOIN"
-							minimumsize = { 220 0 }
-							onclick = "[JominiServerBrowserGui.JoinServerWithId]"
-							block "serverbrowser_join_server" {}
-						}
-					}
-
 				}
 			}
 		}
@@ -572,7 +532,7 @@ types JominiServerBrowser {
 				}
 			}
 
-			expand = {}
+			expand = { }
 
 			hbox = {
 				spacing = 10
@@ -660,7 +620,7 @@ types JominiMultiplayerIngame {
 									layoutpolicy_horizontal = expanding
 								}
 
-								expand = {}
+								expand = { }
 
 								button_standard = {
 									name = "reject_button"
@@ -770,7 +730,7 @@ types JominiMultiplayerIngame {
 							}
 						}
 
-						expand = {}
+						expand = { }
 					}
 				}
 			}
@@ -799,9 +759,9 @@ types JominiMultiplayerFrontend
 		name = "JominiMultiplayerView"
 		size = { 100% 100% }
 
-		block "background" {}
+		block "background" { }
 
-		block "states" {}
+		block "states" { }
 
 		block "menu"
 		{
@@ -856,7 +816,7 @@ types JominiMultiplayerSetup {
 		}
 	}
 
-	type JominiMultiplayerSetupTextBox = text_single {}
+	type JominiMultiplayerSetupTextBox = text_single { }
 
 	type JominiMultiplayerSetupCheckButton = hbox {
 		layoutpolicy_horizontal = expanding
@@ -865,7 +825,7 @@ types JominiMultiplayerSetup {
 
 		button_checkbox = {
 			size = { 20 20 }
-			block "checkbutton" {}
+			block "checkbutton" { }
 		}
 
 		JominiMultiplayerSetupTextBox = {
@@ -1052,7 +1012,7 @@ types JominiMultiplayerSetup {
 				}
 
 
-				expand = {}
+				expand = { }
 
 				vbox = {
 					layoutpolicy_horizontal = expanding
@@ -1208,6 +1168,31 @@ types JominiMultiplayerLobby
 			}
 		}
 
+		button_text = {
+			visible = "[JominiIsHostOrLocal]"
+			layoutpolicy_horizontal = expanding
+			blockoverride "pre" {
+				text_single = {
+					raw_text = "Disabled"
+					margin_right = 3
+					visible = "[Not(LobbyView.IsAutoAccept)]"
+				}
+			}
+			blockoverride "text" {
+				raw_text = "JOMINI_MULTIPLAYER_GUI_AUTO_ACCEPT"
+				align = left
+			}
+			blockoverride "extra" {
+				text_single = {
+					raw_text = ", Enabled"
+					visible = "[LobbyView.IsAutoAccept]"
+				}
+				dot = { }
+			}
+			onclick = "[LobbyView.ToggleAutoAccept]"
+			tooltip = "JOMINI_MULTIPLAYER_GUI_AUTO_ACCEPT_TT"
+		}
+
 		text_single = {
 			layoutpolicy_horizontal = expanding
 			text = "JOMINI_MULTIPLAYER_GUI_VISIBILITY"
@@ -1271,7 +1256,8 @@ types JominiMultiplayerLobby
 			spacing = 10
 			layoutpolicy_horizontal = expanding
 			restrictparent_min = yes
-			block "setup_hbox_height" {}
+			block "setup_hbox_height" { }
+
 
 			hbox = {
 				layoutpolicy_horizontal = expanding
@@ -1341,43 +1327,18 @@ types JominiMultiplayerLobby
 			}
 
 			hbox = {
-				block "game_options_left" {}
-				block "game_options_right" {}
+				block "game_options_left" { }
+				block "game_options_right" { }
 			}
-		}
-
-		button_text = {
-			visible = "[JominiIsHostOrLocal]"
-			layoutpolicy_horizontal = expanding
-			blockoverride "pre" {
-				text_single = {
-					raw_text = "Disabled"
-					margin_right = 3
-					visible = "[Not(LobbyView.IsAutoAccept)]"
-				}
-			}
-			blockoverride "text" {
-				raw_text = "JOMINI_MULTIPLAYER_GUI_AUTO_ACCEPT"
-				align = left
-			}
-			blockoverride "extra" {
-				text_single = {
-					raw_text = ", Enabled"
-					visible = "[LobbyView.IsAutoAccept]"
-				}
-				dot = { }
-			}
-			onclick = "[LobbyView.ToggleAutoAccept]"
-			tooltip = "JOMINI_MULTIPLAYER_GUI_AUTO_ACCEPT_TT"
 		}
 
 		vbox = {
 			layoutpolicy_horizontal = expanding
 			spacing = 5
 
-			block "mp_info_header" {}
+			block "mp_info_header" { }
 
-			block "mp_info_left_info" {}
+			block "mp_info_left_info" { }
 
 
 			JominiLobbyViewServerInfoEntry = {
@@ -1408,7 +1369,7 @@ types JominiMultiplayerLobby
 					space = { }
 					text_single = {
 						text = "JOMINI_MULTIPLAYER_GUI_ENABLED_DLCS"
-						block "jomini_standard_textbox" {}
+						block "jomini_standard_textbox" { }
 					}
 					dot = { }
 					expand = { }
@@ -1554,7 +1515,7 @@ types JominiMultiplayerLobby
 						spacing = 3
 
 						text_single = {
-							max_width = 300
+							max_width = 380
 							autoresize = yes
 							raw_text = "[LobbyPlayer.GetName],"
 						}
@@ -1659,7 +1620,7 @@ types JominiMultiplayerLobby
 						datamodel = "[LobbyView.Players]"
 						ignoreinvisible = yes
 
-						block "player_list_properties" {}
+						block "player_list_properties" { }
 
 						item = {
 							JominiLobbyViewPlayerItem = {
@@ -1739,7 +1700,7 @@ types JominiMultiplayerLobby
 				align = left
 			}
 
-			expand = {}
+			expand = { }
 		}
 
 		# Playable Selected
@@ -1755,7 +1716,7 @@ types JominiMultiplayerLobby
 			}
 		}
 
-		block "game_rules" {}
+		block "game_rules" { }
 	}
 
 	# Game Info Panel
@@ -2033,12 +1994,12 @@ types JominiMultiplayerLobby
 							visible = "[And( Or(GetVariableSystem.HasValue( 'mp_lobby_tabs', 'show_settings' ), Not( LobbyView.ShowPlayerList )), LobbyView.HasServerInfo )]"
 						}
 
-						expand = {}
+						expand = { }
 
-						JominiLobbyViewHostingStatus = {}
-						JominiLobbyViewHostError = {}
+						JominiLobbyViewHostingStatus = { }
+						JominiLobbyViewHostError = { }
 
-						JominiLobbyViewBack = {}
+						JominiLobbyViewBack = { }
 					}
 				}
 			}
@@ -2798,7 +2759,7 @@ types JominiMultiplayerLobby
 					visible = "[Not(GetVariableSystem.Exists('selected_character'))]"
 					block "right_panel_content"
 					{
-						# JominiLobbyViewGameInfoPanel = {}
+						# JominiLobbyViewGameInfoPanel = { }
 						JominiLobbyViewPreparation = { }
 						JominiLobbyViewSelectionWidget = { }
 
@@ -2909,7 +2870,7 @@ types JominiMultiplayerGameTypes
 
 			button_checkbox = {
 				size = { 20 20 }
-				block "checkbutton" {}
+				block "checkbutton" { }
 			}
 
 			text_single = {

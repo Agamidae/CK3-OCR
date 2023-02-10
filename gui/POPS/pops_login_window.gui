@@ -1,0 +1,662 @@
+
+types POPS
+{
+	type pops_login_window = window {
+		name = "pops_login_window"
+		size = { 100% 100% }
+		movable = no
+		layer = confirmation
+		using = TooltipFocus
+
+		using = Animation_ShowHide_Quick
+		using = Background_Full_Dim
+
+		button = {
+			size = { 100% 100% }
+			onclick = "[POPSLoginView.Hide]"
+		}
+
+		widget = {
+			size = { 600 400 }
+			parentanchor = center
+			alwaystransparent = no
+
+			using = Window_Background
+
+			vbox = {
+				using = Window_Margins
+				margin_top = 20
+				vbox = {
+					name = "log_in"
+					visible = "[POPSLoginView.IsLogin]"
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+
+					text_multi = {
+						raw_text = "[POPSLoginView.GetErrorMessage]"
+						visible = "[Not(POPSStatusIsLoggingIn)]"
+						multiline = yes
+						layoutpolicy_horizontal = expanding
+						autoresize = yes
+						max_width = 500
+					}
+
+					### ANIMATIONS ####
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						visible = "[POPSStatusIsLoggingIn]"
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 5
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								text = "LOGGING_IN"
+							}
+
+							pops_load_indicator = {
+								blockoverride "load_indicator"
+								{
+									visible = yes
+								}
+							}
+						}
+
+						background = {
+							using = Background_Area_Border
+						}
+					}
+
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "[Localize('POPS_LOGIN')]."
+					}
+
+					button = {
+						shortcut = close_window
+						onclick = "[POPSLoginView.Hide]"
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						minimumsize = { 500 0 }
+						spacing = 5
+						margin = { 20 10 }
+
+						pops_textbox_entry = {
+							name = "pops_login_entry_email"
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "title"
+							{
+								raw_text = "[Localize('EMAIL')]."
+								layoutpolicy_horizontal = expanding
+							}
+							blockoverride "editbox_properties"
+							{
+							    name = "pops_editbox"
+							    text = "[POPSLoginView.GetEmail]"
+							    ontextchanged = "[POPSLoginView.SetEmail]"
+							    onreturnpressed = "[POPSLoginView.Login]"
+							    maxcharacters = 255
+								ontextchanged = "[PdxGuiWidget.FindChild('email').Hide]"
+
+								text_single = {
+									name = "email"
+									raw_text = "Enter e-mail here."
+									visible = "[StringIsEmpty(POPSLoginView.GetEmail)]"
+									margin_left = 5
+								}
+							}
+						}
+
+						pops_textbox_entry = {
+							name = "pops_login_entry_password"
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "title"
+							{
+								raw_text = "[Localize('PASSWORD')]."
+								layoutpolicy_horizontal = expanding
+							}
+
+							blockoverride "editbox_properties"
+							{
+							    name = "pops_editbox"
+							    text = "[POPSLoginView.GetPassword]"
+							    ontextchanged = "[POPSLoginView.SetPassword]"
+								onreturnpressed = "[POPSLoginView.Login]"
+								password = yes
+								ontextchanged = "[PdxGuiWidget.FindChild('pass').Hide]"
+
+								text_single = {
+									name = "pass"
+									raw_text = "Enter password here."
+									visible = "[StringIsEmpty(POPSLoginView.GetPassword)]"
+									margin_left = 5
+								}
+							}
+						}
+
+
+
+						expand = {
+							layoutpolicy_vertical = expanding
+							visible = "[Not(POPSStatusIsLoggingIn)]"
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[And(Not(POPSStatusIsLoggingIn), Not(POPSStatusIsLoggedIn))]"
+
+							button_primary_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									text = "[POPSLoginView.GetLoginString]"
+								}
+								blockoverride "disabled" {
+									visible = "[Not(POPSLoginView.IsValidLoginInfo)]"
+								}
+								blockoverride "hotkey" {
+									visible = "[POPSLoginView.IsValidLoginInfo]"
+								}
+								layoutpolicy_horizontal = fixed
+								enabled = "[POPSLoginView.IsValidLoginInfo]"
+								onclick = "[POPSLoginView.Login]"
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "[Localize('POPS_LOGIN_RESET_PASSWORD')]."
+								}
+								onclick = "[POPSLoginView.SetState( 'password_reset' )]"
+							}
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						visible = "[And(Not(POPSStatusIsLoggingIn), POPSStatusIsLoggedIn)]"
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "[Localize('POPS_LOGIN_LOGGED_IN')]."
+						}
+
+						button_text = {
+							blockoverride "text" {
+								raw_text = "[Localize('CLOSE_LABEL')]."
+							}
+							layoutpolicy_horizontal = expanding
+							onclick = "[POPSLoginView.Hide]"
+						}
+
+						background = {
+							using = Background_Area_Border_Solid
+						}
+					}
+
+					### CREATE ACCOUNT ###
+					vbox = {
+						visible = "[And(And(Not(POPSLoginView.IsRestoringPassword), Not(POPSStatusIsLoggedIn)), Not(POPSLoginView.IsEmailSent))]"
+						layoutpolicy_horizontal = expanding
+						margin_left = 20
+
+						text_multi = {
+							layoutpolicy_horizontal = expanding
+							text = "POPS_CREATE_ACCOUNT_CREARE_SUGGESTION"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "[Localize('CREATE_ACCOUNT')]."
+							}
+							onclick = "[OnCreateAccount]"
+						}
+					}
+				}
+
+				vbox = {
+					name = "forgot_password"
+					visible = "[POPSLoginView.IsRestoringPassword]"
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+
+					header_pattern = {
+						layoutpolicy_horizontal = expanding
+
+						blockoverride "header_text"
+						{
+							text = "POPS_FORGOT_PASSWORD"
+						}
+
+						blockoverride "button_close"
+						{
+							onclick = "[POPSLoginView.Hide]"
+						}
+					}
+
+					vbox = {
+						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
+						margin = { 20 10 }
+						spacing = 5
+
+						vbox = {
+							layoutpolicy_vertical = expanding
+							text_multi = {
+								layoutpolicy_horizontal = expanding
+								autoresize = yes
+								max_width = 500
+								text = "POPS_LOGIN_RESET_PASSWORD_DESC"
+							}
+
+							spacer = {
+								size = { -1 20 }
+							}
+
+							pops_textbox_entry = {
+								name = "pops_login_entry_email"
+								layoutpolicy_horizontal = expanding
+
+								blockoverride "title"
+								{
+									text = "EMAIL"
+								}
+
+								blockoverride "editbox_properties"
+								{
+								    name = "pops_editbox"
+								    text = "[POPSLoginView.GetEmail]"
+								    ontextchanged = "[POPSLoginView.SetEmail]"
+									onreturnpressed = "[POPSLoginView.ResetPassword]"
+									maxcharacters = 255
+								}
+								block "editbox_size"
+								{
+									size = { 100 0 }
+								}
+							}
+
+							expand = {
+							}
+						}
+
+
+						hbox = {
+							spacing = 10
+
+							button_standard = {
+								text = "CANCEL"
+								onclick = "[POPSLoginView.SetState( 'login' )]"
+							}
+
+
+							button_standard = {
+								text = "POPS_LOGIN_RESET_PASSWORD_SEND"
+								onclick = "[POPSLoginView.ResetPassword]"
+								onclick = "[POPSLoginView.SetState( 'email_sent' )]"
+							}
+						}
+					}
+				}
+
+				vbox = {
+					name = "forgot_password_sent"
+					visible = "[POPSLoginView.IsEmailSent]"
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+
+					header_pattern = {
+						layoutpolicy_horizontal = expanding
+
+						blockoverride "header_text"
+						{
+							text = "POPS_FORGOT_PASSWORD"
+						}
+
+						blockoverride "button_close"
+						{
+							onclick = "[POPSLoginView.Hide]"
+						}
+					}
+
+					vbox = {
+						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
+						spacing = 5
+						margin = { 20 10 }
+
+						text_multi = {
+							layoutpolicy_horizontal = expanding
+							max_width = 500
+							autoresize = yes
+							text = "POPS_LOGIN_RESET_PASSWORD_EMAIL_SENT"
+						}
+
+						expand = { }
+
+						button_standard_back = {
+							text = "BACK_LABEL"
+							layoutpolicy_horizontal = fixed
+							onclick = "[POPSLoginView.SetState( 'login' )]"
+						}
+					}
+				}
+
+				vbox = {
+					margin_top = 10
+					name = "account_info"
+					visible = "[POPSLoginView.IsLoggedIn]"
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+
+					text_multi = {
+						text = "[POPSLoginView.GetErrorMessage]"
+						default_format = "#X"
+						multiline = yes
+						layoutpolicy_horizontal = expanding
+						autoresize = yes
+						max_width = 500
+					}
+
+					widget = {
+						size = { 0 25 }
+						layoutpolicy_horizontal = expanding
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							visible = "[POPSLoginView.IsConnectingAccount]"
+							raw_text = "Connecting account, please wait."
+						}
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "[Localize('PARADOX_ACCOUNT')]."
+					}
+
+					buton = {
+						onclick = "[POPSLoginView.Hide]"
+						shortcut = close_window
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						vbox = {
+							layoutpolicy_vertical = expanding
+							layoutpolicy_horizontal = expanding
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									spacing = 3
+
+									hbox = {
+										text_single = {
+											text = "EMAIL"
+										}
+
+										text_single = {
+											raw_text = ":"
+										}
+									}
+
+									text_single = {
+										text = "[POPStatusGetUserEmailMasked]"
+									}
+
+									expand = { }
+								}
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									spacing = 5
+									minimumsize = { 0 33 }
+
+									hbox = {
+										text_single = {
+											text = "USER_NAME"
+										}
+
+										text_single = {
+											raw_text = ":"
+										}
+									}
+
+									hbox = {
+										visible = "[Not( POPStatusIsUserNameEmpty )]"
+										spacing = 5
+
+										text_single = {
+											raw_text = "[POPStatusGetUserName]."
+										}
+									}
+
+									expand = { }
+								}
+
+								button_text = {
+									visible = "[Not( POPStatusIsUserNameEmpty )]"
+									layoutpolicy_horizontal = expanding
+									onclick = "[POPSLoginView.SetState( 'change_username' )]"
+									blockoverride "text" {
+										raw_text = "Change user name."
+									}
+								}
+
+								button_text = {
+									layoutpolicy_horizontal = expanding
+								    blockoverride "text" {
+										raw_text = "[Localize('POPS_LOGIN_ADD_USER_NAME')]."
+								    }
+									onclick = "[POPSLoginView.SetState( 'change_username' )]"
+									visible = "[POPStatusIsUserNameEmpty]"
+								}
+
+
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									visible = "[And( POPSStatusIsLoggedIn, POPSStatusIsSupportConnectedAccount )]"
+									blockoverride "pre" {
+										text_single = {
+											raw_text = "[Select_CString(POPSStatusIsAccountConnected, 'Enabled', 'Disabled')],"
+										}
+										space = { }
+									}
+								    blockoverride "text" {
+								        raw_text = "[Localize('POPS_LOGIN_BIND_STEAM')]."
+										align = left
+								    }
+									onclick = "[POPSLoginView.ToggleConnected]"
+								}
+							}
+
+							expand = { }
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									blockoverride "text" {
+										raw_text = "[Localize('CLOSE_LABEL')]."
+									}
+									onclick = "[POPSLoginView.Hide]"
+								}
+
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									blockoverride "text" {
+										raw_text = "[Localize('LOGOUT')]."
+
+									}
+									onclick = [POPSLoginView.Logout]
+									onclick = "[POPSLoginView.SetState( 'login' )]"
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					name = "change_username"
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+					visible = "[POPSLoginView.IsChangingUserName]"
+
+					header_pattern = {
+						layoutpolicy_horizontal = expanding
+
+						blockoverride "header_text"
+						{
+							text = "PDX_USERNAME"
+						}
+
+						blockoverride "button_close"
+						{
+							onclick = "[POPSLoginView.Hide]"
+						}
+					}
+
+					vbox = {
+						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
+						margin = { 20 10 }
+
+						text_multi = {
+							text = "POPS_LOGIN_CHANGE_USER_NAME_DESC"
+							max_width = 500
+							autoresize = yes
+						}
+
+						spacer = {
+							size = { -1 20 }
+						}
+
+						hbox = {
+							spacing = 10
+							layoutpolicy_horizontal = expanding
+
+							vbox = {
+								spacing = 2
+								layoutpolicy_horizontal = expanding
+
+								editbox_standard_with_label = {
+									layoutpolicy_horizontal = expanding
+									blockoverride "editbox_label"
+									{
+										text = "USERNAME"
+									}
+									size = { 320 30 }
+									blockoverride "editbox_properties"
+									{
+									    name = "edit_username"
+									    text = "[POPStatusGetUserName]"
+									    onreturnpressed = "[POPSLoginView.SetUserName]"
+									    ontextedited = "[POPSLoginView.OnUserNameChange]"
+									    maxcharacters = 255
+									}
+								}
+
+								hbox = {
+									visible = "[POPSLoginView.IsEmptyUserNamePrompt]"
+									layoutpolicy_horizontal = expanding
+
+									text_single = {
+										text = "POPS_LOGIN_EMPTY_USERNAME"
+										default_format = "#negative_value;italic"
+									}
+								}
+
+								text_multi = {
+									text = "[POPSLoginView.GetErrorMessage]"
+									default_format = "#X"
+									multiline = yes
+									layoutpolicy_horizontal = expanding
+									align = center
+									autoresize = yes
+								}
+
+								text_single = {
+									visible = "[POPSLoginView.IsSuccessfulSetName]"
+									text = "POPS_LOGIN_CHANGE_USERNAME_SUCCESS"
+									align = left
+									layoutpolicy_horizontal = expanding
+								}
+							}
+
+							expand = { }
+						}
+
+
+						expand = { }
+
+						hbox = {
+							spacing = 10
+
+							button_standard_back = {
+								text = "BACK_LABEL"
+								layoutpolicy_horizontal = fixed
+								onclick = "[POPSLoginView.SetState( 'logged_in' )]"
+							}
+
+							button_standard = {
+								text = "UPDATE_USERNAME"
+								layoutpolicy_horizontal = fixed
+								onclick = "[POPSLoginView.SetUserName]"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	type pops_login_accountwidget = button_account {
+		name = "account"
+		tooltip = "[SelectLocalization( POPSStatusIsLoggedIn, 'FRONTEND_LOGGED_IN', 'FRONTEND_LOGIN_FOR_MUTLIPLAYER_TT' )]"
+
+		block "properties" {
+			onclick = "[POPSStatusWidget.ToggleLoginWindow]"
+		}
+		enabled = "[Not(POPSStatusIsLoggingIn)]"
+
+		pops_load_indicator = {
+			blockoverride "load_indicator"
+			{
+				visible = "[POPSStatusIsLoggingIn]"
+				size = { 15 15 }
+				parentanchor = right|top
+				widgetanchor = left
+			}
+		}
+
+		icon_circle_green = {
+			name = "online"
+			visible = "[POPSStatusIsLoggedIn]"
+			parentanchor = right|top
+			widgetanchor = left
+		}
+
+		icon_ring = {
+			name = "offline"
+			visible = "[Not(POPSStatusIsLoggedIn)]"
+			size = { 15 15 }
+			alpha = 0.5
+			parentanchor = right|top
+			widgetanchor = left
+		}
+
+		block "text" { }
+	}
+}
