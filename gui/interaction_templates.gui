@@ -9,7 +9,7 @@ types CharacterInteraction
 
 	type vbox_sender_portrait_message = vbox {
 		margin = { 10 5 }
-		using = Background_Letter
+		# using = Background_Letter
 		datacontext = "[CharacterInteractionNotificationWindow.GetSender]"
 
 		hbox = {
@@ -66,24 +66,33 @@ types CharacterInteraction
 		name = "send_offer_window"
 		margin = { 0 10 }
 
-		vbox_interaction_options = {
-			layoutpolicy_horizontal = expanding
-		}
-
 		hbox_character_interaction_acceptance = {
 			layoutpolicy_horizontal = expanding
 		}
 
-		text_multi_on_decline_summary = { }
-
-		button_primary = {
-			size = { 400 42 }
-			block "button_content" { }
+		button_primary_text = {
+			layoutpolicy_horizontal = expanding
+			blockoverride "disabled" {
+				visible = "[Not(CharacterInteractionConfirmationWindow.CanSend)]"
+			}
+			blockoverride "text" {
+				block "button_content" { }
+			}
 			onclick = "[MatchmakerInteractionWindow.Send]"
 			enabled = "[CharacterInteractionConfirmationWindow.CanSend]"
 			tooltip = "[CharacterInteractionConfirmationWindow.GetCanSendDescription]"
 			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
 		}
+
+		widget = {
+			size = { 0 5 }
+		}
+
+		vbox_interaction_options = {
+			layoutpolicy_horizontal = expanding
+		}
+
+		text_multi_on_decline_summary = { }
 	}
 
 	type vbox_marriage_interaction_marriage_details = vbox {
@@ -105,7 +114,7 @@ types CharacterInteraction
 
 				texture = "gfx/interface/icons/marriage_types.dds"
 				framesize = { 60 60 }
-				size = { 60 60 }
+				size = { 0 0 }
 				frame = "[MarriageInfo.GetMarriageIconFrame]"
 			}
 
@@ -116,24 +125,15 @@ types CharacterInteraction
 					name = "children_house_info"
 					visible = "[And( StringIsEmpty( MarriageInfo.GetMatrilinealDesc ), Not( MatchOffer.IsSameSex ) )]"
 					layoutpolicy_horizontal = expanding
-					max_width = 510
+					max_width = 600
 					autoresize = yes
 					text = "MARRIAGE_CHILDREN_HOUSE_INFO"
 				}
 
 				text_multi = {
-					name = "matrilineal_desc"
-					visible = "[Not( MatchOffer.IsSameSex )]"
-					layoutpolicy_horizontal = expanding
-					max_width = 510
-					autoresize = yes
-					text = "[MarriageInfo.GetMatrilinealDesc]"
-				}
-
-				text_multi = {
 					name = "children_chance_info"
 					layoutpolicy_horizontal = expanding
-					max_width = 510
+					max_width = 600
 					autoresize = yes
 					text = "MARRIAGE_CHILDREN_CHANCE_INFO"
 					tooltip = "[MatchOffer.GetChanceOfChildrenTooltip]"
@@ -151,10 +151,11 @@ types CharacterInteraction
 			hbox = {
 				layoutpolicy_horizontal = expanding
 
-				text_label_center = {
+				text_single = {
+					layoutpolicy_horizontal = expanding
 					name = "traits_header"
 					visible = "[MatchOffer.HasInheritableTraits]"
-					text = "INHERITABLE_TRAITS"
+					raw_text = "[Localize('INHERITABLE_TRAITS')]."
 				}
 
 				expand = { }
@@ -162,10 +163,9 @@ types CharacterInteraction
 
 			text_single = {
 				name = "no_traits"
+				layoutpolicy_horizontal = expanding
 				visible = "[Not(MatchOffer.HasInheritableTraits)]"
 				text = "NO_INHERITABLE_TRAITS"
-				default_format = "#low;italic"
-				margin = { 5 15 }
 			}
 
 			hbox = {
@@ -186,14 +186,6 @@ types CharacterInteraction
 				}
 
 				expand = { }
-			}
-
-			text_single = {
-				name = "inbreeding_risk"
-				visible = "[MatchOffer.HasInbreedingRisk]"
-				max_width = 510
-				text = "MATCH_OFFER_INBREEDING_WARNING"
-				default_format = "#low"
 			}
 		}
 
@@ -250,9 +242,10 @@ types CharacterInteraction
 			layoutpolicy_horizontal = expanding
 			margin = { 0 15 }
 
-			text_label_center = {
+			text_single = {
+				layoutpolicy_horizontal = expanding
 				name = alliances_label
-				text = "[alliances|E]"
+				raw_text = "[alliances|E]."
 			}
 
 			vbox = {
@@ -261,18 +254,39 @@ types CharacterInteraction
 				layoutpolicy_horizontal = expanding
 
 				item = {
-					hbox = {
+					vbox = {
 						layoutpolicy_horizontal = expanding
-						portrait_head = {
+
+						char_name_extra = {
+							layoutpolicy_horizontal = expanding
 							datacontext = "[AllianceInfo.GetCharacter]"
-							name = "ally_portrait"
-							blockoverride "opinion_box" { }
-							blockoverride "status_icons" { }
+							blockoverride "pre" {
+								text_single = {
+									raw_text = "Alliance with"
+								}
+							}
 						}
 
-						strength_balance = {
+						hbox = {
+						    layoutpolicy_horizontal = expanding
 							datacontext = "[AllianceInfo.GetMilitaryInfo]"
-							blockoverride "StrengthBalanceAllies" { }
+							spacing = 3
+
+							text_single = {
+								raw_text = "STRENGTH_COMPARISON_TOTAL_STRENGTH"
+							}
+
+							text_single = {
+								raw_text = "soldiers,"
+							}
+
+							text_single = {
+								raw_text = "[GuiMilitaryStrength.GetRatioName]."
+							}
+
+							tooltip = "[GuiMilitaryStrength.GetRatioDescription]"
+
+						    expand = { }
 						}
 
 						expand = { }
@@ -699,32 +713,39 @@ types CharacterInteraction
 					visible = "[Character.IsValid]"
 				}
 
-				text_single = {
-					text = "INTERACTION_SENDER"
+				char_name_extra = {
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "[Localize('INTERACTION_SENDER')],"
+						}
+					}
+					blockoverride "align" {
+						align = left
+					}
 				}
-
-				char_name = { }
 
 			}
 
 			flowcontainer = {
 				spacing = 0
 
-				text_single = {
-
-					block "left_character_label"
-					{
-						text = "[CharacterInteractionConfirmationWindow.GetActorSecondaryLabel]"
+				char_name_extra = {
+					blockoverride "pre" {
+						text_single = {
+							block "left_character_label"
+							{
+								raw_text = "[CharacterInteractionConfirmationWindow.GetActorSecondaryLabel],"
+							}
+						}
 					}
-				}
-
-				char_name = {
+					blockoverride "align" {
+						align = left
+					}
 					block "left_portrait"
 					{
 						datacontext = "[CharacterInteractionConfirmationWindow.GetSecondaryActor]"
 					}
 				}
-
 
 				button_text = {
 					name = "tutorial_highlight_change_left_character"
@@ -774,34 +795,20 @@ types CharacterInteraction
 
 			flowcontainer = {
 				spacing = 0
-
-				block "right_small_portrait"
-				{
-					datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
-					visible = "[Character.IsValid]"
-				}
-
-				text_single = {
-					text = "INTERACTION_RECIPIENT"
-				}
-
-				char_name = { }
-
-			}
-
-			flowcontainer = {
-				spacing = 0
 				visible = "[CharacterInteractionConfirmationWindow.GetSecondaryRecipient.IsValid]"
 
-				text_single = {
-
-					block "right_character_label"
-					{
-						text = "INTERACTION_RECIPIENT"
+				char_name_extra = {
+					blockoverride "pre" {
+						text_single = {
+							block "right_character_label"
+							{
+								raw_text = "[Localize('INTERACTION_RECIPIENT')],"
+							}
+						}
 					}
-				}
-
-				char_name = {
+					blockoverride "align" {
+						align = left
+					}
 					block "right_main_portrait"
 					{
 						datacontext = "[CharacterInteractionConfirmationWindow.GetSecondaryRecipient]"
@@ -847,6 +854,28 @@ types CharacterInteraction
 						onclick = "[CharacterInteractionConfirmationWindow.OnChangeOrRevertActorCharacter]"
 					}
 				}
+			}
+
+			flowcontainer = {
+				spacing = 0
+
+				block "right_small_portrait"
+				{
+					datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+					visible = "[Character.IsValid]"
+				}
+
+				char_name_extra = {
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "[Localize('INTERACTION_RECIPIENT')],"
+						}
+					}
+					blockoverride "align" {
+						align = left
+					}
+				}
+
 			}
 
 			button_text = {
@@ -1235,7 +1264,7 @@ types CharacterInteraction
 	type hbox_character_interaction_acceptance = hbox {
 		name = "acceptance"
 		visible = "[CharacterInteractionConfirmationWindow.ShouldShowAnswer]"
-		margin = { 10 0 }
+		margin = { 5 0 }
 
 		widget = {
 			name = "answer_chance"
@@ -1244,6 +1273,7 @@ types CharacterInteraction
 			tooltip = "[CharacterInteractionConfirmationWindow.GetAnswerReason]"
 
 			background = {
+				margin = { 10 0 }
 				using = Background_Area_Dark
 			}
 
