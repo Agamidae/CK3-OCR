@@ -1,0 +1,277 @@
+######################################################
+################# REDIRECT GHW TARGET ################
+######################################################
+
+window= {
+	name = "change_ghw_target_window"
+	parentanchor = top|right
+	position = { 0 0 }
+	size = { 600 100% }
+	movable = no
+	layer = windows_layer
+
+	state = {
+		name = _show
+		on_start = "[GetVariableSystem.Clear('selected_ghw_target')]"
+	}
+
+	state = {
+		name = _hide
+		on_start = "[ClearErrorLog]"
+	}
+
+	using = Window_Background_No_Edge
+
+	vbox = {
+		# using = Window_Margins
+		margin_bottom = 30
+
+		header_pattern = {
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "header_text"
+			{
+				raw_text = "[Localize('CHANGE_GHW_TARGET_HEADER')]."
+			}
+
+			blockoverride "button_close"
+			{
+				onclick = "[ChangeGHWTargetWindow.Close]"
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			datamodel = "[ChangeGHWTargetWindow.GetTitles]"
+
+			item = {
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[ChangeGHWTargetWindowTitleItem.IsSelected]"
+					raw_text = "Selected [ChangeGHWTargetWindowTitleItem.GetTitle.GetNameNoTooltip]."
+				}
+			}
+		}
+
+		### SEND OFFER BUTTON
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			# visible = "[GetVariableSystem.Exists('selected_ghw_target')]"
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				name = "cost"
+				text = "CHANGE_GHW_TARGET_COST"
+				tooltip = "CHANGE_GHW_TARGET_COST_TOOLTIP"
+			}
+
+			button_primary_text = {
+				layoutpolicy_horizontal = expanding
+				name = "confirm_button"
+				blockoverride "text" {
+					text = "CHANGE_GHW_TARGET_CONFIRM"
+				}
+				blockoverride "disabled" {
+					visible = "[Not(ChangeGHWTargetWindow.CanConfirm)]"
+				}
+				blockoverride "hotkey" {
+					visible = "[ChangeGHWTargetWindow.CanConfirm]"
+				}
+				onclick = "[ChangeGHWTargetWindow.OnConfirm]"
+				enabled = "[ChangeGHWTargetWindow.CanConfirm]"
+				tooltip = "[ChangeGHWTargetWindow.CanConfirmDesc]"
+			}
+		}
+
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			raw_text = "[GetDataModelSize(ChangeGHWTargetWindow.GetTitles)] targets. Click to select, right click to view title."
+		}
+
+		error_button = {
+			layoutpolicy_horizontal = expanding
+		}
+
+		scrollbox = {
+			name = "titles_scroll_area"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			blockoverride "scrollbox_empty"
+			{
+				text = "LEASE_OUT_BARONIES_NO_TITLES"
+				visible = "[IsDataModelEmpty(ChangeGHWTargetWindow.GetTitles)]"
+			}
+
+			blockoverride "scrollbox_content"
+			{
+				vbox = {
+					name = "titles_grid"
+					datamodel = "[ChangeGHWTargetWindow.GetTitles]"
+					layoutpolicy_horizontal = expanding
+
+					item = {
+						widget = {
+							name = "title_button"
+							layoutpolicy_horizontal = expanding
+							size = { 0 150 }
+
+							background = {
+								using = Background_Area
+								margin = { 0 0 }
+							}
+
+							hbox = {
+								set_parent_size_to_minimum = yes
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									layoutpolicy_vertical = expanding
+
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										datacontext = "[ChangeGHWTargetWindowTitleItem.GetTitle]"
+
+										blockoverride "pre" {
+											spacing = 3
+											text_single = {
+												raw_text = "Selected,"
+												visible = "[ChangeGHWTargetWindowTitleItem.IsSelected]"
+											}
+										}
+
+									    blockoverride "text" {
+											raw_text = "[ChangeGHWTargetWindowTitleItem.GetTitle.GetNameNoTooltip]."
+									    }
+										# blockoverride "extra" {
+										# 	# text_single = {
+										# 	# 	visible = "[Title.GetHolder.IsValid]"
+										# 	# 	raw_text = "Holder has [Title.GetHolder.GetMilitaryStrengthText] soldiers."
+										# 	# }
+										# 	# text_single = {
+										# 	# 	raw_text = "Not created."
+										# 	# 	visible = "[Not(Title.GetHolder.IsValid)]"
+										# 	# }
+										# 	spacing = 3
+										# 	text_single = {
+										# 		raw_text = "Right click to view title."
+										# 	}
+										# }
+										# using = title_click
+										onclick = "[ChangeGHWTargetWindowTitleItem.OnClick]"
+										onrightclick = "[DefaultOnCoatOfArmsClick(Title.GetID)]"
+										onrightclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+										onclick = "[GetVariableSystem.Set('selected_ghw_target', 'yes')]"
+									}
+
+									# char_name = {
+									# 	blockoverride "pre" {
+									# 		spacing = 3
+									# 		text_single = {
+									# 			raw_text = "Holder:"
+									# 		}
+									# 	}
+									# 	layoutpolicy_horizontal = expanding
+									# 	datacontext = "[ChangeGHWTargetWindowTitleItem.GetTitle.GetHolder]"
+									# 	visible = "[Character.IsValid]"
+									# }
+
+									hbox = {
+									    layoutpolicy_horizontal = expanding
+										spacing = 3
+
+									    text_single = {
+									    	raw_text = "[GetDataModelSize(ChangeGHWTargetWindowTitleItem.GetDefenders)]"
+									    }
+
+										text_single = {
+											name = "defenders_label"
+											raw_text = "[Localize('CHANGE_GHW_TARGET_DEFENDERS')]."
+										}
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											visible = "[GreaterThan_int32(GetDataModelSize(ChangeGHWTargetWindowTitleItem.GetDefenders), '(int32)2')]"
+											raw_text = "View all in the tooltip."
+
+										}
+
+										tooltipwidget = {
+											container = {
+												using = DefaultTooltipBackground
+
+												flowcontainer = {
+													visible = "[GreaterThan_int32(GetDataModelSize(ChangeGHWTargetWindowTitleItem.GetDefenders), '(int32)1')]"
+													margin = { 10 10 }
+													direction = vertical
+													name = "defenders_titles"
+													datamodel = "[ChangeGHWTargetWindowTitleItem.GetDefenders]"
+
+													item = {
+														flowcontainer = {
+															text_single = {
+																raw_text = "[Character.GetMilitaryStrengthText] soldiers,"
+															}
+
+															realm_name = { }
+														}
+													}
+												}
+											}
+										}
+
+									    expand = { }
+									}
+
+									# fixedgridbox = {
+									# 	addcolumn = 550
+									# 	addrow = 22
+									# 	datamodel = "[ChangeGHWTargetWindowTitleItem.GetDefenders]"
+									# 	maxverticalslots = 1
+									# 	visible = "[Or(EqualTo_int32(GetDataModelSize(ChangeGHWTargetWindowTitleItem.GetDefenders), '(int32)1'), GreaterThan_int32(GetDataModelSize(ChangeGHWTargetWindowTitleItem.GetDefenders), '(int32)2'))]"
+									#
+									# 	item = {
+									# 		hbox = {
+									# 		    layoutpolicy_horizontal = expanding
+									#
+									# 			text_single = {
+									# 				raw_text = "[Character.GetMilitaryStrengthText] soldiers,"
+									# 			}
+									#
+									# 			realm_name = { }
+									#
+									# 		    expand = { }
+									# 		}
+									# 	}
+									# }
+
+									fixedgridbox = {
+										addcolumn = 550
+										addrow = 22
+										datamodel = "[ChangeGHWTargetWindowTitleItem.GetDefenders]"
+										maxverticalslots = 1
+										# visible = "[EqualTo_int32(GetDataModelSize(ChangeGHWTargetWindowTitleItem.GetDefenders), '(int32)1')]"
+
+										item = {
+											hbox = {
+											    layoutpolicy_horizontal = expanding
+
+												text_single = {
+													raw_text = "[Character.GetMilitaryStrengthText] soldiers,"
+												}
+
+												realm_name = { }
+
+											    expand = { }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
