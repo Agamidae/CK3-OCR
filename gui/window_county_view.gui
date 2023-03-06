@@ -8,10 +8,10 @@ window = {
 	parentanchor = bottom|left
 	allow_outside = yes
 	movable = no
-	layer = windows_layer
+	layer = top
 	maximumsize = { 650 -1 }
 	scissor = yes
-	size = { 650 0 }
+	size = { 650 100% }
 	datacontext = "[HoldingView.GetHolding]"
 	datacontext = "[HoldingView.GetProvince]"
 	datacontext = "[HoldingView.GetHolder]"
@@ -87,257 +87,321 @@ window = {
 	}
 
 	vbox = {
-		resizeparent = yes
+		layoutpolicy_vertical = expanding
 		name = "window_content"
-		margin = { 10 10 }
+		margin = { 10 5 }
 
-		hbox = {
-			name = "county_header"
+		error_button = {
 			layoutpolicy_horizontal = expanding
-			margin_bottom = 2
-			spacing = 2
+		}
 
-			background = {
-				using = Background_Area_Dark
-				margin_left = 15
-				margin_bottom = 5
+		#title
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			button_text = {
+				visible = no
+				datacontext = "[GetScriptedGui('county_controller')]"
+				onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( HoldingView.GetProvince.MakeScope ).End )]"
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					raw_text = "Controller: [HoldingView.GetProvince.MakeScope.Var('controller').GetCharacter.GetNameNoTooltip]"
+				}
+			}
+			hbox = {
+			    layoutpolicy_horizontal = expanding
+
+				button_text = {
+					datacontext = "[HoldingView.GetCountyTitle]"
+					using = title_click
+					blockoverride "text" {
+						raw_text = "[Title.GetNameNoTierNoTooltip],"
+					}
+				}
+
+				button_text = {
+					using = title_click
+					datacontext = "[HoldingView.GetHolding.GetProvince.GetTitle]"
+					blockoverride "extra" {
+						text_single = {
+							visible = "[HoldingView.GetHolding.IsEmpty]"
+							raw_text = "[HoldingView.GetProvince.GetTerrain.GetNameNoTooltip] of"
+						}
+						text_single = {
+							visible = "[Not(HoldingView.GetHolding.IsEmpty)]"
+							raw_text = "[HoldingView.GetHolding.GetType.GetName] of"
+						}
+						text_single = {
+							raw_text = " [HoldingView.GetHolding.GetNameNoTooltip]."
+						}
+					}
+				}
+
+
+				text_single = {
+					raw_text = " De jure in"
+				}
+
+				button_text = {
+					using = title_click
+					datacontext = "[HoldingView.GetCountyTitle.GetDeJureLiege]"
+				    blockoverride "text" {
+				        raw_text = "[Title.GetNameNoTierNoTooltip],"
+				    }
+				}
+
+				button_text = {
+					using = title_click
+					datacontext = "[HoldingView.GetCountyTitle.GetDeJureLiege.GetDeJureLiege]"
+				    blockoverride "text" {
+				        raw_text = "[Title.GetNameNoTierNoTooltip]."
+				    }
+				}
+
+			    expand = { }
 			}
 
-			#title
-			vbox = {
+
+			hbox = {
+				visible = "[Not(GetVariableSystem.Exists('hide_county'))]"
+				layoutpolicy_horizontal = expanding
+				spacing = 3
+
+				text_single = {
+					margin_left = 5
+					raw_text = "Hostile county!"
+					visible = "[GetScriptedGui('is_he_at_war').IsShown( GuiScope.SetRoot( HoldingView.GetProvince.MakeScope ).AddScope( 'me', GetPlayer.MakeScope ).End )]"
+				}
+
+				### SIEGE AND RAID GOTO BUTTON ###
+				button_group = {
+					name = "open_siege_button"
+					datacontext = "[HoldingView.GetProvince.GetSiege]"
+					visible = "[HoldingView.GetProvince.HasActiveSiege]"
+					onclick = "[DefaultOnSiegeClick(Siege.GetID)]"
+					tooltip = "[Siege.GetSiegeDescription]"
+					using = tooltip_se
+					shortcut = confirm
+					using = siege_goto_template
+					blockoverride "key" {
+						shortcut = army_merge
+					}
+					blockoverride "extra" {
+						text_single = {
+							raw_text = " hotkey G"
+						}
+					}
+				}
+
+				button_group = {
+					name = "open_raid_button"
+					datacontext = "[HoldingView.GetProvince.GetRaid]"
+					visible = "[HoldingView.GetProvince.HasActiveRaid]"
+					onclick = "[DefaultOnRaidClick( Raid.Self )]"
+					tooltip = "MAP_RAID_TOOLTIP"
+					shortcut = confirm
+					using = tooltip_se
+					using = raid_goto_template
+					blockoverride "tooltip" { }
+					blockoverride "key" {
+						shortcut = army_merge
+					}
+					blockoverride "extra" {
+						text_single = {
+							raw_text = " hotkey G"
+						}
+					}
+				}
+
+				# text_single = {
+				# 	raw_text = "Adjacent to an allied county."
+				# 	visible = "[GetScriptedGui('adjacent_to_ally').IsShown( GuiScope.SetRoot( HoldingView.GetProvince.MakeScope ).AddScope( 'me', GetPlayer.MakeScope ).End )]"
+				# }
+
 				button_text = {
-					visible = no
-					datacontext = "[GetScriptedGui('county_controller')]"
-					onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( HoldingView.GetProvince.MakeScope ).End )]"
+					visible = "[County.IsFullyOccupied]"
+					datacontext = "[County.GetCountyOccupant]"
 					layoutpolicy_horizontal = expanding
 					blockoverride "text" {
-						raw_text = "Controller: [HoldingView.GetProvince.MakeScope.Var('controller').GetCharacter.GetNameNoTooltip]"
+						align = left
+						raw_text = "Occupied by [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
 					}
+					using = char_click
 				}
-
-				hbox = {
-					layoutpolicy_horizontal = expanding
-					ignoreinvisible = yes
-
-					margin_left = 5
-
-					text_single = {
-						raw_text = "[AddTextIf(HoldingView.GetHolding.IsEmpty, HoldingView.GetProvince.GetTerrain.GetNameNoTooltip)][AddTextIf(Not(HoldingView.GetHolding.IsEmpty), HoldingView.GetHolding.GetPrimaryBuildingType.GetTypeName)] of [HoldingView.GetHolding.GetNameNoTooltip] in [HoldingView.GetCountyTitle.GetNameNoTooltip]."
-						max_width = 420
-					}
-
-					button_text = {
-					    blockoverride "text" {
-					        raw_text = "Press F to [Select_CString(GetVariableSystem.Exists('hide_county'), ' show county', 'jump to holdings')]."
-							align = left
-					    }
-						shortcut = army_split_half
-						onclick = "[GetVariableSystem.Toggle('hide_county')]"
-					}
-
-					expand = { }
-				}
-
-				hbox = {
-					visible = "[Not(GetVariableSystem.Exists('hide_county'))]"
-					layoutpolicy_horizontal = expanding
-					spacing = 3
-
-					text_single = {
-						margin_left = 5
-						raw_text = "Hostile county!"
-						visible = "[GetScriptedGui('is_he_at_war').IsShown( GuiScope.SetRoot( HoldingView.GetProvince.MakeScope ).AddScope( 'me', GetPlayer.MakeScope ).End )]"
-					}
-
-					### SIEGE AND RAID GOTO BUTTON ###
-					button_group = {
-						name = "open_siege_button"
-						datacontext = "[HoldingView.GetProvince.GetSiege]"
-						visible = "[HoldingView.GetProvince.HasActiveSiege]"
-						onclick = "[DefaultOnSiegeClick(Siege.GetID)]"
-						tooltip = "[Siege.GetSiegeDescription]"
-						using = tooltip_se
-						shortcut = confirm
-						using = siege_goto_template
-						blockoverride "key" {
-							shortcut = army_merge
-						}
-						blockoverride "extra" {
-							text_single = {
-								raw_text = " hotkey G"
-							}
-						}
-					}
-
-					button_group = {
-						name = "open_raid_button"
-						datacontext = "[HoldingView.GetProvince.GetRaid]"
-						visible = "[HoldingView.GetProvince.HasActiveRaid]"
-						onclick = "[DefaultOnRaidClick( Raid.Self )]"
-						tooltip = "MAP_RAID_TOOLTIP"
-						shortcut = confirm
-						using = tooltip_se
-						using = raid_goto_template
-						blockoverride "tooltip" { }
-						blockoverride "key" {
-							shortcut = army_merge
-						}
-						blockoverride "extra" {
-							text_single = {
-								raw_text = " hotkey G"
-							}
-						}
-					}
-
-					# text_single = {
-					# 	raw_text = "Adjacent to an allied county."
-					# 	visible = "[GetScriptedGui('adjacent_to_ally').IsShown( GuiScope.SetRoot( HoldingView.GetProvince.MakeScope ).AddScope( 'me', GetPlayer.MakeScope ).End )]"
-					# }
-
-					button_text = {
-						visible = "[County.IsFullyOccupied]"
-						datacontext = "[County.GetCountyOccupant]"
-						layoutpolicy_horizontal = expanding
-						blockoverride "text" {
-							align = left
-							raw_text = "Occupied by [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
-						}
-						using = char_click
-					}
-					expand = { }
-				}
-
-				hbox = {
-					visible = "[Not(GetVariableSystem.Exists('hide_county'))]"
-					datacontext = "[HoldingView.GetCountyTitle.GetHolder]"
-					layoutpolicy_horizontal = expanding
-
-					text_single = {
-						name = "your_county"
-						visible = "[ObjectsEqual( Character.Self, GetPlayer )]"
-						# layoutpolicy_horizontal = expanding
-						text = "HOLDING_VIEW_YOUR_COUNTY"
-						margin_left = 2
-					}
-
-					text_single = {
-						name = "top_realm_county"
-						visible = "[Character.IsOtherLiegeOrAbove( GetPlayer )]"
-						# layoutpolicy_horizontal = expanding
-						text = "HOLDING_VIEW_TOP_REALM_COUNTY"
-						margin_left = 5
-					}
-
-					text_single = {
-						name = "foreign_county"
-						visible = "[Not(Or(ObjectsEqual( Character.Self, GetPlayer ),Character.IsOtherLiegeOrAbove( GetPlayer )))]"
-						# layoutpolicy_horizontal = expanding
-						text = "HOLDING_VIEW_FOREIGN_COUNTY"
-						margin_left = 5
-					}
-
-					text_single = {
-						raw_text = "."
-					}
-
-					text_single = {
-						raw_text = " Your capital."
-						layoutpolicy_horizontal = expanding
-						visible = "[ObjectsEqual(HoldingView.GetProvince, GetPlayer.GetCapitalLocation)]"
-					}
-
-					vbox = {
-						datacontext = "[HoldingView.GetCountyTitle.GetHolder]"
-						visible = "[And(HoldingView.GetProvince.HasCountyCapitalProvince, Not(ObjectsEqual(Character.Self, GetPlayer)))]"
-						margin_left = 5
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							spacing = 5
-
-							text_single = {
-								layoutpolicy_horizontal = expanding
-								text = "HOLDING_VIEW_COUNTY_HOLDER"
-								# default_format = "#low"
-							}
-
-							char_name = {
-								datacontext = "[HoldingView.GetCountyTitle.GetHolder]"
-								blockoverride "width" {
-									max_width = 200
-									align = left
-								}
-							}
-
-							text_single = {
-								datacontext = "[HoldingView.GetCountyTitle.GetHolder]"
-								visible = "[And(Character.HasRelationTo( GetPlayer ), Not(Character.IsPlayer))]"
-								layoutpolicy_horizontal = expanding
-								max_width = 250
-								raw_text = "[Character.GetRelationToString( GetPlayer )]."
-								tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-							}
-						}
-					}
-
-					expand = { }
-				}
-
-				hbox = {
-					layoutpolicy_horizontal = expanding
-					visible = "[Not(GetVariableSystem.Exists('hide_county'))]"
-
-					button_text = {
-						visible = "[HoldingView.GetCountyTitle.CanPlayerCustomizeTitle]"
-						onclick = "[OpenTitleCustomizationWindow(HoldingView.GetCountyTitle)]"
-						blockoverride "text" {
-							raw_text = "Rename county."
-							align = left
-						}
-					}
-
-					button_text = {
-					    blockoverride "text" {
-					        raw_text = "Go to your closest county,"
-							align = left
-					    }
-						datacontext = "[HoldingView.GetProvince.MakeScope.Var('closest_county').Title]"
-						blockoverride "extra" {
-							text_single = {
-								raw_text = " [Title.GetNameNoTierNoTooltip], Shift E."
-								visible = "[HoldingView.GetProvince.MakeScope.Var('closest_county').IsSet]"
-							}
-						}
-						using = prov_click
-						visible = "[Not(Or(ObjectsEqual( Character.Self, GetPlayer ),Character.IsOtherLiegeOrAbove( GetPlayer )))]"
-						shortcut = map_mode_11
-					}
-
-					button_text = {
-						onclick = "[DefaultOnCoatOfArmsClick(HoldingView.GetCountyTitle.GetID)]"
-						blockoverride "text" {
-							raw_text = "Open title window."
-							align = left
-						}
-					}
-
-					expand = { }
-				}
+				expand = { }
 			}
 
-			expand = { }
+			hbox = {
+			    layoutpolicy_horizontal = expanding
+
+			    button_text = {
+					using = char_click
+					datacontext = "[HoldingView.GetTopLiege]"
+			        blockoverride "extra" {
+			            text_single = {
+			            	raw_text = "Realm, [Character.GetPrimaryTitle.GetNameNoTooltip],"
+			            }
+						text_single = {
+							visible = "[GreaterThan_int32(Character.RealmSize, '(int32)1')]"
+							raw_text = " [Character.RealmSize] counties,"
+						}
+			        }
+			    }
+
+				button_text = {
+					datacontext = "[HoldingView.GetTopLiege]"
+				    blockoverride "text" {
+						raw_text = "[Character.GetFirstNameNicknamedOrMe]."
+				    }
+				}
+
+			    expand = { }
+			}
+
+			hbox = {
+				visible = no# "[Not(GetVariableSystem.Exists('hide_county'))]"
+				datacontext = "[HoldingView.GetCountyTitle.GetHolder]"
+				layoutpolicy_horizontal = expanding
+
+				text_single = {
+					name = "your_county"
+					visible = "[ObjectsEqual( Character.Self, GetPlayer )]"
+					# layoutpolicy_horizontal = expanding
+					text = "HOLDING_VIEW_YOUR_COUNTY"
+					margin_left = 2
+				}
+
+				text_single = {
+					name = "top_realm_county"
+					visible = "[Character.IsOtherLiegeOrAbove( GetPlayer )]"
+					# layoutpolicy_horizontal = expanding
+					text = "HOLDING_VIEW_TOP_REALM_COUNTY"
+					margin_left = 5
+				}
+
+				text_single = {
+					name = "foreign_county"
+					visible = "[Not(Or(ObjectsEqual( Character.Self, GetPlayer ),Character.IsOtherLiegeOrAbove( GetPlayer )))]"
+					# layoutpolicy_horizontal = expanding
+					text = "HOLDING_VIEW_FOREIGN_COUNTY"
+					margin_left = 5
+				}
+
+				text_single = {
+					raw_text = "."
+				}
+
+				text_single = {
+					raw_text = " Your capital."
+					layoutpolicy_horizontal = expanding
+					visible = "[ObjectsEqual(HoldingView.GetProvince, GetPlayer.GetCapitalLocation)]"
+				}
+
+				vbox = {
+					datacontext = "[HoldingView.GetCountyTitle.GetHolder]"
+					visible = "[And(HoldingView.GetProvince.HasCountyCapitalProvince, Not(ObjectsEqual(Character.Self, GetPlayer)))]"
+					margin_left = 5
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 5
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							text = "HOLDING_VIEW_COUNTY_HOLDER"
+							# default_format = "#low"
+						}
+
+						char_name = {
+							datacontext = "[HoldingView.GetCountyTitle.GetHolder]"
+							blockoverride "width" {
+								max_width = 200
+								align = left
+							}
+						}
+
+						text_single = {
+							datacontext = "[HoldingView.GetCountyTitle.GetHolder]"
+							visible = "[And(Character.HasRelationTo( GetPlayer ), Not(Character.IsPlayer))]"
+							layoutpolicy_horizontal = expanding
+							max_width = 250
+							raw_text = "[Character.GetRelationToString( GetPlayer )]."
+							tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+						}
+					}
+				}
+
+				expand = { }
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				visible = no# "[Not(GetVariableSystem.Exists('hide_county'))]"
+
+				button_text = {
+					visible = "[HoldingView.GetCountyTitle.CanPlayerCustomizeTitle]"
+					onclick = "[OpenTitleCustomizationWindow(HoldingView.GetCountyTitle)]"
+					blockoverride "text" {
+						raw_text = "Rename county."
+						align = left
+					}
+				}
+
+				button_text = {
+					onclick = "[DefaultOnCoatOfArmsClick(HoldingView.GetCountyTitle.GetID)]"
+					blockoverride "text" {
+						raw_text = "Open title window."
+						align = left
+					}
+				}
+
+				expand = { }
+			}
+		}
+
+		hbox = {
+			margin_left = 5
+		    layoutpolicy_horizontal = expanding
+			spacing = 5
+			visible = "[Not(ObjectsEqual(HoldingView.GetProvince, GetPlayer.GetCapitalLocation))]"
+
+			text_single = {
+				raw_text = "[GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', HoldingView.GetProvince.MakeScope).ScriptValue('province_distance')|0] days"
+			}
+
+			text_single = {
+				raw_text = "[GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', HoldingView.GetProvince.MakeScope).Custom('province_direction')]"
+			}
+
+			text_single = {
+				raw_text = "from your capital."
+			}
+
+			button_text = {
+				blockoverride "text" {
+					margin_left = -5
+					raw_text = "Closest county,"
+					align = left
+				}
+				datacontext = "[HoldingView.GetProvince.MakeScope.Var('closest_county').Title]"
+				blockoverride "extra" {
+					text_single = {
+						raw_text = " [Title.GetNameNoTierNoTooltip], Shift E."
+						visible = "[HoldingView.GetProvince.MakeScope.Var('closest_county').IsSet]"
+					}
+				}
+				using = prov_click
+				visible = "[Not(Or(ObjectsEqual( Character.Self, GetPlayer ),Character.IsOtherLiegeOrAbove( GetPlayer )))]"
+				shortcut = map_mode_11
+			}
+
+		    expand = { }
 		}
 
 		hbox = {
 			layoutpolicy_horizontal = expanding
+			visible = no
 
 			spacing = 3
-
-			text_single = {
-				raw_text = "[GuiScope.SetRoot(HoldingView.GetProvince.MakeScope).ScriptValue('distance_to_player')|0] days [HoldingView.GetProvince.Custom('county_direction_from_capital')] from your capital."
-				# layoutpolicy_horizontal = expanding
-				visible = "[Not(ObjectsEqual(HoldingView.GetProvince, GetPlayer.GetCapitalLocation))]"
-			}
 
 			text_single = {
 				raw_text = "Coastal county."
@@ -365,478 +429,389 @@ window = {
 			expand = { }
 		}
 
+		hbox = {
+		    layoutpolicy_horizontal = expanding
 
+			button_text = {
+				onclick = "[GetVariableSystem.Clear('county_tabs')]"
+				shortcut = decrease_speed_2
+				blockoverride "pre" {
+					text_single = {
+						visible = "[Not(GetVariableSystem.Exists('county_tabs'))]"
+						margin_right = 3
+						raw_text = "Showing"
+					}
+				}
+			    blockoverride "text" {
+			        raw_text = "County info, Z."
+			    }
+			}
+
+			button_text = {
+				onclick = "[GetVariableSystem.Set('county_tabs', 'holdings')]"
+				shortcut = increase_speed_2
+				blockoverride "pre" {
+					text_single = {
+						visible = "[GetVariableSystem.HasValue('county_tabs', 'holdings')]"
+						margin_right = 3
+						raw_text = "Showing"
+					}
+				}
+			    blockoverride "text" {
+			        raw_text = "Holdings, X."
+			    }
+			}
+
+			button_text = {
+				onclick = "[GetVariableSystem.Set('county_tabs', 'adjacent_counties')]"
+				shortcut = character_finder
+				blockoverride "pre" {
+					text_single = {
+						visible = "[GetVariableSystem.HasValue('county_tabs', 'adjacent_counties')]"
+						margin_right = 3
+						raw_text = "Showing"
+					}
+				}
+			    blockoverride "text" {
+			        raw_text = "Adjacent counties, C."
+			    }
+			}
+
+		    expand = { }
+		}
+
+		# county info
 		vbox = {
+			visible = "[Not(GetVariableSystem.Exists('county_tabs'))]"
 			layoutpolicy_horizontal = expanding
-			visible = "[Not(GetVariableSystem.Exists('hide_county'))]"
 
-			#navigation
-			vbox = {
+			hbox = {
+				name = "county_info"
+				datacontext = "[HoldingView.GetProvince.GetCountyCapitalProvince]"
 				layoutpolicy_horizontal = expanding
-				#
-
-				hbox = {
-					spacing = 3
-					layoutpolicy_horizontal = expanding
-
-					button_text = {
-					    blockoverride "text" {
-					        raw_text = "  [GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties'))] Adjacent counties, [Select_CString(GetVariableSystem.Exists('hide_adjacent'), 'Show', 'Hide')] with E."
-					    }
-						onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
-					}
-
-					button = {
-						onclick = "[GetVariableSystem.Toggle('hide_adjacent')]"
-						onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
-						shortcut = map_mode_1
-					}
-					expand = { }
-				}
-
-				state = {
-					on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
-					trigger_when = "[IsDataModelEmpty(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties'))]"
-				}
-
-				dynamicgridbox = {
-					minimumsize = { 50 25 }
-					datamodel_wrap = 3
-					layoutpolicy_horizontal = expanding
-					flipdirection = yes
-					visible = "[Not(GetVariableSystem.Exists('hide_adjacent'))]"
-
-					datamodel = "[HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties')]"
-
-					item = {
-						button = {
-							size = { 0 22 }
-							onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.Title.GetProvince.GetId))]"
-							onclick = "[DefaultOnCoatOfArmsRightClick(Scope.Title.GetProvince.GetTitle.GetID)]"
-							# onrightclick = "[DefaultOnCoatOfArmsRightClick(Scope.Title.GetProvince.GetID)]"
-							button_ignore = none
-
-							onclick = "[PdxGuiTriggerAllAnimations('adjacent_counties')]"
-
-							flowcontainer = {
-								resizeparent = yes
-								spacing = 5
-
-								widget = {
-									size = { 5 0 }
-								}
-
-								text_single = {
-									raw_text = "[Scope.Title.GetBaseNameNoTierNoTooltip], "
-									max_width = 130
-								}
-
-								# text_single = {
-								# 	raw_text = "[Scope.Title.MakeScope.Var('direction').GetValue|0]."
-								# 	margin_right = 5
-								# }
-
-								text_single = {
-									raw_text = "[Scope.Title.Custom('county_direction')]."
-									# margin_right = 10
-								}
-							}
-						}
-					}
-				}
 
 				vbox = {
-					visible = "[Not(IsDataModelEmpty(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_across_water')))]"
-					layoutpolicy_horizontal = expanding
+					margin_left = 10
 
-					button = {
-						size = { 400 22 }
+					vbox = {
+						# margin = { 10 0 }
+						visible = "[Not( IsDataModelEmpty(HoldingView.GetCountyModifiers))]"
 						layoutpolicy_horizontal = expanding
-						onclick = "[GetVariableSystem.Toggle('hide_across_water')]"
-						shortcut = map_mode_12
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "[GetDataModelSize(HoldingView.GetCountyModifiers)] County modifiers:"
+						}
+
+						dynamicgridbox = {
+							datamodel_wrap = 3
+							datamodel = "[HoldingView.GetCountyModifiers]"
+
+							item = {
+								text_single = {
+									raw_text = "[ModifierItem.GetName]."
+									raw_tooltip = "[ModifierItem.GetTooltip]"
+								}
+							}
+							layoutpolicy_horizontal = expanding
+						}
+					}
+
+					#resources
+					flowcontainer = {
+						ignoreinvisible = yes
+						layoutpolicy_horizontal = expanding
+						direction = vertical
+						text_single = {
+							# layoutpolicy_horizontal = expanding
+							raw_text = "Total tax: [GuiScope.SetRoot(HoldingView.GetCountyTitle.MakeScope).ScriptValue('total_tax')|1]."
+						}
+
+						text_single = {
+							# layoutpolicy_horizontal = expanding
+							raw_text = "Total levies: [GuiScope.SetRoot(HoldingView.GetCountyTitle.MakeScope).ScriptValue('total_levies')|0]."
+						}
 
 						flowcontainer = {
-							ignoreinvisible = yes
 							spacing = 5
-							background = { using = Background_Area_Border_Solid }
+							# layoutpolicy_horizontal = expanding
+							datacontext = "[HoldingView.GetProvince.GetCounty]";
+							# expand = { }
 
 							text_single = {
-								layoutpolicy_horizontal = expanding
-								raw_text = "  [GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_across_water'))] Across"
-							}
-
-							text_single = {
-								raw_text = "sea:"
-								visible = "[GetScriptedGui('is_coastal_county').IsShown( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
-							}
-							text_single = {
-								raw_text = "river:"
-								visible = "[GetScriptedGui('is_riverside_county').IsShown( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
-							}
-							text_single = {
-								raw_text = "sea or river:"
-								visible = "[GetScriptedGui('is_river_and_coastal').IsShown( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
+								# layoutpolicy_horizontal = expanding
+								raw_text = "[control|E]:"
 							}
 
 							text_single = {
-								raw_text = "Hide with Control E."
-								visible = "[Not(GetVariableSystem.Exists('hide_across_water'))]"
+								raw_text = "[County.GetControlLevel]."
+								default_format = "#high"
+								tooltip = "COUNTY_CONTROL_TOOLTIP"
+
+								background = {
+									visible = "[LessThan_CFixedPoint(County.GetControl, '(CFixedPoint)100')]"
+									margin = { 5 0 }
+									using = Status_Bad
+								}
+							}
+						}
+
+						flowcontainer = {
+							spacing = 5
+							# layoutpolicy_horizontal = expanding
+
+							# expand = { }
+
+							text_single = {
+								# layoutpolicy_horizontal = expanding
+								raw_text = "[development|E]:"
 							}
 
 							text_single = {
-								raw_text = "Show with Control E"
-								visible = "[GetVariableSystem.Exists('hide_across_water')]"
+								raw_text = "[HoldingView.GetProvince.GetCounty.GetDevelopmentLevelString]."
+								default_format = "#high"
+								tooltip = "COUNTY_DEVELOPMENT_TOOLTIP"
 							}
 						}
 					}
 
-					dynamicgridbox = {
-						minimumsize = { 50 25 }
-						datamodel_wrap = 3
+					flowcontainer = {
 						layoutpolicy_horizontal = expanding
-						flipdirection = yes
-						visible = "[Not(GetVariableSystem.Exists('hide_across_water'))]"
+						ignoreinvisible = yes
+						direction = vertical
+						flowcontainer = {
+							spacing = 5
+							ignoreinvisible = yes
+							# expand = { }
 
-						datamodel = "[HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_across_water')]"
+							text_single = {
+								# layoutpolicy_horizontal = expanding
+								raw_text = "[county_opinion|E]:"
+							}
 
-						item = {
-							button = {
-								size = { 0 22 }
-								onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.Title.GetProvince.GetId))]"
-								onclick = "[DefaultOnCoatOfArmsRightClick(Scope.Title.GetProvince.GetTitle.GetID)]"
-								# onrightclick = "[DefaultOnCoatOfArmsRightClick(Scope.Title.GetProvince.GetID)]"
-								button_ignore = none
+							button_normal = {
+								name = "in_faction"
+								visible = "[HoldingView.IsInFaction]"
+								onclick = "[HoldingView.OnGotoFaction]"
+								tooltip = "COUNTY_IN_FACTION_TOOLTIP"
+								size = { 20 20 }
+								texture = "gfx/interface/icons/symbols/icon_warning.dds"
+							}
 
-								onclick = "[PdxGuiTriggerAllAnimations('adjacent_counties')]"
+							text_single = {
+								raw_text = "[HoldingView.GetCountyOpinion|=+]."
+								default_format = "#high"
+								tooltip = "COUNTY_OPINION_TOOLTIP"
+							}
+						}
 
-								flowcontainer = {
-									resizeparent = yes
-									spacing = 5
+						flowcontainer = {
+							datacontext = "[Province.GetCounty.GetCulture]"
 
-									widget = {
-										size = { 5 0 }
+							using = tooltip_ne
+
+							# expand = { }
+
+							tooltipwidget = {
+
+								culture_tooltip = {
+
+									blockoverride "extra_info"
+									{
+										text_single = {
+											fonttintcolor = "[TooltipInfo.GetTintColor]"
+											using = DefaultTooltipText
+											visible = "[Not( ObjectsEqual( Culture.Self, GetPlayer.GetCulture ) )]"
+											text = "COUNTY_NOT_YOUR_CULTURE"
+										}
 									}
+								}
+							}
 
-									text_single = {
-										raw_text = "[Scope.Title.GetBaseNameNoTierNoTooltip], "
-										max_width = 130
+							text_single = {
+								# layoutpolicy_horizontal = expanding
+								raw_text = "[culture|E]:"
+							}
+
+							text_single = {
+								raw_text = " "
+							}
+
+							button_group = {
+								# shortcut = "innovations_window"
+								onclick = "[DefaultOnCultureClick(Culture.GetID)]"
+
+								text_single = {
+									text = "CULTURE_COUNTY_WINDOW"
+									default_format = "#high"
+
+									background = {
+										visible = "[NotEqualTo_uint32(Culture.GetID, GetPlayer.GetCulture.GetID)]"
+										margin = { 5 0 }
+										using = Status_Bad
+										alpha = 0.5
 									}
+								}
+							}
 
-									# text_single = {
-									# 	raw_text = "[Scope.Title.MakeScope.Var('direction').GetValue|0]."
-									# 	margin_right = 5
-									# }
+							text_single = {
+								raw_text = "."
+							}
+						}
 
-									text_single = {
-										raw_text = "[Scope.Title.Custom('county_direction')]."
-										# margin_right = 10
+						flowcontainer = {
+							datacontext = "[Province.GetCounty.GetFaith]"
+							# layoutpolicy_horizontal = expanding
+							spacing = 5
+							using = tooltip_ne
+
+							# expand = { }
+
+							tooltipwidget = {
+
+								faith_tooltip = {
+
+									blockoverride "extra_info" {
+										using = faith_tooltip_click_default_extra_info
+
+										text_single = {
+											margin = { 10 0 }
+											layoutpolicy_horizontal = expanding
+											fonttintcolor = "[TooltipInfo.GetTintColor]"
+											using = DefaultTooltipText
+											visible = "[Not( ObjectsEqual( Faith.Self, GetPlayer.GetFaith ) )]"
+											text = "COUNTY_NOT_YOUR_FAITH"
+										}
+									}
+								}
+							}
+
+							text_single = {
+								# layoutpolicy_horizontal = expanding
+								raw_text = "[faith|E]:"
+							}
+
+							# vbox = {
+							# 	expand = { minimumsize = { 0 2 } }
+							# 	icon = {
+							# 		size = { 22 22 }
+							# 		datacontext = "[Province.GetCounty.GetFaith]"
+							# 		texture = "[Faith.GetIcon]"
+							# 	}
+							# }
+
+							button_group = {
+								# shortcut = "faith_window"
+								onclick = "[DefaultOnFaithClick(Faith.GetID)]"
+
+								text_single = {
+									raw_text = "[Faith.GetNameNoTooltip]."
+									default_format = "#high"
+
+									background = {
+										visible = "[NotEqualTo_uint32(Faith.GetID, GetPlayer.GetFaith.GetID)]"
+										margin = { 5 0 }
+										using = Status_Bad
+										alpha = 0.5
 									}
 								}
 							}
 						}
 					}
+
+				}
+
+				expand = { }
+			}
+
+			expand = { }
+		}
+
+		#navigation
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[GetVariableSystem.HasValue('county_tabs', 'adjacent_counties')]"
+
+			hbox = {
+				spacing = 3
+				layoutpolicy_horizontal = expanding
+
+				button_text = {
+					blockoverride "text" {
+						raw_text = "  [GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties'))] Adjacent counties."
+					}
+					onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+				}
+
+				button = {
+					onclick = "[GetVariableSystem.Toggle('hide_adjacent')]"
+					onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+					shortcut = map_mode_1
+				}
+				expand = { }
+			}
+
+			state = {
+				on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+				trigger_when = "[IsDataModelEmpty(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties'))]"
+			}
+
+			dynamicgridbox = {
+				minimumsize = { 50 25 }
+				# datamodel_wrap = 3
+				layoutpolicy_horizontal = expanding
+				# flipdirection = yes
+				visible = "[Not(GetVariableSystem.Exists('hide_adjacent'))]"
+
+				datamodel = "[HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties')]"
+
+				item = {
+					adjacent_county_button = { }
 				}
 			}
 
 			vbox = {
+				visible =  "[Not(IsDataModelEmpty(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_across_water')))]"
 				layoutpolicy_horizontal = expanding
-				margin_bottom = 5
 
-				background = {
-					using = Background_Area
-					margin = { 0 5 }
-				}
-				#hierarchy
-
-				button_text = {
+				button = {
+					size = { 400 22 }
 					layoutpolicy_horizontal = expanding
-					onclick = "[GetVariableSystem.Toggle('hide_hierarchy')]"
-					blockoverride "pre" {
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 5
+						background = { using = Background_Area_Border_Solid }
+
 						text_single = {
-							raw_text = "De Jure Hierarchy,"
-							margin_right = 5
+							layoutpolicy_horizontal = expanding
+							raw_text = "  [GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_across_water'))] Across"
+						}
+
+						text_single = {
+							raw_text = "sea:"
+							visible = "[GetScriptedGui('is_coastal_county').IsShown( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
+						}
+						text_single = {
+							raw_text = "river:"
+							visible = "[GetScriptedGui('is_riverside_county').IsShown( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
+						}
+						text_single = {
+							raw_text = "sea or river:"
+							visible = "[GetScriptedGui('is_river_and_coastal').IsShown( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
 						}
 					}
-					blockoverride "text" {
-						raw_text = "[Select_CString(GetVariableSystem.Exists('hide_hierarchy'), 'Show', 'Hide')] with Shift D."
-						align = left
-					}
-					shortcut = mapmode_house_secondary
 				}
 
-				hbox = {
+				dynamicgridbox = {
 					layoutpolicy_horizontal = expanding
-					margin_left = 10
+					visible = "[Not(GetVariableSystem.Exists('hide_across_water'))]"
 
-					hbox = {
-						datamodel = "[HoldingView.GetDeJureLieges]"
-						visible = "[Not(GetVariableSystem.Exists('hide_hierarchy'))]"
+					datamodel = "[HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_across_water')]"
 
-						item = {
-							flowcontainer = {
-								visible = "[GreaterThan_int32( Title.GetTierFrame, '(int32)3' )]"
-
-								button_text = {
-									onclick = "[DefaultOnCoatOfArmsClick(Title.GetID)]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
-								    blockoverride "text" {
-								        raw_text = "[Title.GetNameNoTooltip]"
-								    }
-									blockoverride "extra" {
-										text_single = {
-											visible = "[Not(Title.HasHolder)]"
-											raw_text = ", not created"
-											align = left
-										}
-									}
-									blockoverride "dot" { }
-								}
-							}
-						}
+					item = {
+						adjacent_county_button = { }
 					}
-
-					expand = { }
 				}
-
-				hbox = {
-					name = "county_info"
-					datacontext = "[HoldingView.GetProvince.GetCountyCapitalProvince]"
-					layoutpolicy_horizontal = expanding
-
-					vbox = {
-						margin_left = 10
-
-						vbox = {
-							# margin = { 10 0 }
-							visible = "[Not( IsDataModelEmpty(HoldingView.GetCountyModifiers))]"
-							layoutpolicy_horizontal = expanding
-							text_single = {
-								layoutpolicy_horizontal = expanding
-								raw_text = "[GetDataModelSize(HoldingView.GetCountyModifiers)] County modifiers:"
-							}
-
-							dynamicgridbox = {
-								datamodel_wrap = 3
-								datamodel = "[HoldingView.GetCountyModifiers]"
-
-								item = {
-									text_single = {
-										raw_text = "[ModifierItem.GetName]."
-										raw_tooltip = "[ModifierItem.GetTooltip]"
-									}
-								}
-								layoutpolicy_horizontal = expanding
-							}
-						}
-
-						#resources
-						flowcontainer = {
-							ignoreinvisible = yes
-							spacing = 3
-							layoutpolicy_horizontal = expanding
-							text_single = {
-								# layoutpolicy_horizontal = expanding
-								raw_text = "Total tax: [GuiScope.SetRoot(HoldingView.GetCountyTitle.MakeScope).ScriptValue('total_tax')|1]."
-							}
-
-							text_single = {
-								# layoutpolicy_horizontal = expanding
-								raw_text = "Total levies: [GuiScope.SetRoot(HoldingView.GetCountyTitle.MakeScope).ScriptValue('total_levies')|0]."
-							}
-
-							flowcontainer = {
-								spacing = 5
-								# layoutpolicy_horizontal = expanding
-								datacontext = "[HoldingView.GetProvince.GetCounty]";
-								# expand = { }
-
-								text_single = {
-									# layoutpolicy_horizontal = expanding
-									raw_text = "[control|E]:"
-								}
-
-								text_single = {
-									raw_text = "[County.GetControlLevel]."
-									default_format = "#high"
-									tooltip = "COUNTY_CONTROL_TOOLTIP"
-
-									background = {
-										visible = "[LessThan_CFixedPoint(County.GetControl, '(CFixedPoint)100')]"
-										margin = { 5 0 }
-										using = Status_Bad
-									}
-								}
-							}
-
-							flowcontainer = {
-								spacing = 5
-								# layoutpolicy_horizontal = expanding
-
-								# expand = { }
-
-								text_single = {
-									# layoutpolicy_horizontal = expanding
-									raw_text = "[development|E]:"
-								}
-
-								text_single = {
-									raw_text = "[HoldingView.GetProvince.GetCounty.GetDevelopmentLevelString]."
-									default_format = "#high"
-									tooltip = "COUNTY_DEVELOPMENT_TOOLTIP"
-								}
-							}
-						}
-
-						flowcontainer = {
-							layoutpolicy_horizontal = expanding
-							ignoreinvisible = yes
-							spacing = 5
-							flowcontainer = {
-								spacing = 5
-								ignoreinvisible = yes
-								# expand = { }
-
-								text_single = {
-									# layoutpolicy_horizontal = expanding
-									raw_text = "[county_opinion|E]:"
-								}
-
-								button_normal = {
-									name = "in_faction"
-									visible = "[HoldingView.IsInFaction]"
-									onclick = "[HoldingView.OnGotoFaction]"
-									tooltip = "COUNTY_IN_FACTION_TOOLTIP"
-									size = { 20 20 }
-									texture = "gfx/interface/icons/symbols/icon_warning.dds"
-								}
-
-								text_single = {
-									raw_text = "[HoldingView.GetCountyOpinion|=+]."
-									default_format = "#high"
-									tooltip = "COUNTY_OPINION_TOOLTIP"
-								}
-							}
-
-							flowcontainer = {
-								datacontext = "[Province.GetCounty.GetCulture]"
-
-								using = tooltip_ne
-
-								# expand = { }
-
-								tooltipwidget = {
-
-									culture_tooltip = {
-
-										blockoverride "extra_info"
-										{
-											text_single = {
-												fonttintcolor = "[TooltipInfo.GetTintColor]"
-												using = DefaultTooltipText
-												visible = "[Not( ObjectsEqual( Culture.Self, GetPlayer.GetCulture ) )]"
-												text = "COUNTY_NOT_YOUR_CULTURE"
-											}
-										}
-									}
-								}
-
-								text_single = {
-									# layoutpolicy_horizontal = expanding
-									raw_text = "[culture|E]:"
-								}
-
-								text_single = {
-									raw_text = " "
-								}
-
-								button_group = {
-									# shortcut = "innovations_window"
-									onclick = "[DefaultOnCultureClick(Culture.GetID)]"
-
-									text_single = {
-										text = "CULTURE_COUNTY_WINDOW"
-										default_format = "#high"
-
-										background = {
-											visible = "[NotEqualTo_uint32(Culture.GetID, GetPlayer.GetCulture.GetID)]"
-											margin = { 5 0 }
-											using = Status_Bad
-											alpha = 0.5
-										}
-									}
-								}
-
-								text_single = {
-									raw_text = "."
-								}
-							}
-
-							flowcontainer = {
-								datacontext = "[Province.GetCounty.GetFaith]"
-								# layoutpolicy_horizontal = expanding
-								spacing = 5
-								using = tooltip_ne
-
-								# expand = { }
-
-								tooltipwidget = {
-
-									faith_tooltip = {
-
-										blockoverride "extra_info" {
-											using = faith_tooltip_click_default_extra_info
-
-											text_single = {
-												margin = { 10 0 }
-												layoutpolicy_horizontal = expanding
-												fonttintcolor = "[TooltipInfo.GetTintColor]"
-												using = DefaultTooltipText
-												visible = "[Not( ObjectsEqual( Faith.Self, GetPlayer.GetFaith ) )]"
-												text = "COUNTY_NOT_YOUR_FAITH"
-											}
-										}
-									}
-								}
-
-								text_single = {
-									# layoutpolicy_horizontal = expanding
-									raw_text = "[faith|E]:"
-								}
-
-								# vbox = {
-								# 	expand = { minimumsize = { 0 2 } }
-								# 	icon = {
-								# 		size = { 22 22 }
-								# 		datacontext = "[Province.GetCounty.GetFaith]"
-								# 		texture = "[Faith.GetIcon]"
-								# 	}
-								# }
-
-								button_group = {
-									# shortcut = "faith_window"
-									onclick = "[DefaultOnFaithClick(Faith.GetID)]"
-
-									text_single = {
-										raw_text = "[Faith.GetNameNoTooltip]."
-										default_format = "#high"
-
-										background = {
-											visible = "[NotEqualTo_uint32(Faith.GetID, GetPlayer.GetFaith.GetID)]"
-											margin = { 5 0 }
-											using = Status_Bad
-											alpha = 0.5
-										}
-									}
-								}
-							}
-						}
-
-					}
-
-					expand = { }
-				}
-
-				expand = { }
 			}
 		}
 
@@ -846,485 +821,403 @@ window = {
 			on_finish = "[GetScriptedGui('county_holding_list').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
 		}
 
-
-		text_single = {
+		vbox = {
 			layoutpolicy_horizontal = expanding
-			raw_text = "[GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('county_holdings'))] holdings, use number keys to select."
-		}
-
-		flowcontainer = {
-			layoutpolicy_horizontal = expanding
-			margin_left = 10
-			spacing = 2
-			datamodel = "[HoldingView.GetCountyTitle.MakeScope.GetList('county_holdings')]"
-
-
-			item = {
-				button_text = {
-					datacontext = "[Scope.GetProvince.GetHolding]"
-				    blockoverride "text" {
-						raw_text = " [AddTextIf(Not(Holding.IsEmpty), Concatenate(Holding.GetPrimaryBuildingType.GetTypeName, ' '))][Holding.GetNameNoTooltip]."
-						align = left
-				    }
-					blockoverride "pre" {
-						text_single = {
-							raw_text = "[Scope.GetProvince.MakeScope.Var('order').GetValue]"
-							visible = "[LessThan_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)6')]"
-						}
-					}
-					onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
-					onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-
-					button = {
-						onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
-						onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-						shortcut = speed_1
-						visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)1')]"
-					}
-					button = {
-						onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
-						onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-						shortcut = speed_2
-						visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)2')]"
-					}
-					button = {
-						onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
-						onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-						shortcut = speed_3
-						visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)3')]"
-					}
-					button = {
-						onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
-						onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-						shortcut = speed_4
-						visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)4')]"
-					}
-					button = {
-						onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
-						onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-						shortcut = speed_5
-						visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)5')]"
-					}
-				}
+			visible = "[GetVariableSystem.HasValue('county_tabs', 'holdings')]"
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "[GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('county_holdings'))] holdings, use number keys to select."
 			}
-		}
-
-		widget = {
-			# layoutpolicy_horizontal = expanding
-			size = { 700 26 }
-			scissor = yes
-			visible = no
-
-
 
 			flowcontainer = {
+				layoutpolicy_horizontal = expanding
 				margin_left = 10
 				spacing = 2
-				datamodel = "[HoldingView.GetCountyHoldings]"
+				datamodel = "[HoldingView.GetCountyTitle.MakeScope.GetList('county_holdings')]"
 
-				text_single = {
-					raw_text = "[GetDataModelSize(HoldingView.GetCountyHoldings)] holdings:"
-				}
 
 				item = {
-					button = {
-						name = "holding"
-						datacontext = "[GUICountyHolding.GetHolding]"
-						alwaystransparent = "[GUICountyHolding.IsSelected]"
-						onclick = "[GUICountyHolding.OnClick]"
-						onclick = "[PdxGuiTriggerAllAnimations('holding_view_refresh')]"
-						using = tooltip_ne
-						background = { using = Background_Area_Dark }
-
-						state = {
-							name = select
-							on_finish = "[GUICountyHolding.OnClick]"
+					button_text = {
+						datacontext = "[Scope.GetProvince.GetHolding]"
+					    blockoverride "text" {
+							raw_text = " [AddTextIf(Not(Holding.IsEmpty), Concatenate(Holding.GetPrimaryBuildingType.GetTypeName, ' '))][Holding.GetNameNoTooltip]."
+							align = left
+					    }
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "[Scope.GetProvince.MakeScope.Var('order').GetValue]"
+								visible = "[LessThan_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)6')]"
+							}
 						}
+						onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
+						onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
 
-						text_single = {
-							raw_text = "[AddTextIf(Not(GUICountyHolding.GetHolding.IsEmpty), Concatenate(GUICountyHolding.GetHolding.GetPrimaryBuildingType.GetTypeName, ' '))][GUICountyHolding.GetHolding.GetNameNoTooltip]."
-							resizeparent = yes
-							margin_left = 3
+						button = {
+							onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
+							onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+							shortcut = speed_1
+							visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)1')]"
+						}
+						button = {
+							onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
+							onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+							shortcut = speed_2
+							visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)2')]"
+						}
+						button = {
+							onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
+							onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+							shortcut = speed_3
+							visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)3')]"
+						}
+						button = {
+							onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
+							onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+							shortcut = speed_4
+							visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)4')]"
+						}
+						button = {
+							onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
+							onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+							shortcut = speed_5
+							visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)5')]"
 						}
 					}
 				}
 			}
-		}
 
-		### info
-		flowcontainer = {
-			layoutpolicy_horizontal = expanding
-			direction = vertical
-			margin_top = 5
-			ignoreinvisible = yes
+			widget = {
+				# layoutpolicy_horizontal = expanding
+				size = { 700 26 }
+				scissor = yes
+				visible = no
 
-			#modifiers
-			dynamicgridbox = {
-				name = "holding_modifiers_grid"
-				datamodel = "[HoldingView.GetHoldingModifiers]"
-				flipdirection = yes
+				flowcontainer = {
+					margin_left = 10
+					spacing = 2
+					datamodel = "[HoldingView.GetCountyHoldings]"
 
-				item = {
 					text_single = {
-						raw_text = " [ModifierItem.GetName],"
-						tooltip = "[ModifierItem.GetTooltip]"
+						raw_text = "[GetDataModelSize(HoldingView.GetCountyHoldings)] holdings:"
+					}
+
+					item = {
+						button = {
+							name = "holding"
+							datacontext = "[GUICountyHolding.GetHolding]"
+							alwaystransparent = "[GUICountyHolding.IsSelected]"
+							onclick = "[GUICountyHolding.OnClick]"
+							onclick = "[PdxGuiTriggerAllAnimations('holding_view_refresh')]"
+							using = tooltip_ne
+							background = { using = Background_Area_Dark }
+
+							state = {
+								name = select
+								on_finish = "[GUICountyHolding.OnClick]"
+							}
+
+							text_single = {
+								raw_text = "[AddTextIf(Not(GUICountyHolding.GetHolding.IsEmpty), Concatenate(GUICountyHolding.GetHolding.GetPrimaryBuildingType.GetTypeName, ' '))][GUICountyHolding.GetHolding.GetNameNoTooltip]."
+								resizeparent = yes
+								margin_left = 3
+							}
+						}
 					}
 				}
 			}
 
+			### info
 			flowcontainer = {
+				layoutpolicy_horizontal = expanding
 				direction = vertical
+				margin_top = 5
 				ignoreinvisible = yes
-				spacing = 3
 
-				#holder
+				#modifiers
+				dynamicgridbox = {
+					name = "holding_modifiers_grid"
+					datamodel = "[HoldingView.GetHoldingModifiers]"
+					flipdirection = yes
+
+					item = {
+						text_single = {
+							raw_text = " [ModifierItem.GetName],"
+							tooltip = "[ModifierItem.GetTooltip]"
+						}
+					}
+				}
+
 				flowcontainer = {
 					direction = vertical
 					ignoreinvisible = yes
+					spacing = 3
 
+					#holder
 					flowcontainer = {
-						ignoreinvisible = yes
-						spacing = 5
-
-						text_single = {
-							raw_text = "Selected: [AddTextIf(Not(HoldingView.GetHolding.IsEmpty), Concatenate(HoldingView.GetHolding.GetPrimaryBuildingType.GetTypeName, ' of '))][HoldingView.GetProvince.GetTitle.GetNameNoTierNoTooltip]."
-							tooltip = "[HoldingView.GetProvince.GetTitle.GetNameNoTierNoTooltip]"
-						}
-
-						#button
-						flowcontainer = {
-							visible = "[HoldingView.GetTitle.HasHolder]"
-							ignoreinvisible = yes
-
-							text_single = {
-								raw_text = "County capital."
-								visible = "[And(HoldingView.GetProvince.GetTitle.IsCountyCapital, Not(HoldingView.GetProvince.IsRealmCapital))]"
-								tooltip = "COUNTY_CAPITAL_TOOLTIP"
-							}
-
-							text_single = {
-								raw_text = "Realm capital." #TODO what realm
-								visible = "[HoldingView.GetProvince.IsRealmCapital]"
-								tooltip = "REALM_CAPITAL_TOOLTIP"
-							}
-
-							button_text = {
-								blockoverride "text" {
-									raw_text = "Make realm capital"
-									align = left
-								}
-								blockoverride "extra" {
-									text_single = {
-										raw_text = ", disabled."
-										visible = "[Not(HoldingView.CanSetRealmCapital)]"
-									}
-								}
-								enabled = "[HoldingView.CanSetRealmCapital]"
-								visible = "[HoldingView.PotentialSetRealmCapital]"
-								onclick = "[HoldingView.SetRealmCapital]"
-								tooltip = "[HoldingView.GetSetRealmCapitalTooltip]"
-							}
-
-							button_text = {
-								blockoverride "text" {
-									raw_text = "Make county capital."
-									align = left
-								}
-								visible = "[HoldingView.CanSetCountyCapital]"
-								onclick = "[HoldingView.SetCountyCapital]"
-								tooltip = "SET_COUNTY_CAPITAL_TOOLTIP"
-							}
-						}
-
-						button_text = {
-							blockoverride "text" {
-								raw_text = "Rename holding."
-							}
-							visible = "[HoldingView.GetProvince.GetTitle.CanPlayerCustomizeTitle]"
-							onclick = "[OpenTitleCustomizationWindow(HoldingView.GetProvince.GetTitle)]"
-						}
-					}
-
-					# text_single = {
-					# 	raw_text = "Holding owner: [HoldingView.GetHolding.GetLesseeOrHolder.GetNameNoTooltip]"
-					# }
-
-					# holder
-					flowcontainer = {
-						visible = "[Not(HoldingView.GetHolding.IsEmpty)]"
 						direction = vertical
 						ignoreinvisible = yes
 
-						#grant to
-						button_text = {
-							blockoverride "text" {
-								raw_text = "Grant holding, hotkey G."
-							}
-							shortcut = "army_merge"
-							onclick = "[HoldingView.ToggleFindVassalListWindow]"
-							visible = "[And( And( ObjectsEqual( HoldingView.GetTitle.GetHolder, GetPlayer ), HoldingView.GetTitle.CanUseFindVassal( GetPlayer ) ), Not(HoldingView.GetTitle.IsLeasedOut))]"
-							# tooltip = "FIND_VASSAL_BUTTON_HOLDING_VIEW_TOOLTIP"
-						}
-
 						flowcontainer = {
-							name = "theocracy_property"
-							datacontext = "[HoldingView.GetTitle.GetLesseeOrHolder]"
-							# layoutpolicy_vertical = expanding
-							margin_left = 2
-							spacing = 3
 							ignoreinvisible = yes
+							spacing = 5
 
 							text_single = {
-								datacontext = "[HoldingView.GetTitle]"
-								visible = "[Not(Title.IsLeasedOut)]"
-								# layoutpolicy_horizontal = expanding
-								text = "HOLDING_VIEW_HOLDER"
-								default_format = "#low"
+								raw_text = "Selected: [AddTextIf(Not(HoldingView.GetHolding.IsEmpty), Concatenate(HoldingView.GetHolding.GetPrimaryBuildingType.GetTypeName, ' of '))][HoldingView.GetProvince.GetTitle.GetNameNoTierNoTooltip]."
+								tooltip = "[HoldingView.GetProvince.GetTitle.GetNameNoTierNoTooltip]"
 							}
 
-							text_single = {
-								datacontext = "[HoldingView.GetTitle]"
-								visible = "[Title.IsLeasedOut]"
-								# layoutpolicy_horizontal = expanding
-								text = "HOLDING_VIEW_LESSEE"
-								default_format = "#low"
-							}
+							#button
+							flowcontainer = {
+								visible = "[HoldingView.GetTitle.HasHolder]"
+								ignoreinvisible = yes
 
-							char_name = {
-								blockoverride "text" {
-									raw_text = "[Character.GetShortUINameNoTooltip]."
-									align = left
+								text_single = {
+									raw_text = "County capital."
+									visible = "[And(HoldingView.GetProvince.GetTitle.IsCountyCapital, Not(HoldingView.GetProvince.IsRealmCapital))]"
+									tooltip = "COUNTY_CAPITAL_TOOLTIP"
+								}
+
+								text_single = {
+									raw_text = "Realm capital." #TODO what realm
+									visible = "[HoldingView.GetProvince.IsRealmCapital]"
+									tooltip = "REALM_CAPITAL_TOOLTIP"
+								}
+
+								button_text = {
+									blockoverride "text" {
+										raw_text = "Make realm capital"
+										align = left
+									}
+									blockoverride "extra" {
+										text_single = {
+											raw_text = ", disabled."
+											visible = "[Not(HoldingView.CanSetRealmCapital)]"
+										}
+									}
+									enabled = "[HoldingView.CanSetRealmCapital]"
+									visible = "[HoldingView.PotentialSetRealmCapital]"
+									onclick = "[HoldingView.SetRealmCapital]"
+									tooltip = "[HoldingView.GetSetRealmCapitalTooltip]"
+								}
+
+								button_text = {
+									blockoverride "text" {
+										raw_text = "Make county capital."
+										align = left
+									}
+									visible = "[HoldingView.CanSetCountyCapital]"
+									onclick = "[HoldingView.SetCountyCapital]"
+									tooltip = "SET_COUNTY_CAPITAL_TOOLTIP"
 								}
 							}
 
-							text_single = {
-								visible = "[And(Character.HasRelationTo( GetPlayer ), Not(ObjectsEqual(Character.Self, GetPlayer)))]"
-								# layoutpolicy_horizontal = expanding
-								raw_text = "[Character.GetRelationToString( GetPlayer )]."
-								tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-								default_format = "#low"
+							button_text = {
+								blockoverride "text" {
+									raw_text = "Rename holding."
+								}
+								visible = "[HoldingView.GetProvince.GetTitle.CanPlayerCustomizeTitle]"
+								onclick = "[OpenTitleCustomizationWindow(HoldingView.GetProvince.GetTitle)]"
 							}
+						}
 
+						# text_single = {
+						# 	raw_text = "Holding owner: [HoldingView.GetHolding.GetLesseeOrHolder.GetNameNoTooltip]"
+						# }
+
+						# holder
+						flowcontainer = {
+							visible = "[Not(HoldingView.GetHolding.IsEmpty)]"
+							direction = vertical
+							ignoreinvisible = yes
+
+							#grant to
+							button_text = {
+								blockoverride "text" {
+									raw_text = "Grant holding, hotkey G."
+								}
+								shortcut = "army_merge"
+								onclick = "[HoldingView.ToggleFindVassalListWindow]"
+								visible = "[And( And( ObjectsEqual( HoldingView.GetTitle.GetHolder, GetPlayer ), HoldingView.GetTitle.CanUseFindVassal( GetPlayer ) ), Not(HoldingView.GetTitle.IsLeasedOut))]"
+								# tooltip = "FIND_VASSAL_BUTTON_HOLDING_VIEW_TOOLTIP"
+							}
 
 							flowcontainer = {
-								layoutpolicy_horizontal = expanding
+								name = "theocracy_property"
+								datacontext = "[HoldingView.GetTitle.GetLesseeOrHolder]"
+								# layoutpolicy_vertical = expanding
+								margin_left = 2
+								spacing = 3
+								ignoreinvisible = yes
 
-								container = {
-									name = "revoke_lease_button"
+								text_single = {
+									datacontext = "[HoldingView.GetTitle]"
+									visible = "[Not(Title.IsLeasedOut)]"
+									# layoutpolicy_horizontal = expanding
+									text = "HOLDING_VIEW_HOLDER"
+									default_format = "#low"
+								}
+
+								text_single = {
 									datacontext = "[HoldingView.GetTitle]"
 									visible = "[Title.IsLeasedOut]"
+									# layoutpolicy_horizontal = expanding
+									text = "HOLDING_VIEW_LESSEE"
+									default_format = "#low"
+								}
 
-									button_text = {
-										blockoverride "text" {
-											raw_text = "Revoke lease"
-											align = left
-										}
-										blockoverride "extra" {
-											text_single = {
-												raw_text = ", disabled"
-												visible = "[Not(Character.IsPlayerInteractionWithTargetTitleValid('revoke_leased_title_interaction', Title.Self))]"
-											}
-										}
-										blockoverride "dot" { }
-										datacontext = "[Title.GetLessee]"
-										visible = "[And( Title.GetHolder.IsLocalPlayer, Character.IsPlayerInteractionShownAndCanPickTitle('revoke_leased_title_interaction', Title.Self) )]"
-										enabled = "[Character.IsPlayerInteractionWithTargetTitleValid('revoke_leased_title_interaction', Title.Self)]"
-										tooltip = "[Character.GetPlayerInteractionWithTargetTitleTooltip('revoke_leased_title_interaction', Title.Self)]"
-										onclick = "[Character.OpenPlayerInteractionWithTargetTitle('revoke_leased_title_interaction', Title.Self)]"
+								char_name = {
+									blockoverride "text" {
+										raw_text = "[Character.GetShortUINameNoTooltip]."
+										align = left
 									}
 								}
+
+								text_single = {
+									visible = "[And(Character.HasRelationTo( GetPlayer ), Not(ObjectsEqual(Character.Self, GetPlayer)))]"
+									# layoutpolicy_horizontal = expanding
+									raw_text = "[Character.GetRelationToString( GetPlayer )]."
+									tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+									default_format = "#low"
+								}
+
 
 								flowcontainer = {
-									datacontext = "[HoldingView.GetTitle]"
-									visible = no#"[Title.IsUnderTheocraticLease]" #TODO
-									tooltip = "CHURCH_PROPERTY_TOOLTIP"
 									layoutpolicy_horizontal = expanding
 
-									icon = {
-										name = "church_property"
-										texture = "gfx/interface/icons/icon_holding_church.dds"
-										size = { 30 30 }
+									container = {
+										name = "revoke_lease_button"
+										datacontext = "[HoldingView.GetTitle]"
+										visible = "[Title.IsLeasedOut]"
+
+										button_text = {
+											blockoverride "text" {
+												raw_text = "Revoke lease"
+												align = left
+											}
+											blockoverride "extra" {
+												text_single = {
+													raw_text = ", disabled"
+													visible = "[Not(Character.IsPlayerInteractionWithTargetTitleValid('revoke_leased_title_interaction', Title.Self))]"
+												}
+											}
+											blockoverride "dot" { }
+											datacontext = "[Title.GetLessee]"
+											visible = "[And( Title.GetHolder.IsLocalPlayer, Character.IsPlayerInteractionShownAndCanPickTitle('revoke_leased_title_interaction', Title.Self) )]"
+											enabled = "[Character.IsPlayerInteractionWithTargetTitleValid('revoke_leased_title_interaction', Title.Self)]"
+											tooltip = "[Character.GetPlayerInteractionWithTargetTitleTooltip('revoke_leased_title_interaction', Title.Self)]"
+											onclick = "[Character.OpenPlayerInteractionWithTargetTitle('revoke_leased_title_interaction', Title.Self)]"
+										}
+									}
+
+									flowcontainer = {
+										datacontext = "[HoldingView.GetTitle]"
+										visible = no#"[Title.IsUnderTheocraticLease]" #TODO
+										tooltip = "CHURCH_PROPERTY_TOOLTIP"
+										layoutpolicy_horizontal = expanding
+
+										icon = {
+											name = "church_property"
+											texture = "gfx/interface/icons/icon_holding_church.dds"
+											size = { 30 30 }
+										}
 									}
 								}
 							}
-						}
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-
-						blockoverride "text" {
-							text = "CREATE_NEW_HOLDING_BUTTON"
-							align = left
-						}
-						blockoverride "extra" {
-							text_single = {
-								raw_text = ", disabled"
-								visible = "[Not(And(HoldingView.CanNewHoldingBeConstructed, Not(HoldingView.IsSelectingHoldingType)))]"
-							}
-						}
-						blockoverride "dot" { }
-						name = "construct_holding"
-						visible = "[And(Not(HoldingView.HasHolding), Not(HoldingView.IsBeingConstructed))]"
-						onclick = "[HoldingView.OnConstructHoldingClick]"
-						# tooltip = "[HoldingView.GetHoldingConstructionTooltip]"
-						enabled = "[And(HoldingView.CanNewHoldingBeConstructed, Not(HoldingView.IsSelectingHoldingType))]"
-					}
-
-					button_text  = {
-						blockoverride "text" {
-							raw_text = "Fuedalize tribe button"
-							align = left
-						}
-						blockoverride "extra" {
-							text_single = {
-								raw_text = ", disabled"
-								visible = "[Not(Character.IsPlayerInteractionWithTargetTitleValid('feudalize_tribal_holding_interaction', Title.Self))]"
-							}
-						}
-						blockoverride "dot" { }
-						datacontext = "[HoldingView.GetGUIHoldingBuilding]"
-						datacontext = "[HoldingView.GetTitle]"
-						datacontext = "[HoldingView.GetHolder]"
-						visible = "[And( Character.IsLocalPlayer, Character.IsPlayerInteractionShownAndCanPickTitle('feudalize_tribal_holding_interaction', Title.Self) )]"
-						enabled = "[Character.IsPlayerInteractionWithTargetTitleValid('feudalize_tribal_holding_interaction', Title.Self)]"
-						tooltip = "[Character.GetPlayerInteractionWithTargetTitleTooltip('feudalize_tribal_holding_interaction', Title.Self)]"
-						oversound = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
-						clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_select"
-						onclick = "[Character.OpenPlayerInteractionWithTargetTitle('feudalize_tribal_holding_interaction', Title.Self)]"
-					}
-
-					#construction
-					flowcontainer = {
-						direction = vertical
-						ignoreinvisible = yes
-						spacing = 3
-						name = "constructing_holding"
-						visible = "[HoldingView.IsBeingConstructed]"
-
-						text_single = {
-							raw_text = "Construction: [HoldingView.GetConstructionTimeLeftForSlot('(int32)0')], [HoldingView.GetConstructionProgressForSlot('(int32)0')|0]% done."
-							tooltip = "[HoldingView.GetHoldingUnderConstructionTooltip]"
 						}
 
 						button_text = {
+							layoutpolicy_horizontal = expanding
+
 							blockoverride "text" {
-								raw_text = "CANCEL_HOLDING_CONSTRUCTION"
+								text = "CREATE_NEW_HOLDING_BUTTON"
 								align = left
 							}
 							blockoverride "extra" {
 								text_single = {
-									raw_text = ", cost will be refunded."
+									raw_text = ", disabled"
+									visible = "[Not(And(HoldingView.CanNewHoldingBeConstructed, Not(HoldingView.IsSelectingHoldingType)))]"
 								}
 							}
-							onclick = "[HoldingView.CancelHoldingConstruction]"
-							visible = "[HoldingView.CanCancelConstruction]"
-							# tooltip = "CANCEL_HOLDING_CONSTRUCTION_TOOLTIP"
-						}
-					}
-
-					#occupation
-					text_single = {
-						visible = "[HoldingView.GetProvince.IsOccupied]"
-						text = "[HoldingView.GetOccupiedInfo]"
-						default_format = "#high"
-					}
-				}
-
-
-				flowcontainer = {
-					spacing = 3
-					ignoreinvisible = yes
-
-					### Tax Income
-					flowcontainer = {
-						name = "tutorial_highlight_holding_view_taxes_box"
-						visible = "[HoldingView.HasHolding]"
-						ignoreinvisible = yes
-						# margin = { 2 0 }
-						tooltip = "[Holding.GetTaxTooltip]"
-
-						background = {
-							visible = "[Holding.LevyAndTaxIsAffectedByFixableSituation]"
-							using = Status_Bad
-							alpha = 0.6
+							blockoverride "dot" { }
+							name = "construct_holding"
+							visible = "[And(Not(HoldingView.HasHolding), Not(HoldingView.IsBeingConstructed))]"
+							onclick = "[HoldingView.OnConstructHoldingClick]"
+							# tooltip = "[HoldingView.GetHoldingConstructionTooltip]"
+							enabled = "[And(HoldingView.CanNewHoldingBeConstructed, Not(HoldingView.IsSelectingHoldingType))]"
 						}
 
-						text_single = {
-							text = "HOLDING_TAX"
+						button_text  = {
+							blockoverride "text" {
+								raw_text = "Fuedalize tribe button"
+								align = left
+							}
+							blockoverride "extra" {
+								text_single = {
+									raw_text = ", disabled"
+									visible = "[Not(Character.IsPlayerInteractionWithTargetTitleValid('feudalize_tribal_holding_interaction', Title.Self))]"
+								}
+							}
+							blockoverride "dot" { }
+							datacontext = "[HoldingView.GetGUIHoldingBuilding]"
+							datacontext = "[HoldingView.GetTitle]"
+							datacontext = "[HoldingView.GetHolder]"
+							visible = "[And( Character.IsLocalPlayer, Character.IsPlayerInteractionShownAndCanPickTitle('feudalize_tribal_holding_interaction', Title.Self) )]"
+							enabled = "[Character.IsPlayerInteractionWithTargetTitleValid('feudalize_tribal_holding_interaction', Title.Self)]"
+							tooltip = "[Character.GetPlayerInteractionWithTargetTitleTooltip('feudalize_tribal_holding_interaction', Title.Self)]"
+							oversound = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
+							clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_select"
+							onclick = "[Character.OpenPlayerInteractionWithTargetTitle('feudalize_tribal_holding_interaction', Title.Self)]"
 						}
 
-						widget = {
-							size = { 5 0 }
-						}
-
-						text_single = {
-							text = "HOLDING_TAX_VALUE"
-							default_format = "#V"
-						}
-
-						text_single = {
-							raw_text = "."
-							default_format = "#high"
-						}
-
-						text_single = {
-							raw_text = " Reduced."
-							visible = "[Holding.LevyAndTaxIsAffectedByFixableSituation]"
-						}
-					}
-
-					### Raid loot
-					flowcontainer = {
-						name = "tutorial_highlight_holding_view_loot_box"
-						visible = "[HoldingView.HasHolding]"
-						margin = { 2 0 }
-						tooltip = "[Holding.GetProvince.GetRaidLootTooltip]"
-						ignoreinvisible = yes
-
-						background = {
-							visible = "[Holding.GetProvince.IsRecentlyLooted]"
-							using = Status_Bad
-						}
-
-						text_single = {
-							# layoutpolicy_horizontal = expanding
-							text = "HOLDING_LOOT"
-							default_format = "#high"
-						}
-
-						widget = {
-							size = { 5 0 }
-						}
-
-						text_single = {
-							text = "HOLDING_LOOT_VALUE"
-						}
-
-						text_single = {
-							raw_text = "."
-							default_format = "#high"
-						}
-
-						text_single = {
-							raw_text = " Recently looted."
-							visible = "[Holding.GetProvince.IsRecentlyLooted]"
-						}
-					}
-
-					### Levies
-					flowcontainer = {
-						visible = "[HoldingView.HasHolding]"
-						layoutpolicy_horizontal = expanding
-						spacing = 2
-						ignoreinvisible = yes
-
+						#construction
 						flowcontainer = {
-							# spacing = 3
+							direction = vertical
+							ignoreinvisible = yes
+							spacing = 3
+							name = "constructing_holding"
+							visible = "[HoldingView.IsBeingConstructed]"
+
+							text_single = {
+								raw_text = "Construction: [HoldingView.GetConstructionTimeLeftForSlot('(int32)0')], [HoldingView.GetConstructionProgressForSlot('(int32)0')|0]% done."
+								tooltip = "[HoldingView.GetHoldingUnderConstructionTooltip]"
+							}
+
+							button_text = {
+								blockoverride "text" {
+									raw_text = "CANCEL_HOLDING_CONSTRUCTION"
+									align = left
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = ", cost will be refunded."
+									}
+								}
+								onclick = "[HoldingView.CancelHoldingConstruction]"
+								visible = "[HoldingView.CanCancelConstruction]"
+								# tooltip = "CANCEL_HOLDING_CONSTRUCTION_TOOLTIP"
+							}
+						}
+
+						#occupation
+						text_single = {
+							visible = "[HoldingView.GetProvince.IsOccupied]"
+							text = "[HoldingView.GetOccupiedInfo]"
+							default_format = "#high"
+						}
+					}
+
+
+					flowcontainer = {
+						spacing = 3
+						ignoreinvisible = yes
+
+						### Tax Income
+						flowcontainer = {
+							name = "tutorial_highlight_holding_view_taxes_box"
+							visible = "[HoldingView.HasHolding]"
 							ignoreinvisible = yes
 							# margin = { 2 0 }
-
-							tooltip = "[Holding.GetLeviesTooltip]"
+							tooltip = "[Holding.GetTaxTooltip]"
 
 							background = {
 								visible = "[Holding.LevyAndTaxIsAffectedByFixableSituation]"
@@ -1333,8 +1226,7 @@ window = {
 							}
 
 							text_single = {
-								# layoutpolicy_horizontal = expanding
-								text = "LEVIES"
+								text = "HOLDING_TAX"
 							}
 
 							widget = {
@@ -1342,15 +1234,8 @@ window = {
 							}
 
 							text_single = {
-								raw_text = "[Holding.GetMaxLevySize|0],"
-							}
-
-							widget = {
-								size = { 5 0 }
-							}
-
-							text_single = {
-								raw_text = "[Holding.GetUnraisedLevyRatioPercent|0]% of total"
+								text = "HOLDING_TAX_VALUE"
+								default_format = "#V"
 							}
 
 							text_single = {
@@ -1363,225 +1248,316 @@ window = {
 								visible = "[Holding.LevyAndTaxIsAffectedByFixableSituation]"
 							}
 						}
-					}
-				}
 
-				#winter
-				flowcontainer = {
-					datacontext = "[HoldingView.GetProvince]"
-					ignoreinvisible = yes
-					spacing = 3
+						### Raid loot
+						flowcontainer = {
+							name = "tutorial_highlight_holding_view_loot_box"
+							visible = "[HoldingView.HasHolding]"
+							margin = { 2 0 }
+							tooltip = "[Holding.GetProvince.GetRaidLootTooltip]"
+							ignoreinvisible = yes
 
-					text_single = {
-						raw_text = "[Terrain.GetNameNoTooltip]."
-						datacontext = "[HoldingView.GetProvince.GetTerrain]"
-						tooltip = "HOLDING_TERRAIN_TOOLTIP"
-					}
-
-					### Supply Level
-					flowcontainer = {
-						tooltip = "[HoldingView.GetSupplyLimitTooltip]"
-						layoutpolicy_horizontal = expanding
-						spacing = 3
-
-						text_single = {
-							# layoutpolicy_horizontal = expanding
-							text = "SUPPLY_LIMIT"
-							default_format = "#high"
-						}
-
-						text_single = {
-							raw_text = " [HoldingView.GetSupplyLimit|V]."
-							default_format = "#high"
-						}
-					}
-
-					container = {
-						ignoreinvisible = yes
-						# margin_left = 5
-						text_single = {
-							raw_text = " Mild winter."
-							visible = "[Province.HasWinterLevel( '(int32)1' )]"
-						}
-
-						text_single = {
-							raw_text = " Winter."
-							visible = "[Province.HasWinterLevel( '(int32)2' )]"
-						}
-
-						text_single = {
-							raw_text = " Harsh winter."
-							visible = "[Province.HasWinterLevel( '(int32)3' )]"
-						}
-						tooltip = "PROVINCE_VIEW_TOOLTIP_WINTER"
-					}
-				}
-			}
-
-			@building_width = 500
-			@building_height = 45
-			### buildings
-			flowcontainer = {
-				direction = vertical
-				visible = "[HoldingView.GetTitle.HasHolder]"
-
-				button_standard = {
-					datacontext = "[HoldingView.GetGUIHoldingBuilding]"
-					parentanchor = right
-					size = { @building_width @building_height }
-					allow_outside = yes
-					onclick = "[GUIBuildingItem.OnClick]"
-					down = "[GUIBuildingItem.IsHighlighted]"
-					enabled = "[GUIBuildingItem.IsBuildingButtonEnabled]"
-
-					vbox = {
-						# resizeparent = yes
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							spacing = 5
-							text_single = {
-								raw_text = "Main building:"
+							background = {
+								visible = "[Holding.GetProvince.IsRecentlyLooted]"
+								using = Status_Bad
 							}
 
 							text_single = {
-								text = "[HoldingView.GetHolding.GetPrimaryBuildingType.GetTypeName]"
+								# layoutpolicy_horizontal = expanding
+								text = "HOLDING_LOOT"
+								default_format = "#high"
+							}
+
+							widget = {
+								size = { 5 0 }
 							}
 
 							text_single = {
-								visible = "[GUIBuildingItem.HasLevel]"
-								raw_text = "level [GUIBuildingItem.GetCurrentOrConstrucingBuilding.GetLevel]."
+								text = "HOLDING_LOOT_VALUE"
 							}
 
 							text_single = {
-								raw_text = "Tooltip."
-								tooltip = "[GUIBuildingItem.GetTooltip]"
-							}
-
-							text_single = {
-								raw_text = "Construction: [GUIBuildingItem.GetConstructingProgress|0]%."
-								tooltip = "[GUIBuildingItem.GetTooltip]"
-								visible = "[GUIBuildingItem.IsConstructing]"
-							}
-
-							text_single = {
-								datacontext = "[HoldingView.GetHolder]"
-								raw_text = "Wrong type for the holder."
-								visible = "[And(Not(HoldingView.GetHolding.IsEmpty),Not(HoldingView.GetHolding.IsValidForLesseeOrHolder))]"
-								tooltip = HOLDING_VIEW_WRONG_HOLDING_TYPE
-							}
-
-							text_single = {
-								raw_text = "Disabled."
-								visible = "[GUIBuildingItem.IsBuildingDisabled]"
-							}
-							expand = { }
-						}
-
-						### Fort Info
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							tooltip = "[HoldingView.GetGarrisonTooltip]"
-							visible = "[HoldingView.GetProvince.HasFort]"
-							spacing = 3
-							text_single = {
-								raw_text = "Fort level [HoldingView.GetProvince.GetFortLevel]."
-								tooltip = "[Province.GetFortLevelTooltip]"
+								raw_text = "."
 								default_format = "#high"
 							}
 
 							text_single = {
-								raw_text = "Garrison: [HoldingView.GetCurrentGarrisonSize],"
+								raw_text = " Recently looted."
+								visible = "[Holding.GetProvince.IsRecentlyLooted]"
+							}
+						}
+
+						### Levies
+						flowcontainer = {
+							visible = "[HoldingView.HasHolding]"
+							layoutpolicy_horizontal = expanding
+							spacing = 2
+							ignoreinvisible = yes
+
+							flowcontainer = {
+								# spacing = 3
+								ignoreinvisible = yes
+								# margin = { 2 0 }
+
+								tooltip = "[Holding.GetLeviesTooltip]"
+
+								background = {
+									visible = "[Holding.LevyAndTaxIsAffectedByFixableSituation]"
+									using = Status_Bad
+									alpha = 0.6
+								}
+
+								text_single = {
+									# layoutpolicy_horizontal = expanding
+									text = "LEVIES"
+								}
+
+								widget = {
+									size = { 5 0 }
+								}
+
+								text_single = {
+									raw_text = "[Holding.GetMaxLevySize|0],"
+								}
+
+								widget = {
+									size = { 5 0 }
+								}
+
+								text_single = {
+									raw_text = "[Holding.GetUnraisedLevyRatioPercent|0]% of total"
+								}
+
+								text_single = {
+									raw_text = "."
+									default_format = "#high"
+								}
+
+								text_single = {
+									raw_text = " Reduced."
+									visible = "[Holding.LevyAndTaxIsAffectedByFixableSituation]"
+								}
+							}
+						}
+					}
+
+					#winter
+					flowcontainer = {
+						datacontext = "[HoldingView.GetProvince]"
+						ignoreinvisible = yes
+						spacing = 3
+
+						text_single = {
+							raw_text = "[Terrain.GetNameNoTooltip]."
+							datacontext = "[HoldingView.GetProvince.GetTerrain]"
+							tooltip = "HOLDING_TERRAIN_TOOLTIP"
+						}
+
+						### Supply Level
+						flowcontainer = {
+							tooltip = "[HoldingView.GetSupplyLimitTooltip]"
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+
+							text_single = {
+								# layoutpolicy_horizontal = expanding
+								text = "SUPPLY_LIMIT"
+								default_format = "#high"
 							}
 
 							text_single = {
-								raw_text = "[HoldingView.GetGarrisonRatio]% of total."
+								raw_text = " [HoldingView.GetSupplyLimit|V]."
+								default_format = "#high"
 							}
+						}
+
+						container = {
+							ignoreinvisible = yes
+							# margin_left = 5
+							text_single = {
+								raw_text = " Mild winter."
+								visible = "[Province.HasWinterLevel( '(int32)1' )]"
+							}
+
+							text_single = {
+								raw_text = " Winter."
+								visible = "[Province.HasWinterLevel( '(int32)2' )]"
+							}
+
+							text_single = {
+								raw_text = " Harsh winter."
+								visible = "[Province.HasWinterLevel( '(int32)3' )]"
+							}
+							tooltip = "PROVINCE_VIEW_TOOLTIP_WINTER"
+						}
+					}
+				}
+
+				@building_width = 500
+				@building_height = 45
+				### buildings
+				flowcontainer = {
+					direction = vertical
+					visible = "[HoldingView.GetTitle.HasHolder]"
+
+					button_standard = {
+						datacontext = "[HoldingView.GetGUIHoldingBuilding]"
+						parentanchor = right
+						size = { @building_width @building_height }
+						allow_outside = yes
+						onclick = "[GUIBuildingItem.OnClick]"
+						down = "[GUIBuildingItem.IsHighlighted]"
+						enabled = "[GUIBuildingItem.IsBuildingButtonEnabled]"
+
+						vbox = {
+							# resizeparent = yes
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 5
+								text_single = {
+									raw_text = "Main building:"
+								}
+
+								text_single = {
+									text = "[HoldingView.GetHolding.GetPrimaryBuildingType.GetTypeName]"
+								}
+
+								text_single = {
+									visible = "[GUIBuildingItem.HasLevel]"
+									raw_text = "level [GUIBuildingItem.GetCurrentOrConstrucingBuilding.GetLevel]."
+								}
+
+								text_single = {
+									raw_text = "Tooltip."
+									tooltip = "[GUIBuildingItem.GetTooltip]"
+								}
+
+								text_single = {
+									raw_text = "Construction: [GUIBuildingItem.GetConstructingProgress|0]%."
+									tooltip = "[GUIBuildingItem.GetTooltip]"
+									visible = "[GUIBuildingItem.IsConstructing]"
+								}
+
+								text_single = {
+									datacontext = "[HoldingView.GetHolder]"
+									raw_text = "Wrong type for the holder."
+									visible = "[And(Not(HoldingView.GetHolding.IsEmpty),Not(HoldingView.GetHolding.IsValidForLesseeOrHolder))]"
+									tooltip = HOLDING_VIEW_WRONG_HOLDING_TYPE
+								}
+
+								text_single = {
+									raw_text = "Disabled."
+									visible = "[GUIBuildingItem.IsBuildingDisabled]"
+								}
+								expand = { }
+							}
+
+							### Fort Info
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								tooltip = "[HoldingView.GetGarrisonTooltip]"
+								visible = "[HoldingView.GetProvince.HasFort]"
+								spacing = 3
+								text_single = {
+									raw_text = "Fort level [HoldingView.GetProvince.GetFortLevel]."
+									tooltip = "[Province.GetFortLevelTooltip]"
+									default_format = "#high"
+								}
+
+								text_single = {
+									raw_text = "Garrison: [HoldingView.GetCurrentGarrisonSize],"
+								}
+
+								text_single = {
+									raw_text = "[HoldingView.GetGarrisonRatio]% of total."
+								}
+								expand = { }
+							}
+
 							expand = { }
 						}
-
-						expand = { }
-					}
-				}
-
-				flowcontainer = {
-				    ignoreinvisible = yes
-
-					text_single = {
-						raw_text = "[GuiScope.SetRoot(HoldingView.GetProvince.MakeScope).ScriptValue('num_buildings_sval')] buildings"
-					}
-
-				    text_single = {
-				    	raw_text = ", [GuiScope.SetRoot(HoldingView.GetProvince.MakeScope).ScriptValue('free_building_slots_sval')] empty slots"
-						visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(HoldingView.GetProvince.MakeScope).ScriptValue('free_building_slots_sval'), '(CFixedPoint)0')]"
-				    }
-
-					dot = { }
-
-
-					# text_single = {
-					# 	raw_text = "[GetDataModelSize(HoldingView.GetBuildings)] Common buildings slots:"
-					# 	visible = "[EqualTo_CFixedPoint(HoldingView.GetProvince.MakeScope.ScriptValue('free_building_slots_sval'), '(CFixedPoint)0')]"
-					# }
-				}
-
-
-				flowcontainer = {
-					name = "buildings_grid_special"
-					ignoreinvisible = yes
-					direction = vertical
-
-					# Upgrade buildings
-					flowcontainer = {
-						name = "buildings_grid"
-						datamodel = "[HoldingView.GetBuildings]"
-						ignoreinvisible = yes
-						direction = vertical
-
-						item = {
-							widget_building_text = { }
-						}
 					}
 
 					flowcontainer = {
-						visible = "[Or(HoldingView.HasDuchyCapitalBuildingSlot, HoldingView.HasSpecialBuildingSlot )]"
-						# spacing = 3
-						ignoreinvisible = yes
-						direction = vertical
+					    ignoreinvisible = yes
 
 						text_single = {
-							raw_text = "Duchy capital building:"
-							datacontext = "[HoldingView.GetGUIDuchyCapitalBuilding]"
-							visible = "[HoldingView.HasDuchyCapitalBuildingSlot]"
+							raw_text = "[GuiScope.SetRoot(HoldingView.GetProvince.MakeScope).ScriptValue('num_buildings_sval')] buildings"
 						}
 
-						widget_building_text = {
-							name = "duchy_capital_building"
-							datacontext = "[HoldingView.GetGUIDuchyCapitalBuilding]"
-							visible = "[HoldingView.HasDuchyCapitalBuildingSlot]"
-						}
+					    text_single = {
+					    	raw_text = ", [GuiScope.SetRoot(HoldingView.GetProvince.MakeScope).ScriptValue('free_building_slots_sval')] empty slots"
+							visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(HoldingView.GetProvince.MakeScope).ScriptValue('free_building_slots_sval'), '(CFixedPoint)0')]"
+					    }
 
-						text_single = {
-							raw_text = "Special building:"
-							datacontext = "[HoldingView.GetGUISpecialBuilding]"
-							visible = "[HoldingView.HasSpecialBuildingSlot]"
-						}
+						dot = { }
 
-						widget_building_text = {
-							name = "special_building"
-							datacontext = "[HoldingView.GetGUISpecialBuilding]"
-							visible = "[HoldingView.HasSpecialBuildingSlot]"
-						}
 
-						# widget = {
-						# 	# This is needed to offset the building slots correctly when special building slots exist.
-						# 	name = "Conditional_margin_widget"
-						# 	size = { 0 0 }
-						# 	visible = "[HoldingView.HasSpecialBuildingSlot]"
+						# text_single = {
+						# 	raw_text = "[GetDataModelSize(HoldingView.GetBuildings)] Common buildings slots:"
+						# 	visible = "[EqualTo_CFixedPoint(HoldingView.GetProvince.MakeScope.ScriptValue('free_building_slots_sval'), '(CFixedPoint)0')]"
 						# }
 					}
+
+
+					flowcontainer = {
+						name = "buildings_grid_special"
+						ignoreinvisible = yes
+						direction = vertical
+
+						# Upgrade buildings
+						flowcontainer = {
+							name = "buildings_grid"
+							datamodel = "[HoldingView.GetBuildings]"
+							ignoreinvisible = yes
+							direction = vertical
+
+							item = {
+								widget_building_text = { }
+							}
+						}
+
+						flowcontainer = {
+							visible = "[Or(HoldingView.HasDuchyCapitalBuildingSlot, HoldingView.HasSpecialBuildingSlot )]"
+							# spacing = 3
+							ignoreinvisible = yes
+							direction = vertical
+
+							text_single = {
+								raw_text = "Duchy capital building:"
+								datacontext = "[HoldingView.GetGUIDuchyCapitalBuilding]"
+								visible = "[HoldingView.HasDuchyCapitalBuildingSlot]"
+							}
+
+							widget_building_text = {
+								name = "duchy_capital_building"
+								datacontext = "[HoldingView.GetGUIDuchyCapitalBuilding]"
+								visible = "[HoldingView.HasDuchyCapitalBuildingSlot]"
+							}
+
+							text_single = {
+								raw_text = "Special building:"
+								datacontext = "[HoldingView.GetGUISpecialBuilding]"
+								visible = "[HoldingView.HasSpecialBuildingSlot]"
+							}
+
+							widget_building_text = {
+								name = "special_building"
+								datacontext = "[HoldingView.GetGUISpecialBuilding]"
+								visible = "[HoldingView.HasSpecialBuildingSlot]"
+							}
+
+							# widget = {
+							# 	# This is needed to offset the building slots correctly when special building slots exist.
+							# 	name = "Conditional_margin_widget"
+							# 	size = { 0 0 }
+							# 	visible = "[HoldingView.HasSpecialBuildingSlot]"
+							# }
+						}
+					}
 				}
-			}
+				}
 		}
 
 		expand = { }
@@ -2664,6 +2640,30 @@ types CountyViewTypes
 
 			expand = { }
 		}
+	}
+
+	type adjacent_county_button = button_text {
+		blockoverride "extra" {
+			spacing = 3
+			text_single = {
+				raw_text = "[Scope.Title.GetBaseNameNoTierNoTooltip], "
+			}
+			# text_single = {
+			# 	raw_text = "[Scope.Title.Custom('county_direction')]."
+			# }
+			text_single = {
+				raw_text = "[GuiScope.SetRoot(HoldingView.GetProvince.MakeScope).AddScope('second', Scope.Title.GetProvince.MakeScope).Custom('province_direction')]."
+			}
+			text_single = {
+				raw_text = "in [Scope.Title.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTooltip]."
+			}
+			# [Scope.Title.GetHolder.GetTopLiege.RealmSize] counties.
+		}
+
+		onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.Title.GetProvince.GetId))]"
+		onclick = "[DefaultOnCoatOfArmsRightClick(Scope.Title.GetProvince.GetTitle.GetID)]"
+
+		onclick = "[PdxGuiTriggerAllAnimations('adjacent_counties')]"
 	}
 
 	type widget_building_item = widget {
