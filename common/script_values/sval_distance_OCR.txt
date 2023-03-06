@@ -3,76 +3,8 @@
 
 	multiply = -1
 }
-difference_margin_ruler = 400
-difference_margin_ruler_reverse = {
-	value = difference_margin
-	multiply = -1
-}
 
-ruler_direction_svalue = {
-	value = 0
-
-	if = {
-		#east
-		limit = {
-			x_difference > difference_margin_ruler
-		}
-		add = 3
-		# north-west, y2 is high enough
-		if = {
-			limit = {
-				y_difference > difference_margin_ruler
-			}
-			subtract = 1
-		}
-		# south-west if y2 is low enough
-		else_if = {
-			limit = {
-				y_difference < difference_margin_ruler_reverse
-			}
-			add = 1
-		}
-	}
-	else_if = {
-		# west
-		limit = {
-			x_difference < difference_margin_ruler_reverse
-		}
-		add = 7
-		# north-west
-		if = {
-			limit = {
-				y_difference > difference_margin_ruler
-			}
-			add = 1
-		}
-		# south-west
-		else_if = {
-			limit = {
-				y_difference < difference_margin_ruler_reverse
-			}
-			subtract = 1
-		}
-	}
-	else = {
-		# north
-		if = {
-			limit = {
-				y_difference > difference_margin_ruler
-			}
-			add = 1
-		}
-		# south
-		else_if = {
-			limit = {
-				y_difference < difference_margin_ruler_reverse
-			}
-			add = 5
-		}
-	}
-	multiply = -1
-}
-
+margin_factor = 0.2
 x_difference = {
 	value = var:pos_x
 	subtract = scope:origin.var:pos_x
@@ -81,9 +13,6 @@ x_difference_abs = {
 	value = x_difference
 	abs = yes
 }
-
-margin_factor = 0.2
-
 x_difference_margin = {
 	value = x_difference
 	abs = yes
@@ -102,13 +31,6 @@ y_difference_margin = {
 	value = y_difference
 	abs = yes
 	multiply = margin_factor
-}
-
-difference_margin = 10
-
-difference_margin_reverse = {
-	value = difference_margin
-	multiply = -1
 }
 
 direction_svalue_temp = {
@@ -213,17 +135,9 @@ direction_svalue_temp = {
 	}
 }
 
+reduce_distance = 500
 
-trigger_to_script_bitsum = {
-    value = scope:tmp_testbit
-    if = {
-        limit = {
-            exists = scope:tmp_numbit
-        }
-        add = scope:tmp_numbit
-    }
-}
-
+# unused, default value from Tobbzn's framework
 distance_to_prev = {
     if = {
         limit = {
@@ -236,18 +150,8 @@ distance_to_prev = {
     }
 }
 
-distance_to_capital = {
-	if = {
-		limit = {
-            save_temporary_trigger_breakpoint_as = {
-                TRIGGER = rf_distance_to_player
-                NAME = tmp
-            }
-        }
-        add = scope:tmp
-	}
-}
-
+# used in find_closest sgui, to get to your closest county from anywhere on the map
+# requires a saved province scope 'target'
 distance_to_target = {
 	if = {
 		limit = {
@@ -260,6 +164,7 @@ distance_to_target = {
 	}
 }
 
+# used in custom loc for direction, requires a saved 'capital' scope
 distance_to_player = {
     if = {
         limit = {
@@ -274,8 +179,34 @@ distance_to_player = {
             }
         }
         add = scope:tmp
-		divide = 1000
-		# multiply = 0.77
+		divide = reduce_distance
+    }
+}
+
+# new and cool, root is province, 'second' is character
+distance_to_second = {
+    if = {
+        limit = {
+            save_temporary_trigger_breakpoint_as = {
+                TRIGGER = rf_distance_to_second
+                NAME = tmp
+            }
+        }
+        add = scope:tmp
+		divide = reduce_distance
+    }
+}
+
+distance_to_second_province = {
+    if = {
+        limit = {
+            save_temporary_trigger_breakpoint_as = {
+                TRIGGER = rf_distance_to_second_province
+                NAME = tmp
+            }
+        }
+        add = scope:tmp
+		divide = reduce_distance
     }
 }
 
@@ -295,7 +226,7 @@ distance_to_army = {
 			}
         }
         add = scope:tmp
-		divide = 1000
+		divide = reduce_distance
 		# multiply = 0.77
     }
 }
@@ -309,7 +240,7 @@ distance_to_army_target = {
 			}
         }
         add = scope:tmp
-		divide = 1000
+		divide = reduce_distance
 		# multiply = 0.77
     }
 }
@@ -329,7 +260,7 @@ distance_to_army_or_capital = {
 				}
 	        }
 	        add = scope:tmp
-			divide = 1000
+			divide = reduce_distance
 			# multiply = 0.77
 	    }
 	}
@@ -347,11 +278,12 @@ distance_to_army_or_capital = {
 				}
 			}
 			add = scope:tmp
-			divide = 1000
+			divide = reduce_distance
 		}
 	}
 }
 
+# only used in custom loc for directions
 direction_from_capital = {
 	value = 0
 
@@ -367,6 +299,42 @@ direction_from_capital = {
 	}
 }
 
+# new
+# root is player, second is another character
+direction_from_second = {
+	value = 0
+	if = {
+		limit = {
+			capital_province = {
+				save_temporary_scope_as = origin
+			}
+		}
+	}
+	if = {
+		limit = {
+			scope:second = {
+				exists = capital_province
+			}
+		}
+		add = scope:second.capital_province.direction_svalue
+	}
+	else = {
+		add = scope:second.location.direction_svalue
+	}
+}
+
+# direction_from_location = {
+# 	value = 0
+# 	if = {
+# 		limit = {
+# 			location = {
+# 				save_temporary_scope_as = origin
+# 			}
+# 		}
+# 	}
+# 	add = scope:second.direction_svalue
+# }
+
 direction_from_army = {
 	value = 0
 
@@ -381,4 +349,15 @@ direction_from_army = {
 		}
 		add = direction_svalue
 	}
+}
+
+# Used by distance scripted triggers
+trigger_to_script_bitsum = {
+    value = scope:tmp_testbit
+    if = {
+        limit = {
+            exists = scope:tmp_numbit
+        }
+        add = scope:tmp_numbit
+    }
 }

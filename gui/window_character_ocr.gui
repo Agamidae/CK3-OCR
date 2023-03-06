@@ -35,15 +35,15 @@ types OCRTypes {
 					visible = "[HasViewHistory]"
 					onclick = "[OpenFromViewHistory]"
 					tooltip = "[GetViewHistoryTooltip]"
-					onclick = "[PdxGuiTriggerAllAnimations('pan_to_previos_ruler')]"
+					# onclick = "[PdxGuiTriggerAllAnimations('pan_to_previos_ruler')]"
 
-					state = {
-						name = "pan_to_previos_ruler"
-						delay = 0.1
-						# on_start = "[DefaultOnCoatOfArmsRightClick(CharacterWindow.GetCharacter.GetCapitalLocation.GetCoATitle.GetID)]"
-						on_start = "[DefaultOnCharacterClick(CharacterWindow.GetCharacter.GetID)]"
-						on_start = "[DefaultOnCharacterClick(CharacterWindow.GetCharacter.GetID)]"
-					}
+					# state = {
+					# 	name = "pan_to_previos_ruler"
+					# 	delay = 0.1
+					# 	on_start = "[DefaultOnCoatOfArmsRightClick(CharacterWindow.GetCharacter.GetCurrentLocation.GetCoATitle.GetID)]"
+					# 	# on_start = "[DefaultOnCharacterClick(CharacterWindow.GetCharacter.GetID)]"
+					# 	# on_start = "[DefaultOnCharacterClick(CharacterWindow.GetCharacter.GetID)]"
+					# }
 				}
 
 				blockoverride "button_me"
@@ -270,7 +270,11 @@ types OCRTypes {
 						position = { 145 -21 }
 					}
 
-					visible = "[InDebugMode]"
+					visible = "[And(InDebugMode, ReleaseMode)]"
+				}
+
+				error_button = {
+					layoutpolicy_horizontal = expanding
 				}
 
 				# ruler
@@ -300,24 +304,104 @@ types OCRTypes {
 						}
 
 						text_single = {
-							raw_text = " [Character.GetPrimaryTitle.GetRankConcept]."
+							raw_text = " [Character.GetPrimaryTitle.GetRankConcept]"
 							max_width = 330
 						}
 
-						button_text = {
-							visible = "[Character.IsAlive]"
-						    blockoverride "text" {
-						    	raw_text = " [Character.RealmSize] counties."
-								align = left
-								margin_left = -3
-						    }
-							onclick = "[GetVariableSystem.Set('expand_view', 'counties')]"
-							onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+						text_single = {
+							visible = "[Character.GetPrimaryTitle.GetDeJureLiege.IsValid]"
+							raw_text = " in [Character.GetPrimaryTitle.GetDeJureLiege.GetNameNoTierNoTooltip]"
 						}
+						dot = { }
 					}
 					datacontext = "[Character.GetPrimaryTitle]"
 					using = title_click
 				}
+
+				#buttons
+				hbox = {
+					visible = "[And(And(Character.HasLandedTitles, Not(GetVariableSystem.Exists('expand_view'))), Character.IsAlive)]"
+					spacing = 3
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						# layoutpolicy_horizontal = expanding
+						visible = "[And(Character.HasLandedTitles, Character.IsAlive)]"
+
+						button = {
+							onclick = "[GetVariableSystem.Set('expand_view', 'counties')]"
+							onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+							using = expanded_view
+							text_single = {
+								resizeparent = yes
+								raw_text = "[Character.RealmSize] counties."
+								margin_left = 3
+								# [GuiScope.SetRoot(Character.MakeScope).ScriptValue('my_counties')]
+							}
+						}
+
+						hbox = {
+							datacontext = "[CharacterWindow.GetCharacter]"
+							visible = "[And( Not( Character.GetPrimaryTitle.HasFaction ), And( Character.HasLandedTitles, Character.IsAlive ) )]"
+
+							button = {
+								onclick = "[GetVariableSystem.Set('expand_view', 'holdings')]"
+								using = expanded_view
+								onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+
+								text_single = {
+									resizeparent = yes
+									name = "domain_limit"
+									raw_text = "[Character.GetDomainSize] holdings."
+									margin_left = 3
+								}
+							}
+						}
+					}
+
+					hbox = {
+						button = {
+							onclick = "[GetVariableSystem.Set('expand_view', 'titles')]"
+							# onclick = "[CharacterWindow.ToggleExpandedTitles]"
+							visible = "[GreaterThan_int32(GetDataModelSize(CharacterWindow.GetTitles), '(int32)0' )]"
+							using = expanded_view
+							text_single = {
+								resizeparent = yes
+								raw_text = "[GetDataModelSize(CharacterWindow.GetTitles)] Titles."
+								margin_left = 3
+							}
+						}
+
+						button = {
+							onclick = "[GetVariableSystem.Set('expand_view', 'claims')]"
+							visible = "[GreaterThan_int32(GetDataModelSize(CharacterWindow.GetClaims), '(int32)0' )]"
+							using = expanded_view
+							text_single = {
+								resizeparent = yes
+								raw_text = "[GetDataModelSize(CharacterWindow.GetClaims)] Claims."
+								margin_left = 3
+							}
+						}
+
+						expand = { }
+					}
+
+					button = {
+						visible = "[And( Character.HasLandedTitles, Character.IsAlive )]"
+						onclick = "[GetVariableSystem.Set('expand_view', 'neighbours')]"
+						using = expanded_view
+						shortcut = map_mode_6
+
+						text_single = {
+							resizeparent = yes
+							raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_rulers'))] Neighbours, Control A."
+							# margin_left = 3
+						}
+					}
+
+					expand = { }
+				}
+
 
 				# vassal
 				realm_name_and_type_vbox_ocr = {
@@ -534,7 +618,7 @@ types OCRTypes {
 								}
 
 								text_single = {
-									raw_text = ", hotkey Shift D"
+									raw_text = ", Shift D"
 								}
 								visible = "[DataModelHasItems(CharacterWindow.GetDiplomacyItems)]"
 								dot = { }
@@ -705,7 +789,7 @@ types OCRTypes {
 					vbox = {
 						layoutpolicy_horizontal = expanding
 
-						# liege block
+						# spouse
 						vbox = {
 							layoutpolicy_horizontal = expanding
 							vbox = {
@@ -720,10 +804,11 @@ types OCRTypes {
 
 
 									char_name = {
-										blockoverride "text" {
-											raw_text = "[AddTextIf(CharacterWindow.GetSpouse.IsDeadAndValid, 'Dead ')]Spouse: [Character.GetNameNoTooltip]."
-											alwaystransparent = yes
-											max_width = 550
+										blockoverride "pre" {
+											spacing = 3
+											text_single = {
+												raw_text = "[AddTextIf(CharacterWindow.GetSpouse.IsDeadAndValid, 'Dead ')]Spouse,"
+											}
 										}
 									}
 
@@ -892,7 +977,7 @@ types OCRTypes {
 							}
 						}
 
-						#heir
+						# player heir
 						hbox = {
 							datacontext = "[CharacterWindow.GetCharacter.GetPlayerHeir]"
 							visible = "[And( Character.IsValid, CharacterWindow.GetCharacter.IsLocalPlayer )]"
@@ -900,9 +985,11 @@ types OCRTypes {
 							spacing = 3
 
 							char_name = {
-								blockoverride "text" {
-									raw_text = "Player heir: [Character.GetNameNoTooltip]."
-									max_width = 450
+								blockoverride "pre" {
+									spacing = 3
+									text_single = {
+										raw_text = "Player heir:"
+									}
 								}
 							}
 
@@ -915,7 +1002,7 @@ types OCRTypes {
 							expand = { }
 						}
 
-						#heir 2
+						# heir
 						hbox = {
 							datacontext = "[CharacterWindow.GetCharacter.GetPrimaryTitle.GetHeir]"
 							visible = "[And( And( Character.IsValid, Not(CharacterWindow.GetCharacter.IsLocalPlayer) ), CharacterWindow.GetCharacter.IsAlive )]"
@@ -924,10 +1011,11 @@ types OCRTypes {
 
 
 							char_name = {
-								blockoverride "text" {
-									alwaystransparent = yes
-									raw_text = "[primary_heir|E]: [Character.GetNameNoTooltip]."
-									max_width = 450
+								blockoverride "pre" {
+									spacing = 3
+									text_single = {
+										raw_text = "Heir,"
+									}
 								}
 							}
 
@@ -997,155 +1085,66 @@ types OCRTypes {
 					layoutpolicy_horizontal = expanding
 
 					#location
-					widget = {
-						size = { 0 20 }
+					hbox = {
 						layoutpolicy_horizontal = expanding
-
+						spacing = 3
+						visible = "[Character.IsAlive]"
 
 						hbox = {
-							layoutpolicy_horizontal = expanding
+							visible = "[Character.HasLandedTitles]"
 							spacing = 3
 
-							hbox = {
-								visible = "[Character.HasLandedTitles]"
-
-								button = {
-									size = { 0 0 }
-									onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Character.GetCapitalLocation.GetId))]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCapitalLocation.GetCoATitle.GetID)]"
-									shortcut = map_mode_9
-									text_single = {
-										resizeparent = yes
-										margin_left = 3
-										raw_text = "Capital: [Character.GetCapitalLocation.GetNameNoTooltip]."
-									}
-								}
-
-								text_single = {
-									margin_left = 3
-									raw_text = "[GuiScope.SetRoot(Character.GetCapitalLocation.MakeScope).ScriptValue('distance_to_player')|0] points [Character.GetCapitalLocation.Custom('county_direction_from_capital')] from your capital."
-									layoutpolicy_horizontal = expanding
-									visible = "[Not(ObjectsEqual(Character.Self, GetPlayer))]"
-								}
-							}
-
-							hbox = {
-								visible = "[Not(Character.HasLandedTitles)]"
-								button = {
-									size = { 0 0 }
-									onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Character.GetCurrentLocation.GetId))]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCurrentLocation.GetCoATitle.GetID)]"
-									visible = "[And(Not(Character.HasLandedTitles), Character.HasLocation)]"
-									shortcut = map_mode_9
-									text_single = {
-										resizeparent = yes
-										margin_left = 3
-										raw_text = "Location: [Character.GetCurrentLocation.GetNameNoTooltip]."
-									}
-								}
-
-								text_single = {
-									margin_left = 3
-									raw_text = "[GuiScope.SetRoot(Character.GetCurrentLocation.MakeScope).ScriptValue('distance_to_player')|0] points [Character.GetCurrentLocation.Custom('county_direction_from_capital')] from your capital."
-									layoutpolicy_horizontal = expanding
-									visible = "[Not(ObjectsEqual(Character.GetCurrentLocation, GetPlayer.GetCapitalLocation))]"
+							button_text = {
+								onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Character.GetCapitalLocation.GetId))]"
+								onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCapitalLocation.GetCoATitle.GetID)]"
+								shortcut = map_mode_9
+								blockoverride "text" {
+									raw_text = "Capital, [Character.GetCapitalLocation.GetNameNoTooltip]."
 								}
 							}
 
 							text_single = {
-								raw_text = "Shift Q."
+								visible = "[Not(ObjectsEqual(Character.Self, GetPlayer))]"
+								raw_text = "[GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Character.GetCapitalLocation.MakeScope).ScriptValue('distance_to_second_province')|0] days"
 							}
 
-							expand = { }
-						}
-					}
-
-					#buttons
-					hbox = {
-						spacing = 0
-						layoutpolicy_horizontal = expanding
-
-						hbox = {
-							# layoutpolicy_horizontal = expanding
-							visible = "[And(Character.HasLandedTitles, Character.IsAlive)]"
-
-							hbox = {
-								datacontext = "[CharacterWindow.GetCharacter]"
-								visible = "[And( Not( Character.GetPrimaryTitle.HasFaction ), And( Character.HasLandedTitles, Character.IsAlive ) )]"
-
-								button = {
-									onclick = "[GetVariableSystem.Set('expand_view', 'holdings')]"
-									using = expanded_view
-									onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
-
-									text_single = {
-										resizeparent = yes
-										name = "domain_limit"
-										raw_text = "[Character.GetDomainSize] holdings, [GuiScope.SetRoot(Character.MakeScope).ScriptValue('realm_holdings')] total."
-										margin_left = 3
-									}
-								}
+							text_single = {
+								raw_text =  "[GetPlayer.Custom2('char_direction_from_second', Character.Self)] from your capital."
+								layoutpolicy_horizontal = expanding
+								visible = "[Not(ObjectsEqual(Character.Self, GetPlayer))]"
 							}
-
-							button = {
-								onclick = "[GetVariableSystem.Set('expand_view', 'counties')]"
-								onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
-								using = expanded_view
-								text_single = {
-									resizeparent = yes
-									raw_text = "[Character.RealmSize] counties."
-									margin_left = 3
-									# [GuiScope.SetRoot(Character.MakeScope).ScriptValue('my_counties')]
-								}
-							}
-
-							expand = { }
 						}
 
 						hbox = {
-							# layoutpolicy_horizontal = expanding
+							visible = "[Not(Character.HasLandedTitles)]"
+							spacing = 3
 
-							button = {
-								onclick = "[GetVariableSystem.Set('expand_view', 'titles')]"
-								# onclick = "[CharacterWindow.ToggleExpandedTitles]"
-								visible = "[GreaterThan_int32(GetDataModelSize(CharacterWindow.GetTitles), '(int32)0' )]"
-								using = expanded_view
-								text_single = {
-									resizeparent = yes
-									raw_text = "[GetDataModelSize(CharacterWindow.GetTitles)] Titles."
-									margin_left = 3
+							button_text = {
+								onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Character.GetCurrentLocation.GetId))]"
+								onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCurrentLocation.GetCoATitle.GetID)]"
+								shortcut = map_mode_9
+								blockoverride "text" {
+									raw_text = "Location, [Character.GetCurrentLocation.GetNameNoTooltip]."
 								}
 							}
 
-							button = {
-								onclick = "[GetVariableSystem.Set('expand_view', 'claims')]"
-								visible = "[GreaterThan_int32(GetDataModelSize(CharacterWindow.GetClaims), '(int32)0' )]"
-								using = expanded_view
-								text_single = {
-									resizeparent = yes
-									raw_text = "[GetDataModelSize(CharacterWindow.GetClaims)] Claims."
-									margin_left = 3
-								}
+							text_single = {
+								visible = "[Not(ObjectsEqual(Character.GetCurrentLocation, GetPlayer.GetCapitalLocation))]"
+								raw_text = "[GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Character.GetCurrentLocation.MakeScope).ScriptValue('distance_to_second_province')|0] days"
 							}
 
-							expand = { }
+							text_single = {
+								raw_text =  "[GetPlayer.Custom2('char_direction_from_second', Character.Self)] from your capital."
+								layoutpolicy_horizontal = expanding
+								visible = "[Not(ObjectsEqual(Character.GetCurrentLocation, GetPlayer.GetCapitalLocation))]"
+							}
+						}
+
+						text_single = {
+							raw_text = "Shift Q."
 						}
 
 						expand = { }
-					}
-
-					button = {
-						layoutpolicy_horizontal = expanding
-						visible = "[And( Character.HasLandedTitles, Character.IsAlive )]"
-						onclick = "[GetVariableSystem.Set('expand_view', 'neighbours')]"
-						using = expanded_view
-						shortcut = map_mode_6
-
-						text_single = {
-							resizeparent = yes
-							raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_rulers'))] Neighbours, Control A."
-							# margin_left = 3
-						}
 					}
 
 					hbox = {
@@ -1446,11 +1445,6 @@ types OCRTypes {
 				}
 
 				text_single = {
-					raw_text = "Click an entry to open character view and pan the camera to their capital."
-					visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
-				}
-
-				text_single = {
 					raw_text = "Click a title to open title view. Right-click to open de-jure capital."
 					visible = "[GetVariableSystem.HasValue('expand_view', 'titles')]"
 				}
@@ -1741,76 +1735,10 @@ types OCRTypes {
 							raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_rulers'))] Independent."
 						}
 						item = {
-							button = {
-								onclick = "[DefaultOnCharacterClick(Scope.GetCharacter.GetID)]"
-								onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetCharacter.GetCapitalLocation.GetCoATitle.GetID)]"
-								onrightclick = "[DefaultOnCharacterRightClick(Scope.GetCharacter.GetID)]"
-								button_ignore = none
-
-								flowcontainer = {
-									resizeparent = yes
-									ignoreinvisible = yes
-									spacing = 3
-									text_single = {
-										raw_text = "[Scope.GetCharacter.GetMaxMilitaryStrength|0] men,"
-									}
-									text_single = {
-										raw_text = "[Scope.GetCharacter.GetPrimaryTitle.GetNameNoTooltip],"
-									}
-									text_single = {
-										raw_text = "[Scope.GetCharacter.GetFirstNameNicknamedOrMe],"
-									}
-									text_single = {
-										raw_text = "[GuiScope.SetRoot(Scope.GetCharacter.GetCapitalLocation.MakeScope).ScriptValue('distance_to_player')|0] points"
-									}
-									text_single = {
-										raw_text = "[Scope.GetCharacter.Custom('ruler_direction')]."
-									}
-								}
-							}
+							adjacent_ruler_button = { }
 						}
 					}
-					flowcontainer = {
-						visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
-						datamodel = "[Character.MakeScope.GetList('adjacent_rulers_across_water')]"
-						direction = vertical
-						layoutpolicy_horizontal = expanding
-
-						text_single = {
-							raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_rulers_across_water'))] Across water."
-						}
-						item = {
-							button = {
-								onclick = "[DefaultOnCharacterClick(Scope.GetCharacter.GetID)]"
-								onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetCharacter.GetPrimaryTitle.GetPreferredCapital.GetID)]"
-								onrightclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetCharacter.GetPrimaryTitle.GetPreferredCapital.GetID)]"
-								button_ignore = none
-
-								flowcontainer = {
-									resizeparent = yes
-									ignoreinvisible = yes
-									spacing = 3
-									text_single = {
-										raw_text = "[Scope.GetCharacter.GetMaxMilitaryStrength|0] men,"
-									}
-									text_single = {
-										raw_text = "[Scope.GetCharacter.GetPrimaryTitle.GetNameNoTooltip],"
-									}
-									text_single = {
-										raw_text = "[Scope.GetCharacter.GetFirstNameNicknamedOrMe],"
-									}
-									text_single = {
-										raw_text = "[GuiScope.SetRoot(Scope.GetCharacter.GetCapitalLocation.MakeScope).ScriptValue('distance_to_player')|0] points"
-									}
-									text_single = {
-										raw_text = "[Scope.GetCharacter.Custom('ruler_direction')]."
-									}
-								}
-							}
-						}
-					}
-
-					#neighbours
+					#vassals
 					flowcontainer = {
 						visible = "[And(GetVariableSystem.HasValue('expand_view', 'neighbours'), Not(Character.IsIndependentRuler))]"
 						datamodel = "[Character.MakeScope.GetList('adjacent_vassals')]"
@@ -1821,30 +1749,21 @@ types OCRTypes {
 							raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_vassals'))] fellow vassals."
 						}
 						item = {
-							button = {
-								onclick = "[DefaultOnCharacterClick(Scope.GetCharacter.GetID)]"
-								onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetCharacter.GetPrimaryTitle.GetPreferredCapital.GetID)]"
-								onrightclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetCharacter.GetPrimaryTitle.GetPreferredCapital.GetID)]"
-								button_ignore = none
+							adjacent_ruler_button = { }
+						}
+					}
+					# across water
+					flowcontainer = {
+						visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
+						datamodel = "[Character.MakeScope.GetList('adjacent_rulers_across_water')]"
+						direction = vertical
+						layoutpolicy_horizontal = expanding
 
-								flowcontainer = {
-									resizeparent = yes
-									ignoreinvisible = yes
-									spacing = 3
-									text_single = {
-										raw_text = "[Scope.GetCharacter.GetMaxMilitaryStrength|0] men,"
-									}
-									text_single = {
-										raw_text = "[Scope.GetCharacter.GetPrimaryTitle.GetNameNoTooltip],"
-									}
-									text_single = {
-										raw_text = "[Scope.GetCharacter.GetFirstNameNicknamedOrMe],"
-									}
-									text_single = {
-										raw_text = "[Scope.GetCharacter.Custom('ruler_direction')]."
-									}
-								}
-							}
+						text_single = {
+							raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_rulers_across_water'))] Across water."
+						}
+						item = {
+							adjacent_ruler_button = { }
 						}
 					}
 
@@ -3150,6 +3069,52 @@ types OCRTypes {
 		# flowcontainer = {
 		# 	datamodel = "[Character.MakeScope.GetList('realm_holdings')]"
 		# }
+	}
+
+	type adjacent_ruler_button = button {
+		onclick = "[DefaultOnCharacterClick(Scope.GetCharacter.GetID)]"
+		onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetCharacter.GetCapitalLocation.GetCoATitle.GetID)]"
+		onrightclick = "[DefaultOnCharacterRightClick(Scope.GetCharacter.GetID)]"
+		button_ignore = none
+
+		flowcontainer = {
+			resizeparent = yes
+			ignoreinvisible = yes
+			datacontext = "[Scope.GetCharacter]"
+			spacing = 3
+			# text_single = {
+			# 	raw_text = "[GuiScope.SetRoot(Scope.GetCharacter.GetCapitalLocation.MakeScope).ScriptValue('distance_to_player')|0] days"
+			# }
+			text_single = {
+				raw_text = "[CharacterWindow.GetCharacter.Custom2('char_direction_from_second', Scope.GetCharacter)],"
+			}
+			text_single = {
+				raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+			}
+			text_single = {
+				raw_text = "[Character.RealmSize] count[Select_CString(GreaterThan_int32(Character.RealmSize, '(int32)1'), 'ies', 'y')],"
+			}
+			# text_single = {
+			# 	raw_text = "[Scope.GetCharacter.GetFirstNameNicknamedOrMe],"
+			# }
+			text_single = {
+				raw_text = "[Character.GetMaxMilitaryStrength|0] men,"
+			}
+			text_single = {
+				visible = "[Character.IsAtWar]"
+				raw_text = "at war."
+			}
+			text_single = {
+				raw_text = "[Character.GetPrimaryTitle.GetTierAsNameNoTooltip]"
+			}
+			text_single = {
+				visible = "[Character.GetPrimaryTitle.GetDeJureLiege.IsValid]"
+				raw_text = "in [Character.GetPrimaryTitle.GetDeJureLiege.GetNameNoTierNoTooltip]"
+			}
+			dot = {
+				margin_left = -3
+			}
+		}
 	}
 
 	type realm_name_and_type_vbox_ocr = hbox {
