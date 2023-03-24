@@ -4,7 +4,8 @@ template fullscreen_window {
 
 template "char_click" {
 	onclick = "[DefaultOnCharacterClick(Character.GetID)]"
-	onclick = "[DefaultOnCharacterClick(Character.GetID)]"
+	onclick = "[GetVariableSystem.Clear('expand_view')]"
+	# onclick = "[DefaultOnCharacterClick(Character.GetID)]"
 	onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
 }
 
@@ -34,19 +35,173 @@ template prov_click {
 	onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetProvince.GetTitle.GetID)]"
 }
 
+## Generic scrollarea. Remember that "scrollbox_content" can only contain one child without siblings.
+types Scrollbar
+{
+
+	type scrollbox = scrollarea {
+		size = { 100 100 }
+
+		scrollbarpolicy_horizontal = always_off
+
+		scrollbar_vertical = {
+			using = Scrollbar_Vertical
+			blockoverride "text" {
+				text_single = {
+					# position = { 0 -1 }
+					background = { using = Background_Area_Solid margin = { 1000 3 } }
+					widgetanchor = right
+					align = left
+					parentanchor = left
+					raw_text = "List can be scrolled."
+					layoutpolicy_horizontal = expanding
+					alwaystransparent = yes
+				}
+			}
+		}
+
+		block "scrollbox_background"
+		{
+			background = {
+				using = Background_Area
+			}
+		}
+
+		scrollwidget = {
+			block "scrollbox_replace_vbox"
+			{
+				vbox = {
+					block "scrollbox_margins"
+					{
+						using = Scrollbox_Margins
+					}
+
+					block "scrollbox_content"
+					{
+						debug_square = { }
+					}
+
+					text_single = {
+						layoutpolicy_vertical = expanding
+						default_format = "#low;italic"
+
+						block "scrollbox_empty"
+						{
+							visible = no
+						}
+					}
+
+					block "scrollbox_expand"
+					{
+						expand = {
+							layoutpolicy_vertical = growing
+						}
+					}
+				}
+			}
+		}
+
+		block "scrollbox_background_fade" {
+			icon = {
+				name = "scrollbar_fade"
+				texture = "gfx/interface/scrollbars/scrollbar_fade.dds"
+				size = { 100% 100% }
+				alwaystransparent = yes
+
+				spriteType = Corneredtiled
+				spriteborder = { 0 30 }
+			}
+		}
+	}
+}
+
+## Vertical scrollbar
+template Scrollbar_Vertical
+{
+	scrollbar = {
+		name = "vertical_scrollbar"
+		block "scrollsize" {
+			size = { 100 12 }
+		}
+		wheelstep = 60
+		direction = vertical
+		block "text" { }
+		allow_outside = yes
+
+		track = {
+			button = {
+				alwaystransparent = yes
+				size = { 12 12 }
+				gfxtype = buttongfx
+
+				# texture = "gfx/interface/scrollbars/scrollbar_track_vertical.dds"
+				spriteType = Corneredtiled
+				spriteborder = { 0 3 }
+				effectname = "NoHighlight"
+			}
+		}
+
+		slider = {
+			button = {
+				gfxtype = framedbuttongfx
+				effectname = "NoHighlight"
+				alwaystransparent = yes
+
+				# texture = "gfx/interface/scrollbars/scrollbar_slider.dds"
+				spriteType = Corneredtiled
+				spriteborder = { 0 3 }
+				framesize = { 12 40 }
+				minimumsize = { -1 40 }
+
+				upframe = 1
+				overframe = 2
+				downframe = 2
+
+				oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+
+				state = {
+					name = _mouse_press
+					start_sound = {
+						soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+					}
+				}
+
+				state = {
+					name = _mouse_release
+					start_sound = {
+						soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+					}
+				}
+			}
+		}
+
+		block "scrollbuttons" {
+			dec_button = {
+				button = {
+					size = { 100 20 }
+					background = { using = Background_Area_Solid }
+					text_single = {
+						raw_text = " Scroll up."
+					}
+				}
+			}
+			inc_button = {
+				button = {
+					size = { 100 20 }
+					background = { using = Background_Area_Solid margin_left = 10 margin_bottom = 2 }
+					text_single = {
+						raw_text = " Scroll down."
+					}
+				}
+			}
+		}
+	}
+}
+
 types OcrSharedTypes {
 
 	type mod_version_preview = flowcontainer {
 		direction = vertical
-
-		background = {
-			texture = "gfx/interface/component_masks/mask_rough_edges.dds"
-		    spriteType = Corneredtiled
-		    spriteborder = { 20 20 }
-		    color = { 0 0 0 0.8 }
-		    texture_density = 2
-			margin = { 10 5 }
-		}
 
 		mod_version = { }
 
@@ -65,6 +220,10 @@ types OcrSharedTypes {
 	type dot = text_single {
 		raw_text = "."
 	}
+	type dot_l = text_single {
+		raw_text = "."
+		margin_left = -3
+	}
 	type space = text_single {
 		raw_text = " "
 	}
@@ -81,7 +240,7 @@ types OcrSharedTypes {
 			# margins are necessary, because NVDA places the cursor right on the edge of the word, where the button isn't clickable
 			block "margins" {
 				margin_left = 4
-				margin_top = 1
+				# margin_top = 1
 				spacing = 0
 			}
 
@@ -132,24 +291,28 @@ types OcrSharedTypes {
 
 	type char_name = button_text {
 		block "onclick" {
+			onclick = "[GetVariableSystem.Clear('expand_view')]"
 			onclick = "[DefaultOnCharacterClick(Character.GetID)]"
 			onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
 		}
 
 		blockoverride "text" {
-			raw_text = "[Character.GetNameNoTooltip]."
-			block "width" {
-				max_width = 450
+			block "text2" {
+				raw_text = "[Character.GetNameOrMeNoTooltip]."
+				block "width" {
+					max_width = 450
+				}
 			}
 		}
 	}
 	type realm_name = button_text {
 		block "onclick" {
+			onclick = "[GetVariableSystem.Clear('expand_view')]"
 			onclick = "[DefaultOnCharacterClick(Character.GetID)]"
 			onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
 		}
 		blockoverride "text" {
-			raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip], [Character.GetTitleAsName] [Character.GetFirstNameNoTooltip]."
+			raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip], [Character.GetTitleAsNameNoTooltip] [Character.GetFirstNameNoTooltip]."
 			block "width" {
 				max_width = 450
 			}
@@ -297,14 +460,14 @@ types OcrSharedTypes {
 		text_single = {
 			raw_text = "Space, pause or unpause."
 		}
-		# text_single = {
-		# 	raw_text = "X, hide or show all tooltips."
-		# }
 		text_single = {
-			raw_text = "1 through 5, set game speed."
+			raw_text = "Numpad plus and minus, increase and decrease speed."
 		}
 		text_single = {
-			raw_text = "Z and X, decrease or increase speed."
+			raw_text = "Z and X, same, but also used for tabs in some windows."
+		}
+		text_single = {
+			raw_text = "1 through 5, set game speed, also used for tabs in some windows."
 		}
 		text_single = {
 			raw_text = "B, go to the previous window. Works with characters, counties, titles."
@@ -360,6 +523,7 @@ types OcrSharedTypes {
 	}
 
 	type error_button = button_text {
+		shortcut = confirm
 		visible = "[And(Not(ReleaseMode), GreaterThan_int32(NumberOrErrors, '(int32)0'))]"
 		blockoverride "text" {
 			raw_text = "Errors: [NumberOrErrors]"

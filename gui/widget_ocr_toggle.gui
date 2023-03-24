@@ -25,40 +25,45 @@ window = {
 	size = { 100% 100% }
 	alwaystransparent = yes
 
-	# state = {
-	# 	name = pause
-	# 	trigger_when = "[Not(IsGamePaused)]"
-	# 	on_start = "[SetGameSpeed('(int32)0')]"
-	# 	on_start = "[OnPause]"
-	# }
 
-	state = {
-		name = zoom_out
-		trigger_when = "[Not(GetVariableSystem.Exists('zoomed_out'))]"
-		on_start = "[GetScriptedGui('manual_zoom_out').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-		next = a
-	}
-	state = {
-		name = a
-		delay = 0.3
-		on_start = "[GetScriptedGui('manual_zoom_in').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-		onclick = "[GetVariableSystem.Set('zoomed_out', 'yes')]"
+
+	widget = {
+		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
+
+		state = {
+			name = monthly_tick
+			on_start = "[SetMapMode('realms_ocr')]"
+		}
+
+		state = {
+			on_start = "[SetMapMode('realms_ocr')]"
+			trigger_when = "[Not(IsMapMode('realms_ocr'))]"
+		}
 	}
 
 	button = {
 		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
 		onclick = "[GetVariableSystem.Toggle('ocr')]"
+		onclick = "[GetVariableSystem.Toggle('tooltip_focus')]"
 		shortcut = "screenshot_map"
-		onclick = "[GetScriptedGui('manual_zoom_out_ocr').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-		onclick = "[SetMapMode('realms_text')]"
+		onclick = "[GetVariableSystem.Toggle('hide_tooltips')]"
+		# TODO replace with an animation
+		# onclick = "[GetScriptedGui('manual_zoom_out_ocr').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		datacontext = "[GetTitleByKey('e_byzantium')]"
+		onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+		onclick = "[SetMapMode('realms')]"
 	}
 
 	button = {
 		visible = "[GetVariableSystem.Exists('ocr')]"
 		onclick = "[GetVariableSystem.Toggle('ocr')]"
+		onclick = "[GetVariableSystem.Clear('tooltip_focus')]"
+		onclick = "[GetVariableSystem.Toggle('hide_tooltips')]"
 		shortcut = "screenshot_map"
-		onclick = "[GetScriptedGui('manual_zoom_in_ocr').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-		onclick = "[SetMapMode('realms')]"
+		datacontext = "[GetPlayer.GetCapitalLocation.GetCounty.GetTitle]"
+		onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+		# onclick = "[GetScriptedGui('manual_zoom_in_ocr').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		onclick = "[SetMapMode('realms_ocr')]"
 	}
 
 	button = {
@@ -140,6 +145,7 @@ window = {
 	}
 
 	button = {
+		visible = "[GetVariableSystem.Exists('hide_event')]"
 		shortcut = army_create_new
 		onclick = "[GetVariableSystem.Toggle('hide_event')]"
 	}
@@ -149,17 +155,38 @@ window = {
 		shortcut = undo
 	}
 
+	button = {
+		visible = "[Not(IsGameViewOpen('outliner'))]"
+		shortcut = "mapmode_duchies_secondary"
+		onclick = "[ToggleGameView('outliner')]"
+		onclick = "[PdxGuiTriggerAllAnimations('select_first_army_delay')]"
+	}
+
+	state = {
+		name = select_first_army_delay
+		delay = 0.2
+		on_finish = "[PdxGuiTriggerAllAnimations('select_first_army')]"
+	}
+
 	widget = {
 		size = { 100% 100% }
-		alwaystransparent = no
+		alwaystransparent = yes
 		using = TooltipFocus
 		visible = "[GetVariableSystem.Exists('sending_army')]"
 
 		button = {
+			alwaystransparent = "[Not(GetVariableSystem.Exists('sending_army'))]"
 			parentanchor = center
 			widgetanchor = left|vcenter
+			onmousehierarchyenter = "[PdxGuiTriggerAllAnimations('army_sent')]"
 			onmousehierarchyenter = "[GetVariableSystem.Clear('sending_army')]"
 			position = { -50 0 }
+
+			state = {
+				name = army_sent
+				delay = 2
+				on_finish = "[PdxGuiTriggerAllAnimations('show_army_window')]"
+			}
 			# texture = "gfx/interface/colors/white.dds"
 
 			flowcontainer = {

@@ -65,13 +65,27 @@ window = {
 
 					hbox = {
 					    layoutpolicy_horizontal = expanding
+						spacing = 3
 
 					    text_single = {
-					    	raw_text = "MILITARY_VIEW"
+					    	raw_text = "[Localize('MILITARY_VIEW')]."
 					    }
 
-						dot = { }
+						datacontext = "[MilitaryView.GetMilitaryItem]"
+						datacontext = "[MilitaryItem.GetComposition]"
 
+						text_single = {
+							raw_text = "[ArmyComposition.GetSoldierCountString] soldiers,"
+						}
+
+						text_single = {
+							visible = "[ArmyComposition.HasRaisedSoldiers]"
+							raw_text = "[ArmyComposition.GetUnraisedNumberOfSoldiers] unraised,"
+						}
+
+						text_single = {
+							raw_text = "[GetKnightCount( GetPlayer.Self )] knights."
+						}
 					    expand = { }
 					}
 				}
@@ -81,7 +95,6 @@ window = {
 					spacing = 3
 					direction = vertical
 					visible = "[GetVariableSystem.HasValue( 'military_view_tabs', 'troops' )]"
-
 
 					ignoreinvisible = yes
 
@@ -98,15 +111,13 @@ window = {
 						onclick = "[PlayerRaiseAllRegiments]"
 						enabled = "[PlayerCanRaiseAnyRallyPoint]"
 						onclick = "[MilitaryView.Close]"
-						onclick = "[OpenGameView('outliner')]"
+						# onclick = "[OpenGameView('outliner')]"
 						clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_raise_army"
 						blockoverride "extra" {
 							text_single = {
 								tooltip = "[GetPlayerRaiseAllTooltip]"
 								raw_text = ", tooltip"
 							}
-						}
-						blockoverride "dot" {
 						}
 					}
 
@@ -121,7 +132,7 @@ window = {
 						}
 						datacontext = "[GetPlayer]"
 						onclick = "[PlayerRaiseAllRaidRegiments]"
-						onclick = "[OpenGameView('outliner')]"
+						# onclick = "[OpenGameView('outliner')]"
 						visible = "[Character.CanRaid]"
 						enabled = "[PlayerCanRaiseAnyRaiderRallyPoint]"
 						tooltip = "[GetPlayerRaiseAllRaidersTooltip]"
@@ -149,6 +160,86 @@ window = {
 						clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_unit_army_disband"
 						blockoverride "dot" {
 						}
+					}
+				}
+
+				vbox = {
+					name = "rally_points"
+					layoutpolicy_horizontal = expanding
+					visible = "[GetVariableSystem.HasValue( 'military_view_tabs', 'troops' )]"
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[GetVariableSystem.Toggle('rally_points')]"
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(MilitaryView.GetRallyPoints)]"
+							margin_right = 2
+						}
+					    blockoverride "extra" {
+							spacing = 3
+							text_single = {
+								text = "MV_RALLY_POINTS"
+							}
+							text_single = {
+								visible = "[Not(GetVariableSystem.Exists('rally_points'))]"
+								raw_text = "Click to hide."
+							}
+							text_single = {
+								visible = "[GetVariableSystem.Exists('rally_points')]"
+								raw_text = "Click to show."
+							}
+					    }
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not(GetVariableSystem.Exists('rally_points'))]"
+
+						dynamicgridbox = {
+							name = "rally_point_list"
+							datamodel = "[MilitaryView.GetRallyPoints]"
+							# flipdirection = yes
+							layoutpolicy_horizontal = expanding
+
+							item = {
+								button_text = {
+									datacontext = "[RallyPointItem.GetRallyPoint]"
+									datacontext = "[RallyPoint.GetProvince]"
+									blockoverride "text" {
+										raw_text = "[Province.GetNameNoTooltip],"
+									}
+									blockoverride "extra" {
+										spacing = 3
+										text_single = {
+											visible = "[ObjectsEqual(Province.GetId, GetPlayer.GetCapitalLocation.GetId)]"
+											raw_text = "your capital"
+										}
+										text_single = {
+											visible = "[Not(ObjectsEqual(Province.GetId, GetPlayer.GetCapitalLocation.GetId))]"
+											raw_text = "AnyProvinceDistance"
+										}
+										text_single = {
+											visible = "[Not(ObjectsEqual(Province.GetId, GetPlayer.GetCapitalLocation.GetId))]"
+											raw_text = "AnyProvinceDirection"
+										}
+										dot = { margin_left = -3 }
+									}
+									onclick = "[RallyPointItem.OnClick]"
+								}
+							}
+						}
+
+						button_text = {
+							blockoverride "text" {
+								raw_text = "Add Rally Point."
+							}
+							layoutpolicy_horizontal = expanding
+							visible = "[MilitaryView.CanAddRallyPoint]" #TODO
+							onclick = "[MilitaryView.OnAddRallyPoint]"
+							# tooltip = "[MilitaryView.GetAddRallyPointTooltip]"
+						}
+
+						# expand = { }
 					}
 				}
 
@@ -718,68 +809,6 @@ window = {
 									}
 								}
 							}
-						}
-					}
-
-					vbox = {
-						name = "rally_points"
-						layoutpolicy_horizontal = expanding
-						margin = { 25 10 }
-						spacing = 5
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							spacing = 5
-							text_single = {
-								raw_text = "[GetDataModelSize(MilitaryView.GetRallyPoints)]"
-							}
-							text_single = {
-								text = "MV_RALLY_POINTS"
-							}
-							text_single = {
-								raw_text = "Double-click to pan camera."
-							}
-							expand = { }
-						}
-
-
-						divider_light = {
-							layoutpolicy_horizontal = expanding
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-
-							dynamicgridbox = {
-								name = "rally_point_list"
-								datamodel = "[MilitaryView.GetRallyPoints]"
-								datamodel_wrap = 3
-								flipdirection = yes
-								layoutpolicy_horizontal = expanding
-
-								item = {
-									button_text = {
-										datacontext = "[RallyPointItem.GetRallyPoint]"
-									    blockoverride "text" {
-									        raw_text = "[RallyPoint.GetName],"
-									    }
-										onclick = "[RallyPointItem.OnClick]"
-										# tooltip = "MV_RALLY_POINT_TT"
-									}
-								}
-							}
-
-							button_text = {
-							    blockoverride "text" {
-							        raw_text = "Add Rally Point."
-							    }
-								layoutpolicy_horizontal = expanding
-								visible = "[MilitaryView.CanAddRallyPoint]" #TODO
-								onclick = "[MilitaryView.OnAddRallyPoint]"
-								# tooltip = "[MilitaryView.GetAddRallyPointTooltip]"
-							}
-
-							# expand = { }
 						}
 					}
 

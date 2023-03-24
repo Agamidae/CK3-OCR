@@ -731,3 +731,729 @@ close_interactions = {
 		has_variable = close_interactions
 	}
 }
+
+is_drifting_to_player = {
+	saved_scopes = { player }
+	is_shown = {
+		de_jure_drifting_towards = scope:player.primary_title
+	}
+}
+
+is_drifting = {
+	saved_scopes = { parent_title }
+
+	is_shown = {
+		de_jure_drifting_towards = scope:parent_title
+	}
+}
+
+is_drifting_to_liege = {
+	saved_scopes = { parent_title }
+
+	is_shown = {
+		de_jure_drifting_towards = scope:parent_title.de_facto_liege
+	}
+}
+
+fabricating_claim = {
+	saved_scopes = { player }
+	is_shown = {
+		is_target_of_council_task = task_fabricate_claim
+		scope:player = {
+			exists = cp:councillor_court_chaplain
+			cp:councillor_court_chaplain = {
+				is_performing_council_task = task_fabricate_claim
+				councillor_task_target = root.title_province
+			}
+		}
+	}
+}
+
+fabricate_claim = {
+	saved_scopes = { player }
+	confirm_title = "fabricate_claim_title"
+	confirm_text = "fabricate_claim_text"
+
+	is_valid = {
+		save_temporary_scope_as = county
+		exists = scope:player.cp:councillor_court_chaplain
+
+		scope:player.cp:councillor_court_chaplain = {
+			save_temporary_scope_as = councillor
+			liege = {
+				save_temporary_scope_as = councillor_liege
+			}
+		}
+
+		scope:county.holder.top_liege = {
+			in_diplomatic_range = scope:councillor_liege
+		}
+		scope:county = {
+			NOR = {
+				holder = scope:councillor_liege
+				scope:councillor_liege = {
+					has_claim_on = scope:county
+				}
+			}
+		}
+	}
+
+	effect = {
+		save_scope_as = county
+		if = {
+			limit = {
+				exists = scope:player.cp:councillor_court_chaplain
+			}
+			scope:player.cp:councillor_court_chaplain = {
+				save_scope_as = councillor
+				liege = {
+					save_scope_as = councillor_liege
+				}
+			}
+		}
+
+		scope:player = {
+			cp:councillor_court_chaplain = {
+				set_council_task = {
+					task_type = task_fabricate_claim
+					target = root
+				}
+				hidden_effect = {
+					set_council_task = {
+						task_type = task_fabricate_claim
+						target = root.title_province
+					}
+				}
+			}
+		}
+	}
+}
+
+is_conversion_active = {
+	saved_scopes = { county councillor councillor_liege }
+
+	is_shown = {
+		scope:county = {
+			is_target_of_council_task = task_conversion
+		}
+		scope:councillor = {
+			is_performing_council_task = task_conversion
+			councillor_task_target = scope:county.title_province
+		}
+	}
+}
+
+###
+
+any_task_active = {
+	saved_scopes = { county councillor_liege target_character }
+	is_shown = {
+		OR = {
+			AND = {
+				exists = cp:councillor_court_chaplain
+				cp:councillor_court_chaplain = {
+					save_temporary_scope_as = councillor
+				}
+				OR = {
+					council_task_is_shown = { task = task_fabricate_claim }
+					council_task_is_shown = { task = task_conversion }
+				}
+			}
+			AND = {
+				exists = cp:councillor_chancellor
+				cp:councillor_chancellor = {
+					save_temporary_scope_as = councillor
+				}
+				OR = {
+					council_task_is_shown = { task = task_integrate_title }
+					court_task_is_shown = { task = task_bestow_royal_favor }
+				}
+			}
+			AND = {
+				exists = cp:councillor_marshal
+				cp:councillor_marshal = {
+					save_temporary_scope_as = councillor
+				}
+				council_task_is_shown = { task = task_increase_control }
+			}
+			AND = {
+				exists = cp:councillor_steward
+				cp:councillor_steward = {
+					save_temporary_scope_as = councillor
+				}
+				OR = {
+					council_task_is_shown = { task = task_develop_county }
+					council_task_is_shown = { task = task_promote_culture }
+					council_task_is_shown = { task = task_accept_culture }
+					council_task_is_shown = { task = task_convince_dejure }
+				}
+			}
+			AND = {
+				exists = cp:councillor_spymaster
+				cp:councillor_spymaster = {
+					save_temporary_scope_as = councillor
+				}
+				scope:target_character.capital_province.county = scope:county
+				court_task_is_shown = { task = task_find_secrets }
+			}
+		}
+	}
+}
+
+
+is_fabricating_claim = {
+	saved_scopes = { county councillor councillor_liege }
+
+	is_shown = {
+		council_task_is_shown = { task = task_fabricate_claim }
+	}
+}
+
+fabricate_claim_button = {
+	saved_scopes = { county councillor councillor_liege }
+	confirm_title = "fabricate_claim_title"
+	confirm_text = "active_task_warning"
+
+	is_shown = {
+		council_task_is_valid = { task = task_fabricate_claim }
+		NOT = { council_task_is_shown = { task = task_fabricate_claim } }
+	}
+	is_valid = {
+		council_task_is_valid = { task = task_fabricate_claim }
+	}
+	effect = {
+		council_task_effect = { task = task_fabricate_claim }
+	}
+}
+
+is_converting_faith = {
+	saved_scopes = { county councillor councillor_liege }
+
+	is_shown = {
+		council_task_is_shown = { task = task_conversion }
+	}
+}
+
+convert_faith_button = {
+	saved_scopes = { county councillor councillor_liege }
+	confirm_title = "convert_faith_title"
+	confirm_text = "active_task_warning"
+
+	is_shown = {
+		NOT = { scope:county.faith = root.faith }
+		scope:county.holder = {
+			OR = {
+				this = root
+				any_liege_or_above = {
+					this = root
+				}
+			}
+		}
+		NOT = { council_task_is_shown = { task = task_conversion } }
+	}
+
+	is_valid = {
+		council_task_is_valid = { task = task_conversion }
+	}
+	effect = {
+		council_task_effect = { task = task_conversion }
+	}
+}
+
+task_integrate_title = {
+	saved_scopes = { county councillor councillor_liege }
+	confirm_title = "task_integrate_title_title"
+	confirm_text = "active_task_warning"
+
+	is_shown = {
+		scope:county = {
+			de_jure_drifting_towards = scope:councillor_liege.primary_title
+		}
+		NOT = { council_task_is_shown = { task = task_integrate_title } }
+	}
+
+	is_valid = {
+		council_task_is_valid = { task = task_integrate_title }
+	}
+	effect = {
+		council_task_effect = { task = task_integrate_title }
+	}
+}
+
+
+is_integrating_title = {
+	saved_scopes = { county councillor councillor_liege }
+
+	is_shown = {
+		council_task_is_shown = { task = task_integrate_title }
+	}
+}
+
+task_increase_control = {
+	saved_scopes = { county councillor councillor_liege }
+	confirm_title = "task_increase_control_title"
+	confirm_text = "active_task_warning"
+
+	is_shown = {
+		council_task_is_valid = { task = task_increase_control }
+		NOT = { council_task_is_shown = { task = task_increase_control } }
+	}
+
+	is_valid = {
+		council_task_is_valid = { task = task_increase_control }
+	}
+	effect = {
+		council_task_effect = { task = task_increase_control }
+	}
+}
+
+has_county_corruption_trigger_sgui = {
+	is_shown = {
+		has_county_corruption_trigger = yes
+	}
+}
+
+is_increasing_control = {
+	saved_scopes = { county councillor councillor_liege }
+
+	is_shown = {
+		council_task_is_shown = { task = task_increase_control }
+	}
+}
+
+task_develop_county = {
+	saved_scopes = { county councillor councillor_liege }
+	confirm_title = "task_develop_county_title"
+	confirm_text = "active_task_warning"
+
+	is_shown = {
+		council_task_is_valid = { task = task_develop_county }
+		NOT = { council_task_is_shown = { task = task_develop_county } }
+	}
+
+	is_valid = {
+		council_task_is_valid = { task = task_develop_county }
+	}
+	effect = {
+		council_task_effect = { task = task_develop_county }
+	}
+}
+
+task_promote_culture = {
+	saved_scopes = { county councillor councillor_liege }
+	confirm_title = "task_promote_culture_title"
+	confirm_text = "active_task_warning"
+
+	is_shown = {
+		# council_task_is_valid = { task = task_promote_culture }
+		scope:county = {
+			NOT = { culture = scope:councillor_liege.culture }
+		}
+		scope:county.holder = {
+			OR = {
+				this = root
+				any_liege_or_above = {
+					this = root
+				}
+			}
+		}
+		NOT = { council_task_is_shown = { task = task_promote_culture } }
+	}
+
+	is_valid = {
+		council_task_is_valid = { task = task_promote_culture }
+	}
+	effect = {
+		council_task_effect = { task = task_promote_culture }
+	}
+}
+
+task_accept_culture = {
+	saved_scopes = { county councillor councillor_liege }
+	confirm_title = "task_accept_culture_title"
+	confirm_text = "active_task_warning"
+
+	is_shown = {
+		# council_task_is_valid = { task = task_accept_culture }
+		scope:county = {
+			NOT = { culture = scope:councillor_liege.culture }
+		}
+		scope:county.holder = {
+			OR = {
+				this = root
+				any_liege_or_above = {
+					this = root
+				}
+			}
+		}
+		NOT = { council_task_is_shown = { task = task_accept_culture } }
+	}
+
+	is_valid = {
+		council_task_is_valid = { task = task_accept_culture }
+	}
+	effect = {
+		council_task_effect = { task = task_accept_culture }
+	}
+}
+
+task_convince_dejure = {
+	saved_scopes = { county councillor councillor_liege }
+	confirm_title = "task_convince_dejure_title"
+	confirm_text = "active_task_warning"
+
+	is_shown = {
+		has_dlc_feature = royal_court
+		NOT = {
+			scope:county = {
+				holder = {
+					OR = {
+						this = root
+						target_is_liege_or_above = root
+					}
+				}
+			}
+		}
+		council_task_is_valid = { task = task_convince_dejure }
+		NOT = { council_task_is_shown = { task = task_convince_dejure } }
+	}
+
+	is_valid = {
+		council_task_is_valid = { task = task_convince_dejure }
+	}
+	effect = {
+		council_task_effect = { task = task_convince_dejure }
+	}
+}
+
+is_developing = {
+	saved_scopes = { county councillor councillor_liege }
+
+	is_shown = {
+		council_task_is_shown = { task = task_develop_county }
+	}
+}
+
+is_promoting = {
+	saved_scopes = { county councillor councillor_liege }
+
+	is_shown = {
+		council_task_is_shown = { task = task_promote_culture }
+	}
+}
+
+is_accepting = {
+	saved_scopes = { county councillor councillor_liege }
+
+	is_shown = {
+		council_task_is_shown = { task = task_accept_culture }
+	}
+}
+
+is_convincing_de_jure = {
+	saved_scopes = { county councillor councillor_liege }
+
+	is_shown = {
+		council_task_is_shown = { task = task_convince_dejure }
+	}
+}
+
+finish_task = {
+	effect = {
+		finish_council_task = yes
+	}
+}
+
+task_find_secrets = {
+	saved_scopes = { target_character councillor councillor_liege }
+	confirm_title = "task_find_secrets_title"
+	confirm_text = "active_task_warning"
+
+	is_shown = {
+		court_task_is_valid = { task = task_find_secrets }
+		NOT = { court_task_is_shown = { task = task_find_secrets } }
+	}
+	is_valid = {
+		court_task_is_valid = { task = task_find_secrets }
+	}
+	effect = {
+		court_task_effect = { task = task_find_secrets }
+	}
+}
+
+is_searching_for_secrets = {
+	saved_scopes = { target_character county councillor councillor_liege }
+
+	is_shown = {
+		scope:target_character.capital_province.county = scope:county
+		court_task_is_shown = { task = task_find_secrets }
+	}
+}
+
+task_bestow_royal_favor = {
+	saved_scopes = { target_character councillor councillor_liege }
+	confirm_title = "task_bestow_royal_favor_title"
+	confirm_text = "active_task_warning"
+
+	is_shown = {
+		# court_task_is_valid = { task = task_bestow_royal_favor }
+		has_dlc_feature = royal_court
+		court_grandeur_current_level >= 2
+		target_is_vassal_or_below = scope:target_character
+		NOT = { court_task_is_shown = { task = task_bestow_royal_favor } }
+	}
+	is_valid = {
+		court_task_is_valid = { task = task_bestow_royal_favor }
+	}
+	effect = {
+		court_task_effect = { task = task_bestow_royal_favor }
+	}
+}
+
+is_bestowing_favor = {
+	saved_scopes = { target_character councillor councillor_liege }
+
+	is_shown = {
+		court_task_is_shown = { task = task_bestow_royal_favor }
+	}
+}
+
+show_coordinates = {
+	is_shown = {
+		exists = var:show_coordinates
+	}
+	effect = {
+		if = {
+			limit = {
+				NOT = { exists = var:show_coordinates }
+			}
+			set_variable = show_coordinates
+		}
+		else = {
+			remove_variable = show_coordinates
+		}
+	}
+}
+
+safe_county = {
+	saved_scopes = { target }
+	is_valid = {
+		scope:target = {
+			county_controller = {
+				is_county_safe = yes
+			}
+		}
+	}
+}
+
+
+is_hostile_county = {
+	saved_scopes = { target }
+
+	is_shown = {
+		scope:target = {
+			county_controller = {
+				is_county_safe = no
+			}
+		}
+
+		# # are they or their liege at war with you
+		# OR = {
+		# 	is_at_war_with = root
+		# 	any_liege_or_above = {
+		# 		is_at_war_with = root
+		# 	}
+		# }
+		# # and this isn't you or your vassal, since you may be at war with liege
+		# NOR = {
+		# 	this = root
+		# 	is_vassal_or_below_of = root
+		# }
+
+
+			# OR = {
+			# 	is_at_war_with = scope:me
+			# 	AND = {
+			# 		any_liege_or_above = {
+			# 			is_at_war_with = scope:me
+			# 		}
+			# 		NOT = {
+			# 			any_liege_or_above = {
+			# 				this = scope:me
+			# 			}
+			# 		}
+			# 		NOT = {
+			# 			this = scope:me
+			# 		}
+			# 	}
+			# 	AND = {
+			# 		any_liege_or_above = {
+			# 			is_at_war_with = scope:me
+			# 			is_vassal_or_below_of = scope:me
+			# 		}
+			# 		NOT = {
+			# 			this = scope:me
+			# 		}
+			# 	}
+			# }
+			# is_at_war = yes
+	}
+}
+
+
+build_farms = {
+	effect = {
+		clear_variable_list = build_farms
+
+		ordered_sub_realm_barony = {
+			order_by = title_province.monthly_income
+			min = 0
+
+			limit = {
+				can_build_farms = yes
+			}
+
+			root = {
+				add_to_variable_list = {
+					name = build_farms
+					target = prev.title_province
+				}
+			}
+		}
+	}
+}
+
+build_in_vassals = {
+	effect = {
+		if = {
+			limit = {
+				has_variable = build_in_vassals
+			}
+			remove_variable = build_in_vassals
+		}
+		else = {
+			set_variable = build_in_vassals
+		}
+	}
+}
+
+replace_buildings = {
+	effect = {
+		if = {
+			limit = {
+				has_variable = replace_buildings
+			}
+			remove_variable = replace_buildings
+		}
+		else = {
+			set_variable = replace_buildings
+		}
+	}
+}
+
+is_king_or_emperor = {
+	is_shown = {
+		highest_held_title_tier >= tier_kingdom
+	}
+}
+
+integrate_titles = {
+	is_shown = {
+		integrate_titles > 0
+		highest_held_title_tier >= tier_kingdom
+	}
+
+	effect = {
+		clear_variable_list = integrate_titles
+
+		# every_realm_de_jure_kingdom = {
+		# 	limit = {
+		# 		can_integrate_title = yes
+		# 	}
+		# 	# add_to_list = integrate_kingdoms
+		# 	add_to_list = integrate_titles
+		# }
+		#
+		# every_realm_de_jure_duchy = {
+		# 	limit = {
+		# 		can_integrate_title = yes
+		# 	}
+		# 	add_to_list = integrate_titles
+		# 	# add_to_list = integrate_duchies
+		# }
+
+		every_realm_county = {
+			limit = {
+				can_integrate_title = yes
+			}
+			add_to_list = integrate_titles
+			# add_to_list = integrate_counties
+		}
+
+		# every_in_list = {
+		# 	list = integrate_counties
+		# 	limit = {
+		# 		de_jure_liege = {
+		# 			is_in_list = integrate_duchies
+		# 		}
+		# 	}
+		# 	remove_from_list = integrate_counties
+		# }
+		#
+		# every_in_list = {
+		# 	list = integrate_duchies
+		# 	limit = {
+		# 		de_jure_liege = {
+		# 			is_in_list = integrate_kingdoms
+		# 		}
+		# 	}
+		# 	remove_from_list = integrate_duchies
+		# }
+		#
+		# every_in_list = {
+		# 	list = integrate_duchies
+		# 	add_to_list = integrate_titles
+		# }
+		# every_in_list = {
+		# 	list = integrate_counties
+		# 	add_to_list = integrate_titles
+		# }
+		every_in_list = {
+			list = integrate_titles
+			root = {
+				add_to_variable_list = {
+					name = integrate_titles
+					target = prev
+				}
+			}
+		}
+	}
+}
+
+low_control_counties = {
+	effect = {
+		clear_variable_list = low_control_counties
+		ordered_sub_realm_county = {
+			order_by = {
+				value = county_control
+				multiply = -1
+			}
+			min = 0
+			limit = {
+				can_increase_control = yes
+				trigger_if = {
+					limit = {
+						root = { NOT = { exists = var:build_in_vassals } }
+					}
+					holder = root
+				}
+			}
+			root = {
+				add_to_variable_list = {
+					name = low_control_counties
+					target = prev
+				}
+			}
+		}
+	}
+}

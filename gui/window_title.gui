@@ -31,6 +31,29 @@ window = {
 
 	datacontext = "[TitleViewWindow.GetTitle]"
 
+	buttons_window_control = {
+		blockoverride "button_close"
+		{
+			onclick = "[TitleViewWindow.Close]"
+			onclick = "[TitleViewWindow.CloseHistory]"
+			onclick = "[TitleViewWindow.CloseClaimants]"
+		}
+
+		blockoverride "button_back"
+		{
+			size = { 0 0 }
+			visible = "[HasViewHistory]"
+			onclick = "[OpenFromViewHistory]"
+			tooltip = "[GetViewHistoryTooltip]"
+		}
+
+		blockoverride "button_me"
+		{
+			size = { 0 0 }
+			onclick = "[DefaultOnCharacterClick(GetPlayer.GetID)]"
+		}
+	}
+
 	vbox = {
 		using = Window_Margins_Sidebar
 
@@ -59,22 +82,32 @@ window = {
 			vbox = {
 				layoutpolicy_horizontal = expanding
 
+				error_button = {
+					layoutpolicy_horizontal = expanding
+				}
+
 				vbox = {
-					ignoreinvisible = yes
 					datacontext = "[TitleViewWindow.GetTitle]"
 					layoutpolicy_horizontal = expanding
+
+					button = {
+						using = prov_click
+						datacontext = "[TitleViewWindow.GetTitle.GetPreferredCapital]"
+						shortcut = map_mode_9
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not(Or(Title.IsMercenaryCompany, Or( Title.IsHolyOrder, Title.HasFaction )))]"
+						raw_text = "[Localize('TV_TIER_INFO')]."
+					}
 
 					hbox = {
 						layoutpolicy_horizontal = expanding
 
-						button = {
-							using = title_click
-							shortcut = map_mode_9
-						}
-
 						hbox = {
-							layoutpolicy_horizontal = expanding
 							spacing = 3
+
 							text_single = {
 								raw_text = "[TitleViewWindow.GetTitle.GetNameNoTooltip|U]."
 								max_width = 350
@@ -83,105 +116,164 @@ window = {
 							}
 
 							text_single = {
-								visible = "[Not(Or(Title.IsMercenaryCompany, Or( Title.IsHolyOrder, Title.HasFaction )))]"
-								raw_text = "[Localize('TV_TIER_INFO')]."
-							}
-
-							text_single = {
 								visible = "[Not(Title.CanHaveClaim)]"
 								raw_text = "[Title.GetSpecialDescription]."
 							}
-
-							expand = { }
 						}
 
-						vbox = {
-							layoutpolicy_vertical = expanding
+						button_text = {
+							visible = "[DataModelHasItems(TitleViewWindow.GetLiegeItems)]"
+						    blockoverride "text" {
+						        raw_text = "De jure in [Title.GetDeJureLiege.GetNameNoTooltip], Page Up."
+						    }
+							onclick = "[DefaultOnCoatOfArmsClick(Title.GetDeJureLiege.GetID)]"
+							onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetDeJureLiege.GetID)]"
 
-							buttons_window_control = {
-								blockoverride "button_close"
-								{
-									onclick = "[TitleViewWindow.Close]"
-									onclick = "[TitleViewWindow.CloseHistory]"
-									onclick = "[TitleViewWindow.CloseClaimants]"
-								}
-
-								blockoverride "button_back"
-								{
-									size = { 0 0 }
-									visible = "[HasViewHistory]"
-									onclick = "[OpenFromViewHistory]"
-									tooltip = "[GetViewHistoryTooltip]"
-								}
-
-								blockoverride "button_me"
-								{
-									size = { 0 0 }
-									onclick = "[DefaultOnCharacterClick(GetPlayer.GetID)]"
-								}
-							}
-
-							expand = { }
-						}
-					}
-
-					watch_window_button = {
-						size = { 60 40 }
-						onclick = "[AddWatchWindow( TitleViewWindow.GetTitle.MakeScope )]"
-					}
-
-					text_single = {
-						visible = "[Title.HasFaction]"
-						datacontext = "[Title.GetFaction]"
-						text = "TITLE_VIEW_FACTION"
-					}
-
-					# owner
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						layoutpolicy_vertical = expanding
-						spacing = 3
-
-						text_single = {
-							name = "is_created"
-							visible = "[Not(Title.HasHolder)]"
-							raw_text = "[Localize('TV_NOT_CREATED')]."
-						}
-
-						vbox = {
-							name = "existing_title"
-							ignoreinvisible = yes
-							visible = "[Title.HasHolder]"
-
-							text_single = {
-								name = "my_title"
-								visible = "[EqualTo_uint32( Title.GetHolder.GetID, GetPlayer.GetID )]"
-								raw_text = "[Localize('TV_MY_TITLE')]."
-							}
-
-							text_single = {
-								raw_text = "[Localize('TV_NO_CLAIM')]."
-								visible = "[And(And(NotEqualTo_uint32( Title.GetHolder.GetID, GetPlayer.GetID ), Not(GetPlayer.HasClaimOnTitle(TitleViewWindow.GetTitle ))),Title.CanHaveClaim))]"
-							}
-
-							text_multi = {
-								name = "have_claim"
-								raw_text = "[Title.GetClaimStateFor(GetPlayer)]."
-								minimumsize = { 200 50 }
-								visible = "[And(NotEqualTo_uint32( Title.GetHolder.GetID, GetPlayer.GetID ), GetPlayer.HasClaimOnTitle(TitleViewWindow.GetTitle ))]"
-							}
-						}
-
-						text_single = {
-							raw_text = "You hold [GuiScope.SetRoot(Title.MakeScope).AddScope('player', GetPlayer.MakeScope).ScriptValue('your_counties_in_title')] counties"
-						}
-
-						text_single = {
-							raw_text = "out of [GuiScope.SetRoot(Title.MakeScope).ScriptValue('counties_in_title')]."
+							shortcut = "zoom_out"
 						}
 
 						expand = { }
+					}
 
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not(GetVariableSystem.Exists('title_tabs'))]"
+
+						watch_window_button = {
+							size = { 60 40 }
+							onclick = "[AddWatchWindow( TitleViewWindow.GetTitle.MakeScope )]"
+						}
+
+						text_single = {
+							visible = "[Title.HasFaction]"
+							datacontext = "[Title.GetFaction]"
+							text = "TITLE_VIEW_FACTION"
+						}
+
+						vbox = {
+							# visible = "[Title.HasHolder]"
+							margin = { 0 5 }
+							layoutpolicy_horizontal = expanding
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "Drifting towards your primary title."
+								visible = "[GetScriptedGui('is_drifting_to_player').IsShown( GuiScope.SetRoot( Title.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_multi = {
+									raw_text = "[Title.GetDeJureDriftTooltip]"
+									autoresize = yes
+									max_width = 570
+								}
+
+								text_multi = {
+									raw_text = "[Title.GetDeJureLiege.GetDeJureDriftTooltip]"
+									autoresize = yes
+									max_width = 570
+								}
+
+								text_multi = {
+									raw_text = "[Title.GetDeJureLiege.GetDeJureLiege.GetDeJureDriftTooltip]"
+									autoresize = yes
+									max_width = 570
+								}
+
+								expand = { }
+							}
+						}
+
+						#
+						# hbox = {
+						#     layoutpolicy_horizontal = expanding
+						# 	visible = "[GetScriptedGui('is_drifting').IsShown( GuiScope.SetRoot( Title.MakeScope ).AddScope('parent_title', Title.GetDeFactoLiege.MakeScope).End )]"
+						#
+						# 	text_single = {
+						# 		raw_text = "[Title.Custom('DriftProgress')]"
+						# 	}
+						#
+						# 	text_single = {
+						# 		raw_text = " de jure drifting into [Title.GetDeFactoLiege.GetNameNoTooltip]."
+						# 	}
+						#
+						#     expand = { }
+						# }
+						#
+						# hbox = {
+						#     layoutpolicy_horizontal = expanding
+						# 	visible = "[GetScriptedGui('is_drifting_to_liege').IsShown( GuiScope.SetRoot( Title.MakeScope ).AddScope('parent_title', Title.GetDeFactoLiege.MakeScope).End )]"
+						#
+						# 	text_single = {
+						# 		raw_text = "[Title.Custom('DriftProgressLiege')]"
+						# 	}
+						#
+						# 	text_single = {
+						# 		raw_text = " de jure drifting into [Title.GetDeFactoLiege.GetDeFactoLiege.GetNameNoTooltip]."
+						# 	}
+						#
+						#     expand = { }
+						# }
+
+
+						# owner
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+							spacing = 3
+
+							text_single = {
+								name = "is_created"
+								visible = "[Not(Title.HasHolder)]"
+								raw_text = "[Localize('TV_NOT_CREATED')]."
+							}
+
+							vbox = {
+								name = "existing_title"
+								ignoreinvisible = yes
+								visible = "[Title.HasHolder]"
+								layoutpolicy_horizontal = expanding
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									name = "my_title"
+									visible = "[EqualTo_uint32( Title.GetHolder.GetID, GetPlayer.GetID )]"
+									raw_text = "[Localize('TV_MY_TITLE')]."
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									raw_text = "[Localize('TV_NO_CLAIM')]."
+									visible = "[And(And(NotEqualTo_uint32( Title.GetHolder.GetID, GetPlayer.GetID ), Not(GetPlayer.HasClaimOnTitle(TitleViewWindow.GetTitle ))),Title.CanHaveClaim))]"
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									name = "have_claim"
+									raw_text = "[Title.GetClaimStateFor(GetPlayer)]."
+									visible = "[And(NotEqualTo_uint32( Title.GetHolder.GetID, GetPlayer.GetID ), GetPlayer.HasClaimOnTitle(TitleViewWindow.GetTitle ))]"
+								}
+
+								hbox = {
+								    layoutpolicy_horizontal = expanding
+									spacing = 3
+
+									text_single = {
+										raw_text = "You hold [GuiScope.SetRoot(Title.MakeScope).AddScope('player', GetPlayer.MakeScope).ScriptValue('your_counties_in_title')] counties"
+									}
+
+									text_single = {
+										raw_text = "out of [GuiScope.SetRoot(Title.MakeScope).ScriptValue('counties_in_title')]."
+									}
+
+								    expand = { }
+								}
+							}
+
+							expand = { }
+
+						}
 					}
 
 					widget = {
@@ -307,6 +399,7 @@ window = {
 								button_text = {
 									using = title_click
 									onclick = "[GetScriptedGui('adjacent_titles').Execute( GuiScope.SetRoot( Title.MakeScope ).End )]"
+									onclick = "[GetVariableSystem.Clear('title_tabs')]"
 									layoutpolicy_horizontal = expanding
 									datacontext = "[Scope.Title]"
 									blockoverride "text" {
@@ -338,9 +431,7 @@ window = {
 								}
 							}
 						}
-
 						expand = { }
-
 					}
 
 
@@ -361,14 +452,17 @@ window = {
 							layoutpolicy_horizontal = expanding
 							visible = "[And(TitleViewWindow.GetTitle.HasHolder,TitleViewWindow.GetTitle.IsLanded)]"
 							blockoverride "text" {
-								raw_text = "[TitleViewWindow.GetTypeOfLanded]:"
-								align = left
+								raw_text = "[TitleViewWindow.GetTypeOfLanded],"
 								alwaystransparent = yes
 							}
 							blockoverride "extra" {
 								text_single = {
 									raw_text = " [Holding.GetProvince.GetNameNoTooltip]."
 								}
+								# text_single = {
+								# 	datacontext = "[Holding.GetProvince]"
+								# 	raw_text = "AnyProvinceDistanceDirection"
+								# }
 							}
 							datacontext = "[TitleViewWindow.GetHolding]"
 							onclick = "[TitleViewWindow.GoToHolding]"
@@ -376,18 +470,28 @@ window = {
 
 						# capital
 						button_text = {
+							shortcut = map_mode_9
 							layoutpolicy_horizontal = expanding
 							datacontext = "[TitleViewWindow.GetTitle.GetPreferredCapital]"
-							visible = "[And( Title.IsValid, Not( TitleViewWindow.GetTitle.HasFaction ) )]"
+							visible = "[And( Title.HasHolder, Not( TitleViewWindow.GetTitle.HasFaction ) )]"
 							blockoverride "pre" {
 								text_single = {
-									raw_text = "De Jure Capital:"
+									raw_text = "De Jure Capital,"
 								}
 								space = { }
 							}
 							blockoverride "text" {
-								raw_text = "[Title.GetNameNoTooltip]."
-								align = left
+								raw_text = "[Title.GetNameNoTooltip],"
+							}
+							blockoverride "extra" {
+								text_single = {
+									margin_left = 3
+									datacontext = "[TitleViewWindow.GetTitle.GetPreferredCapital.GetProvince]"
+									raw_text = "AnyProvinceDistanceDirection"
+								}
+								text_single = {
+									raw_text = " Shift Q."
+								}
 							}
 							using = prov_click
 						}
@@ -403,7 +507,7 @@ window = {
 							blockoverride "pre" {
 								text_single = {
 									margin_right = 3
-									raw_text = "[Localize('TITLE_VIEW_HOLDER')]:"
+									raw_text = "[Localize('TITLE_VIEW_HOLDER')],"
 								}
 							}
 						}
@@ -417,13 +521,20 @@ window = {
 							visible = "[Not( Title.HasFaction )]"
 							layoutpolicy_horizontal = expanding
 
-							text_multi = {
-								visible = "[TitleViewWindow.GetTitle.HasHolder]"
-								raw_text = "[TitleViewWindow.GetSuccessionDescription]."
-								layoutpolicy_horizontal = expanding
-								max_width = 570
-								autoresize = yes
+							hbox = {
+							    layoutpolicy_horizontal = expanding
+
+								text_multi = {
+									visible = "[TitleViewWindow.GetTitle.HasHolder]"
+									raw_text = "[TitleViewWindow.GetSuccessionDescription]."
+									layoutpolicy_horizontal = expanding
+									max_width = 570
+									autoresize = yes
+								}
+
+							    expand = { }
 							}
+
 
 							vbox = {
 								datacontext = "[TitleViewWindow.GetTitle]"

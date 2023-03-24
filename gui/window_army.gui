@@ -7,16 +7,33 @@ window = {
 	filter_mouse = left|right
 	movable = no
 	# allow_outside = yes
+	alwaystransparent = yes
 	layer = middle
 
+	state = {
+		name = hide_army_window
+		position = { -1500 0 }
+	}
+	state = {
+		name = show_army_window
+		position = { 0 0 }
+	}
+
+	state = {
+		name = refresh_first_army
+		on_start = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Army.GetLocation.MakeScope ).End )]"
+		on_start = "[GetScriptedGui('hostile_forts').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
+		on_start = "[GetScriptedGui('raid_targets').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
+	}
+
 	widget = {
-		visible = "[IsGamePaused]"
+		visible = "[And(IsGamePaused, Not(GetVariableSystem.Exists('ocr')))]"
 
 		state = {
 			trigger_on_create = yes
 			name = daily_tick
 
-			on_start = "[GetScriptedGui('save_army_position').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Army.MakeScope).End )]"
+			# on_start = "[GetScriptedGui('save_army_position').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Army.MakeScope).End )]"
 			on_start = "[GetScriptedGui('hostile_forts').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
 			on_start = "[GetScriptedGui('raid_targets').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
 			on_start = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
@@ -26,23 +43,23 @@ window = {
 	state = {
 		trigger_on_create = yes
 
-		on_start = "[GetScriptedGui('save_army_position').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Army.MakeScope).End )]"
+		# on_start = "[GetScriptedGui('save_army_position').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Army.MakeScope).End )]"
 		on_start = "[GetScriptedGui('hostile_forts').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
-		on_start = "[GetScriptedGui('raid_targets').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
+		# on_start = "[GetScriptedGui('raid_targets').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
 		on_start = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
 	}
 
 	# using = Window_Background_No_Edge
-	background = { using = Background_Area_Border_Solid }
-
 
 	state = {
 		name = _show
 		on_start = "[GetVariableSystem.Set( 'county_view_open', 'true' )]"
 		on_start = "[GetVariableSystem.Set( 'hide_bottom_left_HUD', 'true' )]"
-		on_start = "[GetScriptedGui('save_army_position').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Army.MakeScope).End )]"
+		onclick = "[GetVariableSystem.Clear('war_selector')]"
 		on_start = "[GetScriptedGui('hostile_forts').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
-		on_start = "[GetScriptedGui('raid_targets').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
+		on_start = "[PdxGuiTriggerAllAnimations('show_army_window')]"
+		on_start = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Army.GetLocation.MakeScope ).End )]"
+
 
 		using = Animation_FadeIn_Standard
 		using = Sound_WindowShow_Standard
@@ -64,1450 +81,1897 @@ window = {
 		onclick = "[ArmyWindow.CloseAndDeselect]"
 		size = { 0 0 }
 		shortcut = "close_window"
+		visible = "[Not(GetVariableSystem.Exists('army_tabs'))]"
 	}
 
 	vbox = {
-		margin = { 5 5 }
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
 
-		### close button row
-		hbox = {
-			layoutpolicy_horizontal = expanding
-			margin_right = 8
-
-			hbox = {
-				layoutpolicy_horizontal = expanding
-				visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					resizeparent = yes
-					margin_left = 5
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						margin_top = 2
-						text_single = {
-							align = left
-							visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
-							name = "strength"
-							tooltip = "[ArmyWindow.GetAllArmiesCompositionString]"
-							raw_text = "[GetDataModelSize(ArmyWindow.GetSelectedUnitItems)] armies selected, total soldiers: [ArmyWindow.GetTotalSoldierCountString]."
-						}
-
-						hbox = {
-							visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
-							button_text = {
-								blockoverride "text" {
-									raw_text = "Merge, hotkey G."
-								}
-								blockoverride "disabled" {
-									visible = "[Not(ArmyWindow.CanMerge)]"
-									tooltip = "[ArmyWindow.BuildMergeTooltip]"
-								}
-								onclick = "[ArmyWindow.MergeSelected]"
-								shortcut = "army_merge"
-							}
-
-							button_text = {
-							    blockoverride "text" {
-							        raw_text = "Reorganize, hotkey Y."
-							    }
-								blockoverride "disabled" {
-									visible = "[Not(ArmyWindow.CanReorgSelected)]"
-									tooltip = "[ArmyWindow.BuildReorgTooltip]"
-								}
-								onclick = "[ArmyWindow.ToggleReorganizationWindow]"
-								enabled = "[ArmyWindow.CanReorgSelected]"
-								shortcut = map_mode_4
-							}
-						}
-
-						expand = { }
-					}
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-
-						text_single = {
-							raw_text = "Armies: "
-						}
-
-						dynamicgridbox = {
-							layoutpolicy_horizontal = expanding
-							name = "banner_items_grid"
-							datamodel = "[ArmyWindow.GetSelectedUnitItems]"
-							visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
-							datamodel_wrap = 8
-							flipdirection = yes
-
-							item = {
-								button_text = {
-									blockoverride "text" {
-										raw_text = "[SelectedUnitItem.GetArmy.GetSoldierCount|*],"
-										align = left
-									}
-									# blockoverride "extra" {
-									# 	text_single = {
-									# 		raw_text = " selected."
-									# 		visible = "[SelectedUnitItem.IsShown]"
-									# 	}
-									# }
-									onclick = "[PdxGuiTriggerAllAnimations('army_change')]"
-									onrightclick = "[SelectedUnitItem.OnRightClick]"
-									down = "[SelectedUnitItem.IsShown]"
-
-									state = {
-										name = _mouse_click
-										delay = 0.2
-										on_finish = "[SelectedUnitItem.OnClick]"
-									}
-									tooltip = "[SelectedUnitItem.GetTooltip]"
-									using = tooltip_ne
-								}
-							}
-						}
-					}
-					## Armies flag
-				}
-			}
-		}
-
-		### info row
+		# all tabs
 		vbox = {
 			layoutpolicy_horizontal = expanding
-			# layoutpolicy_vertical = expanding
-
-			### Dark header row
-			hbox = {
-				### name
-				# visible = "[Not(GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1'))]"
-				layoutpolicy_horizontal = expanding
-				minimumsize = { 0 30 }
-				margin = { 10 4 }
-				margin_right = 20
-
-				spacing = 3
-
-				background = {
-					margin_left = 15
-					margin_right = -7
-					using = Background_Area_Dark
-				}
-
-				text_single = {
-					raw_text = "Selected:"
-					visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
-				}
-
-				text_single = {
-					name = "strength"
-					datacontext = "[Army.GetComposition]"
-					raw_text = "[ArmyComposition.GetSoldierCountString] men,"
-				}
-
-				hbox = {
-					spacing = 3
-					visible = "[Army.IsGathering]"
-
-					text_single = {
-						name = "status_text"
-						raw_text = "[ArmyWindow.GetUnitItem.GetStatusDescription],"
-						default_format = "#high"
-					}
-
-					button_text = {
-						blockoverride "text" {
-							raw_text = "STOP_GATHERING"
-						}
-						blockoverride "dot" {
-
-						}
-						visible = "[ArmyWindow.CanStopGathering]"
-						onclick = "[ArmyWindow.StopGathering]"
-					}
-				}
-
-				hbox = {
-					name = "loot"
-					visible = "[Army.IsRaidArmy]"
-					tooltip = "ARMY_RAID_LOOT_TOOLTIP"
-
-					text_single = {
-						raw_text = "Loot:"
-					}
-
-					text_single = {
-						raw_text = " "
-					}
-
-					text_single = {
-						name = "loot"
-						raw_text = "[Army.GetRaidLoot|0] out of [Army.GetLootCap|0]."
-					}
-				}
-
-				text_single = {
-					name = "name"
-					raw_text = "[Army.GetNameNoTooltip]."
-					max_width = 500
-				}
-
-				expand = { }
-			}
-
-			hbox = {
-				margin_left = 10
-				spacing = 3
-				layoutpolicy_horizontal = expanding
-
-				visible = "[Not(Army.IsGathering)]"
-
-				text_single = {
-					name = "status_text"
-					raw_text = "[ArmyWindow.GetUnitItem.GetStatusDescription],"
-					default_format = "#high"
-				}
-
-				text_single = {
-					visible = "[And(Army.IsMoving, Not(GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End )))]"
-					raw_text = "to [Army.GetMovementInfoForTooltip]."
-				}
-
-				container = {
-					name = "open_raid_button"
-					visible = "[Army.IsTakingRaidAction]"
-					datacontext = "[Army.GetRaid]"
-					using = raid_goto_template
-					blockoverride "key" {
-						shortcut = confirm
-					}
-					blockoverride "extra" {
-						text_single = {
-							raw_text = " hotkey Enter"
-						}
-					}
-				}
-
-				vbox = {
-					name = "open_siege_button"
-					visible = "[Army.IsSieging]"
-					datacontext = "[Army.GetLocation.GetSiege]"
-					using = siege_goto_template
-					blockoverride "key" {
-						shortcut = confirm
-					}
-					blockoverride "extra" {
-						text_single = {
-							raw_text = " hotkey Enter"
-						}
-					}
-				}
-
-				button_text = {
-					blockoverride "text" {
-						raw_text = "STOP_GATHERING"
-						align = left
-					}
-					visible = "[ArmyWindow.CanStopGathering]"
-					onclick = "[ArmyWindow.StopGathering]"
-				}
-
-				expand = { }
-			}
-
-			hbox = {
-			    layoutpolicy_horizontal = expanding
-				margin_left = 10
-
-				hbox = {
-					tooltip = "ARMY_ATTRITION_TT"
-					spacing = 3
-
-					visible = "[GreaterThan_CFixedPoint(Army.GetArmyAttritionPercentage, '(CFixedPoint)0')]"
-
-					text_single = {
-						raw_text = "Attrition:"
-					}
-
-					text_single = {
-						name = "attrition"
-						raw_text = "[Army.GetArmyAttritionPercentage|%0-]."
-					}
-				}
-
-				hbox = {
-					name = "supplies"
-					tooltip = "[Army.GetSupplyStateTooltip]"
-
-					text_single = {
-						raw_text = "Supply:"
-					}
-
-					text_single = {
-						raw_text = " "
-					}
-
-					text_single = {
-						name = "supply_text"
-						raw_text = "[ArmyWindow.GetCurrentSupply]"
-					}
-
-					text_single = {
-						visible = "[GreaterThan_int32(ArmyWindow.GetFullSupplyCapacity, ArmyWindow.GetCurrentSupply)]"
-						raw_text = " out of [ArmyWindow.GetFullSupplyCapacity]"
-					}
-
-					text_single = {
-						visible = "[EqualTo_int32(ArmyWindow.GetFullSupplyCapacity, ArmyWindow.GetCurrentSupply)]"
-						raw_text = ", full"
-					}
-
-					text_single = {
-						raw_text = ", decreasing"
-						visible = "[ArmyWindow.ShowSupplyTrend]"
-					}
-
-					dot = { }
-
-				}
-
-				space = { }
-
-				text_single = {
-					raw_text = "Supply limit here: [Army.GetLocation.GetSupplyLimitFor( GetPlayer )]."
-				}
-
-			    expand = { }
-			}
-
-			button_text = {
-				layoutpolicy_horizontal = expanding
-				blockoverride "text" {
-					raw_text = "Click to select only this unit."
-				}
-				onclick = "[ArmyWindow.SelectThisUnitOnly]"
-				visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
-			}
-
-			### selected Dark header row
-			button = {
-				name = "select_this_only"
-				visible = no# "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
-				layoutpolicy_horizontal = expanding
-				minimumsize = { 0 48  }
-				onclick = "[ArmyWindow.SelectThisUnitOnly]"
-
-				tooltip = "ARMY_SELECT_THIS_ONLY"
-
-				state = {
-					name = "army_change"
-					alpha = 0
-					duration = 0.2
-					next = "b"
-					using = Animation_Curve_Default
-				}
-
-				state = {
-					name = "b"
-					alpha = 1
-					duration = 0.2
-					using = Animation_Curve_Default
-				}
-
-				### name ###
-				hbox = {
-					margin_left = 10
-					margin_right = 20
-
-					spacing = 5
-
-					background = {
-						margin_left = 15
-						margin_right = -6
-						using = Background_Area_Dark
-					}
-
-					hbox = {
-						layoutpolicy_vertical = expanding
-						spacing = 5
-
-						text_single = {
-							name = "name"
-							text = "[Army.GetNameNoTooltip]"
-							align = left
-							using = Font_Size_Medium
-							max_width = 600
-						}
-
-						button_select_arrow = {
-							alwaystransparent = yes
-							size = { 20 20 }
-						}
-					}
-
-					expand = { }
-
-					hbox = {
-						name = "loot"
-						visible = "[Army.IsRaidArmy]"
-						tooltip = "ARMY_RAID_LOOT_TOOLTIP"
-
-						icon = {
-							name = "loot_icon"
-							size = { 35 35 }
-							texture = "gfx/interface/icons/icon_gold.dds"
-						}
-
-						text_single = {
-							name = "loot"
-							text = "[Army.GetRaidLoot|0]/[Army.GetLootCap|0]"
-						}
-					}
-
-					hbox = {
-						tooltip = "ARMY_ATTRITION_TT"
-
-						icon = {
-							texture = "gfx/interface/icons/map_icons/attrition_icon.dds"
-							size = { 35 35 }
-						}
-
-						text_single = {
-							name = "attrition"
-							text = "[Army.GetArmyAttritionPercentage|%0-]"
-						}
-					}
-
-					hbox = {
-						name = "supplies"
-						tooltip = "[Army.GetSupplyStateTooltip]"
-
-						icon = {
-							name = "supply_icon"
-							size = { 40 40 }
-							framesize = { 60 60 }
-							frame = "[ArmyWindow.GetSupplyStateFrame]"
-							texture = "gfx/interface/icons/icon_supplies.dds"
-						}
-
-						icon = {
-							name = "supply_trend_icon"
-							size = { 25 25 }
-							visible = "[ArmyWindow.ShowSupplyTrend]"
-							texture = "gfx/interface/icons/symbols/icon_supplies_trend.dds"
-						}
-
-						text_single = {
-							name = "supply_text"
-							text = "[ArmyWindow.GetCurrentSupply]/[ArmyWindow.GetFullSupplyCapacity]"
-							minimumsize = { 60 0 }
-							align = right
-						}
-					}
-				}
-			}
-
-			datacontext = "[Army.GetCommander]"
-
-			hbox = {
-				layoutpolicy_horizontal = expanding
-
-				#TODO
-				text_single = {
-					max_width = 580
-					margin_left = 10
-					fontsize_min = 14
-					# layoutpolicy_horizontal = expanding
-					raw_text = "In [Army.GetLocation.GetHolding.GetName][AddTextIf(Not(Army.GetLocation.GetTitle.IsCountyCapital), Concatenate(', ', Army.GetLocation.GetCounty.GetName))][AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.IsValid, ', ')][Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.GetBaseNameNoTierNoTooltip],"
-				}
-				text_single = {
-					raw_text = " [GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).ScriptValue('province_distance')|0] days"
-				}
-
-				text_single = {
-					raw_text = " [GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')] from you."
-				}
-
-				button_text = {
-					blockoverride "text" {
-						raw_text = "Pan camera, Shift Q."
-						align = left
-					}
-					onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
-					shortcut = map_mode_9
-				}
-				expand = { }
-			}
-
-			text_single = {
-				margin_left = 10
-				layoutpolicy_horizontal = expanding
-				visible = no#"[InDebugMode]"
-				raw_text = "X [ArmyWindow.GetArmy.GetLocation.MakeScope.Var('pos_x').GetValue|0], Y [ArmyWindow.GetArmy.GetLocation.MakeScope.Var('pos_y').GetValue|0]. "
-			}
-
-			widget = {
-				size = { 0 5 }
-			}
+			layoutpolicy_vertical = expanding
+			alwaystransparent = yes
+			visible = "[Not(GetVariableSystem.Exists('war_selector'))]"
 
 			vbox = {
-				visible = "[Not(GetVariableSystem.Exists('expand_forts'))]"
 				layoutpolicy_horizontal = expanding
+				alwaystransparent = no
+				layoutpolicy_vertical = expanding
 
-				margin_right = 5
-
-				### Info ###
-
-				hbox = {
+				# header
+				vbox = {
+					margin_left = 10
 					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
-					minimumsize = { 280 0 }
+					background = { using = Background_Area_Border_Solid }
 
-					background = {
-						name = "army_state_background"
-						texture = "[Army.GetArmyStatusIcon]"
-						margin_top = 5
-						margin_right = -5
-						using = Mask_Rough_Edges
-						fittype = centercrop
-						alpha = 0.2
-
-						modify_texture = {
-							texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
-							blend_mode = alphamultiply
-							rotate_uv = -90
-							mirror = vertical
-						}
+					error_button = {
+						shortcut = map_mode_6
+						layoutpolicy_horizontal = expanding
 					}
 
+					# multi unit header
 					vbox = {
-						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
+						visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
+						margin_left = 5
 
 						hbox = {
-							margin_left = 10
 							layoutpolicy_horizontal = expanding
-							soldiers_and_quality_big = {
-								datacontext = "[Army.GetComposition]"
+							margin_top = 2
+
+							text_single = {
+								align = left
+								visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
+								name = "strength"
+								tooltip = "[ArmyWindow.GetAllArmiesCompositionString]"
+								raw_text = "[GetDataModelSize(ArmyWindow.GetSelectedUnitItems)] armies selected, total soldiers: [ArmyWindow.GetTotalSoldierCountString]."
+							}
+
+							hbox = {
+								visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
+								button_text = {
+									blockoverride "text" {
+										raw_text = "Merge, hotkey G."
+									}
+									blockoverride "disabled" {
+										visible = "[Not(ArmyWindow.CanMerge)]"
+										tooltip = "[ArmyWindow.BuildMergeTooltip]"
+									}
+									onclick = "[ArmyWindow.MergeSelected]"
+									shortcut = "army_merge"
+								}
+
+								button_text = {
+									blockoverride "text" {
+										raw_text = "Reorganize, hotkey Y."
+									}
+									blockoverride "disabled" {
+										visible = "[Not(ArmyWindow.CanReorgSelected)]"
+										tooltip = "[ArmyWindow.BuildReorgTooltip]"
+									}
+									onclick = "[ArmyWindow.ToggleReorganizationWindow]"
+									enabled = "[ArmyWindow.CanReorgSelected]"
+									shortcut = map_mode_4
+								}
 							}
 
 							expand = { }
 						}
 
-						divider_light = {
-							layoutpolicy_horizontal = expanding
-						}
-
 						hbox = {
 							layoutpolicy_horizontal = expanding
-							layoutpolicy_vertical = expanding
-							margin_left = 10
+
+							text_single = {
+								raw_text = "Armies: "
+							}
+
+							dynamicgridbox = {
+								layoutpolicy_horizontal = expanding
+								name = "banner_items_grid"
+								datamodel = "[ArmyWindow.GetSelectedUnitItems]"
+								visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
+								datamodel_wrap = 8
+								flipdirection = yes
+
+								item = {
+									button_text = {
+										blockoverride "text" {
+											raw_text = "[SelectedUnitItem.GetArmy.GetSoldierCount|*],"
+											align = left
+										}
+										# blockoverride "extra" {
+										# 	text_single = {
+										# 		raw_text = " selected."
+										# 		visible = "[SelectedUnitItem.IsShown]"
+										# 	}
+										# }
+										onclick = "[PdxGuiTriggerAllAnimations('army_change')]"
+										onrightclick = "[SelectedUnitItem.OnRightClick]"
+										down = "[SelectedUnitItem.IsShown]"
+
+										state = {
+											name = _mouse_click
+											delay = 0.2
+											on_finish = "[SelectedUnitItem.OnClick]"
+										}
+										tooltip = "[SelectedUnitItem.GetTooltip]"
+										using = tooltip_ne
+									}
+								}
+							}
+						}
+						## Armies flag
+					}
+
+					# header
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						# name
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							spacing = 3
+
+							text_single = {
+								raw_text = "Selected:"
+								visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
+							}
+
+							text_single = {
+								name = "strength"
+								datacontext = "[Army.GetComposition]"
+								raw_text = "[ArmyComposition.GetSoldierCountString] men,"
+							}
+
+							hbox = {
+								spacing = 3
+								visible = "[Army.IsGathering]"
+
+								text_single = {
+									name = "status_text"
+									raw_text = "[ArmyWindow.GetUnitItem.GetStatusDescription],"
+									default_format = "#high"
+								}
+
+								button_text = {
+									blockoverride "text" {
+										raw_text = "STOP_GATHERING"
+									}
+									blockoverride "dot" {
+
+									}
+									visible = "[ArmyWindow.CanStopGathering]"
+									onclick = "[ArmyWindow.StopGathering]"
+								}
+							}
+
+							hbox = {
+								name = "loot"
+								visible = "[Army.IsRaidArmy]"
+								tooltip = "ARMY_RAID_LOOT_TOOLTIP"
+
+								text_single = {
+									raw_text = "Loot:"
+								}
+
+								text_single = {
+									raw_text = " "
+								}
+
+								text_single = {
+									name = "loot"
+									raw_text = "[Army.GetRaidLoot|0] out of [Army.GetLootCap|0]."
+								}
+							}
+
+							text_single = {
+								name = "name"
+								raw_text = "[Army.GetNameNoTooltip]."
+								max_width = 500
+							}
+
+							expand = { }
+						}
+
+						# order
+						hbox = {
+							spacing = 3
+							layoutpolicy_horizontal = expanding
+
+							visible = "[Not(Army.IsGathering)]"
+
+							text_single = {
+								name = "status_text"
+								raw_text = "[ArmyWindow.GetUnitItem.GetStatusDescription],"
+								default_format = "#high"
+							}
+
+							text_single = {
+								visible = "[And(Army.IsMoving, Not(GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End )))]"
+								raw_text = "to [Army.GetMovementInfoForTooltip]."
+							}
+
+							container = {
+								name = "open_raid_button"
+								visible = "[Army.IsTakingRaidAction]"
+								datacontext = "[Army.GetRaid]"
+								using = raid_goto_template
+								blockoverride "key" {
+									shortcut = confirm
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = " hotkey Enter"
+									}
+								}
+							}
 
 							vbox = {
-								layoutpolicy_vertical = expanding
+								name = "open_siege_button"
+								visible = "[Army.IsSieging]"
+								datacontext = "[Army.GetLocation.GetSiege]"
+								using = siege_goto_template
+								blockoverride "key" {
+									shortcut = confirm
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = " hotkey Enter"
+									}
+								}
+							}
 
-								### Hired Troops
+							button_text = {
+								blockoverride "text" {
+									raw_text = "STOP_GATHERING"
+									align = left
+								}
+								visible = "[ArmyWindow.CanStopGathering]"
+								onclick = "[ArmyWindow.StopGathering]"
+							}
+
+							expand = { }
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Or(Not(GetVariableSystem.Exists('army_tabs')), GetVariableSystem.Exists('mini_army'))]"
+							# supply
+							#TODO
+							hbox = {
+								visible = no#"[Not(GetVariableSystem.Exists('army_tabs'))]"
+							    layoutpolicy_horizontal = expanding
+
 								hbox = {
-									name = "hired_and_event_troops"
-									visible = no#"[Or( DataModelHasItems(ArmyWindow.GetHiredTroopItems), Army.HasEventTroops )]"
-									ignoreinvisible = yes
-									layoutpolicy_horizontal = expanding
+									tooltip = "ARMY_ATTRITION_TT"
+									spacing = 3
 
-									widget = {
-										visible = "[Army.HasEventTroops]"
-										size = { 150 25 }
-										layoutpolicy_horizontal = expanding
-										scissor = yes
-										text_single = {
-											raw_text = "ARMY_VIEW_ARMY_HAS_EVENT_TROOPS"
-										}
+									visible = "[GreaterThan_CFixedPoint(Army.GetArmyAttritionPercentage, '(CFixedPoint)0')]"
+
+									text_single = {
+										raw_text = "Attrition:"
 									}
 
-									overlappingitembox = {
-										size = { 350 42 }
-										visible = no
-										name = "hired_troops"
-										datamodel = "[ArmyWindow.GetHiredTroopItems]"
+									text_single = {
+										name = "attrition"
+										raw_text = "[Army.GetArmyAttritionPercentage|%0-]."
+									}
+								}
 
-										item = {
-											container = {
-												ignoreinvisible = yes
+								hbox = {
+									name = "supplies"
+									tooltip = "[Army.GetSupplyStateTooltip]"
 
-												container = {
-													name = "mercenary_item"
-													visible = "[HiredTroopItem.IsMercenaryCompany]"
-													datacontext = "[HiredTroopItem.GetMercenaryCompany]"
+									text_single = {
+										raw_text = "Supply:"
+									}
 
-													coa_title_tiny = {
-														name = "mercenary_coa"
-														datacontext = "[MercenaryCompany.GetTitle]"
-													}
-												}
+									text_single = {
+										raw_text = " "
+									}
 
-												container = {
-													name = "holy_order_item"
-													visible = "[HiredTroopItem.IsHolyOrder]"
-													datacontext = "[HiredTroopItem.GetHolyOrder]"
+									text_single = {
+										name = "supply_text"
+										raw_text = "[ArmyWindow.GetCurrentSupply]"
+									}
 
-													coa_title_tiny = {
-														name = "holy_order_coa"
-														datacontext = "[HolyOrder.GetTitle]"
-													}
-												}
-											}
+									text_single = {
+										visible = "[GreaterThan_int32(ArmyWindow.GetFullSupplyCapacity, ArmyWindow.GetCurrentSupply)]"
+										raw_text = " out of [ArmyWindow.GetFullSupplyCapacity]"
+									}
+
+									text_single = {
+										visible = "[EqualTo_int32(ArmyWindow.GetFullSupplyCapacity, ArmyWindow.GetCurrentSupply)]"
+										raw_text = ", full"
+									}
+
+									text_single = {
+										raw_text = ", decreasing"
+										visible = "[ArmyWindow.ShowSupplyTrend]"
+									}
+
+									dot = { }
+
+								}
+
+								space = { }
+
+								text_single = {
+									raw_text = "Supply limit here: [Army.GetLocation.GetSupplyLimitFor( GetPlayer )]."
+								}
+
+							    expand = { }
+							}
+
+							# select one unit
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "Click to select only this unit."
+								}
+								onclick = "[ArmyWindow.SelectThisUnitOnly]"
+								visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
+							}
+
+							# UNUSED?
+							button = {
+								name = "select_this_only"
+								visible = no# "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
+								layoutpolicy_horizontal = expanding
+								minimumsize = { 0 48  }
+								onclick = "[ArmyWindow.SelectThisUnitOnly]"
+
+								tooltip = "ARMY_SELECT_THIS_ONLY"
+
+								state = {
+									name = "army_change"
+									alpha = 0
+									duration = 0.2
+									next = "b"
+									using = Animation_Curve_Default
+								}
+
+								state = {
+									name = "b"
+									alpha = 1
+									duration = 0.2
+									using = Animation_Curve_Default
+								}
+
+								### name ###
+								hbox = {
+									margin_left = 10
+									margin_right = 20
+
+									spacing = 5
+
+									background = {
+										margin_left = 15
+										margin_right = -6
+										using = Background_Area_Dark
+									}
+
+									hbox = {
+										layoutpolicy_vertical = expanding
+										spacing = 5
+
+										text_single = {
+											name = "name"
+											text = "[Army.GetNameNoTooltip]"
+											align = left
+											using = Font_Size_Medium
+											max_width = 600
+										}
+
+										button_select_arrow = {
+											alwaystransparent = yes
+											size = { 20 20 }
 										}
 									}
 
 									expand = { }
+
+									hbox = {
+										name = "loot"
+										visible = "[Army.IsRaidArmy]"
+										tooltip = "ARMY_RAID_LOOT_TOOLTIP"
+
+										icon = {
+											name = "loot_icon"
+											size = { 35 35 }
+											texture = "gfx/interface/icons/icon_gold.dds"
+										}
+
+										text_single = {
+											name = "loot"
+											text = "[Army.GetRaidLoot|0]/[Army.GetLootCap|0]"
+										}
+									}
+
+									hbox = {
+										tooltip = "ARMY_ATTRITION_TT"
+
+										icon = {
+											texture = "gfx/interface/icons/map_icons/attrition_icon.dds"
+											size = { 35 35 }
+										}
+
+										text_single = {
+											name = "attrition"
+											text = "[Army.GetArmyAttritionPercentage|%0-]"
+										}
+									}
+
+									hbox = {
+										name = "supplies"
+										tooltip = "[Army.GetSupplyStateTooltip]"
+
+										icon = {
+											name = "supply_icon"
+											size = { 40 40 }
+											framesize = { 60 60 }
+											frame = "[ArmyWindow.GetSupplyStateFrame]"
+											texture = "gfx/interface/icons/icon_supplies.dds"
+										}
+
+										icon = {
+											name = "supply_trend_icon"
+											size = { 25 25 }
+											visible = "[ArmyWindow.ShowSupplyTrend]"
+											texture = "gfx/interface/icons/symbols/icon_supplies_trend.dds"
+										}
+
+										text_single = {
+											name = "supply_text"
+											text = "[ArmyWindow.GetCurrentSupply]/[ArmyWindow.GetFullSupplyCapacity]"
+											minimumsize = { 60 0 }
+											align = right
+										}
+									}
+								}
+							}
+
+							hbox = {
+							    layoutpolicy_horizontal = expanding
+
+								text_single = {
+									raw_text = "ArmyDistance"
 								}
 
-								### MAA ###
+								text_single = {
+									margin_left = 2
+									raw_text = "[GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')] from your capital."
+								}
+
+								fixedgridbox = {
+									datamodel = "[ArmyWindow.GetSelectedUnitItems]"
+									maxverticalslots = 1
+									addrow = 22
+									addcolumn = 200
+
+									item = {
+										button_text = {
+											blockoverride "text" {
+												raw_text = "Pan camera, Shift Q."
+												align = left
+											}
+											# onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+											onclick = "[SelectedUnitItem.OnRightClick]"
+											shortcut = map_mode_9
+										}
+									}
+								}
+
+							    expand = { }
+							}
+
+							# location
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								#TODO
+								text_single = {
+									raw_text = "In your capital."
+									visible = "[ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId)]"
+								}
+
+								hbox = {
+									visible = "[Not(ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId))]"
+									spacing = 3
+
+									text_single = {
+										visible = "[Army.GetLocation.GetCounty.GetTitle.IsValid]"
+										raw_text = "In [Army.GetLocation.GetCounty.GetTitle.GetNameNoTierNoTooltip],"
+									}
+
+									text_single = {
+										visible = "[Not(Army.IsEmbarked)]"
+										raw_text = "[Army.GetLocation.GetTerrain.GetName] of"
+									}
+
+									text_single = {
+										raw_text = "[Army.GetLocation.GetNameNoTooltip],"
+									}
+
+									text_single = {
+										visible = "[Not(Army.IsEmbarked)]"
+										raw_text = "[Army.GetLocation.GetCounty.GetTitle.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+									}
+									# text_single = {
+									# 	raw_text = "ArmyDistance"
+									# }
+									#
+									# text_single = {
+									# 	margin_left = 2
+									# 	raw_text = "[GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')] from your capital."
+									# }
+								}
+
+								expand = { }
+							}
+						}
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+					        raw_text = "Show details, E."
+					    }
+						visible = "[GetVariableSystem.Exists('mini_army')]"
+						onclick = "[GetVariableSystem.Toggle('mini_army')]"
+						shortcut = map_mode_1
+					}
+				}
+
+				# tabs
+				vbox = {
+					margin_left = 10
+					margin_bottom = 5
+					background = { using = Background_Area_Border_Solid }
+					layoutpolicy_horizontal = expanding
+					visible = "[Not(GetVariableSystem.Exists('mini_army'))]"
+
+					vbox = {
+						visible = "[Not(GetVariableSystem.Exists('army_tabs'))]"
+						layoutpolicy_horizontal = expanding
+						margin = { 0 5 }
+						spacing = 5
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "Overview."
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[GetPlayer.MakeScope.Var('closest_enemy').IsSet]"
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "Closest enemy,"
+							}
+
+							army_button_o = {
+								datacontext = "[GetPlayer.MakeScope.Var('closest_enemy').Army]"
+							}
+							#
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "No enemies detected."
+							visible = "[Not(GetPlayer.MakeScope.Var('closest_enemy').IsSet)]"
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[GetPlayer.MakeScope.Var('closest_hostile_county').IsSet]"
+							# visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('hostile_forts'))]"
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "Closest hostile county,"
+							}
+							#
+							hostile_fort_item = {
+								datacontext = "[GetPlayer.MakeScope.Var('closest_hostile_county').Province]"
+								# blockoverride "capital" {
+								# 	text_single = {
+								# 		raw_text = "Occupied by [Province.GetController.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+								# 		visible = "[Province.IsOccupied]"
+								# 	}
+								# }
+							}
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "No hostile counties."
+							# visible = "[IsDataModelEmpty(GetPlayer.MakeScope.GetList('hostile_forts'))]"
+							visible = "[Not(GetPlayer.MakeScope.Var('closest_hostile_county').IsSet)]"
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[GetPlayer.MakeScope.Var('enemy_capital').IsSet]"
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[AddTextIf( GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('your_wars')), '(int32)1'), 'Closest ')]Enemy capital,"
+							}
+
+							hostile_fort_item = {
+								datacontext = "[GetPlayer.MakeScope.Var('enemy_capital').Province]"
+								blockoverride "capital" {
+									text_single = {
+										raw_text = "Occupied by [Province.GetController.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+										visible = "[Province.IsOccupied]"
+									}
+								}
+							}
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "No enemy capital found."
+							visible = "[Not(GetPlayer.MakeScope.Var('enemy_capital').IsSet)]"
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Army.IsRaidArmy]"
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "Closest raid target,"
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "Richest county within 2 months,"
+							}
+						}
+
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						button_text = {
+							visible = "[GetVariableSystem.Exists('army_tabs')]"
+							layoutpolicy_horizontal = expanding
+							shortcut = close_window
+							onclick = "[GetVariableSystem.Clear('army_tabs')]"
+
+						    blockoverride "extra" {
+								text_single = {
+									raw_text = "Showing"
+								}
+
+								text_single = {
+									raw_text = " [Select_CString(Army.IsRaidArmy, 'raid', 'siege')]"
+									visible = "[GetVariableSystem.HasValue('army_tabs', 'targets')]"
+								}
+
+								text_single = {
+									raw_text = " [GetVariableSystem.Get('army_tabs')]"
+								}
+
+								container = {
+									visible = "[Or(GetVariableSystem.HasValue('army_tabs', 'targets'), GetVariableSystem.HasValue('army_tabs', 'armies'))]"
+
+									text_single = {
+										visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('your_wars')), '(int32)1')]"
+										raw_text = " in war against [GetPlayer.MakeScope.Var('selected_war').War.GetPrimaryPlayerEnemy.GetPrimaryTitle.GetNameNoTierNoTooltip]"
+									}
+								}
+
+								text_single = {
+									raw_text = ". Close, escape."
+								}
+						    }
+						}
+
+						# tabs
+						hbox = {
+							visible = "[Not(GetVariableSystem.Exists('army_tabs'))]"
+							layoutpolicy_horizontal = expanding
+							# alpha = "[Select_int32(GetVariableSystem.Exists('army_tabs'), '(int32)0', '(int32)1')]"
+							spacing = 3
+
+							text_single = {
+								raw_text = "Tabs:"
+							}
+
+							button_text = {
+								blockoverride "text" {
+									raw_text = "1, Army info."
+								}
+								onclick = "[GetVariableSystem.Set('army_tabs', 'info')]"
+								shortcut = speed_1
+							}
+
+							button_text = {
+								visible = "[GetPlayer.IsAtWar]"
+								blockoverride "text" {
+									raw_text = "2, [Select_CString(Army.IsRaidArmy, 'Raid', 'Siege')] targets."
+								}
+								onclick = "[GetVariableSystem.Set('army_tabs', 'targets')]"
+								onclick = "[GetScriptedGui('hostile_forts').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
+								shortcut = speed_2
+							}
+
+							button_text = {
+								blockoverride "text" {
+									raw_text = "3, other armies."
+								}
+								onclick = "[GetVariableSystem.Set('army_tabs', 'armies')]"
+								shortcut = speed_3
+							}
+
+							button_text = {
+								blockoverride "text" {
+									raw_text = "4, adjacent counties."
+								}
+								onclick = "[GetVariableSystem.Set('army_tabs', 'adjacent counties')]"
+								shortcut = speed_4
+							}
+
+							button_text = {
+								blockoverride "text" {
+									raw_text = "5, other holdings."
+								}
+								onclick = "[GetVariableSystem.Set('army_tabs', 'holdings')]"
+								shortcut = speed_5
+							}
+							margin_bottom = 5
+
+							expand = { }
+						}
+
+						# reload lists
+						button_text = {
+							# visible = "[GetVariableSystem.Exists('army_tabs')]"
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "Reload, Shift E."
+							}
+							shortcut = map_mode_11
+							onclick = "[PdxGuiTriggerAllAnimations('refresh_first_army')]"
+						}
+
+						# current war
+						vbox = {
+						    layoutpolicy_horizontal = expanding
+							visible = "[Or(GetVariableSystem.HasValue('army_tabs', 'targets'), GetVariableSystem.HasValue('army_tabs', 'armies'))]"
+
+
+							button_text = {
+								visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('your_wars')), '(int32)2')]"
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "Select another war."
+								}
+								onclick = "[GetVariableSystem.Toggle('war_selector')]"
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[EqualTo_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('your_wars')), '(int32)2')]"
+
+								datamodel = "[GetPlayer.MakeScope.GetList('your_wars')]"
+
+								item = {
+									button_text = {
+										datacontext = "[Scope.War]"
+										layoutpolicy_horizontal = expanding
+										visible = "[GetScriptedGui('select_war_army_view').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('this_war', Scope.War.MakeScope).End )]"
+										onclick = "[GetScriptedGui('select_war_army_view').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('this_war', Scope.War.MakeScope).End )]"
+										onclick = "[GetScriptedGui('hostile_forts').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
+										blockoverride "text" {
+											raw_text = "Change to war against [War.GetPrimaryPlayerEnemy.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+										}
+									}
+								}
+							}
+						}
+					}
+
+					# hide details
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[GetVariableSystem.Toggle('mini_army')]"
+					    blockoverride "text" {
+					        raw_text = "Hide all details, E."
+					    }
+						shortcut = map_mode_1
+					}
+				}
+
+				# lists
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					background = { using = Background_Area_Border_Solid }
+					visible = "[And(Not(GetVariableSystem.Exists('mini_army')), GetVariableSystem.Exists('army_tabs'))]"
+
+					scrollbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						blockoverride "scrollbox_content" {
+
+							vbox = {
+								visible = "[GetVariableSystem.HasValue('army_tabs', 'info')]"
+								layoutpolicy_horizontal = expanding
+
 								vbox = {
 									layoutpolicy_horizontal = expanding
+									datacontext = "[Army.GetCommander]"
+
+									### Info ###
 
 									hbox = {
 										layoutpolicy_horizontal = expanding
+										layoutpolicy_vertical = expanding
+										minimumsize = { 280 0 }
 
-										dynamicgridbox = {
-											name = "troops"
-											datamodel = "[ArmyWindow.GetTroopItems]"
-											datamodel_wrap = 4
-											flipdirection = yes
+										vbox = {
+											layoutpolicy_vertical = expanding
 
-											item = {
-												widget = {
-													tooltip = "ARMY_VIEW_TROOP_TT"
+											hbox = {
+												layoutpolicy_horizontal = expanding
+												spacing = 3
 
-													hbox = {
-														set_parent_size_to_minimum = yes
-														margin_left = 5
-														spacing = 3
+												soldiers_and_quality_big = {
+													datacontext = "[Army.GetComposition]"
+												}
+												text_single = {
+													visible = "[Army.HasEventTroops]"
+													raw_text = "Has special soldiers."
+												}
+												expand = { }
+											}
 
-														text_single = {
-															name = "men_at_arms_icon"
-															visible = "[TroopItem.IsMaa]"
-															raw_text = "[TroopItem.GetRegiment.GetRegiment.GetMAAType.GetName]:"
+											hbox = {
+												layoutpolicy_horizontal = expanding
+
+												dynamicgridbox = {
+													name = "troops"
+													datamodel = "[ArmyWindow.GetTroopItems]"
+													datamodel_wrap = 4
+													flipdirection = yes
+													#TODO might need to make verticl
+
+													item = {
+														flowcontainer = {
+															ignoreinvisible = yes
+															tooltip = "ARMY_VIEW_TROOP_TT"
+															margin_left = 5
+															spacing = 3
+
+															text_single = {
+																name = "men_at_arms_icon"
+																visible = "[TroopItem.IsMaa]"
+																raw_text = "[TroopItem.GetRegiment.GetRegiment.GetMAAType.GetName],"
+															}
+
+															text_single = {
+																raw_text = "Levies:"
+																visible = "[TroopItem.IsLevies]"
+															}
+
+															text_single = {
+																raw_text = "Knights:"
+																visible = "[TroopItem.IsKnight]"
+															}
+
+															text_single = {
+																layoutpolicy_horizontal = growing
+																raw_text = "[TroopItem.GetCount|*],"
+															}
 														}
+													}
+												}
 
-														text_single = {
-															raw_text = "Levies:"
-															visible = "[TroopItem.IsLevies]"
-														}
+												expand = { }
+											}
+										}
+										expand = { }
+									}
 
-														text_single = {
-															raw_text = "Knights:"
-															visible = "[TroopItem.IsKnight]"
-														}
+									### Commmander ###
+									hbox = {
+										# layoutpolicy_vertical = expanding
+										layoutpolicy_horizontal = expanding
+										margin_left = 5
 
-														text_single = {
-															layoutpolicy_horizontal = growing
-															raw_text = "[TroopItem.GetCount|*],"
+										button_text = {
+											visible = "[Not( Character.IsValid )]"
+											blockoverride "text" {
+												raw_text = "Assign commander."
+											}
+											onclick = "[ArmyWindow.ShowCommanders]"
+										}
+
+										flowcontainer = {
+											visible = "[Character.IsValid]"
+											direction = vertical
+											ignoreinvisible = yes
+
+											# text_single = {
+											# 	raw_text = "[Character.]"
+											# }
+											char_name = {
+												blockoverride "pre" {
+													text_single = {
+														margin_right = 3
+														raw_text = "Commander,"
+													}
+												}
+											}
+											text_single = {
+												tooltip = "[Character.GetCommanderAdvantageDesc]"
+												raw_text = "Advantage, [Character.GetCommanderAdvantage]."
+											}
+
+											flowcontainer = {
+												ignoreinvisible = yes
+												spacing = 2
+												text_single = {
+													visible = "[Not(IsDataModelEmpty(ArmyWindow.GetCommanderTraits))]"
+													raw_text = "[GetDataModelSize(ArmyWindow.GetCommanderTraits)] traits:"
+												}
+
+												dynamicgridbox = {
+													name = "commander_traits"
+													datamodel = "[ArmyWindow.GetCommanderTraits]"
+													flipdirection = yes
+													datamodel_wrap = 5
+
+													item = {
+														container = {
+															visible = "[Trait.IsValid]"
+
+															text_single = {
+																tooltip = "trait_tooltip"
+																margin_left = 5
+																raw_text = "[Trait.GetNameNoTooltip(Character.Self)],"
+															}
 														}
 													}
 												}
 											}
-										}
+											widget = {
+												size = { 0 3 }
+											}
 
-										# widget = {
-										# 	visible = "[Army.HasEventTroops]"
-										# 	size = { 150 24 }
-										# 	layoutpolicy_horizontal = expanding
-										# 	scissor = yes
-										# 	text_single = {
-										# 		margin_left = 4
-										# 		raw_text = "ARMY_VIEW_ARMY_HAS_EVENT_TROOPS"
-										# 	}
-										# }
+											button_text = {
+												blockoverride "text" {
+													raw_text = "Change commander"
+												}
+												blockoverride "extra" {
+													text_single = {
+														raw_text = ", disabled. Tooltip"
+														tooltip = "[ArmyWindow.GetShowCommandersTooltip]"
+														visible = "[Not(ArmyWindow.CanShowCommanders)]"
+													}
+													dot = { }
+												}
+												enabled = "[ArmyWindow.CanShowCommanders]"
+												onclick = "[ArmyWindow.ShowCommanders]"
+											}
+										}
 
 										expand = { }
 									}
 								}
 
-								expand = { }
-							}
+								vbox = {
+									name = "hundred"
+									margin = { 10 0 }
+									layoutpolicy_horizontal = expanding
 
-							expand = { }
-						}
-					}
+									state = {
+										name = "army_change"
+										alpha = 0.5
+										duration = 0.2
+										next = "b"
+										using = Animation_Curve_Default
+									}
 
-					expand = { }
-				}
+									state = {
+										name = "b"
+										alpha = 1
+										duration = 0.2
+										using = Animation_Curve_Default
+									}
 
-				### Commmander ###
-				hbox = {
-					# layoutpolicy_vertical = expanding
-					layoutpolicy_horizontal = expanding
-					margin_left = 5
+									### Manage buttons
 
-					button_text = {
-						visible = "[Not( Character.IsValid )]"
-						blockoverride "text" {
-							raw_text = "Assign commander."
-						}
-						onclick = "[ArmyWindow.ShowCommanders]"
-					}
-
-					flowcontainer = {
-						visible = "[Character.IsValid]"
-						direction = vertical
-						ignoreinvisible = yes
-
-						# text_single = {
-						# 	raw_text = "[Character.]"
-						# }
-						char_name = {
-							blockoverride "text" {
-								raw_text = "Commander: [Character.GetNameOrMeNoTooltip]."
-								# max_width = 250
-							}
-						}
-						text_single = {
-							tooltip = "[Character.GetCommanderAdvantageDesc]"
-							raw_text = "Advantage: [Character.GetCommanderAdvantage]."
-						}
-
-						flowcontainer = {
-							ignoreinvisible = yes
-							spacing = 2
-							text_single = {
-								visible = "[Not(IsDataModelEmpty(ArmyWindow.GetCommanderTraits))]"
-								raw_text = "[GetDataModelSize(ArmyWindow.GetCommanderTraits)] traits:"
-							}
-
-							dynamicgridbox = {
-								name = "commander_traits"
-								datamodel = "[ArmyWindow.GetCommanderTraits]"
-								flipdirection = yes
-								datamodel_wrap = 5
-
-								item = {
-									container = {
-										visible = "[Trait.IsValid]"
+									vbox = {
+										layoutpolicy_horizontal = expanding
 
 										text_single = {
-											tooltip = "trait_tooltip"
-											margin_left = 5
-											raw_text = "[Trait.GetNameNoTooltip(Character.Self)],"
+											name = "attached_to_name"
+											visible = "[ArmyWindow.IsAttachedToAnyUnit]"
+											datacontext = "[ArmyWindow.GetAttachedToArmy]"
+											text = "ATTACHED_ARMY_NAME"
+											align = left
+											max_width = 250
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+											spacing = 1
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+											    blockoverride "text" {
+											        raw_text = "Attach to army"
+													align = left
+											    }
+												blockoverride "disabled" {
+													visible = "[Not(ArmyWindow.CanAttachToAnyLocalUnit)]"
+													align = left
+												}
+												blockoverride "dot" { }
+
+												visible = "[And( Not( ArmyWindow.CanAttachToMultipleLocalUnits ), Not( ArmyWindow.IsAttachedToAnyUnit ) )]"
+												enabled = "[ArmyWindow.CanAttachToAnyLocalUnit]"
+												tooltip = "[ArmyWindow.BuildAttachToUnitTooltip]"
+												tooltip_enabled = "[Not(ArmyWindow.CanAttachToAnyLocalUnit)]"
+												onclick = "[ArmyWindow.AttachToLocalUnit]"
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												name = "attach_to_unit_window_button"
+												visible = "[And( ArmyWindow.CanAttachToMultipleLocalUnits, Not( ArmyWindow.IsAttachedToAnyUnit ) )]"
+												tooltip = "TOGGLE_ATTACH_TO_UNIT_WINDOW"
+												onclick = "[ArmyWindow.ToggleAttachToWindow]"
+											    blockoverride "text" {
+											        raw_text = "Attach to other"
+													align = left
+											    }
+												blockoverride "dot" { }
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												name = "detach_from_unit_button"
+												visible = "[ArmyWindow.IsAttachedToAnyUnit]"
+												enabled = "[ArmyWindow.CanDetachFromUnit]"
+												tooltip = "[ArmyWindow.BuildDetachFromUnitTooltip]"
+												onclick = "[ArmyWindow.DetachFromUnit]"
+											    blockoverride "text" {
+											        raw_text = "Detach unit"
+													align = left
+											    }
+												blockoverride "extra" {
+													text_single = {
+														raw_text = ", disabled"
+														visible = "[Not(ArmyWindow.CanDetachFromUnit)]"
+													}
+												}
+												blockoverride "dot" { }
+											}
+
+											button_checked_text = {
+												layoutpolicy_horizontal = expanding
+												visible = "[Army.IsRaidArmy]"
+												onclick = "[ArmyWindow.ToggleLooting]"
+												tooltip = "TOGGLE_LOOTER_STANCE"
+
+												blockoverride "visible"
+												{
+													visible = "[Not(Army.HasLooterStance)]"
+												}
+
+												blockoverride "text"
+												{
+													text = "AV_ALWAYS_RAID"
+												}
+											}
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+											spacing = 1
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												# name = "unit_custom_split_button"
+												enabled = "[ArmyWindow.CanSplitHalfSelected]"
+
+												onclick = "[ArmyWindow.SplitHalfSelected]"
+												shortcut = map_mode_5
+												tooltip = "[ArmyWindow.BuildSplitHalfTooltip]"
+												tooltip_enabled = "[Not(ArmyWindow.CanSplitHalfSelected)]"
+												blockoverride "text" {
+													raw_text = "Split in half"
+													align = left
+												}
+												blockoverride "disabled" {
+													visible = "[Not(ArmyWindow.CanSplitHalfSelected)]"
+													align = left
+												}
+												blockoverride "extra" {
+													text_single = {
+														raw_text = ", Control Q"
+														visible = "[ArmyWindow.CanSplitHalfSelected]"
+													}
+												}
+												blockoverride "dot" { }
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												name = "unit_custom_split_button"
+												enabled = "[ArmyWindow.CanSplitCustomSelected]"
+												tooltip_enabled = "[Not(ArmyWindow.CanSplitCustomSelected)]"
+												shortcut = map_mode_13
+
+												tooltip = "[ArmyWindow.BuildSplitCustomTooltip]"
+												onclick = "[ArmyWindow.ToggleSplitArmyWindow]"
+												blockoverride "text" {
+													raw_text = "Make new army"
+													align = left
+												}
+												blockoverride "disabled" {
+													visible = "[Not(ArmyWindow.CanSplitCustomSelected)]"
+													align = left
+												}
+												blockoverride "extra" {
+													text_single = {
+														visible = "[ArmyWindow.CanSplitCustomSelected]"
+														raw_text = ", Control W"
+													}
+												}
+												# shortcut = army_create_new
+												blockoverride "dot" { }
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												name = "split_off_button"
+												onclick = "[ArmyWindow.SplitSelectedHiredAndEventTroops]"
+												tooltip = "[ArmyWindow.BuildSplitHiredAndEventTroopsTooltip]"
+												enabled = "[ArmyWindow.CanSplitSelectedHiredAndEventTroops]"
+												using = tooltip_ne
+												tooltip_enabled = "[Not(ArmyWindow.CanSplitSelectedHiredAndEventTroops)]"
+
+												blockoverride "text" {
+													raw_text = "Split off hired"
+													align = left
+												}
+												blockoverride "disabled" {
+													align = left
+													visible = "[Not(ArmyWindow.CanSplitSelectedHiredAndEventTroops)]"
+												}
+												blockoverride "dot" { }
+											}
+
+											expand = { }
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												name = "split_for_siege_button"
+												visible = "[Army.IsSieging]"
+
+												onclick = "[ArmyWindow.SplitSelectedForSiege]"
+												tooltip = "[ArmyWindow.BuildSplitForSiegeTooltip]"
+												enabled = "[ArmyWindow.CanSplitSelectedForSiege]"
+												using = tooltip_ne
+
+												blockoverride "text" {
+													raw_text = "Station besiegers"
+													align = left
+												}
+												blockoverride "extra" {
+													text_single = {
+														raw_text = ", disabled"
+														visible = "[Not(ArmyWindow.CanSplitSelectedForSiege)]"
+													}
+												}
+												blockoverride "dot" { }
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												name = "toggle_raiding"
+												enabled = "[ArmyWindow.CanToggleRaiding]"
+												tooltip = "[ArmyWindow.BuildToggleRaidingTooltip]"
+												# tooltip_enabled = "[Not(ArmyWindow.CanToggleRaiding)]"
+												using = tooltip_ne
+												visible = "[GetPlayer.CanRaid]"
+												onclick = "[ArmyWindow.ToggleRaiding]"
+
+												blockoverride "text" {
+													raw_text = "Toggle raid"
+												}
+												blockoverride "extra" {
+													text_single = {
+														raw_text = ", disabled"
+														visible = "[Not(ArmyWindow.CanToggleRaiding)]"
+													}
+												}
+												blockoverride "dot" { }
+											}
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												name = "disband_button"
+												using = tooltip_ne
+
+												enabled = [ArmyWindow.CanDisband]
+												tooltip = [ArmyWindow.BuildDisbandTooltip]
+												onclick = [ArmyWindow.DisbandSelected]
+												shortcut = army_disband
+
+												blockoverride "text" {
+													raw_text = "Disband"
+													align = left
+												}
+												blockoverride "disabled" {
+													visible = "[Not(ArmyWindow.CanDisband)]"
+													align = left
+												}
+												blockoverride "extra" {
+													text_single = {
+														raw_text = ", hotkey J"
+														visible = "[ArmyWindow.CanDisband]"
+													}
+												}
+												blockoverride "dot" { }
+											}
+
+											expand = { }
+										}
+									}
+								}
+							}
+
+							# enemies
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[GetVariableSystem.HasValue('army_tabs', 'armies')]"
+
+								# battles
+								button_outliner_header = {
+									layoutpolicy_horizontal = expanding
+									visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('battles'))))]"
+
+
+									blockoverride "button_expand_frame"
+									{
+										frame = "[BoolTo2And1(GetVariableSystem.Exists('battles'))]"
+									}
+
+									blockoverride "oh_button"
+									{
+										onclick = "[GetVariableSystem.Toggle('battles')]"
+										oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+										clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+									}
+
+									blockoverride "oh_toggle_frame"
+									{
+										frame = "[BoolTo2And1(GetVariableSystem.Exists('battles'))]"
+									}
+
+									blockoverride "oh_name"
+									{
+										raw_text = "unit[AddTextIf(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('battles')), '(int32)1'), 's')] in battle[AddTextIf(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('battles')), '(int32)1'), 's')]"
+
+									}
+
+									blockoverride "extra" {
+										text_single = {
+											raw_text = ", click to [Select_CString(GetVariableSystem.Exists('battles'), 'show', 'hide')]"
+											# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('battles')), '(int32)1')]"
+										}
+									}
+
+									blockoverride "oh_count"
+									{
+										raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('battles'))]"
+									}
+									blockoverride "expanded"
+									{
+										frame = "[BoolTo2And1(GetVariableSystem.Exists('battles'))]"
+									}
+								}
+
+								# battles
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									margin = { 8 0 }
+									visible = "[And(And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('battles')))), Not(GetVariableSystem.Exists('battles')))]"
+
+									vbox = {
+										datamodel = "[GetPlayer.MakeScope.GetList('your_armies')]"
+										layoutpolicy_horizontal = expanding
+										spacing = -2
+
+										item = {
+											army_button_o = {
+												visible = "[GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End )]"
+												blockoverride "war_filter" {
+												}
+												blockoverride "click" {
+													# onclick = "[UnitItem.SelectAndPanUnit]"
+													# # onclick = "[UnitItem.PanToUnit]"
+													# onrightclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+													# # onrightclick = "[UnitItem.PanToUnit]"
+													# down = "[UnitItem.IsSelected]"
+													# button_ignore = none
+													onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+												}
+												blockoverride "hide_at_capital" {
+													visible = "[Not(ObjectsEqual(ArmyWindow.GetArmy.GetLocation.GetId, Scope.Army.GetLocation.GetId))]"
+												}
+												blockoverride "selected" {
+													text_single = {
+														raw_text = "Selected."
+														visible = "[ObjectsEqual(ArmyWindow.GetArmy.GetArmyId, Scope.Army.GetArmyId)]"
+													}
+												}
+												blockoverride "distance" {
+													datacontext = "[ArmyWindow.GetArmy.GetLocation]"
+													text_single = {
+														raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('saved_distance', MakeScopeValue(GuiScope.SetRoot(Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).ScriptValue('province_distance'))).Custom('ProvinceDistance')]"
+													}
+
+													text_single = {
+														raw_text = " [GuiScope.SetRoot( Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')],"
+													}
+												}
+											}
+										}
+									}
+
+									vbox = {
+										datamodel = "[GetPlayer.MakeScope.GetList('allied_units')]"
+										layoutpolicy_horizontal = expanding
+										spacing = -2
+
+										item = {
+											army_button_o = {
+												blockoverride "war_filter" {
+												}
+												visible = "[GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End )]"
+												blockoverride "fighting" {
+												}
+											}
+										}
+									}
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('your_armies')), '(int32)1')]"
+									# your own
+									button_outliner_header = {
+										visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('your_armies'))))]"
+										layoutpolicy_horizontal = expanding
+
+										blockoverride "button_expand_frame"
+										{
+											frame = "[BoolTo2And1(GetVariableSystem.Exists('your_armies'))]"
+										}
+
+										blockoverride "oh_button"
+										{
+											onclick = "[GetVariableSystem.Toggle('your_armies')]"
+											oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+											clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+										}
+
+										blockoverride "oh_toggle_frame"
+										{
+											frame = "[BoolTo2And1(GetVariableSystem.Exists('your_armies'))]"
+										}
+
+										blockoverride "oh_name"
+										{
+											raw_text = ""
+										}
+
+										blockoverride "extra" {
+											# text_single = {
+											# 	raw_text = ", [GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('your_armies')] total"
+											# 	visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('your_armies')), '(int32)1')]"
+											# }
+											text_single = {
+												raw_text = "Your"
+											}
+
+											space = { }
+
+											text_single = {
+												visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('your_armies')), '(int32)1')]"
+												raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('your_armies'))]"
+											}
+											text_single = {
+												raw_text = "army"
+												visible = "[EqualTo_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('your_armies')), '(int32)1')]"
+											}
+											text_single = {
+												raw_text = " armies"
+												visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('your_armies')), '(int32)1')]"
+											}
+											text_single = {
+												raw_text = ", click to [Select_CString(GetVariableSystem.Exists('your_armies'), 'show', 'hide')]"
+												# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside')), '(int32)1')]"
+											}
+										}
+
+										blockoverride "oh_count"
+										{
+											# raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('your_armies'))]"
+										}
+										blockoverride "expanded"
+										{
+											frame = "[BoolTo2And1(GetVariableSystem.Exists('your_armies'))]"
+										}
+									}
+
+									# your armies
+									vbox = {
+										datamodel = "[GetPlayer.MakeScope.GetList('your_armies')]"
+										visible = "[And(Not(GetVariableSystem.Exists('your_armies')), GetPlayer.IsValid)]"
+										layoutpolicy_horizontal = expanding
+										margin = { 8 0 }
+										spacing = -2
+
+										item = {
+											army_button_o = {
+												visible = "[Not(GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End ))]"
+												blockoverride "war_filter" {
+												}
+												blockoverride "click" {
+													# onclick = "[UnitItem.SelectAndPanUnit]"
+													# # onclick = "[UnitItem.PanToUnit]"
+													# onrightclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+													# # onrightclick = "[UnitItem.PanToUnit]"
+													# down = "[UnitItem.IsSelected]"
+													# button_ignore = none
+													onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+												}
+												#TODO copy to other places
+												blockoverride "same_province" {
+													text_single = {
+														raw_text = " Same location."
+														visible = "[ObjectsEqual(ArmyWindow.GetArmy.GetLocation.GetId, Scope.Army.GetLocation.GetId)]"
+													}
+												}
+												blockoverride "hide_at_capital" {
+													visible = "[Not(ObjectsEqual(ArmyWindow.GetArmy.GetLocation.GetId, Scope.Army.GetLocation.GetId))]"
+												}
+												blockoverride "selected" {
+													text_single = {
+														raw_text = "Selected."
+														visible = "[ObjectsEqual(ArmyWindow.GetArmy.GetArmyId, Scope.Army.GetArmyId)]"
+													}
+												}
+												blockoverride "distance" {
+													datacontext = "[ArmyWindow.GetArmy.GetLocation]"
+													text_single = {
+														raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('saved_distance', MakeScopeValue(GuiScope.SetRoot(Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).ScriptValue('province_distance'))).Custom('ProvinceDistance')]"
+													}
+
+													text_single = {
+														raw_text = " [GuiScope.SetRoot( Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')],"
+													}
+												}
+											}
+										}
+									}
+								}
+
+								outliner_armies = {
+									blockoverride "hide_at_capital" {
+										visible = "[Not(ObjectsEqual(ArmyWindow.GetArmy.GetLocation.GetId, Scope.Army.GetLocation.GetId))]"
+									}
+									blockoverride "distance" {
+										datacontext = "[ArmyWindow.GetArmy.GetLocation]"
+										text_single = {
+											raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('saved_distance', MakeScopeValue(GuiScope.SetRoot(Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).ScriptValue('province_distance'))).Custom('ProvinceDistance')]"
+										}
+
+										text_single = {
+											raw_text = " [GuiScope.SetRoot( Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')],"
+										}
+									}
+								}
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[GetVariableSystem.HasValue('army_tabs', 'targets')]"
+
+								vbox = {
+									visible = "[Not(Army.IsRaidArmy)]"
+									layoutpolicy_horizontal = expanding
+									alwaystransparent = no
+									background = { using = Background_Area_Border_Solid margin = { 20 20 } }
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "Enemy capital."
+									}
+
+									hostile_fort_item = {
+										datacontext = "[GetPlayer.MakeScope.Var('enemy_capital').Province]"
+										blockoverride "capital" {
+											text_single = {
+												raw_text = "Occupied by [Province.GetController.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+												visible = "[Province.IsOccupied]"
+											}
+										}
+									}
+
+									# text_single = {
+									# 	layoutpolicy_horizontal = expanding
+									# 	raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('path_to_capital'))] county away."
+									# }
+									#
+									# vbox = {
+									# 	layoutpolicy_horizontal = expanding
+									# 	datamodel = "[GetPlayer.MakeScope.GetList('path_to_capital')]"
+									#
+									# 	item = {
+									# 		hostile_fort_item = { }
+									# 	}
+									# }
+
+									button_text = {
+										visible = no
+										blockoverride "text" {
+											raw_text = "View adjacent counties."
+										}
+									}
+
+									text_single = {
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('closest_counties'))]"
+										layoutpolicy_horizontal = expanding
+										raw_text = "Your closest county to it:"
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										datamodel = "[GetPlayer.MakeScope.GetList('closest_counties')]"
+
+										item = {
+											friendly_county_item = {
+												datacontext = "[Scope.GetProvince]"
+												layoutpolicy_horizontal = expanding
+
+												blockoverride "extra2" {
+													text_single = {
+														raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope.Var('enemy_capital').Province.MakeScope).AddScope('second', Province.MakeScope).ScriptValue('square_root_of_distance_2')|0] days"
+													}
+													text_single = {
+														raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope.Var('enemy_capital').Province.MakeScope).AddScope('second', Province.MakeScope).Custom('province_direction')|0] from [GetPlayer.MakeScope.Var('enemy_capital').Province.GetCoATitle.GetNameNoTierNoTooltip]."
+													}
+												}
+											}
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('hostile_war_targets'))]"
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												align = left
+												raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostile_war_targets'))] war goals. Click to [Select_CString(GetVariableSystem.Exists('war_targets'), 'Show', 'Hide')]."
+											}
+											onclick = "[GetVariableSystem.Toggle('war_targets')]"
+										}
+
+										vbox = {
+											visible = "[Not(GetVariableSystem.Exists('war_targets'))]"
+											layoutpolicy_horizontal = expanding
+											datamodel = "[GetPlayer.MakeScope.GetList('hostile_war_targets')]"
+
+											item = {
+												hostile_fort_item = { }
+											}
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('captured_war_targets'))]"
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												align = left
+												raw_text = "You control [GetDataModelSize(GetPlayer.MakeScope.GetList('captured_war_targets'))] war targets. Click to [Select_CString(GetVariableSystem.Exists('captured_war_targets'), 'Hide', 'Show')]."
+											}
+											onclick = "[GetVariableSystem.Toggle('captured_war_targets')]"
+										}
+
+										vbox = {
+											visible = "[GetVariableSystem.Exists('captured_war_targets')]"
+											layoutpolicy_horizontal = expanding
+											datamodel = "[GetPlayer.MakeScope.GetList('captured_war_targets')]"
+
+											item = {
+												hostile_fort_item = {
+													blockoverride "border" { }
+												}
+											}
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('adjacent_hostile_forts'))]"
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_hostile_forts'))] counties which can be safely entered."
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+											datamodel = "[GetPlayer.MakeScope.GetList('adjacent_hostile_forts')]"
+
+											item = {
+												hostile_fort_item = {
+													blockoverride "border" {
+
+													}
+												}
+											}
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts')))]"
+
+										text_single = {
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts'))] adjacent across water."
+
+											layoutpolicy_horizontal = expanding
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+											datamodel = "[GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts')]"
+
+											item = {
+												hostile_fort_item = { }
+											}
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('your_hostile_forts')))]"
+										text_single = {
+											background = { using = Background_Area_Dark }
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('your_hostile_forts'))] of your own forts captured by enemies."
+
+											layoutpolicy_horizontal = expanding
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+											datamodel = "[GetPlayer.MakeScope.GetList('your_hostile_forts')]"
+
+											item = {
+												hostile_fort_item = {
+													blockoverride "controller" { }
+												}
+											}
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('personal_forts')))]"
+
+										text_single = {
+											background = { using = Background_Area_Dark }
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('personal_forts'))] personal enemy forts."
+
+											layoutpolicy_horizontal = expanding
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+											datamodel = "[GetPlayer.MakeScope.GetList('personal_forts')]"
+
+											item = {
+												hostile_fort_item = { }
+											}
+										}
+									}
+
+									widget = {
+										size = { 0 5 }
+									}
+
+									vbox = {
+										visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('hostile_forts')))]"
+										layoutpolicy_horizontal = expanding
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostile_forts'))] Other hostile forts. Click to [Select_CString(GetVariableSystem.Exists('other_hostile_forts'), 'Hide', 'Show')]."
+											}
+											onclick = "[GetVariableSystem.Toggle('other_hostile_forts')]"
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+											visible = "[GetVariableSystem.Exists('other_hostile_forts')]"
+											datamodel = "[GetPlayer.MakeScope.GetList('hostile_forts')]"
+
+											item = {
+												hostile_fort_item = {
+													blockoverride "controller" { }
+												}
+											}
+										}
+									}
+								}
+
+								vbox = {
+									visible = "[Army.IsRaidArmy]"
+									layoutpolicy_horizontal = expanding
+
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										blockoverride "text" {
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('raid_targets'))] raid targets, reload with Control E."
+										}
+										onclick = "[GetScriptedGui('raid_targets').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
+										shortcut = map_mode_12
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+
+										datamodel = "[GetPlayer.MakeScope.GetList('raid_targets')]"
+
+										item = {
+											raid_target_item = {
+												visible = "[GreaterThan_int32(Army.GetSoldierCount, Scope.GetProvince.GetHolding.GetCurrentGarrisonSize)]"
+											}
+										}
+									}
+
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										blockoverride "text" {
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('strong_raid_targets'))] targets whose owners are stronger than you, be careful."
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+
+										datamodel = "[GetPlayer.MakeScope.GetList('strong_raid_targets')]"
+
+										item = {
+											raid_target_item = {
+											}
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										margin_top = 5
+
+										datamodel = "[GetPlayer.MakeScope.GetList('raid_targets')]"
+
+										item = {
+											raid_target_item = {
+												visible = "[Not(GreaterThan_int32(Army.GetSoldierCount, Scope.GetProvince.GetHolding.GetCurrentGarrisonSize))]"
+												blockoverride "garrison" {
+													visible = "[Not(Army.IsGathering)]"
+												}
+											}
+										}
+									}
+
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('looted_raid_targets'))]"
+										blockoverride "text" {
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('looted_raid_targets'))] looted raid targets. Click to [Select_CString(GetVariableSystem.Exists('looted_raid_targets'), 'Hide', 'Show')]"
+										}
+										onclick = "[GetVariableSystem.Toggle('looted_raid_targets')]"
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										visible = "[GetVariableSystem.Exists('looted_raid_targets')]"
+
+										datamodel = "[GetPlayer.MakeScope.GetList('looted_raid_targets')]"
+
+										item = {
+											raid_target_item = {
+												visible = "[Not(GreaterThan_int32(Army.GetSoldierCount, Scope.GetProvince.GetHolding.GetCurrentGarrisonSize))]"
+												blockoverride "garrison" {
+													visible = "[Not(Army.IsGathering)]"
+												}
+											}
 										}
 									}
 								}
 							}
 						}
-						widget = {
-							size = { 0 3 }
-						}
-
-						button_text = {
-							blockoverride "text" {
-								raw_text = "Change commander"
-							}
-							blockoverride "extra" {
-								text_single = {
-									raw_text = ", disabled. Tooltip"
-									tooltip = "[ArmyWindow.GetShowCommandersTooltip]"
-									visible = "[Not(ArmyWindow.CanShowCommanders)]"
-								}
-								dot = { }
-							}
-							enabled = "[ArmyWindow.CanShowCommanders]"
-							onclick = "[ArmyWindow.ShowCommanders]"
-						}
 					}
-
-					expand = { }
 				}
+
+				expand = { }
+
 			}
+
+
+			expand = { }
+		}
+
+		# war selector
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			margin_left = 10
+
+			visible = "[GetVariableSystem.Exists('war_selector')]"
 
 			vbox = {
-				visible = "[Not(GetVariableSystem.Exists('expand_forts'))]"
-				name = "hundred"
-				margin = { 10 0 }
+				background = { using = Background_Area_Border_Solid margin = { 10 10 } }
 				layoutpolicy_horizontal = expanding
+				datamodel = "[GetPlayer.MakeScope.GetList('your_wars')]"
 
-				state = {
-					name = "army_change"
-					alpha = 0.5
-					duration = 0.2
-					next = "b"
-					using = Animation_Curve_Default
-				}
-
-				state = {
-					name = "b"
-					alpha = 1
-					duration = 0.2
-					using = Animation_Curve_Default
-				}
-
-				### Manage buttons
-
-				vbox = {
+				text_single = {
 					layoutpolicy_horizontal = expanding
-
-					text_single = {
-						name = "attached_to_name"
-						visible = "[ArmyWindow.IsAttachedToAnyUnit]"
-						datacontext = "[ArmyWindow.GetAttachedToArmy]"
-						text = "ATTACHED_ARMY_NAME"
-						align = left
-						max_width = 250
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						spacing = 1
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-						    blockoverride "text" {
-						        raw_text = "Attach to army"
-								align = left
-						    }
-							blockoverride "disabled" {
-								visible = "[Not(ArmyWindow.CanAttachToAnyLocalUnit)]"
-								align = left
-							}
-							blockoverride "dot" { }
-
-							visible = "[And( Not( ArmyWindow.CanAttachToMultipleLocalUnits ), Not( ArmyWindow.IsAttachedToAnyUnit ) )]"
-							enabled = "[ArmyWindow.CanAttachToAnyLocalUnit]"
-							tooltip = "[ArmyWindow.BuildAttachToUnitTooltip]"
-							tooltip_enabled = "[Not(ArmyWindow.CanAttachToAnyLocalUnit)]"
-							onclick = "[ArmyWindow.AttachToLocalUnit]"
-						}
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							name = "attach_to_unit_window_button"
-							visible = "[And( ArmyWindow.CanAttachToMultipleLocalUnits, Not( ArmyWindow.IsAttachedToAnyUnit ) )]"
-							tooltip = "TOGGLE_ATTACH_TO_UNIT_WINDOW"
-							onclick = "[ArmyWindow.ToggleAttachToWindow]"
-						    blockoverride "text" {
-						        raw_text = "Attach to other"
-								align = left
-						    }
-							blockoverride "dot" { }
-						}
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							name = "detach_from_unit_button"
-							visible = "[ArmyWindow.IsAttachedToAnyUnit]"
-							enabled = "[ArmyWindow.CanDetachFromUnit]"
-							tooltip = "[ArmyWindow.BuildDetachFromUnitTooltip]"
-							onclick = "[ArmyWindow.DetachFromUnit]"
-						    blockoverride "text" {
-						        raw_text = "Detach unit"
-								align = left
-						    }
-							blockoverride "extra" {
-								text_single = {
-									raw_text = ", disabled"
-									visible = "[Not(ArmyWindow.CanDetachFromUnit)]"
-								}
-							}
-							blockoverride "dot" { }
-						}
-
-						button_checked_text = {
-							layoutpolicy_horizontal = expanding
-							visible = "[Army.IsRaidArmy]"
-							onclick = "[ArmyWindow.ToggleLooting]"
-							tooltip = "TOGGLE_LOOTER_STANCE"
-
-							blockoverride "visible"
-							{
-								visible = "[Not(Army.HasLooterStance)]"
-							}
-
-							blockoverride "text"
-							{
-								text = "AV_ALWAYS_RAID"
-							}
-						}
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						spacing = 1
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							# name = "unit_custom_split_button"
-							enabled = "[ArmyWindow.CanSplitHalfSelected]"
-
-							onclick = "[ArmyWindow.SplitHalfSelected]"
-							shortcut = map_mode_5
-							tooltip = "[ArmyWindow.BuildSplitHalfTooltip]"
-							tooltip_enabled = "[Not(ArmyWindow.CanSplitHalfSelected)]"
-							blockoverride "text" {
-								raw_text = "Split in half"
-								align = left
-							}
-							blockoverride "disabled" {
-								visible = "[Not(ArmyWindow.CanSplitHalfSelected)]"
-								align = left
-							}
-							blockoverride "extra" {
-								text_single = {
-									raw_text = ", Control Q"
-									visible = "[ArmyWindow.CanSplitHalfSelected]"
-								}
-							}
-							blockoverride "dot" { }
-						}
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							name = "unit_custom_split_button"
-							enabled = "[ArmyWindow.CanSplitCustomSelected]"
-							tooltip_enabled = "[Not(ArmyWindow.CanSplitCustomSelected)]"
-							shortcut = map_mode_13
-
-							tooltip = "[ArmyWindow.BuildSplitCustomTooltip]"
-							onclick = "[ArmyWindow.ToggleSplitArmyWindow]"
-							blockoverride "text" {
-								raw_text = "Make new army"
-								align = left
-							}
-							blockoverride "disabled" {
-								visible = "[Not(ArmyWindow.CanSplitCustomSelected)]"
-								align = left
-							}
-							blockoverride "extra" {
-								text_single = {
-									visible = "[ArmyWindow.CanSplitCustomSelected]"
-									raw_text = ", Control W"
-								}
-							}
-							# shortcut = army_create_new
-							blockoverride "dot" { }
-						}
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							name = "split_off_button"
-							onclick = "[ArmyWindow.SplitSelectedHiredAndEventTroops]"
-							tooltip = "[ArmyWindow.BuildSplitHiredAndEventTroopsTooltip]"
-							enabled = "[ArmyWindow.CanSplitSelectedHiredAndEventTroops]"
-							using = tooltip_ne
-							tooltip_enabled = "[Not(ArmyWindow.CanSplitSelectedHiredAndEventTroops)]"
-
-							blockoverride "text" {
-								raw_text = "Split off hired"
-								align = left
-							}
-							blockoverride "disabled" {
-								align = left
-								visible = "[Not(ArmyWindow.CanSplitSelectedHiredAndEventTroops)]"
-							}
-							blockoverride "dot" { }
-						}
-
-						expand = { }
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							name = "split_for_siege_button"
-							visible = "[Army.IsSieging]"
-
-							onclick = "[ArmyWindow.SplitSelectedForSiege]"
-							tooltip = "[ArmyWindow.BuildSplitForSiegeTooltip]"
-							enabled = "[ArmyWindow.CanSplitSelectedForSiege]"
-							using = tooltip_ne
-
-							blockoverride "text" {
-								raw_text = "Station besiegers"
-								align = left
-							}
-							blockoverride "extra" {
-								text_single = {
-									raw_text = ", disabled"
-									visible = "[Not(ArmyWindow.CanSplitSelectedForSiege)]"
-								}
-							}
-							blockoverride "dot" { }
-						}
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							name = "toggle_raiding"
-							enabled = "[ArmyWindow.CanToggleRaiding]"
-							tooltip = "[ArmyWindow.BuildToggleRaidingTooltip]"
-							using = tooltip_ne
-							visible = "[GetPlayer.CanRaid]"
-							onclick = "[ArmyWindow.ToggleRaiding]"
-
-							blockoverride "text" {
-								raw_text = "Toggle raid."
-								align = left
-							}
-							blockoverride "extra" {
-								text_single = {
-									raw_text = ", disabled"
-									visible = "[Not(ArmyWindow.CanToggleRaiding)]"
-								}
-							}
-							blockoverride "dot" { }
-						}
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							name = "disband_button"
-							using = tooltip_ne
-
-							enabled = [ArmyWindow.CanDisband]
-							tooltip = [ArmyWindow.BuildDisbandTooltip]
-							onclick = [ArmyWindow.DisbandSelected]
-							shortcut = army_disband
-
-							blockoverride "text" {
-								raw_text = "Disband"
-								align = left
-							}
-							blockoverride "disabled" {
-								visible = "[Not(ArmyWindow.CanDisband)]"
-								align = left
-							}
-							blockoverride "extra" {
-								text_single = {
-									raw_text = ", hotkey J"
-									visible = "[ArmyWindow.CanDisband]"
-								}
-							}
-							blockoverride "dot" { }
-						}
-
-						expand = { }
-					}
+					raw_text = "Select a war:"
 				}
-			}
 
-			expand = { }
-		}
-
-		# button_text = {
-		#     blockoverride "text" {
-		#         raw_text = "Close expanded fort view, hotkey Escape."
-		#     }
-		# 	visible = "[And(GetVariableSystem.Exists('expand_forts'), Not(GetPlayer.IsAtWar))]"
-		# 	onclick = "[GetVariableSystem.Clear('expand_forts')]"
-		# }
-
-		widget = {
-			size = { 0 5 }
-		}
-
-		hbox = {
-			layoutpolicy_horizontal = expanding
-			spacing = 3
-
-			button_text = {
-				# visible = "[Not(GetVariableSystem.Exists('expand_forts'))]"
-				blockoverride "text" {
-					raw_text = "[Select_CString(GetVariableSystem.Exists('expand_forts'), 'Show', 'Hide')] army details, hotkey E."
-				}
-				onclick = "[GetVariableSystem.Toggle('expand_forts')]"
-				onclick = "[GetScriptedGui('hostile_forts').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
-				onclick = "[GetScriptedGui('raid_targets').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
-				shortcut = map_mode_1
-			}
-
-			button_text = {
-				visible = "[GetPlayer.IsAtWar]"
-				blockoverride "text" {
-					raw_text = "[Select_CString(GetVariableSystem.Exists('hide_forts'), 'Show', 'Hide')] forts, F."
-				}
-				onclick = "[GetVariableSystem.Toggle('hide_forts')]"
-				onclick = "[GetScriptedGui('hostile_forts').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
-				shortcut = army_split_half
-			}
-
-			button_text = {
-				visible = "[Army.IsRaidArmy]"
-				blockoverride "text" {
-					raw_text = "[Select_CString(GetVariableSystem.Exists('hide_raid_targets'), 'Show', 'Hide')] raid targets, T."
-				}
-				onclick = "[GetVariableSystem.Toggle('hide_raid_targets')]"
-				onclick = "[GetScriptedGui('raid_targets').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
-				shortcut = map_mode_2
-			}
-
-			expand = { }
-		}
-
-		vbox = {
-			visible = "[GetPlayer.IsAtWar]"
-			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
-
-			scrollbox = {
-				visible = "[Not(GetVariableSystem.Exists('hide_forts'))]"
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-				# minimumsize = { 500 500 }
-
-				blockoverride "scrollbox_content" {
-
-					vbox = {
-						# visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('adjacent_hostile_forts')))]"
+				item = {
+					button_text = {
+						datacontext = "[Scope.War]"
 						layoutpolicy_horizontal = expanding
-
-						# button = {
-						# 	visible = "[GetVariableSystem.Exists('expand_forts')]"
-						# 	onclick = "[GetVariableSystem.Clear('expand_forts')]"
-						# 	shortcut = "close_window"
-						# 	# shortcut = map_mode_1
-						# }
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							margin_top = 5
-
-
-							button_text = {
-								blockoverride "pre" {
-									# text_single = {
-									# 	visible = "[Not(GetVariableSystem.Exists('expand_forts'))]"
-									# 	raw_text = "Capture enemy forts to gain warscore,"
-									# 	align = left
-									# 	margin_right = 3
-									#
-									# }
-								}
-								blockoverride "text" {
-									raw_text = "Reload forts, Control E."
-								}
-								onclick = "[GetScriptedGui('save_army_position').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Army.MakeScope).End )]"
-								onclick = "[GetScriptedGui('hostile_forts').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
-								onclick = "[GetScriptedGui('raid_targets').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
-								shortcut = map_mode_12
-							}
-
-							expand = { }
-						}
-
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							visible = "[And(Not(GetVariableSystem.Exists('expand_forts')), GetPlayer.MakeScope.Var('army_position').IsSet)]"
-							raw_text = "Forts are sorted by distance from the army."
-						}
-
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							visible = "[And(Not(GetVariableSystem.Exists('expand_forts')), Not(GetPlayer.MakeScope.Var('army_position').IsSet))]"
-							raw_text = "Forts are sorted by distance from the capital while you're at sea."
-						}
-
-						# text_single = {
-						# 	raw_text = "Select where to send the army."
-						# 	layoutpolicy_horizontal = expanding
-						# }
-
-						#TODO
-
-						# text_single = {
-						# 	layoutpolicy_horizontal = expanding
-						# 	visible = "[Not(GetVariableSystem.Exists('expand_forts'))]"
-						# 	raw_text = "Avoid walking through hostile forts, as you will lose men. Prefer those bordering your land."
-						# }
-
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							datamodel = "[GetPlayer.MakeScope.GetList('enemy_capitals')]"
-
-							item = {
-								hostile_fort_item = {
-									blockoverride "capital" {
-										text_single = {
-											raw_text = "Enemy capital,"
-										}
-										text_single = {
-											raw_text = "occupied,"
-											visible = "[Province.IsOccupied]"
-										}
-									}
-								}
+						# visible = "[GetScriptedGui('select_war_army_view').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('this_war', Scope.War.MakeScope).End )]"
+						onclick = "[GetScriptedGui('select_war_army_view').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('this_war', Scope.War.MakeScope).End )]"
+						onclick = "[GetScriptedGui('hostile_forts').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
+						onclick = "[GetVariableSystem.Clear('war_selector')]"
+						blockoverride "pre" {
+							text_single = {
+								margin_right = 4
+								visible = "[GetScriptedGui('is_civil_war').IsShown( GuiScope.SetRoot( War.MakeScope ).End )]"
+								raw_text = "Civil"
 							}
 						}
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('hostile_war_targets'))]"
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-						    blockoverride "text" {
-								align = left
-								raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostile_war_targets'))] war goals. Click to [Select_CString(GetVariableSystem.Exists('war_targets'), 'Show', 'Hide')]."
-						    }
-							onclick = "[GetVariableSystem.Toggle('war_targets')]"
-						}
-
-						vbox = {
-							visible = "[Not(GetVariableSystem.Exists('war_targets'))]"
-							layoutpolicy_horizontal = expanding
-							datamodel = "[GetPlayer.MakeScope.GetList('hostile_war_targets')]"
-
-							item = {
-								hostile_fort_item = { }
-							}
-						}
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('captured_war_targets'))]"
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-						    blockoverride "text" {
-								align = left
-								raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('captured_war_targets'))] Captured war goals. Click to [Select_CString(GetVariableSystem.Exists('captured_war_targets'), 'Hide', 'Show')]."
-						    }
-							onclick = "[GetVariableSystem.Toggle('captured_war_targets')]"
-						}
-
-						vbox = {
-							visible = "[GetVariableSystem.Exists('captured_war_targets')]"
-							layoutpolicy_horizontal = expanding
-							datamodel = "[GetPlayer.MakeScope.GetList('captured_war_targets')]"
-
-							item = {
-								hostile_fort_item = {
-									blockoverride "border" { }
-								}
-							}
-						}
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('adjacent_hostile_forts'))]"
-
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_hostile_forts'))] forts on the border with you or ally."
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							datamodel = "[GetPlayer.MakeScope.GetList('adjacent_hostile_forts')]"
-
-							item = {
-								hostile_fort_item = {
-									blockoverride "border" {
-
-									}
-								}
-							}
-						}
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts')))]"
-
-						text_single = {
-							raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts'))] adjacent across water."
-
-							layoutpolicy_horizontal = expanding
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							datamodel = "[GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts')]"
-
-							item = {
-								hostile_fort_item = { }
-							}
-						}
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('your_hostile_forts')))]"
-						text_single = {
-							background = { using = Background_Area_Dark }
-							raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('your_hostile_forts'))] of your own forts captured by enemies."
-
-							layoutpolicy_horizontal = expanding
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							datamodel = "[GetPlayer.MakeScope.GetList('your_hostile_forts')]"
-
-							item = {
-								hostile_fort_item = {
-									blockoverride "controller" { }
-								}
-							}
-						}
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('personal_forts')))]"
-
-						text_single = {
-							background = { using = Background_Area_Dark }
-							raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('personal_forts'))] personal enemy forts."
-
-							layoutpolicy_horizontal = expanding
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							datamodel = "[GetPlayer.MakeScope.GetList('personal_forts')]"
-
-							item = {
-								hostile_fort_item = { }
-							}
-						}
-					}
-
-					widget = {
-						size = { 0 5 }
-					}
-
-					vbox = {
-						visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('hostile_forts')))]"
-						layoutpolicy_horizontal = expanding
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-						    blockoverride "text" {
-								raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostile_forts'))] Other hostile forts. Click to [Select_CString(GetVariableSystem.Exists('other_hostile_forts'), 'Hide', 'Show')]."
-						    }
-							onclick = "[GetVariableSystem.Toggle('other_hostile_forts')]"
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							visible = "[GetVariableSystem.Exists('other_hostile_forts')]"
-							datamodel = "[GetPlayer.MakeScope.GetList('hostile_forts')]"
-
-							item = {
-								hostile_fort_item = {
-									blockoverride "controller" { }
-								}
-							}
+						blockoverride "text" {
+							raw_text = "War against [War.GetPrimaryPlayerEnemy.GetPrimaryTitle.GetNameNoTierNoTooltip]."
 						}
 					}
 				}
-			}
 
-			expand = { }
-		}
-
-
-		vbox = {
-			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
-			visible = "[Army.IsRaidArmy]"
-
-			button_text = {
-				layoutpolicy_horizontal = expanding
-				blockoverride "text" {
-					raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('raid_targets'))] raid targets, reload with Control E."
-				}
-				onclick = "[GetScriptedGui('raid_targets').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
-				shortcut = map_mode_12
-			}
-
-			scrollbox = {
-				visible = "[Not(GetVariableSystem.Exists('hide_raid_targets'))]"
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-				blockoverride "scrollbox_margins" {
-					margin_top = 20
-				}
-
-				blockoverride "scrollbox_content" {
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-
-							datamodel = "[GetPlayer.MakeScope.GetList('raid_targets')]"
-
-							item = {
-								raid_target_item = {
-									visible = "[GreaterThan_int32(Army.GetSoldierCount, Scope.GetProvince.GetHolding.GetCurrentGarrisonSize)]"
-								}
-							}
-						}
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-						    blockoverride "text" {
-						        raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('strong_raid_targets'))] targets whose owners are stronger than you, be careful."
-						    }
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-
-							datamodel = "[GetPlayer.MakeScope.GetList('strong_raid_targets')]"
-
-							item = {
-								raid_target_item = {
-								}
-							}
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							margin_top = 5
-
-							datamodel = "[GetPlayer.MakeScope.GetList('raid_targets')]"
-
-							item = {
-								raid_target_item = {
-									visible = "[Not(GreaterThan_int32(Army.GetSoldierCount, Scope.GetProvince.GetHolding.GetCurrentGarrisonSize))]"
-									blockoverride "garrison" {
-										visible = "[Not(Army.IsGathering)]"
-									}
-								}
-							}
-						}
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('looted_raid_targets'))]"
-						    blockoverride "text" {
-						        raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('looted_raid_targets'))] looted raid targets. Click to [Select_CString(GetVariableSystem.Exists('looted_raid_targets'), 'Hide', 'Show')]"
-						    }
-							onclick = "[GetVariableSystem.Toggle('looted_raid_targets')]"
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							visible = "[GetVariableSystem.Exists('looted_raid_targets')]"
-
-							datamodel = "[GetPlayer.MakeScope.GetList('looted_raid_targets')]"
-
-							item = {
-								raid_target_item = {
-									visible = "[Not(GreaterThan_int32(Army.GetSoldierCount, Scope.GetProvince.GetHolding.GetCurrentGarrisonSize))]"
-									blockoverride "garrison" {
-										visible = "[Not(Army.IsGathering)]"
-									}
-								}
-							}
-						}
-					}
+				button = {
+					shortcut = close_window
+					onclick = "[GetVariableSystem.Clear('war_selector')]"
 				}
 			}
 
@@ -1515,6 +1979,10 @@ window = {
 		}
 
 		expand = { }
+	}
+
+	army_old = {
+		visible = "[GetVariableSystem.Exists('ocr')]"
 	}
 }
 
@@ -1621,7 +2089,7 @@ types FortTypes {
 	}
 
 	type hostile_fort_item = button {
-		size = { 0 20 }
+		size = { 0 22 }
 		layoutpolicy_horizontal = expanding
 		datacontext = "[Scope.GetProvince]"
 
@@ -1630,6 +2098,7 @@ types FortTypes {
 		onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
 		onrightclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
 		onclick = "[GetVariableSystem.Set('sending_army', Province.GetNameNoTooltip)]"
+		onclick = "[PdxGuiTriggerAllAnimations('hide_army_window')]"
 
 		hbox = {
 			# background = { using = Background_Area_Light }
@@ -1669,27 +2138,30 @@ types FortTypes {
 			# }
 
 			text_single = {
-				raw_text = "[Province.GetHolding.GetNameNoTooltip], "
+				raw_text = "FortDistance"
 			}
 
-			# text_single = {
-			# 	raw_text = "[Province.GetCounty.GetName]."
-			# }
+			text_single = {
+				margin_left = 2
+				raw_text = "[GuiScope.SetRoot(Army.GetLocation.MakeScope).AddScope('second', Province.MakeScope).Custom('province_direction')]."
+			}
+
+			text_single = {
+				raw_text = "[Province.GetCounty.GetTitle.GetNameNoTierNoTooltip], "
+			}
+
+			text_single = {
+				raw_text = "[Province.GetNameNoTooltip]."
+			}
 
 			block "border" {
 				text_single = {
-					raw_text = "Bordering."
+					raw_text = "on border,"
 					visible = "[GetScriptedGui('adjacent_to_ally').IsShown( GuiScope.SetRoot( Province.MakeScope ).AddScope('me', GetPlayer.MakeScope).End )]"
 				}
 			}
 
-			text_single = {
-				raw_text = "[GuiScope.SetRoot(Army.GetLocation.MakeScope).AddScope('second', Province.MakeScope).ScriptValue('province_distance')|0]"
-			}
 
-			text_single = {
-				raw_text = "[GuiScope.SetRoot(Army.GetLocation.MakeScope).AddScope('second', Province.MakeScope).Custom('province_direction')]."
-			}
 
 			text_single = {
 				visible = "[Province.MakeScope.Var('enemy_here').IsSet]"
@@ -1761,6 +2233,31 @@ types FortTypes {
 			}
 
 			expand = { }
+		}
+	}
+
+	type friendly_county_item = button_text {
+		onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+		onrightclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+		onclick = "[GetVariableSystem.Set('sending_army', Province.GetNameNoTooltip)]"
+		onclick = "[PdxGuiTriggerAllAnimations('hide_army_window')]"
+		datacontext = "[Scope.GetProvince]"
+
+	    blockoverride "text" {
+	        raw_text = "[Province.GetCounty.GetTitle.GetNameNoTierNoTooltip],"
+	    }
+		blockoverride "extra" {
+			spacing = 3
+			text_single = {
+				raw_text = "FortDistance"
+			}
+			text_single = {
+				raw_text = "[GuiScope.SetRoot(Army.GetLocation.MakeScope).AddScope('second', Province.MakeScope).Custom('province_direction')]."
+			}
+			text_single = {
+				raw_text = "[Province.GetSupplyLimitFor( GetPlayer )] supply."
+			}
+			block "extra2" { }
 		}
 	}
 }
@@ -2564,7 +3061,8 @@ types ArmyWindow
 
 	type soldiers_and_quality_big = hbox {
 		margin = { 0 2 }
-		margin_right = 20
+		#TODO check
+		# margin_right = 20
 		spacing = 5
 
 		vbox = {

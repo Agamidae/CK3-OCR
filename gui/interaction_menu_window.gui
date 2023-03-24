@@ -43,6 +43,7 @@ window = {
 			ignoreinvisible = yes
 			min_width = 500
 			margin_bottom = 10
+			margin_left = 10
 
 			background = {
 				texture = "gfx/interface/component_tiles/interaction_menu_bg.dds"
@@ -57,80 +58,151 @@ window = {
 					blend_mode = overlay
 				}
 			}
+			background = { using = Background_Area_Border_Solid margin = { 8 14 } }
 			datacontext = "[CharacterInteractionMenuWindow.GetCharacter]"
 
-			widget = {
-				datacontext = "[CharacterInteractionMenuWindow.GetCharacter]"
-				size = { 100% 25 }
-				name = "character_info"
+			flowcontainer = {
+			    ignoreinvisible = yes
+				direction = vertical
+				visible = "[Not(GetVariableSystem.Exists('action_category'))]"
 
-				button_text = {
-					using = char_click
-					layoutpolicy_horizontal = expanding
-					blockoverride "extra" {
-						spacing = 3
-						text_single = {
-							raw_text = "Interact with"
-						}
-						text_single = {
-							visible = "[Not(Character.IsLocalPlayer)]"
-							raw_text = "[Character.GetUINameNoTooltip]."
-						}
+				widget = {
+					datacontext = "[CharacterInteractionMenuWindow.GetCharacter]"
+					size = { 100% 25 }
+					name = "character_info"
 
-						text_single = {
-							visible = "[Character.IsLocalPlayer]"
-							raw_text = "yourself."
+					button_text = {
+						using = char_click
+						layoutpolicy_horizontal = expanding
+						blockoverride "extra" {
+							spacing = 3
+							text_single = {
+								raw_text = "Interact with"
+							}
+							text_single = {
+								visible = "[Not(Character.IsLocalPlayer)]"
+								raw_text = "[Character.GetUINameNoTooltip]."
+							}
+
+							text_single = {
+								visible = "[Character.IsLocalPlayer]"
+								raw_text = "yourself."
+							}
 						}
 					}
 				}
+
+				# flowcontainer = {
+				#     ignoreinvisible = yes
+				# 	margin_left = 5
+				# 	spacing = 5
+				#
+				# 	text_single = {
+				# 		raw_text = "[Character.GetHerHis|U] opinion, [Character.GetOpinionOf(GetPlayer)]."
+				# 		tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+				# 	}
+				#
+				# 	text_single = {
+				# 		raw_text = "Your opinion of [Character.GetHerHim], [GetPlayer.GetOpinionOf(Character.Self)]."
+				# 		tooltip = "[GetPlayer.GetOpinionBreakdownText(Character.Self)]"
+				# 	}
+				# }
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+
+					button_text = {
+						blockoverride "text" {
+							raw_text = "[AddTextIf(Character.IsPinned, 'Un')]pin [Select_CString(Character.IsPinned, 'from', 'to')] outliner, hotkey O."
+						}
+						shortcut = mapmode_empires_secondary
+						name = "button_pin"
+						# visible = "[Not(Character.IsPinned)]"
+						onclick = "[Character.ToggleCharacterPinned]"
+
+						# tooltip = "PIN_TT"
+						using = tooltip_se
+					}
+
+
+					widget = {
+						size = { 500 23 }
+						scissor = yes
+						raw_tooltip = "[Character.GetDebugTooltip]"
+
+						text_single = {
+							margin_left = 5
+							raw_text = "[Character.GetDebugTooltip]."
+							position = { 0 -21 }
+						}
+
+						visible = "[And(InDebugMode, ReleaseMode)]"
+					}
+
+					button_text = {
+						blockoverride "text" {
+							raw_text = "Rename."
+						}
+						name = "button_rename"
+						datacontext = "[GetScriptedGui( 'rename_character_after_birth' )]"
+						visible = "[Character.CanCharacterBeRenamed]"
+						onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'child', Character.MakeScope ).End  )]"
+						onclick = "[CharacterInteractionMenuWindow.Close]"
+						onclick = "[CloseGameView('character')]"
+
+						# tooltip = "RENAME_CHARACTER"
+						using = tooltip_ne
+					}
+
+					button_text = {
+						blockoverride "text" {
+							raw_text = "Open memories"
+							align = left
+						}
+						blockoverride "dot" { }
+						datacontext = "[Character]"
+						onclick = "[ToggleGameViewData( 'memories', Character.GetID  )]"
+					}
+				}
+
+				text_single = {
+					visible = "[CharacterInteractionMenuWindow.OutsideDiplomaticRange]"
+					tooltip = OUT_OF_DIPLOMACY_RANGE_TOOLTIP
+					name = "label"
+					text = OUT_OF_DIPLOMACY_RANGE
+				}
+			}
+
+			# to prevent accidental clcks
+			button = {
+				shortcut = go_back
+				visible = "[Not(GetVariableSystem.Exists('action_category'))]"
+				clicksound =""
+			}
+
+			button = {
+				visible = "[GetVariableSystem.Exists('action_category')]"
+				clicksound =""
+				shortcut = army_split_half
 			}
 
 			button_text = {
-				visible = no
-				blockoverride "text" {
-					margin_left = 5
-					raw_text = "[Select_CString(GetVariableSystem.Exists('enabled_x'), 'Don\'t show', 'Show')] enabled interactions first."
-				}
-				onclick = "[GetVariableSystem.Toggle('enabled_x')]"
+				visible = "[Not(GetVariableSystem.Exists('action_category'))]"
+				onclick = "[GetVariableSystem.Set('action_category', 'yes')]"
+				shortcut = army_split_half
+			    blockoverride "text" {
+			        raw_text = "Filter by category, F."
+			    }
 			}
 
-			flowcontainer = {
-				margin = { 10 0 }
-				ignoreinvisible = yes
-				direction = vertical
-
-				button_text = {
-					blockoverride "text" {
-						raw_text = "[AddTextIf(Character.IsPinned, 'Un')]pin [Select_CString(Character.IsPinned, 'from', 'to')] the outliner."
-					}
-					name = "button_pin"
-					# visible = "[Not(Character.IsPinned)]"
-					onclick = "[Character.ToggleCharacterPinned]"
-
-					# tooltip = "PIN_TT"
-					using = tooltip_se
-				}
-
-				button_text = {
-					blockoverride "text" {
-						raw_text = "Rename."
-					}
-					name = "button_rename"
-					datacontext = "[GetScriptedGui( 'rename_character_after_birth' )]"
-					visible = "[Character.CanCharacterBeRenamed]"
-					onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'child', Character.MakeScope ).End  )]"
-
-					tooltip = "RENAME_CHARACTER"
-					using = tooltip_ne
-				}
-			}
-
-			text_single = {
-				visible = "[CharacterInteractionMenuWindow.OutsideDiplomaticRange]"
-				tooltip = OUT_OF_DIPLOMACY_RANGE_TOOLTIP
-				name = "label"
-				text = OUT_OF_DIPLOMACY_RANGE
-				margin_left = 10
+			button_text = {
+				visible = "[GetVariableSystem.Exists('action_category')]"
+				onclick = "[GetVariableSystem.Clear('action_category')]"
+				shortcut = go_back
+			    blockoverride "text" {
+					raw_text = "Filtered, [GetVariableSystem.Get('action_category')]. Go back, B."
+			    }
 			}
 
 			dynamicgridbox = {
@@ -142,39 +214,61 @@ window = {
 				}
 			}
 
-			button_text = {
-				name = "customize_portrait"
-				blockoverride "text" {
-					margin_left = 10
-					raw_text = "Open barbershop."
-				}
-				# visible = "[Character.CanCustomizePortrait]"
-				onclick = "[Character.OnCustomizePortrait]"
-				onclick = "[CharacterInteractionMenuWindow.Close]"
-				using = tooltip_ne
-			}
+			flowcontainer = {
+			    ignoreinvisible = yes
+				direction = vertical
+				visible = "[Not(GetVariableSystem.Exists('action_category'))]"
 
-			button_text = {
-				visible = "[GetPlayer.IsValid]"
-
-				blockoverride "text" {
-					margin_left = 10
-					raw_text = "Interactions close character,"
-				}
-				blockoverride "extra" {
-					text_single = {
-						raw_text = " Enabled."
-						visible = "[GetScriptedGui('close_interactions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						align = left
+				button_text = {
+					name = "customize_portrait"
+					blockoverride "text" {
+						raw_text = "Open barbershop."
 					}
-					text_single = {
-						raw_text = " Disabled."
-						visible = "[Not(GetScriptedGui('close_interactions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ))]"
-						align = left
-					}
+					# visible = "[Character.CanCustomizePortrait]"
+					onclick = "[Character.OnCustomizePortrait]"
+					onclick = "[CharacterInteractionMenuWindow.Close]"
+					using = tooltip_ne
 				}
 
-				onclick = "[GetScriptedGui('close_interactions').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				text_single = {
+					raw_text = "Settings:"
+					margin_left = 3
+				}
+
+				button_text = {
+					blockoverride "text" {
+						raw_text = "Show enabled interactions first,"
+					}
+					blockoverride "extra" {
+						spacing = 3
+						text_single = {
+							raw_text = "[Select_CString(GetVariableSystem.Exists('enabled_x'), 'Enabled', 'Disabled')]."
+						}
+					}
+					onclick = "[GetVariableSystem.Toggle('enabled_x')]"
+				}
+
+				button_text = {
+					visible = "[GetPlayer.IsValid]"
+
+					blockoverride "text" {
+						raw_text = "Close character window when opening interactions,"
+					}
+					blockoverride "extra" {
+						text_single = {
+							raw_text = " Enabled."
+							visible = "[GetScriptedGui('close_interactions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							align = left
+						}
+						text_single = {
+							raw_text = " Disabled."
+							visible = "[Not(GetScriptedGui('close_interactions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ))]"
+							align = left
+						}
+					}
+
+					onclick = "[GetScriptedGui('close_interactions').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				}
 			}
 		}
 

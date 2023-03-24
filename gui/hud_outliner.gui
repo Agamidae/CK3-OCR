@@ -24,9 +24,6 @@ widget = {
 		start_sound = {
 			soundeffect = "event:/SFX/UI/Generic/Windows/sfx_ui_generic_window_outliner_show"
 		}
-		# on_start = "[GetScriptedGui('zoom_out').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-		next = a
-		# on_start = "[GetScriptedGui('sieges_and_battles').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 	}
 
 	state = {
@@ -37,39 +34,15 @@ widget = {
 		}
 	}
 
-	widget = {
-		visible = "[IsGamePaused]"
-
-	}
-
-	# state = {
-	# 	name = daily_tick
-	# 	trigger_on_create = yes
-	# }
-
 	state = {
 		name = pause_update
 		trigger_when = "[IsGamePaused]"
 
-		# on_finish = "[GetScriptedGui('zoom_out').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-
-		next = a
-	}
-
-	state = {
-		name = a
-		delay = 0.3
-		# fires an animation on all armies in map_icon_layer_templates, which fires a scripted gui add_from_map_outliner in sgui_hostile_outliner. This adds it to a temp list.
-		on_start = "[PdxGuiTriggerAllAnimations('add_from_map')]"
-
-
-		# we then sort armies in the list by strength and add to the outliner
-		on_start = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		on_start = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', GetPlayer.GetCapitalLocation.MakeScope ).End )]"
 		# remove units that are not hostile to us anymore
-		on_start = "[GetScriptedGui('clear_dead_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-		# on_start = "[GetScriptedGui('sieges_and_battles').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-		# trigger_when = "[GetPlayer.MakeScope.]"
-		# on_start = "[GetScriptedGui('zoom_in').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		# on_start = "[GetScriptedGui('clear_dead_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+
+		# next = a
 	}
 
 	state = {
@@ -83,7 +56,6 @@ widget = {
 		using = Animation_FadeIn_Quick
 		trigger_when = "[IsDefaultGUIMode]"
 	}
-	# visible = "[Not(IsRightWindowOpen)]"
 
 	flowcontainer = {
 		visible = "[And(Not(IsRightWindowOpen), Not(IsPauseMenuShown))]"
@@ -141,31 +113,11 @@ widget = {
 		# can be used to force-update the list
 		button = {
 			size = { 640 20 }
-			# onclick = "[GetScriptedGui('manual_zoom_out').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-			# on_start = "[GetScriptedGui('sieges_and_battles').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-
-			onclick = "[PdxGuiTriggerAllAnimations('add_from_map')]"
-			# onclick = "[GetScriptedGui('zoom_out').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-			onclick = "[PdxGuiWidget.TriggerAnimation('a')]"
 			shortcut = map_mode_11
 
-			state = {
-				name = a
-				delay = 0.3
-				on_start = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-				on_start = "[GetScriptedGui('clear_dead_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-				# on_start = "[GetScriptedGui('manual_zoom_in').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-			}
+			onclick = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', GetPlayer.GetCapitalLocation.MakeScope ).End )]"
+			# onclick = "[GetScriptedGui('clear_dead_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 
-			state = {
-				name = _mouse_enter
-				on_start = "[PdxGuiWidget.FindChild('cover').Show]"
-			}
-
-			state = {
-				name = _mouse_leave
-				on_start = "[PdxGuiWidget.FindChild('cover').Hide]"
-			}
 
 			text_single = {
 				margin = { 20 0 }
@@ -179,6 +131,11 @@ widget = {
 			}
 		}
 
+		container = {
+			error_button = {
+				position = { 15 0 }
+			}
+		}
 
 		widget = {
 			size = { 0 0 }
@@ -197,8 +154,16 @@ widget = {
 					button = {
 						size = { 0 0 }
 						raw_text = "unit"
-						onclick = "[UnitItem.SelectAndPanUnit]"
+						onclick = "[PdxGuiWidget.TriggerAnimation('select_first_army')]"
 						shortcut = mapmode_duchies_secondary
+
+						state = {
+							name = select_first_army
+							on_start = "[UnitItem.SelectAndPanUnit]"
+							on_start = "[DefaultOnCoatOfArmsRightClick(UnitItem.GetArmy.GetLocation.GetCoATitle.GetID)]"
+							on_start = "[PdxGuiTriggerAllAnimations('refresh_first_army')]"
+							on_finish = "[Outliner.Close]"
+						}
 					}
 				}
 			}
@@ -256,7 +221,7 @@ widget = {
 
 						blockoverride "oh_name"
 						{
-							text = "OUTLINER_PINNED_CHARACTERS"
+							raw_text = "Pinned character[AddTextIf(GreaterThan_int32(Outliner.GetCategoryItemsCount('pinned_character'), '(int32)1'), 's')]"
 						}
 
 						blockoverride "oh_count"
@@ -270,7 +235,7 @@ widget = {
 						}
 						blockoverride "extra" {
 							text_single = {
-								raw_text = ", [Select_CString(Outliner.IsCategoryShown('pinned_character'), 'Click to close', 'Click to expand')]"
+								raw_text = ", [Select_CString(Outliner.IsCategoryShown('pinned_character'), 'Click to hide', 'Click to show')]"
 								align = left
 							}
 						}
@@ -284,123 +249,31 @@ widget = {
 						margin = { 5 5 }
 
 						item = {
-							hbox = {
-								name = "pinned_character_item"
+
+							button_text = {
 								layoutpolicy_horizontal = expanding
+								onclick = "[DefaultOnCharacterClick(Character.GetID)]"
+								onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
 								using = character_tooltip
+								blockoverride "pre" {
+									text_single = {
+										visible = "[Character.IsDeadAndValid]"
+										raw_text = "Dead,"
 
-								button_list = {
-									name = "character_button"
-									size = { 0 54 }
-									layoutpolicy_horizontal = expanding
-
-									onclick = "[DefaultOnCharacterClick(Character.GetID)]"
-									down = "[Character.IsShownInCharacterWindow]"
-									onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
-									button_ignore = none
-
-									background = {
-										using = Background_Area
 									}
-
-									state = {
-										name = _mouse_hierarchy_enter
-										on_start = "[PdxGuiWidget.FindChild('button_unpin').TriggerAnimation('button_unpin_show')]"
+								}
+							    blockoverride "text" {
+							        raw_text = "[Localize('OUTLINER_PINNED_CHARACTER')]."
+							    }
+								blockoverride "extra" {
+									spacing = 3
+									text_single = {
+										visible = "[Character.IsAlive]"
+										raw_text = "Opinion [Character.GetOpinionOf( GetPlayer )|=]."
 									}
-
-									state = {
-										name = _mouse_hierarchy_leave
-										on_start = "[PdxGuiWidget.FindChild('button_unpin').TriggerAnimation('button_unpin_hide')]"
-									}
-
-									hbox = {
-										margin = { 10 2 }
-
-										vbox = {
-											layoutpolicy_horizontal = expanding
-
-											hbox = {
-												layoutpolicy_horizontal = expanding
-												spacing = 5
-
-												icon = {
-													visible = "[Character.IsDeadAndValid]"
-													size = { 20 20 }
-													texture = "[Character.GetDeathReasonIcon]"
-													tooltip = "CHARACTER_DEAD_TOOLTIP"
-												}
-
-												text_single = {
-													layoutpolicy_horizontal = expanding
-													autoresize = no
-													text = "OUTLINER_PINNED_CHARACTER"
-													align = left
-													default_format = "#high"
-												}
-											}
-
-											hbox = {
-												layoutpolicy_horizontal = expanding
-												spacing = 5
-												margin_left = 3
-
-												text_single = {
-													text = "[Character.GetOpinionOf( GetPlayer )|=]"
-													fonttintcolor = "[Character.GetOpinionOfTint( GetPlayer )]"
-													default_format = "#medium;glow_color:{0.1,0.1,0.1,1}"
-													align = left
-													visible = "[Character.IsAlive]"
-
-													background = {
-														name = "portrait_opinion_bg"
-														texture = "gfx/interface/component_tiles/solid_black_label.dds"
-														spritetype = Corneredtiled
-														spriteborder = { 20 20 }
-														margin = { 5 1 }
-														texture_density = 2
-													}
-												}
-
-												text_single = {
-													layoutpolicy_horizontal = expanding
-													text = "[Character.GetRelationToString( GetPlayer )]"
-													tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-													autoresize = no
-													align = left
-												}
-											}
-										}
-
-										button_round = {
-											name = "button_unpin"
-											size = { 30 30 }
-											onclick = "[Character.ToggleCharacterPinned]"
-											tooltip = "PIN_TT"
-											inherit_visual_state = no
-
-											alpha = 0.6
-
-											state = {
-												name = _mouse_enter
-												alpha = 1
-												duration = 0.1
-												using = Animation_Curve_Default
-											}
-
-											state = {
-												name = _mouse_leave
-												alpha = 0.6
-												duration = 0.2
-												using = Animation_Curve_Default
-											}
-
-											button_unpin = {
-												parentanchor = center
-												size = { 20 20 }
-												alwaystransparent = yes
-												inherit_visual_state = no
-											}
-										}
+									text_single = {
+										raw_text = "[Character.GetRelationToString( GetPlayer )]."
+										tooltip = "EXTENDED_RELATIONS_TOOLTIP"
 									}
 								}
 							}
@@ -524,15 +397,14 @@ widget = {
 
 						blockoverride "oh_name"
 						{
-							raw_text = "Battles"
+							raw_text = "unit[AddTextIf(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('battles')), '(int32)1'), 's')] in battle[AddTextIf(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('battles')), '(int32)1'), 's')]"
 
 						}
 
 						blockoverride "extra" {
 							text_single = {
-								raw_text = ", click to hide"
-								align = left
-								visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('battles')), '(int32)1')]"
+								raw_text = ", click to [Select_CString(GetVariableSystem.Exists('battles'), 'show', 'hide')]"
+								# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('battles')), '(int32)1')]"
 							}
 						}
 
@@ -603,7 +475,12 @@ widget = {
 						}
 					}
 
-					button_outliner_header = {
+					hbox = {
+					    layoutpolicy_horizontal = expanding
+						# visible = "[GetScriptedGui('are_all_armies_in_battle').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						#TODO
+
+						button_outliner_header = {
 						name = "units_header"
 						layoutpolicy_horizontal = expanding
 						visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(Outliner.GetUnitItems)))]"
@@ -629,24 +506,39 @@ widget = {
 
 						blockoverride "oh_name"
 						{
-							text = "OUTLINER_ARMIES"
+							raw_text = ""
 						}
 						blockoverride "extra" {
 							text_single = {
-								raw_text = ", click to hide"
 								visible = "[GreaterThan_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
+								raw_text = "[Outliner.GetCategoryItemsCount('unit')]"
+							}
+							text_single = {
+								raw_text = "army"
+								visible = "[EqualTo_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
+							}
+							text_single = {
+								raw_text = " armies"
+								visible = "[GreaterThan_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
+							}
+							text_single = {
+								raw_text = ", click to [Select_CString(Outliner.IsCategoryShown('unit'), 'hide', 'show')]"
+								# visible = "[GreaterThan_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
 								align = left
 							}
 						}
 
 						blockoverride "oh_count"
 						{
-							text = "[Outliner.GetCategoryItemsCount('unit')|V]"
+							raw_text = "Your"
 						}
 						blockoverride "expanded"
 						{
 							frame = "[BoolTo1And2(Outliner.IsCategoryShown('unit'))]"
 						}
+					}
+
+					    expand = { }
 					}
 
 					vbox = {
@@ -658,6 +550,7 @@ widget = {
 
 						item = {
 							army_button_o = {
+								visible = "[Not(GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End ))]"
 								blockoverride "war_filter" {
 								}
 								blockoverride "context" {
@@ -684,316 +577,7 @@ widget = {
 						}
 					}
 
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						margin_top = 3
-						datamodel = "[GetPlayer.MakeScope.GetList('wars_outliner'))]"
-						visible = "[Or(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('wars_outliner')), '(int32)1'), GetScriptedGui('are_any_wars_hidden').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ))]"
-						item = {
-							hbox = {
-								margin = { 0 3 }
-								margin_left = 10
-								layoutpolicy_horizontal = expanding
-								datacontext = "[Scope.War]"
-
-								background = { using = Background_Area_Border_Solid }
-
-								button_text = {
-									blockoverride "pre" {
-										text_single = {
-											raw_text = "Not showing [War.GetPrimaryPlayerEnemy.GetPrimaryTitle.GetNameNoTierNoTooltip] war. Click to show"
-											visible = "[GetScriptedGui('hide_units_in_war').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', War.MakeScope).End )]"
-											align = left
-										}
-										text_single = {
-											raw_text = "Showing [War.GetPrimaryPlayerEnemy.GetPrimaryTitle.GetNameNoTierNoTooltip] war participants, click to hide"
-											visible = "[Not(GetScriptedGui('hide_units_in_war').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', War.MakeScope).End ))]"
-											align = left
-										}
-									}
-									blockoverride "text" {
-										raw_text = "."
-									}
-									onclick = "[GetScriptedGui('hide_units_in_war').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', War.MakeScope).End )]"
-								}
-
-								expand = { }
-							}
-						}
-					}
-
-					# hostiles in your land
-					button_outliner_header = {
-						visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('hostiles_inside'))))]"
-						layoutpolicy_horizontal = expanding
-
-						# tooltipwidget = {
-						# 	outliner_tooltip = {
-						# 		blockoverride "datamodel" {
-						# 			datamodel = "[GetPlayer.MakeScope.GetList('hostiles_inside')]"
-						# 		}
-						# 	}
-						# }
-
-						blockoverride "button_expand_frame"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_inside'))]"
-						}
-
-						blockoverride "oh_button"
-						{
-							onclick = "[GetVariableSystem.Toggle('hostiles_inside')]"
-							oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
-							clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
-						}
-
-						blockoverride "oh_toggle_frame"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_inside'))]"
-						}
-
-						blockoverride "oh_name"
-						{
-							raw_text = "Enemies in your lands"
-						}
-
-						blockoverride "extra" {
-							text_single = {
-								raw_text = ", click to hide"
-								align = left
-								visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside')), '(int32)1')]"
-							}
-						}
-
-						blockoverride "oh_count"
-						{
-							raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside'))]"
-						}
-						blockoverride "expanded"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_inside'))]"
-						}
-					}
-
-					# hostiles in your land
-					vbox = {
-						datamodel = "[GetPlayer.MakeScope.GetList('hostiles_inside')]"
-						visible = "[And(Not(GetVariableSystem.Exists('hostiles_inside')), GetPlayer.IsValid)]"
-						layoutpolicy_horizontal = expanding
-						margin = { 8 0 }
-						spacing = -2
-
-						item = {
-							army_button_o = { }
-						}
-					}
-
-					# hostiles outside
-					button_outliner_header = {
-						# tooltipwidget = {
-						# 	outliner_tooltip = {
-						# 		blockoverride "datamodel" {
-						# 			datamodel = "[GetPlayer.MakeScope.GetList('hostiles_outside')]"
-						# 		}
-						# 	}
-						# }
-						layoutpolicy_horizontal = expanding
-						visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('hostiles_outside'))))]"
-
-						blockoverride "button_expand_frame"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_outside'))]"
-						}
-
-						blockoverride "oh_button"
-						{
-							onclick = "[GetVariableSystem.Toggle('hostiles_outside')]"
-							oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
-							clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
-						}
-
-						blockoverride "oh_toggle_frame"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_outside'))]"
-						}
-
-						blockoverride "oh_name"
-						{
-							raw_text = "Enemies outside your lands"
-						}
-
-						blockoverride "extra" {
-							text_single = {
-								raw_text = ", click to hide"
-								align = left
-								visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_outside')), '(int32)1')]"
-							}
-						}
-
-						blockoverride "oh_count"
-						{
-							raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_outside'))]"
-						}
-						blockoverride "expanded"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_outside'))]"
-						}
-					}
-
-					# hostiles outside your land
-					vbox = {
-						datamodel = "[GetPlayer.MakeScope.GetList('hostiles_outside')]"
-						visible = "[And(Not(GetVariableSystem.Exists('hostiles_outside')), GetPlayer.IsValid)]"
-						layoutpolicy_horizontal = expanding
-						margin = { 8 0 }
-						spacing = -2
-
-						item = {
-							army_button_o = { }
-						}
-					}
-
-					# hostiles in the fog of war
-					button_outliner_header = {
-						# tooltipwidget = {
-						# 	outliner_tooltip = {
-						# 		blockoverride "datamodel" {
-						# 			datamodel = "[GetPlayer.MakeScope.GetList('hostiles_outside')]"
-						# 		}
-						# 	}
-						# }
-						layoutpolicy_horizontal = expanding
-						visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('in_the_fog'))))]"
-
-						blockoverride "button_expand_frame"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('in_the_fog'))]"
-						}
-
-						blockoverride "oh_button"
-						{
-							onclick = "[GetVariableSystem.Toggle('in_the_fog')]"
-							oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
-							clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
-						}
-
-						blockoverride "oh_toggle_frame"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('in_the_fog'))]"
-						}
-
-						blockoverride "oh_name"
-						{
-							raw_text = "Enemies in the fog of war"
-						}
-
-						blockoverride "extra" {
-							text_single = {
-								raw_text = ", click to hide"
-								align = left
-								visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('in_the_fog')), '(int32)1')]"
-							}
-						}
-
-						blockoverride "oh_count"
-						{
-							raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('in_the_fog'))]"
-						}
-						blockoverride "expanded"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('in_the_fog'))]"
-						}
-					}
-
-					# hostiles in the fog
-					vbox = {
-						datamodel = "[GetPlayer.MakeScope.GetList('in_the_fog')]"
-						visible = "[And(Not(GetVariableSystem.Exists('in_the_fog')), GetPlayer.IsValid)]"
-						layoutpolicy_horizontal = expanding
-						margin = { 8 0 }
-						spacing = -2
-
-						item = {
-							army_button_o = {
-								blockoverride "count" {
-									text_single = {
-										raw_text = "Hidden,"
-									}
-								}
-								blockoverride "fog" {
-									visible = no
-								}
-							}
-						}
-					}
-
-					# allied armies
-					button_outliner_header = {
-						layoutpolicy_horizontal = expanding
-						visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('allied_units'))))]"
-
-						# tooltipwidget = {
-						# 	outliner_tooltip = { }
-						# }
-
-						blockoverride "button_expand_frame"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('allies'))]"
-						}
-
-						blockoverride "oh_button"
-						{
-							onclick = "[GetVariableSystem.Toggle('allies')]"
-							oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
-							clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
-						}
-
-						blockoverride "oh_toggle_frame"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('allies'))]"
-						}
-
-						blockoverride "oh_name"
-						{
-							raw_text = "Allied armies"
-
-						}
-
-						blockoverride "extra" {
-							text_single = {
-								raw_text = ", click to hide"
-								align = left
-								visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('allied_units')), '(int32)1')]"
-							}
-						}
-
-						blockoverride "oh_count"
-						{
-							raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('allied_units'))]"
-						}
-						blockoverride "expanded"
-						{
-							frame = "[BoolTo2And1(GetVariableSystem.Exists('allies'))]"
-						}
-
-					}
-
-					# allied armies
-					vbox = {
-						datamodel = "[GetPlayer.MakeScope.GetList('allied_units')]"
-						visible = "[And(Not(GetVariableSystem.Exists('allies')), GetPlayer.IsValid)]"
-						layoutpolicy_horizontal = expanding
-						margin = { 8 0 }
-						spacing = -2
-
-						item = {
-							army_button_o = {
-								blockoverride "fighting" {
-
-								}
-							}
-						}
-					}
+					outliner_armies = { }
 
 					button_outliner_header = {
 						name = "holdings_header"
@@ -1009,12 +593,17 @@ widget = {
 						{
 
 							onclick = "[Outliner.ToggleCategory('holding')]"
-							tooltip = "[SelectLocalization( Outliner.IsCategoryShown('holding'), 'OUTLINER_COLLAPSE', 'OUTLINER_EXPAND' )]"
+							# tooltip = "[SelectLocalization( Outliner.IsCategoryShown('holding'), 'OUTLINER_COLLAPSE', 'OUTLINER_EXPAND' )]"
 						}
 
 						blockoverride "oh_name"
 						{
 							text = "OUTLINER_HOLDINGS"
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = ", click to [Select_CString(Outliner.IsCategoryShown('holding'), 'hide', 'show')]"
+							}
 						}
 
 						blockoverride "oh_count"
@@ -1042,87 +631,57 @@ widget = {
 								datacontext = "[OutlinerHoldingItem.GetTitle]"
 								datacontext = "[OutlinerHoldingItem.GetTitle.GetProvince.GetHolding]"
 								layoutpolicy_horizontal = expanding
-								size = { 0 34 }
+								size = { 0 25 }
 
 								onclick = "[OutlinerHoldingItem.OnClick]"
 								down = "[Or(Holding.IsHoldingOrNonCapitalHoldingHovered, Holding.IsSelected)]"
-								tooltipwidget = { holding_tooltip_click = {} }
-								using = tooltip_ws
-								using = Holding_Mouse_Entry
-
-								margin_widget = {
-									size = { 100% 100% }
-									margin = { 0 2 }
-									margin_left = 40
-
-									progressbar_standard_transparent = {
-										name = "progress_bar"
-										size = { 100% 100% }
-										visible = "[Holding.IsConstructionInProgress]"
-										value = "[Holding.GetConstructionProgress]"
-										alpha = 0.8
-									}
-								}
-
+								# tooltipwidget = { holding_tooltip_click = { } }
+								# using = tooltip_ws
+								# using = Holding_Mouse_Entry
 								hbox = {
-									widget = {
-										size = { 40 28 }
+									margin = { 5 0 }
+									layoutpolicy_horizontal = expanding
+									spacing = 3
 
-										coa_title_tiny = {
-											name = "claim"
-											datacontext = "[Holding.GetProvince.GetTitle]"
-											parentanchor = center
-											tooltip_enabled = no
+									hbox = {
+										text_single = {
+											name = "holding_name"
+											raw_text = "[Holding.GetProvince.GetNameNoTooltip],"
 										}
 									}
 
 									hbox = {
-										margin = { 5 0 }
-										layoutpolicy_horizontal = expanding
+										visible = "[Not(Holding.IsConstructionInProgress)]"
 
-										hbox = {
-
-											text_single = {
-												max_width = 80
-												name = "holding_name"
-												layoutpolicy_horizontal = expanding
-												text = "[Holding.GetProvince.GetNameNoTooltip]"
-												default_format = "#high"
-												align = left
-											}
-										}
-
-										expand = {}
-
-										hbox = {
-											visible = "[Holding.IsConstructionInProgress]"
-											text_single = {
-												max_width = 120
-												name = "construction_name"
-												text = "[Holding.GetConstructionBuilding.GetNameNoTooltip]"
-												align = right
-												default_format = "#high"
-											}
-										}
-
-										hbox = {
-											visible = "[Not(Holding.IsConstructionInProgress)]"
-
-											text_single = {
-												text = "HOLDING_TAX_VALUE"
-												min_width = 70
-												align = left
-												default_format = "#high"
-											}
-
-											text_single = {
-												text = "HOLDING_LEVY_SIZE"
-												min_width = 60
-												align = left
-												default_format = "#high"
-											}
+										text_single = {
+											visible = "[GreaterThan_CFixedPoint(Holding.GetProvince.MakeScope.ScriptValue('free_building_slots_sval'), '(CFixedPoint)0')]"
+											raw_text = "Empty slots, [Holding.GetProvince.MakeScope.ScriptValue('free_building_slots_sval')]."
 										}
 									}
+
+									hbox = {
+										visible = "[Holding.IsConstructionInProgress]"
+										text_single = {
+											max_width = 300
+											name = "construction_name"
+											raw_text = "[Holding.GetConstructionProgress|0]% building [Holding.GetConstructionBuilding.GetNameNoTooltip]."
+										}
+									}
+
+									hbox = {
+										spacing = 3
+										# visible = "[Not(Holding.IsConstructionInProgress)]"
+
+										text_single = {
+											raw_text = "Tax, [Localize('HOLDING_TAX_VALUE')]."
+										}
+
+										text_single = {
+											raw_text = "Levies, [Holding.GetMaxLevySize]."
+										}
+									}
+
+									expand = { }
 								}
 
 							}
@@ -1140,7 +699,7 @@ types Outliner {
 	type button_outliner_header = button_tab {
 		size = { 0 31 }
 
-		block "oh_button" {}
+		block "oh_button" { }
 
 		hbox = {
 			margin = { 15 0 }
@@ -1150,7 +709,7 @@ types Outliner {
 			# 	size = { 22 22 }
 			# 	alwaystransparent = yes
 			# 	alpha = 0.1
-			# 	block "button_expand_frame" {}
+			# 	block "button_expand_frame" { }
 			# }
 			#
 			# widget = {
@@ -1211,6 +770,7 @@ types Outliner {
 
 		vbox = {
 			layoutpolicy_horizontal = expanding
+			visible = "[Army.GetOwner.IsValid]"
 
 			spacing = -1
 			margin_bottom = 2
@@ -1218,13 +778,14 @@ types Outliner {
 
 			button_text = {
 				layoutpolicy_horizontal = expanding
+				block "army_name" { }
 				block "click" {
 					enabled = "[Army.GetLocation.GetCoATitle.IsValid]"
 					onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
 				}
-			    blockoverride "text" {
-			        raw_text = ""
-			    }
+				blockoverride "text" {
+					raw_text = ""
+				}
 				blockoverride "extra" {
 					flowcontainer = {
 						ignoreinvisible = yes
@@ -1245,7 +806,9 @@ types Outliner {
 
 						text_single = {
 							raw_text = "[Army.MakeScope.Var('armies').GetValue|0] armies,"
-							visible = "[Army.MakeScope.Var('armies').IsSet]"
+							block "fog" {
+								visible = "[Army.MakeScope.Var('armies').IsSet]"
+							}
 						}
 
 						text_single = {
@@ -1263,12 +826,20 @@ types Outliner {
 								raw_text = "[Army.GetOwner.GetPrimaryTitle.GetNameNoTierNoTooltip]."
 								align = left
 							}
+							blockoverride "extra" {
+								text_single = {
+									raw_text = " Enemy of my enemy."
+									visible = "[GetScriptedGui('is_enemy_of_my_enemy').IsShown( GuiScope.SetRoot( Army.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+								}
+							}
 							visible = "[Not(Army.GetOwner.IsLocalPlayer)]"
 						}
 
 						text_single = {
 							raw_text = "Fighting,"
-							visible = "[GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End )]"
+							block "fog" {
+								visible = "[GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End )]"
+							}
 						}
 
 						container = {
@@ -1278,8 +849,9 @@ types Outliner {
 									visible = "[Army.GetOwner.IsLocalPlayer]"
 								}
 								flowcontainer = {
-								    ignoreinvisible = yes
+									ignoreinvisible = yes
 									spacing = 3
+									#TODO get rid of the enemy_here variable???
 									visible = "[Scope.Army.GetLocation.MakeScope.Var('enemy_here').IsSet]"
 									block "enemy_here" {
 										datacontext = "[Scope.Army.GetLocation.MakeScope.Var('enemy_here').Army]"
@@ -1298,9 +870,9 @@ types Outliner {
 									button_text = {
 										datacontext = "[Army.GetOwner]"
 										using = char_click
-									    blockoverride "text" {
+										blockoverride "text" {
 											raw_text = "[Army.GetOwner.GetPrimaryTitle.GetNameNoTierNoTooltip]."
-									    }
+										}
 									}
 								}
 							}
@@ -1311,16 +883,22 @@ types Outliner {
 							visible = "[And(Army.IsGathering, Not(Army.IsMoving))]"
 						}
 
-						text_single = {
-							raw_text = "Sieging, [Army.GetLocation.GetSiege.GetProgress|0]%[AddTextIf(Army.GetLocation.GetSiege.IsAssaultInProgress, ', Assaulting')]."
-							visible = "[And(Army.IsSieging, Not(Army.IsMoving))]"
-						}
+						flowcontainer = {
+							ignoreinvisible = yes
+							spacing = 3
+							block "fog" { }
 
-						container = {
-							visible = "[GetVariableSystem.Exists('compact_units')]"
 							text_single = {
-								raw_text = "attrition [Army.GetArmyAttritionPercentage|%0]."
-								visible = "[GreaterThanOrEqualTo_CFixedPoint(Army.GetArmyAttritionPercentage, '(CFixedPoint)0.01')]"
+								raw_text = "Sieging, [Army.GetLocation.GetSiege.GetProgress|0]%[AddTextIf(Army.GetLocation.GetSiege.IsAssaultInProgress, ', Assaulting')]."
+								visible = "[And(Army.IsSieging, Not(Army.IsMoving))]"
+							}
+
+							container = {
+								visible = "[GetVariableSystem.Exists('compact_units')]"
+								text_single = {
+									raw_text = "attrition [Army.GetArmyAttritionPercentage|%0]."
+									visible = "[GreaterThanOrEqualTo_CFixedPoint(Army.GetArmyAttritionPercentage, '(CFixedPoint)0.01')]"
+								}
 							}
 						}
 
@@ -1337,9 +915,9 @@ types Outliner {
 									margin_left = 1
 								}
 								using = char_click
-							    blockoverride "text" {
-									raw_text = "[Character.GetCommanderAdvantage] advantage leader,"
-							    }
+								blockoverride "text" {
+									raw_text = "[Character.GetCommanderAdvantage] advantage,"
+								}
 								visible = "[Character.IsValid]"
 							}
 
@@ -1366,9 +944,9 @@ types Outliner {
 								}
 								datacontext = "[Army.GetCommander]"
 								using = char_click
-							    blockoverride "text" {
-									raw_text = "[Army.GetCommander.GetCommanderAdvantage] advantage leader,"
-							    }
+								blockoverride "text" {
+									raw_text = "[Army.GetCommander.GetCommanderAdvantage] advantage,"
+								}
 								visible = "[Army.GetCommander.IsValid]"
 							}
 
@@ -1383,10 +961,32 @@ types Outliner {
 							}
 						}
 
-						# text_single = {
-						# 	raw_text = "Selected"
-						# 	visible = "[Army.MakeScope.Var('last_selected_army').IsSet]"
-						# }
+						container = {
+							ignoreinvisible = yes
+							block "in_fog" {
+								visible = no
+							}
+							flowcontainer = {
+								ignoreinvisible = yes
+								visible = "[Not(ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId))]"
+
+								text_single = {
+									raw_text = "ArmyDistance"
+								}
+
+								text_single = {
+									raw_text = " [GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')]"
+								}
+
+								text_single = {
+									visible = "[Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.IsValid]"
+									raw_text = " in [Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.GetNameNoTierNoTooltip]"
+								}
+								dot = { }
+							}
+						}
+
+						block "selected" { }
 
 						# text_single = {
 						# 	raw_text = "[Army.GetNameNoTooltip]."
@@ -1397,6 +997,7 @@ types Outliner {
 				}
 			}
 
+			#TODO can remove?
 			button_text = {
 				layoutpolicy_horizontal = expanding
 				block "click" {
@@ -1456,7 +1057,9 @@ types Outliner {
 				}
 			}
 
+			# location
 			button_text = {
+				block "fog" { }
 				layoutpolicy_horizontal = expanding
 				block "click" {
 					enabled = "[Army.GetLocation.GetCoATitle.IsValid]"
@@ -1468,25 +1071,50 @@ types Outliner {
 				blockoverride "extra" {
 					flowcontainer = {
 						ignoreinvisible = yes
-						spacing = 3
 
 						text_single = {
-							raw_text = "in [Army.GetLocation.GetHolding.GetNameNoTooltip],"
+							visible = "[ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId)]"
+
+							raw_text = "In your capital."
 						}
 
-						text_single = {
-							raw_text = "[GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).ScriptValue('province_distance')|0] days"
-						}
+						block "same_province" { }
 
-						text_single = {
-							raw_text = "[GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')]"
-						}
+						flowcontainer = {
+						    ignoreinvisible = yes
+							block "hide_at_capital" {
+								visible = "[Not(ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId))]"
+							}
 
-						text_single = {
-							visible = "[GetVariableSystem.Exists('compact_units')]"
-							max_width = 400
-							raw_text = "[Army.GetLocation.GetCounty.GetName][AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.IsValid, '. ')][Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.GetBaseNameNoTierNoTooltip][AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.IsValid, ', ')][Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.GetBaseNameNoTierNoTooltip]."
+							block "distance" {
+								text_single = {
+									raw_text = "ArmyDistance"
+								}
 
+								text_single = {
+									raw_text = " [GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')],"
+								}
+							}
+
+
+							text_single = {
+								visible = "[Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.IsValid]"
+								raw_text = " [Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.GetNameNoTierNoTooltip],"
+							}
+
+							text_single = {
+								visible = "[Not(Army.IsEmbarked)]"
+								raw_text = " [Army.GetLocation.GetTerrain.GetName] of"
+							}
+
+							text_single = {
+								raw_text = " [Army.GetLocation.GetHolding.GetNameNoTooltip]."
+							}
+
+							text_single = {
+								visible = "[GetVariableSystem.Exists('compact_units')]"
+								raw_text = " [AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.IsValid, Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.GetNameNoTierNoTooltip)][AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.IsValid, '.')]"
+							}
 						}
 
 						expand = { }
@@ -1494,6 +1122,7 @@ types Outliner {
 				}
 			}
 
+			# detailed view
 			button_text = {
 				block "fog" {
 					visible = "[GetVariableSystem.Exists('compact_units')]"
@@ -1578,6 +1207,7 @@ types Outliner {
 				}
 			}
 
+			# movement
 			button_text = {
 				block "fog" { }
 				layoutpolicy_horizontal = expanding
@@ -1598,15 +1228,24 @@ types Outliner {
 							visible = "[And(And(And(Army.IsMoving, Not(Army.IsEmbarked)), Not(GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End ))), Not(Army.IsRetreating))]"
 						}
 
-						text_single = {
-							raw_text = "Sailing to"
-							visible = "[Army.IsEmbarked]"
+						# text_single = {
+						# 	raw_text = "At sea."
+						# 	visible = "[And(Army.IsEmbarked, Not(Army.IsMoving))]"
+						# }
+
+						container = {
+							visible = "[Not(GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End ))]"
+							text_single = {
+								raw_text = "Retreating to"
+								visible = "[And(Army.IsRetreating, Not(Army.IsEmbarked))]"
+							}
 						}
 
 						text_single = {
-							raw_text = "Retreating to"
-							visible = "[And(Army.IsRetreating, Not(Army.IsEmbarked))]"
+							raw_text = "Sailing to"
+							visible = "[And(Army.IsEmbarked, Army.IsMoving)]"
 						}
+
 
 						text_single = {
 							raw_text = "[Army.GetMovementInfoForTooltip]. View tooltip to pan there."
@@ -1654,6 +1293,342 @@ types Outliner {
 				block "button" {
 					army_button_o = {
 						# size = { 400 40 }
+					}
+				}
+			}
+		}
+	}
+
+	type outliner_armies = vbox {
+		layoutpolicy_horizontal = expanding
+
+		text_single = {
+			margin_left = 10
+			layoutpolicy_horizontal = expanding
+			raw_text = "Units in [GetDataModelSize(GetPlayer.MakeScope.GetList('hidden_wars'))] wars are hidden."
+			visible = "[GetScriptedGui('are_any_wars_hidden').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		}
+
+		# hostiles in your land
+		button_outliner_header = {
+			visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('hostiles_inside'))))]"
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "button_expand_frame"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_inside'))]"
+			}
+
+			blockoverride "oh_button"
+			{
+				onclick = "[GetVariableSystem.Toggle('hostiles_inside')]"
+				oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+				clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+			}
+
+			blockoverride "oh_toggle_frame"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_inside'))]"
+			}
+
+			blockoverride "oh_name"
+			{
+				raw_text = "Enem[Select_CString(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside')), '(int32)1'), 'ies', 'y')] in your lands"
+			}
+
+			blockoverride "extra" {
+				text_single = {
+					raw_text = ", [GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('hostiles_inside')] total"
+					visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside')), '(int32)1')]"
+				}
+				text_single = {
+					raw_text = ", click to [Select_CString(GetVariableSystem.Exists('hostiles_inside'), 'show', 'hide')]"
+					# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside')), '(int32)1')]"
+				}
+			}
+
+			blockoverride "oh_count"
+			{
+				raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside'))]"
+			}
+			blockoverride "expanded"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_inside'))]"
+			}
+		}
+
+		# hostiles in your land
+		vbox = {
+			datamodel = "[GetPlayer.MakeScope.GetList('hostiles_inside')]"
+			visible = "[And(Not(GetVariableSystem.Exists('hostiles_inside')), GetPlayer.IsValid)]"
+			layoutpolicy_horizontal = expanding
+			margin = { 8 0 }
+			spacing = -2
+
+			item = {
+				army_button_o = { }
+			}
+		}
+
+		# hostiles in your liege
+		button_outliner_header = {
+			visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('hostiles_inside_liege'))))]"
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "button_expand_frame"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_inside_liege'))]"
+			}
+
+			blockoverride "oh_button"
+			{
+				onclick = "[GetVariableSystem.Toggle('hostiles_inside_liege')]"
+				oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+				clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+			}
+
+			blockoverride "oh_toggle_frame"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_inside_liege'))]"
+			}
+
+			blockoverride "oh_name"
+			{
+				raw_text = "Enem[Select_CString(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside_liege')), '(int32)1'), 'ies', 'y')] in your liege's realm"
+			}
+
+			blockoverride "extra" {
+				text_single = {
+					raw_text = ", [GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('hostiles_inside_liege')] total"
+					visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside_liege')), '(int32)1')]"
+				}
+				text_single = {
+					raw_text = ", click to [Select_CString(GetVariableSystem.Exists('hostiles_inside_liege'), 'show', 'hide')]"
+					# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside')), '(int32)1')]"
+				}
+			}
+
+			blockoverride "oh_count"
+			{
+				raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside_liege'))]"
+			}
+			blockoverride "expanded"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_inside_liege'))]"
+			}
+		}
+
+		# hostiles in your land
+		vbox = {
+			datamodel = "[GetPlayer.MakeScope.GetList('hostiles_inside_liege')]"
+			visible = "[And(Not(GetVariableSystem.Exists('hostiles_inside_liege')), GetPlayer.IsValid)]"
+			layoutpolicy_horizontal = expanding
+			margin = { 8 0 }
+			spacing = -2
+
+			item = {
+				army_button_o = { }
+			}
+		}
+
+		# hostiles outside
+		button_outliner_header = {
+			layoutpolicy_horizontal = expanding
+			visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('hostiles_outside'))))]"
+
+			blockoverride "button_expand_frame"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_outside'))]"
+			}
+
+			blockoverride "oh_button"
+			{
+				onclick = "[GetVariableSystem.Toggle('hostiles_outside')]"
+				oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+				clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+			}
+
+			blockoverride "oh_toggle_frame"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_outside'))]"
+			}
+
+			blockoverride "oh_name"
+			{
+				raw_text = "Enem[Select_CString(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_outside')), '(int32)1'), 'ies', 'y')] outside your lands"
+			}
+
+			blockoverride "extra" {
+				text_single = {
+					raw_text = ", [GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('hostiles_outside')] total"
+					visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_outside')), '(int32)1')]"
+				}
+				text_single = {
+					raw_text = ", click to [Select_CString(GetVariableSystem.Exists('hostiles_outside'), 'show', 'hide')]"
+					align = left
+					# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_outside')), '(int32)1')]"
+				}
+			}
+
+			blockoverride "oh_count"
+			{
+				raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_outside'))]"
+			}
+			blockoverride "expanded"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('hostiles_outside'))]"
+			}
+		}
+
+		# hostiles outside your land
+		vbox = {
+			datamodel = "[GetPlayer.MakeScope.GetList('hostiles_outside')]"
+			visible = "[And(Not(GetVariableSystem.Exists('hostiles_outside')), GetPlayer.IsValid)]"
+			layoutpolicy_horizontal = expanding
+			margin = { 8 0 }
+			spacing = -2
+
+			item = {
+				army_button_o = { }
+			}
+		}
+
+		# hostiles in the fog of war
+		button_outliner_header = {
+			layoutpolicy_horizontal = expanding
+			visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('in_the_fog'))))]"
+
+			blockoverride "button_expand_frame"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('in_the_fog'))]"
+			}
+
+			blockoverride "oh_button"
+			{
+				onclick = "[GetVariableSystem.Toggle('in_the_fog')]"
+				oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+				clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+			}
+
+			blockoverride "oh_toggle_frame"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('in_the_fog'))]"
+			}
+
+			blockoverride "oh_name"
+			{
+				raw_text = "Enem[Select_CString(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('in_the_fog')), '(int32)1'), 'ies', 'y')] in the fog of war"
+			}
+
+			blockoverride "extra" {
+				text_single = {
+					raw_text = ", click to [Select_CString(GetVariableSystem.Exists('in_the_fog'), 'show', 'hide')]"
+					# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('in_the_fog')), '(int32)1')]"
+				}
+			}
+
+			blockoverride "oh_count"
+			{
+				raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('in_the_fog'))]"
+			}
+			blockoverride "expanded"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('in_the_fog'))]"
+			}
+		}
+
+		# hostiles in the fog
+		vbox = {
+			datamodel = "[GetPlayer.MakeScope.GetList('in_the_fog')]"
+			visible = "[And(Not(GetVariableSystem.Exists('in_the_fog')), GetPlayer.IsValid)]"
+			layoutpolicy_horizontal = expanding
+			margin = { 8 0 }
+			spacing = -2
+
+			item = {
+				army_button_o = {
+					blockoverride "count" {
+						text_single = {
+							visible = "[Not(Army.IsRaidArmy)]"
+							raw_text = "Army of"
+						}
+						text_single = {
+							visible = "[Army.IsRaidArmy]"
+							raw_text = "Raiders of"
+						}
+					}
+					blockoverride "fog" {
+						visible = no
+					}
+					blockoverride "in_fog" {
+					}
+					blockoverride "click" {
+						enabled = "[Army.GetLocation.GetCoATitle.IsValid]"
+						onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetDeJureLiege.GetID)]"
+					}
+				}
+			}
+		}
+
+		# allied armies
+		button_outliner_header = {
+			layoutpolicy_horizontal = expanding
+			visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('allied_units'))))]"
+
+			blockoverride "button_expand_frame"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('allies'))]"
+			}
+
+			blockoverride "oh_button"
+			{
+				onclick = "[GetVariableSystem.Toggle('allies')]"
+				oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+				clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+			}
+
+			blockoverride "oh_toggle_frame"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('allies'))]"
+			}
+
+			blockoverride "oh_name"
+			{
+				raw_text = "Allied armies"
+
+			}
+
+			blockoverride "extra" {
+				text_single = {
+					raw_text = ", click to [Select_CString(GetVariableSystem.Exists('allies'), 'show', 'hide')]"
+					align = left
+					# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('allied_units')), '(int32)1')]"
+				}
+			}
+
+			blockoverride "oh_count"
+			{
+				raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('allied_units'))]"
+			}
+			blockoverride "expanded"
+			{
+				frame = "[BoolTo2And1(GetVariableSystem.Exists('allies'))]"
+			}
+
+		}
+
+		# allied armies
+		vbox = {
+			datamodel = "[GetPlayer.MakeScope.GetList('allied_units')]"
+			visible = "[And(Not(GetVariableSystem.Exists('allies')), GetPlayer.IsValid)]"
+			layoutpolicy_horizontal = expanding
+			margin = { 8 0 }
+			spacing = -2
+
+			item = {
+				army_button_o = {
+					blockoverride "fighting" {
+
 					}
 				}
 			}

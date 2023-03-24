@@ -9,7 +9,9 @@ window = {
 		using = Animation_FadeIn_Standard
 		using = Sound_WindowShow_Standard
 		using =	Sound_Window_AmbienceMute_Snapshot
-		# on_start = "[Encyclopedia.ViewAllEntries]"
+		on_start = "[Encyclopedia.ViewAllEntries]"
+		on_start = "[PdxGuiTriggerAllAnimations('hide_wiki')]"
+		on_start = "[PdxGuiTriggerAllAnimations('hide_wiki_entries')]"
 	}
 
 	state = {
@@ -31,11 +33,53 @@ window = {
 		size = { 100% 100% }
 		alwaystransparent = no
 
-		using = Window_Background
-		using = Window_Decoration_Frontend_Spike
+		using = Window_Background_No_Edge
 
 		vbox = {
-			using = Window_Margins
+			layoutpolicy_horizontal = expanding
+			margin = { 15 5 }
+
+			vbox = {
+			    layoutpolicy_horizontal = expanding
+				visible = "[GetVariableSystem.Exists('select_page')]"
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+
+					blockoverride "text" {
+						raw_text = "[GetDataModelSize(Encyclopedia.AccessPages)] Categories. Close, Escape."
+					}
+					onclick = "[GetVariableSystem.Clear('select_page')]"
+				}
+
+				hbox = {
+				    layoutpolicy_horizontal = expanding
+
+					vbox = {
+						datamodel = "[Encyclopedia.AccessPages]"
+
+						item = {
+							button_tab_vertical = {
+								size = { 175 35 }
+								onclick = "[Encyclopedia.SetCurrentPage( EncyclopediaPage.AccessSelf )]"
+								down = "[ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self )]"
+								visible = "[Not(ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self ))]"
+								onclick = "[GetVariableSystem.Clear('select_page')]"
+								onclick = "[PdxGuiTriggerAllAnimations('show_wiki_entries')]"
+
+								text_single = {
+									raw_text = " [EncyclopediaPage.GetTitle]."
+								}
+							}
+						}
+					}
+
+				    expand = { }
+				}
+
+
+			    expand = { }
+			}
 
 			header_pattern = {
 				layoutpolicy_horizontal = expanding
@@ -43,7 +87,7 @@ window = {
 
 				blockoverride "header_text"
 				{
-					text = "HEADING_ENCYCLOPEDIA"
+					# raw_text = "[Localize('HEADING_ENCYCLOPEDIA')]."
 				}
 
 				blockoverride "button_close"
@@ -52,81 +96,150 @@ window = {
 					onclick = "[Encyclopedia.Hide]"
 					size = { 0 0 }
 				}
-				blockoverride "extra" {
-					hbox = {
-						datacontext = "[Encyclopedia.AccessCurrentPage]"
-						name = "search_controls"
-						layoutpolicy_horizontal = expanding
-						margin = {10 0}
-						spacing = 5
 
-						editbox_search_field =	{
-							min_width = 300
-							blockoverride "editbox_properties" {
-								name = "search_input" # Do not change name, it is referenced from code
-								onreturnpressed = "[EncyclopediaPage.FilterFromText]"
-								maxcharacters = 100
-								ontextchanged = "[PdxGuiWidget.FindChild('text').Hide]"
-								text_single = {
-									name = "text"
-									margin_left = 5
-									raw_text = "Search field."
-									align = left
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+					text_single = {
+						raw_text = "[Localize('HEADING_ENCYCLOPEDIA')]."
+					}
+
+					text_single = {
+						state = {
+							name = show_wiki
+							on_start = "[PdxGuiWidget.Show]"
+						}
+						state = {
+							name = hide_wiki
+							on_start = "[PdxGuiWidget.Hide]"
+						}
+						visible = no
+						raw_text = "[GetDataModelSize(Encyclopedia.GetViewedEntries)] results."
+					}
+
+					expand = { }
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[Encyclopedia.AccessCurrentPage]"
+				name = "search_controls"
+
+				hbox = {
+				    layoutpolicy_horizontal = expanding
+
+					editbox_search_field =	{
+						min_width = 500
+						blockoverride "editbox_properties" {
+							name = "search_input" # Do not change name, it is referenced from code
+							onreturnpressed = "[EncyclopediaPage.FilterFromText]"
+							maxcharacters = 100
+							ontextchanged = "[PdxGuiWidget.FindChild('text').Hide]"
+							onreturnpressed = "[PdxGuiTriggerAllAnimations('show_wiki')]"
+							onreturnpressed = "[PdxGuiTriggerAllAnimations('show_wiki_entries')]"
+							ontextchanged = "[PdxGuiTriggerAllAnimations('type_sound')]"
+
+
+							state = {
+								name = type_sound
+								start_sound = {
+									soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
 								}
 							}
-						}
-
-						# button_primary = {
-						# 	name = "search_for_input"
-						# 	size = { 120 35 }
-						# 	text = "SEARCH_ENCYCLOPEDIA"
-						# 	tooltip = "SEARCH_ENCYCLOPEDIA_TOOLTIP"
-						# 	using = tooltip_se
-						# 	onclick = "[EncyclopediaPage.SearchFromEnteredText]"
-						# }
-
-						# expand = {}
-
-						hbox = {
-							spacing = 5
-							button_text = {
-							    blockoverride "text" {
-							        raw_text = "RESET_SEARCH_ENCYCLOPEDIA_TOOLTIP"
-							    }
-								blockoverride "dot" { margin_top = 1 }
-								onclick = "[EncyclopediaPage.ResetFilter]"
-								onclick = "[PdxGuiWidget.AccessParent.AccessParent.FindChild('text').Show]"
-							}
-							# button_icon = {
-							# 	name = "reset_input"
-							# 	texture = "gfx/interface/icons/flat_icons/window_close.dds"
-							# 	tooltip = "RESET_SEARCH_ENCYCLOPEDIA_TOOLTIP"
-							# 	onclick = "[EncyclopediaPage.ResetFilter]"
-							# 	using = tooltip_se
-							# 	size = { 30 30 }
-							# }
-
-							button_text = {
-							    blockoverride "text" {
-							        raw_text = "Previous result."
-							    }
-								visible = "[Encyclopedia.CanFilterFromHistoryBack]"
-								onclick = "[Encyclopedia.FilterFromHistoryBack]"
-								# tooltip = "ENCYCLOPEDIA_PREVIOUS_SEARCH_TOOLTIP"
-								using = tooltip_se
-							}
-
-							button_text = {
-							    blockoverride "text" {
-							        raw_text = "Next result."
-							    }
-								visible = "[Encyclopedia.CanFilterFromHistoryForward]"
-								onclick = "[Encyclopedia.FilterFromHistoryForward]"
-								# tooltip = "ENCYCLOPEDIA_NEXT_SEARCH_TOOLTIP"
-								using = tooltip_se
+							text_single = {
+								state = {
+									name = hide_wiki
+									on_start = "[PdxGuiWidget.Show]"
+								}
+								name = "text"
+								margin_left = 5
+								raw_text = "Enter your search here and press Enter."
 							}
 						}
-						expand = { }
+					}
+
+				    expand = { }
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					state = {
+						name = show_wiki
+						on_start = "[PdxGuiWidget.Show]"
+					}
+					state = {
+						name = hide_wiki
+						on_start = "[PdxGuiWidget.Hide]"
+					}
+					raw_text = "You may continue to type."
+				}
+
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					# button_text = {
+					# 	layoutpolicy_horizontal = expanding
+					# 	blockoverride "text" {
+					# 		raw_text = "RESET_SEARCH_ENCYCLOPEDIA_TOOLTIP"
+					# 	}
+					# 	blockoverride "dot" { margin_top = 1 }
+					# 	onclick = "[PdxGuiTriggerAllAnimations('hide_wiki')]"
+					# 	onclick = "[EncyclopediaPage.ResetFilter]"
+					# 	onclick = "[PdxGuiWidget.AccessParent.AccessParent.FindChild('text').Show]"
+					# 	visible = "[Encyclopedia.CanFilterFromHistoryBack]"
+					# }
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "Previous result."
+						}
+						blockoverride "extra" {
+							text_single = {
+								visible = no
+								state = {
+									name = show_wiki
+									on_start = "[PdxGuiWidget.Show]"
+								}
+								state = {
+									name = hide_wiki
+									on_start = "[PdxGuiWidget.Hide]"
+								}
+								raw_text = " Up arrow key."
+							}
+						}
+						visible = "[Encyclopedia.CanFilterFromHistoryBack]"
+						onclick = "[Encyclopedia.FilterFromHistoryBack]"
+						onclick = "[EncyclopediaPage.FilterFromText]"
+						onclick = "[PdxGuiTriggerAllAnimations('show_wiki_entries')]"
+						using = tooltip_se
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "Next result."
+						}
+						blockoverride "extra" {
+							text_single = {
+								visible = no
+								state = {
+									name = show_wiki
+									on_start = "[PdxGuiWidget.Show]"
+								}
+								state = {
+									name = hide_wiki
+									on_start = "[PdxGuiWidget.Hide]"
+								}
+								raw_text = " Down arrow key."
+							}
+						}
+						visible = "[Encyclopedia.CanFilterFromHistoryForward]"
+						onclick = "[Encyclopedia.FilterFromHistoryForward]"
+						onclick = "[PdxGuiTriggerAllAnimations('show_wiki_entries')]"
 					}
 				}
 			}
@@ -136,32 +249,19 @@ window = {
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding
 
-				background = {
-					texture = "gfx/interface/illustrations/event_scenes/study.dds"
-					fittype = end
-					alpha = 0.5
-
-					modify_texture = {
-						texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
-						blend_mode = alphamultiply
-						mirror = vertical
-					}
-
-					modify_texture = {
-						texture = "gfx/interface/component_masks/mask_vignette.dds"
-						blend_mode = alphamultiply
-						alpha = 0.4
-					}
-				}
-
 				vbox = {
 					layoutpolicy_vertical = expanding
 					margin_right = 20
-					# margin_right = -3
 					margin_top = 10
 
 					text_single = {
-						raw_text = "Selected page:"
+						raw_text = "Selected category:"
+						visible = "[Not(ObjectsEqual( Encyclopedia.GetCurrentPage, Encyclopedia.GetAllPage ))]"
+					}
+
+					text_single = {
+						visible = "[ObjectsEqual( Encyclopedia.GetCurrentPage, Encyclopedia.GetAllPage )]"
+						raw_text = "Searching in all entries."
 					}
 
 					vbox = {
@@ -179,77 +279,38 @@ window = {
 								visible = "[ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self )]"
 
 								text_single = {
-									visible = "[Not(ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self ))]"
-									parentanchor = center
 									text = "[EncyclopediaPage.GetTitle]"
-									align = left
-									default_format = "#low"
-								}
-
-								text_single = {
-									visible = "[ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self )]"
-									parentanchor = center
-									text = "[EncyclopediaPage.GetTitle]"
-									align = left
-									default_format = "#high"
 								}
 							}
 						}
+					}
+
+					button_text = {
+						blockoverride "text" {
+							raw_text = "Select a category."
+						}
+						onclick = "[GetVariableSystem.Toggle('select_page')]"
 					}
 
 					button_tab_vertical = {
 						name = "select_page"
 						layoutpolicy_horizontal = expanding
 						size = { 175 35 }
-						text = "ENCYCLOPEDIA_ALL_PAGES"
-						onclick = "[Encyclopedia.ViewAllEntries]"
-						down = "[ObjectsEqual( Encyclopedia.GetCurrentPage, Encyclopedia.GetAllPage )]"
-						default_format = "#clickable"
+						raw_text = "Search in all entries."
+						onclick = "[PdxGuiTriggerAllAnimations('hide_wiki')]"
+						onclick = "[PdxGuiTriggerAllAnimations('hide_wiki_entries')]"
+						onclick = "[PdxGuiTriggerAllAnimations('search_all')]"
+
+						visible = "[Not(ObjectsEqual( Encyclopedia.GetCurrentPage, Encyclopedia.GetAllPage ))]"
 					}
 
-					button_text = {
-					    blockoverride "text" {
-					        raw_text = "Select a page."
-					    }
-						onclick = "[GetVariableSystem.Toggle('select_page')]"
+					state = {
+						name = search_all
+						delay = 0.1
+						on_finish = "[Encyclopedia.ViewAllEntries]"
 					}
 
-					vbox = {
-						# name = "entries"
-						visible = "[GetVariableSystem.Exists('select_page')]"
-						datamodel = "[Encyclopedia.AccessPages]"
-						layoutpolicy_horizontal = expanding
-
-						item = {
-							button_tab_vertical = {
-								# name = "select_page"
-								layoutpolicy_horizontal = expanding
-								size = { 175 35 }
-								onclick = "[Encyclopedia.SetCurrentPage( EncyclopediaPage.AccessSelf )]"
-								down = "[ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self )]"
-								visible = "[Not(ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self ))]"
-								onclick = "[GetVariableSystem.Clear('select_page')]"
-
-								text_single = {
-									visible = "[Not(ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self ))]"
-									parentanchor = center
-									text = "[EncyclopediaPage.GetTitle]"
-									align = left
-									default_format = "#low"
-								}
-
-								text_single = {
-									visible = "[ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self )]"
-									parentanchor = center
-									text = "[EncyclopediaPage.GetTitle]"
-									align = left
-									default_format = "#high"
-								}
-							}
-						}
-					}
-
-					expand = {}
+					expand = { }
 				}
 
 				vbox = {
@@ -259,6 +320,20 @@ window = {
 					layoutpolicy_vertical = expanding
 					margin_top = 10
 					spacing = 10
+					visible = no
+
+					state = {
+						name = hide_wiki_entries
+						on_start = "[PdxGuiWidget.Hide]"
+					}
+
+					state = {
+						name = show_wiki_entries
+						on_start = "[PdxGuiWidget.Show]"
+						start_sound = {
+							soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_select"
+						}
+					}
 
 					scrollbox = {
 						layoutpolicy_horizontal = expanding
@@ -267,12 +342,11 @@ window = {
 						blockoverride "scrollbox_content" {
 
 							datamodel = "[Encyclopedia.GetViewedEntries]"
+
 							item = {
 								vbox = {
 									layoutpolicy_horizontal = expanding
-									# layoutpolicy_vertical = expanding
 									datacontext = "[EncyclopediaEntryView.Get]"
-									# set_parent_size_to_minimum = yes
 									margin_bottom = 5
 									spacing = 5
 
@@ -293,25 +367,32 @@ window = {
 											name = "title"
 											layoutpolicy_horizontal = expanding
 											raw_text = "[EncyclopediaEntry.GetTitle]."
-											default_format = "#high"
-											using = Font_Size_Medium
 										}
 									}
 
-									text_multi = {
-										layoutpolicy_horizontal = expanding
-										name = "body"
-										autoresize = yes
-										max_width = 1600
-										min_width = 1600
-										text = "[EncyclopediaEntry.GetBody]"
-										# margin = { 20 0 }
+									hbox = {
+									    layoutpolicy_horizontal = expanding
+
+										text_multi = {
+											layoutpolicy_horizontal = expanding
+											name = "body"
+											autoresize = yes
+											max_width = 900
+											min_width = 900
+											text = "[EncyclopediaEntry.GetBody]"
+											# margin = { 20 0 }
+										}
+
+									    expand = { }
 									}
+
 								}
 							}
 						}
 					}
 				}
+
+				expand = { }
 			}
 		}
 	}

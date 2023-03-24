@@ -7,6 +7,7 @@ widget = {
 	state = {
 		name = _show
 		using = Animation_FadeIn_Standard
+		on_start = "[GetVariableSystem.Clear('mod_changes')]"
 		start_sound = {
 			soundeffect = "event:/SFX/UI/Frontend/sfx_ui_frontend_window_show"
 		}
@@ -285,17 +286,26 @@ widget = {
 					vbox = {
 						layoutpolicy_horizontal = expanding
 
-						hbox = {
-						    layoutpolicy_horizontal = expanding
-							spacing = 5
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "Main menu."
+						}
 
-						    text_single = {
-						    	raw_text = "Main menu."
+						button_text = {
+							layoutpolicy_horizontal = expanding
+						    blockoverride "text" {
+						        raw_text = "mod_version"
 						    }
-							mod_version = {
-								tooltip = "mod_changes"
+							blockoverride "extra" {
+								text_single = {
+									raw_text = " View change notes."
+								}
 							}
-						    expand = { }
+							onclick = "[GetVariableSystem.Toggle('mod_changes')]"
+						}
+
+						widget = {
+							size = { 0 10 }
 						}
 
 						button_text = {
@@ -535,6 +545,7 @@ widget = {
 							blockoverride "dot" { }
 						}
 						button_text = {
+							visible = no
 							layoutpolicy_horizontal = expanding
 							onclick = "[FrontEndMainView.OnCredits]"
 						    blockoverride "text" {
@@ -544,21 +555,29 @@ widget = {
 						}
 					}
 
-					button = {
-						scale = "[ScaleToFitElementInside('(int32)1920', '(int32)1080')]"
-						background = { using = Background_Area_Border_Solid }
+					hbox = {
+					    layoutpolicy_horizontal = expanding
 
-						text_multi = {
-							margin_left = 3
-							margin_top = 2
-							max_width = 500
-							autoresize = yes
-							resizeparent = yes
-							raw_text = "If your screen reader can't read any text above, click here to open settings and increase GUI scaling."
 
+						button = {
+							scale = "[ScaleToFitElementInside('(int32)1920', '(int32)1080')]"
+							background = { using = Background_Area_Border_Solid }
+
+							text_multi = {
+								margin_left = 5
+								margin_top = 2
+								max_width = 500
+								autoresize = yes
+								resizeparent = yes
+								raw_text = "If your screen reader can't read any text above, click here to open settings and increase GUI scaling."
+
+							}
+							onclick = "[FrontEndMainView.OnSettings]"
 						}
-						onclick = "[FrontEndMainView.OnSettings]"
+
+					    expand = { }
 					}
+
 
 					text_multi = {
 						autoresize = yes
@@ -567,6 +586,20 @@ widget = {
 						max_width = 500
 						min_width = 500
 						raw_text = "[GetLoadedMods]."
+					}
+
+					vbox = {
+						margin_left = 5
+						layoutpolicy_horizontal = expanding
+						datamodel = "[FrontEndMainView.GetDlcCollection.GetDlcs]"
+
+						item = {
+							text_single = {
+								visible = "[Not(DlcItem.GetDlc.IsEnabled)]"
+								layoutpolicy_horizontal = expanding
+								raw_text = "Disabled DLC, [DlcItem.GetDlc.GetName]."
+							}
+						}
 					}
 
 					button_text = {
@@ -588,9 +621,125 @@ widget = {
 		left_panel_old = {
 			visible = "[GetVariableSystem.Exists('ocr')]"
 		}
+
+		widget = {
+			parentanchor = bottom|left
+			size = { 800 100 }
+			visible = "[GetVariableSystem.Exists('ocr')]"
+
+			hbox = { # DLCs
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				margin_left = 20
+				spacing = 10
+
+				text_single = {
+					max_width = 150
+					minimumsize = { 0 25 }
+
+					text = "DLC"
+					align = nobaseline
+					using = Font_Size_Medium
+				}
+
+				scrollarea = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					scrollbarpolicy_vertical = always_off
+					scrollbarpolicy_horizontal = as_needed
+
+					scrollbar_horizontal = {
+						scrollbar = {
+							wheelstep = 60
+							direction = horizontal
+
+							track = {
+								button = {}
+							}
+
+							slider = {
+								button = {}
+							}
+
+							dec_button = {
+								button = {
+								}
+							}
+
+							inc_button = {
+								button = {
+								}
+							}
+						}
+					}
+
+					scrollwidget = {
+						hbox = {
+							hbox = {
+								datamodel = "[FrontEndMainView.GetDlcCollection.GetDlcs]"
+								spacing = 5
+
+								item = {
+									hbox = {
+										widget = {
+											visible = "[DlcItem.GetDlc.IsMajor]"
+											size = { 47 47 }
+											dlc_button = {}
+										}
+
+										widget = {
+											visible = "[Not( DlcItem.GetDlc.IsMajor )]"
+											size = { 33 33 }
+											dlc_button = {}
+										}
+									}
+								}
+							}
+
+							expand = {}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	window = {
+		size = { 100% 100% }
+		background = { using = Background_Area_Border_Solid }
+
+		visible = "[GetVariableSystem.Exists('mod_changes')]"
+
+		scrollbox = {
+			size = { 100% 100% }
+
+			blockoverride "scrollbox_content" {
+				button_text = {
+					shortcut = close_window
+					onclick = "[GetVariableSystem.Toggle('mod_changes')]"
+					layoutpolicy_horizontal = expanding
+				    blockoverride "text" {
+						raw_text = "Change notes. Close with Escape."
+				    }
+				}
+				hbox = {
+				    layoutpolicy_horizontal = expanding
+
+					text_multi = {
+						max_width = 900
+						autoresize = yes
+						raw_text = "mod_changes"
+					}
+
+				    expand = { }
+				}
+			}
+		}
 	}
 
 	clickable_version_number = {
+		background = { using = Background_Area_Border_Solid }
 
 		parentanchor = bottom|right
 		position = { -15 -15 }
@@ -616,6 +765,13 @@ widget = {
 		tooltip = "[GetLoadedMods]"
 		position = { -120 -85 }
 	}
+
+	# window = {
+	# 	size = { 100% 100% }
+	# 	background = { using = Background_Area_Border_Solid }
+	#
+	# 	widget_loading_screen = { }
+	# }
 }
 
 types FrontendTypes {
@@ -1000,8 +1156,8 @@ types FrontendTypes {
 
 			vbox = {
 				margin_top = 255
-				margin_bottom = 20
-				spacing = 25
+				margin_bottom = 15
+				spacing = 10
 
 				vbox = {
 					spacing = 5
@@ -1299,9 +1455,6 @@ types FrontendTypes {
 					}
 				}
 
-				widget = {
-					size = { 0 10 }
-				}
 
 				button_frontend = {
 					raw_text = "Toggle OCR mode, Shift F11."
