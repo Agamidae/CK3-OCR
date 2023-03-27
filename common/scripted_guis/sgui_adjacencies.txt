@@ -2,6 +2,7 @@
 
 	saved_scopes = {
 		target
+		player
 	}
 	effect = {
 		if = {
@@ -43,6 +44,98 @@
 					add_to_variable_list = {
 						name = adjacent_counties_across_water
 						target = prev
+					}
+				}
+			}
+		}
+
+		### enemies
+		if = {
+			limit = {
+				scope:player = {
+					OR = {
+						is_at_war = yes
+						AND = {
+							exists = liege
+							any_liege_or_above = {
+								is_at_war = yes
+							}
+						}
+						any_hostile_raider = {
+							is_causing_raid_hostility_towards = prev
+						}
+					}
+				}
+			}
+
+			scope:player = {
+				# LIEGE WARS
+				every_liege_or_above = {
+					every_war_enemy = {
+						limit = {
+							NOR = {
+								this = scope:player
+								is_allied_in_war = scope:player
+							}
+						}
+						every_army = {
+							add_army_to_province = yes
+							add_to_list = all_enemies
+						}
+					}
+				}
+
+				# MY WARS
+				# add all enemies
+				every_war_enemy = {
+					every_army = {
+						add_army_to_province = yes
+						add_to_list = all_enemies
+					}
+					#TODO do we have to?
+					# exclude yourself
+					every_vassal_or_below = {
+						limit = {
+							NOR = {
+								is_allied_in_war = scope:player
+								this = scope:player
+							}
+						}
+						every_army = {
+							limit = {
+								NOT = { is_in_list = all_enemies }
+							}
+							add_army_to_province = yes
+							add_to_list = all_enemies
+						}
+					}
+				}
+
+				# enemies of my enemies are my enemies
+				every_primary_war_enemy = {
+					every_war_enemy = {
+						limit = {
+							NOR = {
+								this = scope:player
+								is_allied_in_war = scope:player
+							}
+						}
+						every_army = {
+							limit = {
+								NOT = {
+									is_in_list = all_enemies
+								}
+							}
+							add_army_to_province = yes
+							add_to_list = all_enemies
+						}
+					}
+				}
+
+				every_hostile_raider = {
+					every_army = {
+						add_army_to_province = yes
+						add_to_list = all_enemies
 					}
 				}
 			}

@@ -1,0 +1,173 @@
+######################################################
+################## CALL ALLY TO WAR ##################
+######################################################
+window = {
+	name = "call_ally_interaction_window"
+	datacontext = "[CallAllyInteractionWindow.GetCharacterInteractionConfirmationWindow]"
+	parentanchor = top|right
+	position = { 0 0 }
+	size = { 600 100% }
+	movable = no
+	layer = middle
+
+	using = Window_Background_Subwindow
+	# using = Window_Decoration_Warfare
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+	}
+
+	vbox = {
+		using = Window_Margins
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		# set_parent_size_to_minimum = yes
+
+		button = {
+			shortcut = close_window
+			onclick = "[CallAllyInteractionWindow.Close]"
+		}
+
+		## Options
+		vbox_interaction_options = {
+			visible = "[CharacterInteractionConfirmationWindow.HasOptions]"
+		}
+
+		### ACCEPTANCE
+		hbox_character_interaction_acceptance = {
+			layoutpolicy_horizontal = expanding
+		}
+
+		text_multi_on_decline_summary = { }
+
+		### SEND OFFER BUTTON
+		button_primary_text = {
+			visible = "[CharacterInteractionConfirmationWindow.ShouldShowAnswer]"
+			layoutpolicy_horizontal = expanding
+			name = "send_offer_button"
+			blockoverride "text" {
+				raw_text = "[CharacterInteractionConfirmationWindow.GetSendName]"
+			}
+			blockoverride "disabled" {
+				visible = "[Not(CallAllyInteractionWindow.CanSendOffer)]"
+			}
+			blockoverride "hotkey" {
+				visible = "[CallAllyInteractionWindow.CanSendOffer]"
+			}
+			enabled = "[CallAllyInteractionWindow.CanSendOffer]"
+			onclick = "[CallAllyInteractionWindow.Send]"
+			tooltip = "[CallAllyInteractionWindow.GetSendOfferTooltip]"
+		}
+
+		### Portrait / Info
+		hbox = {
+			name = "portrait_and_info"
+			layoutpolicy_horizontal = expanding
+			margin = { 15 5 }
+
+			vbox = {
+				layoutpolicy_vertical = expanding
+
+				text_multi = {
+					name = "info_text"
+					layoutpolicy_horizontal = expanding
+					multiline = yes
+					autoresize = yes
+					max_width = 300
+					text = "[CallAllyInteractionWindow.GetCallAllyDescription]"
+					align = left
+				}
+			}
+
+			expand = { }
+		}
+
+		### WAR LIST
+		scrollbox = {
+			name = "wars_list"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			blockoverride "scrollbox_empty"
+			{
+				text = "CALL_ALLY_NO_WARS"
+				visible = "[Not(CallAllyInteractionWindow.HasWars)]"
+			}
+
+			blockoverride "scrollbox_content"
+			{
+				vbox = {
+					name = "wars_grid"
+					datamodel = "[CallAllyInteractionWindow.GetWarItems]"
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					item = {
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[CallAllyWarItem.GetWar]"
+							blockoverride "pre" {
+								spacing = 3
+								text_single = {
+									raw_text = "Can't select"
+									visible = "[Not(CallAllyWarItem.IsEnabled)]"
+								}
+								text_single = {
+									visible = "[CallAllyWarItem.IsSelected]"
+									raw_text = "Selected,"
+								}
+							}
+						    blockoverride "text" {
+								raw_text = "[War.GetName]."
+						    }
+							onclick = "[CallAllyWarItem.OnClick]"
+							down = "[CallAllyWarItem.IsSelected]"
+							enabled = "[CallAllyWarItem.IsEnabled]"
+							tooltip = "[CallAllyWarItem.GetTooltip]"
+							tooltip_enabled = "[Not(CallAllyWarItem.IsEnabled)]"
+						}
+					}
+				}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[CharacterInteractionConfirmationWindow.ShouldShowAnswer]"
+			# spacing = 10
+			margin = { 0 15 }
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				text = "DECISION_DETAIL_EFFECTS"
+			}
+
+			vbox_character_interaction_effects = {
+				datacontext = "[CharacterInteractionConfirmationWindow.GetEffectsDescription]"
+				layoutpolicy_horizontal = expanding
+				blockoverride "minimumsize" {
+					minimumsize = { 540 0 }
+				}
+			}
+		}
+
+		char_name = {
+			layoutpolicy_horizontal = expanding
+			datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+			blockoverride "extra" {
+				text_single = {
+					raw_text = " opinion [Character.GetOpinionOf( GetPlayer )]."
+				}
+			}
+		}
+	}
+}

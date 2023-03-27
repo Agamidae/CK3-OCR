@@ -4,7 +4,7 @@ widget = {
 	position = { 0 0 }
 	alwaystransparent = no
 	filter_mouse = all
-	layer = windows_layer
+	layer = top
 
 	state = {
 		name = default
@@ -14,7 +14,7 @@ widget = {
 
 	state = {
 		name = ocr
-		position = { 0 0 }
+		position = { 15 0 }
 		trigger_when = "[Not(GetVariableSystem.Exists('ocr'))]"
 	}
 
@@ -104,7 +104,7 @@ widget = {
 		background = {
 			using = Background_Area_Solid
 			margin = { -15 0 }
-			margin_right = -20
+			# margin_right = -20
 			alpha = 0.7
 		}
 
@@ -121,7 +121,7 @@ widget = {
 
 			text_single = {
 				margin = { 20 0 }
-				raw_text = "Outliner, hotkey O. Reload with Shift E. Updates on pause."
+				raw_text = "Outliner. Reload, Shift E. Select your first unit, U."
 				layoutpolicy_horizontal = expanding
 			}
 
@@ -193,7 +193,7 @@ widget = {
 			scrollwidget = {
 				vbox = {
 					set_parent_size_to_minimum = yes
-					min_width = 600
+					min_width = 640
 					margin = { 10 0 }
 					margin_right = 15
 					margin_top = 20
@@ -363,15 +363,6 @@ widget = {
 						}
 					}
 
-					button_text = {
-						layoutpolicy_horizontal = expanding
-					    blockoverride "text" {
-					        raw_text = "Using [Select_CString(GetVariableSystem.Exists('compact_units'), 'detailed', 'compact')] unit view, Shift W. Select first unit with U."
-					    }
-						onclick = "[GetVariableSystem.Toggle('compact_units')]"
-						shortcut = map_mode_10
-					}
-
 					# battles
 					button_outliner_header = {
 						layoutpolicy_horizontal = expanding
@@ -441,6 +432,7 @@ widget = {
 									}
 									blockoverride "click" {
 										onclick = "[UnitItem.SelectAndPanUnit]"
+										onclick = "[ToggleGameView('outliner')]"
 										# onclick = "[UnitItem.PanToUnit]"
 										onrightclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
 										# onrightclick = "[UnitItem.PanToUnit]"
@@ -493,6 +485,7 @@ widget = {
 						blockoverride "oh_button"
 						{
 							onclick = "[Outliner.ToggleCategory('unit')]"
+							onclick = "[ToggleGameView('outliner')]"
 							# tooltip = "[SelectLocalization( Outliner.IsCategoryShown('unit'), 'OUTLINER_COLLAPSE', 'OUTLINER_EXPAND' )]"
 							# onclick = "[PdGUIInn('select_armies')]"
 							oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
@@ -561,6 +554,7 @@ widget = {
 								}
 								blockoverride "click" {
 									onclick = "[UnitItem.SelectAndPanUnit]"
+									onclick = "[ToggleGameView('outliner')]"
 									# onclick = "[UnitItem.PanToUnit]"
 									onrightclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
 									# onrightclick = "[UnitItem.PanToUnit]"
@@ -578,6 +572,17 @@ widget = {
 					}
 
 					outliner_armies = { }
+
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							margin_left = 10
+							raw_text = "[Select_CString(GetVariableSystem.Exists('compact_units'), 'Hide', 'Show')] unit details, Shift W."
+						}
+						onclick = "[GetVariableSystem.Toggle('compact_units')]"
+						shortcut = map_mode_10
+					}
 
 					button_outliner_header = {
 						name = "holdings_header"
@@ -634,6 +639,7 @@ widget = {
 								size = { 0 25 }
 
 								onclick = "[OutlinerHoldingItem.OnClick]"
+								onclick = "[ToggleGameView('outliner')]"
 								down = "[Or(Holding.IsHoldingOrNonCapitalHoldingHovered, Holding.IsSelected)]"
 								# tooltipwidget = { holding_tooltip_click = { } }
 								# using = tooltip_ws
@@ -776,12 +782,81 @@ types Outliner {
 			margin_bottom = 2
 			margin_left = 5
 
+			# location
+			button_text = {
+				block "army_window_show" {
+					visible = no
+				}
+				layoutpolicy_horizontal = expanding
+				block "click" {
+					using = army_click
+				}
+			    blockoverride "text" {
+			        raw_text = ""
+			    }
+				blockoverride "extra" {
+					flowcontainer = {
+						ignoreinvisible = yes
+
+						block "same_province" { }
+
+						flowcontainer = {
+						    ignoreinvisible = yes
+
+							flowcontainer = {
+							    ignoreinvisible = yes
+
+								block "hide_at_capital" {
+									visible = "[Not(ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId))]"
+								}
+
+
+								block "distance" {
+									text_single = {
+										raw_text = "ArmyDistance"
+									}
+
+									text_single = {
+										raw_text = " [GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')],"
+									}
+								}
+
+							}
+
+							text_single = {
+								visible = "[ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId)]"
+
+								raw_text = " In your capital."
+							}
+
+							text_single = {
+								visible = "[Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.IsValid]"
+								raw_text = " [Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.GetNameNoTierNoTooltip],"
+							}
+
+							text_single = {
+								visible = "[Not(Army.IsEmbarked)]"
+								raw_text = " [Army.GetLocation.GetTerrain.GetName] of"
+							}
+
+							text_single = {
+								raw_text = " [Army.GetLocation.GetHolding.GetNameNoTooltip]."
+							}
+
+							text_single = {
+								visible = "[GetVariableSystem.Exists('compact_units')]"
+								raw_text = " [AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.IsValid, Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.GetNameNoTierNoTooltip)][AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.IsValid, '.')]"
+							}
+						}
+					}
+				}
+			}
+
 			button_text = {
 				layoutpolicy_horizontal = expanding
 				block "army_name" { }
 				block "click" {
-					enabled = "[Army.GetLocation.GetCoATitle.IsValid]"
-					onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+					using = army_click
 				}
 				blockoverride "text" {
 					raw_text = ""
@@ -1001,8 +1076,7 @@ types Outliner {
 			button_text = {
 				layoutpolicy_horizontal = expanding
 				block "click" {
-					enabled = "[Army.GetLocation.GetCoATitle.IsValid]"
-					onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+					using = army_click
 				}
 				blockoverride "text" {
 					raw_text = ""
@@ -1060,10 +1134,10 @@ types Outliner {
 			# location
 			button_text = {
 				block "fog" { }
+				block "army_window" { }
 				layoutpolicy_horizontal = expanding
 				block "click" {
-					enabled = "[Army.GetLocation.GetCoATitle.IsValid]"
-					onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+					using = army_click
 				}
 			    blockoverride "text" {
 			        raw_text = ""
@@ -1072,30 +1146,36 @@ types Outliner {
 					flowcontainer = {
 						ignoreinvisible = yes
 
-						text_single = {
-							visible = "[ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId)]"
-
-							raw_text = "In your capital."
-						}
-
 						block "same_province" { }
 
 						flowcontainer = {
 						    ignoreinvisible = yes
-							block "hide_at_capital" {
-								visible = "[Not(ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId))]"
-							}
 
-							block "distance" {
-								text_single = {
-									raw_text = "ArmyDistance"
+							flowcontainer = {
+							    ignoreinvisible = yes
+
+								block "hide_at_capital" {
+									visible = "[Not(ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId))]"
 								}
 
-								text_single = {
-									raw_text = " [GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')],"
+
+								block "distance" {
+									text_single = {
+										raw_text = "ArmyDistance"
+									}
+
+									text_single = {
+										raw_text = " [GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')],"
+									}
 								}
+
 							}
 
+							text_single = {
+								visible = "[ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId)]"
+
+								raw_text = " In your capital."
+							}
 
 							text_single = {
 								visible = "[Army.GetLocation.GetCounty.GetTitle.GetDeJureLiege.IsValid]"
@@ -1116,8 +1196,6 @@ types Outliner {
 								raw_text = " [AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.IsValid, Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.GetNameNoTierNoTooltip)][AddTextIf(Army.GetLocation.GetCounty.GetTitle.GetDeFactoTopLiege.IsValid, '.')]"
 							}
 						}
-
-						expand = { }
 					}
 				}
 			}
@@ -1129,8 +1207,7 @@ types Outliner {
 				}
 				layoutpolicy_horizontal = expanding
 				block "click" {
-					enabled = "[Army.GetLocation.GetCoATitle.IsValid]"
-					onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+					using = army_click
 				}
 			    blockoverride "text" {
 			        raw_text = ""
@@ -1212,8 +1289,7 @@ types Outliner {
 				block "fog" { }
 				layoutpolicy_horizontal = expanding
 				block "click" {
-					enabled = "[Army.GetLocation.GetCoATitle.IsValid]"
-					onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+					using = army_click
 				}
 			    blockoverride "text" {
 			        raw_text = ""
@@ -1649,4 +1725,19 @@ local_template character_tooltip
 		}
 	}
 	using = tooltip_ws
+}
+
+template army_click {
+	enabled = "[Army.GetLocation.GetCoATitle.IsValid]"
+	onclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+	onrightclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+	onrightclick = "[PdxGuiWidget.TriggerAnimation('right_click')]"
+
+	state = {
+		name = right_click
+
+		start_sound = {
+			soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_checkbox"
+		}
+	}
 }

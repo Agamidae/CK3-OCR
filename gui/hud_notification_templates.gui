@@ -935,16 +935,37 @@ types Notifications {
     ######################################################
     type notifications_suggestions = widget {
         name = "action_items"
-        visible = "[And(And( Not( IsPauseMenuShown ), And( Not(SinglePlayerShowingPausedSuccession), ActionItemHandler.ShouldBeVisible)), Not(GetVariableSystem.Exists('resources')))]"
+        visible = "[And(And( Not( IsPauseMenuShown ), And( Not(SinglePlayerShowingPausedSuccession), ActionItemHandler.ShouldBeVisible)), Not(IsRightWindowOpen))]"
         visible_at_creation = no
         alwaystransparent = no
         allow_outside = yes
+        size = { 700 0 }
 
-        button = {
-            onclick = "[ActionItemHandler.ToggleList]"
-            visible = "[Not(GetVariableSystem.Exists('ocr'))]"
-            shortcut = "action_list"
+        container = {
+            parentanchor = right
+            visible = "[Not(GetScriptedGui('show_suggestions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ))]"
+
+            button_text = {
+                background = { using = Background_Area_Border_Solid }
+                onclick = "[ActionItemHandler.ToggleList]"
+                visible = "[Not(GetVariableSystem.Exists('ocr'))]"
+                shortcut = "action_list"
+                blockoverride "text" {
+                    margin_right = 5
+                    raw_text = "[ActionItemHandler.GetNumberOfActions] suggestions, Tab."
+                }
+            }
         }
+
+        container = {
+    		visible = "[GetScriptedGui('show_suggestions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+            button = {
+                onclick = "[ActionItemHandler.ToggleList]"
+                visible = "[Not(GetVariableSystem.Exists('ocr'))]"
+                shortcut = "action_list"
+            }
+        }
+
 
         using = Animation_ShowHide_Quick
 
@@ -1183,13 +1204,24 @@ types Notifications {
         }
 
         widget = {
+            parentanchor = right
             visible = "[ActionItemHandler.IsListVisible]"
             visible_at_creation = no
-            parentanchor = top|right
-            position = { 30 0 }
+            # parentanchor = right
+            # position = { 30 0 }
             alwaystransparent = no
             filter_mouse = all
 
+
+            state = {
+                name = _show
+                on_start = "[GetVariableSystem.Set('suggestions', 'open')]"
+            }
+
+            state = {
+                name = _hide
+                on_start = "[GetVariableSystem.Clear('suggestions')]"
+            }
             state = {
                 name = _show
                 using = Animation_FadeIn_Quick
@@ -1204,9 +1236,7 @@ types Notifications {
                 position_y = -20
             }
 
-
             background = { using = Background_Area_Border_Solid }
-
 
             widget = {
                 name = "button"
@@ -1244,7 +1274,7 @@ types Notifications {
                 spacing = 15
                 ignoreinvisible = yes
 
-                @sug_width = 600
+                @sug_width = 700
 
                 vbox = {
                     name = "suggestions"
@@ -1285,41 +1315,25 @@ types Notifications {
                 vbox = {
                     name = "actions"
                     layoutpolicy_horizontal = expanding
-                    spacing = 5
                     margin = { 8 0 }
                     margin_bottom = 8
 
                     hbox = {
+                        layoutpolicy_horizontal = expanding
+
                         text_single = {
-                            layoutpolicy_horizontal = expanding
                             text = "CURRENT_SITUATION_HEADER"
                             max_width = 220
-                            # using = Font_Size_Medium
-                            allow_outside = yes
-                            align = center
-                            # using = Font_Type_Flavor
-                            # default_format = "#light_background"
-
                         }
 
                         text_single = {
-                            raw_text = ", [GetDataModelSize(ActionItemHandler.GetGuiActionItems)] items."
+                            raw_text = ", [ActionItemHandler.GetNumberOfActions] suggestions."
                         }
 
                         text_single = {
                             raw_text = " "
                         }
-                        text_single = {
-                            raw_text = "Click to select, right-click to dismiss."
-                        }
-                        button_text = {
-                            blockoverride "text" {
-                                raw_text = "Reset dismissed."
-                                align = left
-                            }
-                            onclick = "[ActionItemHandler.ResetAllDismissed]"
-                            tooltip = "RESET_DISMISSED_TOOLTIP"
-                        }
+                        expand = { }
                     }
 
                     text_single = {
@@ -1328,71 +1342,118 @@ types Notifications {
                         # default_format = "#light_background;italic"
                     }
 
-                    container = {
-                        scrollbox = {
-                            visible = "[ActionItemHandler.HasAvailableCurrentSituationItems]"
-                            maximumsize = { -1 1000 }
+                    scrollbox = {
+                        layoutpolicy_horizontal = expanding
+                        visible = "[ActionItemHandler.HasAvailableCurrentSituationItems]"
+                        maximumsize = { -1 940 }
 
-                            blockoverride "scrollbox_background_fade" {}
-                            blockoverride "scrollbox_background" {}
+                        blockoverride "scrollbox_background_fade" { }
+                            blockoverride "scrollbox_background" { }
 
-                            blockoverride "scrollbox_margins"
-                            {
-                                margin_top = 20
-                                margin_bottom = 5
-                                margin_left = 5
-                                margin_right = 5
-                            }
+                                blockoverride "scrollbox_margins"
+                                {
+                                    margin_top = 20
+                                }
 
-                            blockoverride "scrollbox_content" {
-                                name = "current_situation"
-                                datamodel = "[ActionItemHandler.GetGuiActionItems]"
-                                set_parent_size_to_minimum = yes
-                                # spacing = 5
+                                blockoverride "scrollbox_content" {
+                                    set_parent_size_to_minimum = yes
+                                    spacing = 10
 
-                                item = {
-                                    flowcontainer = {
-                                        ignoreinvisible = yes
-                                        minimumsize = { @sug_width 0 }
-                                        direction = vertical
+                                    vbox = {
+                                        datamodel = "[ActionItemHandler.GetGuiActionItems]"
 
-                                        flowcontainer = {
-                                            ignoreinvisible = yes
-                                            minimumsize = { @sug_width 0 }
-                                            direction = vertical
-
-                                            button_current_situation_item = {
-                                                visible = "[And(GuiActionItem.IsVisible, Not(GuiActionItem.HasMultipleActions))]"
-                                                datacontext = "[GuiActionItem.GetFirstVisibleActionItem]"
+                                        item = {
+                                            flowcontainer = {
+                                                ignoreinvisible = yes
                                                 minimumsize = { @sug_width 0 }
-                                            }
+                                                direction = vertical
 
-                                            button_current_situation_item_multiple = {
-                                                visible = "[And(GuiActionItem.IsVisible, GuiActionItem.HasMultipleActions)]"
-                                                minimumsize = { @sug_width 0 }
+                                                flowcontainer = {
+                                                    name = "expanded_action_items"
+                                                    datamodel = "[GuiActionItem.GetImportantActionItems]"
+                                                    visible = "[GuiActionItem.IsExpanded]"
+                                                    direction = vertical
+                                                    margin_left = 10
+
+                                                    button_current_situation_item_multiple = {
+                                                        visible = "[And(GuiActionItem.IsVisible, GuiActionItem.HasMultipleActions)]"
+                                                        minimumsize = { @sug_width 0 }
+                                                    }
+
+                                                    ignoreinvisible = yes
+
+                                                    item = {
+                                                        button_current_situation_item_combined = {
+                                                            datacontext = "[GuiActionImportantActionItem.GetImportantAction]"
+                                                            minimumsize = { @sug_width 0 }
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
+                                    }
 
+                                    vbox = {
+                                        datamodel = "[ActionItemHandler.GetGuiActionItems]"
 
-                                        flowcontainer = {
-                                            name = "expanded_action_items"
-                                            datamodel = "[GuiActionItem.GetImportantActionItems]"
-                                            visible = "[GuiActionItem.IsExpanded]"
-                                            direction = vertical
-                                            margin_left = 10
+                                        item = {
+                                            flowcontainer = {
+                                                ignoreinvisible = yes
+                                                minimumsize = { @sug_width 0 }
+                                                direction = vertical
 
-                                            ignoreinvisible = yes
-
-                                            item = {
-                                                button_current_situation_item_combined = {
-                                                    datacontext = "[GuiActionImportantActionItem.GetImportantAction]"
+                                                flowcontainer = {
+                                                    ignoreinvisible = yes
                                                     minimumsize = { @sug_width 0 }
+                                                    direction = vertical
+
+                                                    button_current_situation_item = {
+                                                        visible = "[And(GuiActionItem.IsVisible, Not(GuiActionItem.HasMultipleActions))]"
+                                                        datacontext = "[GuiActionItem.GetFirstVisibleActionItem]"
+                                                        minimumsize = { @sug_width 0 }
+                                                    }
+
+                                                    button_current_situation_item_multiple = {
+                                                        visible = "[And(And(GuiActionItem.IsVisible, GuiActionItem.HasMultipleActions), Not(GuiActionItem.IsExpanded))]"
+                                                        minimumsize = { @sug_width 0 }
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
                             }
+
+                    widget = {
+                        size = { 0 5 }
+                    }
+
+                    text_single = {
+                        margin_left = 5
+                        layoutpolicy_horizontal = expanding
+                        raw_text = "Right click to dismiss a suggestion."
+                    }
+
+                    button_text = {
+                        layoutpolicy_horizontal = expanding
+                        blockoverride "text" {
+                            raw_text = "Reset dismissed."
+                        }
+                        onclick = "[ActionItemHandler.ResetAllDismissed]"
+                        tooltip = "RESET_DISMISSED_TOOLTIP"
+                    }
+
+                    button_text = {
+                        layoutpolicy_horizontal = expanding
+                        onclick = "[GetScriptedGui('show_suggestions').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+                        blockoverride "pre" {
+                            spacing = 3
+                            text_single = {
+                                raw_text = "[Select_CString(GetScriptedGui('show_suggestions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ), 'unchecked', 'checked')],"
+                            }
+                        }
+                        blockoverride "text" {
+                            raw_text = "show the number of suggestions on screen."
                         }
                     }
                 }
@@ -1731,6 +1792,7 @@ types Suggestions
 
         onclick = "[ImportantActionItem.OnClick]"
         onrightclick = "[ImportantActionItem.Dismiss]"
+        onclick = "[ActionItemHandler.ToggleList]"
         button_ignore = none
         onmousehierarchyenter = "[ImportantActionItem.MarkAsRead]"
 
@@ -1790,6 +1852,12 @@ types Suggestions
             resizeparent = yes
             ignoreinvisible = yes
 
+
+            text_single = {
+                margin_right = 3
+                raw_text = "[AddTextIf(GuiActionItem.IsExpanded, 'Expanded,')]"
+            }
+
             text_multi = {
                 autoresize = yes
                 max_width = @sug_width
@@ -1799,12 +1867,8 @@ types Suggestions
 
             text_single = {
                 raw_text = ", [GuiActionItem.GetNumberOfVisibleItems],"
-                default_format = "#high"
             }
 
-            text_single = {
-                raw_text = "[AddTextIf(GuiActionItem.IsExpanded, ' Expanded,')]"
-            }
 
             text_single = {
                 raw_text = " Tooltip."

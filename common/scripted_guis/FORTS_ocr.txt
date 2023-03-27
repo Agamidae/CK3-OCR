@@ -1,0 +1,634 @@
+﻿
+hostile_forts = {
+	saved_scopes = { army }
+	effect = {
+		clear_variable_list = your_wars
+		clear_variable_list = adjacent_hostile_forts
+		clear_variable_list = adjacent_across_water_hostile_forts
+		clear_variable_list = war_targets
+		clear_variable_list = personal_forts
+		clear_variable_list = hostile_forts
+		clear_variable_list = your_hostile_forts
+		clear_variable_list = captured_war_targets
+		clear_variable_list = hostile_war_targets
+		clear_variable_list = enemy_capitals
+		clear_variable_list = closest_counties
+        clear_variable_list = liege_hostile_forts
+        clear_variable_list = all_forts
+		remove_variable = closest_hostile_county
+        remove_variable = closest_hostile_war_target
+
+		#probably unneeded
+		save_scope_as = player
+		scope:army = {
+			location = {
+				save_scope_as = second # for distance
+			}
+		}
+
+		if = {
+			limit = {
+                OR = {
+                    any_liege_or_above = {
+                        is_at_war = yes
+                    }
+                    is_at_war = yes
+                }
+			}
+
+            if = {
+                limit = {
+                    is_at_war = yes
+                }
+                # closest capital
+                ordered_primary_war_enemy = {
+                    # limit = {
+                    # 	any_character_war = {
+                    # 		this = root.var:selected_war
+                    # 	}
+                    # }
+                    order_by = {
+                        value = capital_province.squared_province_distance
+                        multiply = -1
+                    }
+                    max = 1
+                    capital_province = {
+                        # save_scope_as = third # for the path
+                        root = {
+                            set_variable = {
+                                name = enemy_capital
+                                value = prev
+                            }
+                        }
+                    }
+                }
+
+                # all closest capitals
+                ordered_primary_war_enemy = {
+                    order_by = {
+                        value = capital_province.squared_province_distance
+                        multiply = -1
+                    }
+                    min = 0
+
+                    capital_province = {
+                        if = {
+                            limit = {
+                                barony_controller = {
+                                    is_county_safe = no
+                                }
+                            }
+
+                            add_to_list = all_forts
+                            root = {
+                                add_to_variable_list = {
+                                    name = enemy_capitals
+                                    target = prev
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            ### forts
+			if = {
+				limit = {
+					# always = no
+				}
+
+                # all forts
+				if = {
+					limit = {
+						# always = no
+					}
+					# add war targets to war_targets
+					every_character_war = {
+						casus_belli = {
+							every_target_title = {
+								every_in_de_facto_hierarchy = {
+									limit = {
+										tier = tier_county
+									}
+                                    every_county_province = {
+                                        limit = {
+                                            fort_level > 0
+                                            NOT = { is_in_list = enemy_capitals }
+                                        }
+                                        add_to_list = war_targets
+                                    }
+								}
+							}
+						}
+					}
+
+					# make hostile_war_targets list
+					every_in_list = {
+						list = war_targets
+
+						limit = {
+							fort_level > 0
+							barony_controller = {
+								is_county_safe = no
+							}
+						}
+
+                        add_to_list = all_forts
+						add_to_list = hostile_war_targets
+						remove_from_list = war_targets
+					}
+
+					# sort hostile_war_targets and add to a variable list
+					ordered_in_list = {
+						list = hostile_war_targets
+						order_by = {
+							value = squared_province_distance
+							multiply = -1
+						}
+						min = 0
+
+						root = {
+							add_to_variable_list = {
+								name = hostile_war_targets
+								target = prev
+							}
+						}
+					}
+
+					# captured targets list
+					ordered_in_list = {
+						list = war_targets
+						order_by = {
+							value = squared_province_distance
+							multiply = -1
+						}
+						min = 0
+
+						root = {
+							add_to_variable_list = {
+								name = captured_war_targets
+								target = prev
+							}
+						}
+					}
+
+					# add all enemy holdings
+					every_war_enemy = {
+						every_realm_province = {
+							save_scope_as = test
+							limit = {
+								fort_level > 0
+								NOR = {
+									is_in_list = enemy_capitals
+									is_in_list = war_targets
+									is_in_list = hostile_war_targets
+								}
+								barony_controller = {
+									is_county_safe = no
+								}
+							}
+							add_to_list = hostile_forts_unsorted
+                            add_to_list = all_forts
+						}
+					}
+
+					# sort them all
+					ordered_in_list = {
+						list = hostile_forts_unsorted
+						order_by = {
+							value = squared_province_distance
+							multiply = -1
+						}
+						min = 0
+						add_to_list = hostile_forts
+					}
+
+					# add your captured holdings
+					every_realm_province = {
+						limit = {
+							fort_level > 0
+							barony_controller = {
+								is_county_safe = no
+							}
+							NOT = {
+								is_in_list = hostile_forts
+							}
+						}
+                        add_to_list = all_forts
+						add_to_list = your_captured_forts
+					}
+
+                    # add liege's
+                    every_liege_or_above = {
+                        limit = {
+                            is_at_war = yes
+                        }
+                        every_realm_province = {
+                            limit = {
+                                fort_level > 0
+                                barony_controller = {
+                                    is_county_safe = no
+                                }
+                            }
+                            add_to_list = all_forts
+                            add_to_list = liege_hostile_forts
+                        }
+                    }
+
+                    every_in_list = {
+                        list = liege_hostile_forts
+                        root = {
+                            add_to_variable_list = {
+                                name = liege_hostile_forts
+                                target = prev
+                            }
+                        }
+                    }
+				}
+
+                # add all
+                every_in_list = {
+                    list = all_forts
+                    root = {
+                        add_to_variable_list = {
+                            name = all_forts
+                            target = prev
+                        }
+                    }
+                }
+
+                # closest forts
+				if = {
+					limit = {
+						# always = no
+					}
+
+					ordered_in_list = {
+						list = all_forts
+						order_by = {
+							value = squared_province_distance
+							multiply = -1
+						}
+                        limit = {
+                            NOT = {
+                                this = scope:army.location
+                            }
+                        }
+						max = 1
+						root = {
+							set_variable = {
+								name = closest_hostile_county
+								value = prev
+							}
+						}
+					}
+
+                    ordered_in_list = {
+						list = hostile_war_targets
+						order_by = {
+							value = squared_province_distance
+							multiply = -1
+						}
+                        limit = {
+                            NOT = {
+                                this = scope:army.location
+                            }
+                        }
+						max = 1
+						root = {
+							set_variable = {
+								name = closest_hostile_war_target
+								value = prev
+							}
+						}
+					}
+				}
+
+                # find exposed first
+                ordered_in_list = {
+                    list = hostile_forts
+                    order_by = {
+                        value = squared_province_distance
+                        multiply = -1
+                    }
+                    min = 0
+                    limit = {
+                        county = {
+                            save_temporary_scope_as = county
+                            any_neighboring_county = {
+                                NOT = {
+                                    any_county_province = {
+                                        is_in_list = hostile_forts
+                                    }
+                                }
+                                county_controller = {
+                                    is_county_safe = yes
+                                }
+                            }
+                        }
+                    }
+                    root = {
+                        add_to_variable_list = {
+                            name = adjacent_hostile_forts
+                            target = prev
+                        }
+                    }
+                    remove_from_list = hostile_forts
+                }
+
+                # add the rest
+                ordered_in_list = {
+                    list = hostile_forts
+                    order_by = {
+                        value = squared_province_distance
+                        multiply = -1
+                    }
+                    min = 0
+                    root = {
+                        add_to_variable_list = {
+                            name = hostile_forts
+                            target = prev
+                        }
+                    }
+                }
+			}
+
+            ####
+			# war selection list, unused
+            if = {
+                limit = {
+                    always = no
+                }
+                every_character_war = {
+                    add_to_list = your_wars
+                }
+                every_in_list = {
+                    list = your_wars
+                    ROOT = {
+                        add_to_variable_list = {
+                            name = your_wars
+                            target = prev
+                        }
+                    }
+                }
+                if = {
+                    limit = {
+                        exists = var:selected_war
+                        any_in_list = {
+                            variable = your_wars
+                            this = root.var:selected_war
+                        }
+                    }
+                }
+                else = {
+    				random_character_war = {
+    					ROOT = {
+    						set_variable = {
+    							name = selected_war
+    							value = prev
+    						}
+    					}
+    				}
+    			}
+            }
+
+            # path to the capital, unused
+            if = {
+                limit = {
+                    always = no
+                }
+                var:enemy_capital = {
+                    save_scope_as = second
+                }
+                clear_variable_list = path_to_capital
+
+                scope:army.location = {
+                    county = {
+                        every_neighboring_county = {
+                            limit = {
+                                county_controller = {
+                                    NOR = {
+                                        is_at_war_with = root
+                                        any_liege_or_above = {
+                                            is_at_war_with = root
+                                        }
+                                    }
+                                }
+                                title_province = {
+                                    squared_province_distance < scope:army.location.squared_province_distance
+                                }
+                            }
+                            root = {
+                                add_to_variable_list = {
+                                    name = path_to_capital
+                                    target = prev.title_province
+                                }
+                            }
+                        }
+                    }
+                }
+
+                scope:army.location = {
+                    save_scope_as = second
+                }
+            }
+
+
+            # closest friendly county, unused
+			# if = {
+			# 	limit = { always = no }
+			# 	ordered_realm_county = {
+			# 		order_by = {
+			# 			value = squared_province_distance_third
+			# 			multiply = -1
+			# 		}
+			# 		max = 1
+			# 		limit = {
+			# 			county_controller = {
+			# 				NOT = { is_at_war_with = root }
+			# 			}
+			# 		}
+			# 		title_province = {
+			# 			root = {
+			# 				add_to_variable_list = {
+			# 					name = closest_counties
+			# 					target = prev
+			# 				}
+			# 			}
+			# 		}
+			# 	}
+			# }
+		}
+	}
+}
+
+raid_targets = {
+	saved_scopes = { army }
+	effect = {
+		clear_variable_list = raid_targets
+		clear_variable_list = looted_raid_targets
+		clear_variable_list = strong_raid_targets
+		scope:army = {
+			location = {
+				save_scope_as = second
+			}
+		}
+
+		if = {
+			limit = {
+				scope:army = {
+					is_raid_army = yes
+				}
+			}
+
+			every_sub_realm_county = {
+				every_title_to_title_neighboring_county = {
+					every_title_to_title_neighboring_county = {
+						limit = {
+							NOR = {
+								holder.top_liege = root.top_liege
+								holder = {
+									OR = {
+										root = {
+											has_truce = prev
+										}
+										OR = {
+											has_raid_immunity_against = root
+											is_allied_to = root
+										}
+									}
+								}
+								holder = {
+									any_liege_or_above = {
+										OR = {
+											OR = {
+												is_allied_to = root
+												has_raid_immunity_against = root
+											}
+											root = {
+												has_truce = prev
+											}
+										}
+									}
+								}
+							}
+						}
+						title_province = {
+							add_to_list = raid_targets
+						}
+					}
+				}
+			}
+
+			every_character_to_title_neighboring_and_across_water_county = {
+				limit = {
+					OR = {
+						is_coastal_county = yes
+						is_riverside_county = yes
+					}
+					NOT = {
+						title_province = {
+							is_in_list = raid_targets
+						}
+					}
+					# title_province = {
+					# 	distance_to_army < 1500
+					# }
+					NOR = {
+						holder.top_liege = root.top_liege
+						holder = {
+							OR = {
+								root = {
+									has_truce = prev
+								}
+								OR = {
+									has_raid_immunity_against = root
+									is_allied_to = root
+								}
+							}
+						}
+						holder = {
+							any_liege_or_above = {
+								OR = {
+									OR = {
+										is_allied_to = root
+										has_raid_immunity_against = root
+									}
+									root = {
+										has_truce = prev
+									}
+								}
+							}
+						}
+					}
+				}
+				title_province = {
+					add_to_list = raid_targets
+				}
+			}
+
+			every_in_list = {
+				list = raid_targets
+				if = {
+					limit = {
+						OR = {
+							has_province_modifier = recently_looted_modifier
+							is_raided = yes
+						}
+					}
+					root = {
+						add_to_variable_list = {
+							name = looted_raid_targets
+						}
+					}
+					remove_from_list = raid_targets
+				}
+			}
+
+			ordered_in_list = {
+				list = raid_targets
+				order_by = {
+					value = squared_province_distance
+					multiply = -1
+				}
+				min = 0
+
+				if = {
+					limit = {
+						OR = {
+							county.holder.current_military_strength > scope:army.army_size
+							county.holder = {
+								any_liege_or_above = {
+									current_military_strength > scope:army.army_size
+								}
+							}
+						}
+					}
+					root = {
+						add_to_variable_list = {
+							name = strong_raid_targets
+							target = prev
+						}
+					}
+					remove_from_list = raid_targets
+				}
+			}
+
+			ordered_in_list = {
+				list = raid_targets
+				order_by = {
+					value = squared_province_distance
+					multiply = -1
+				}
+				min = 0
+
+				root = {
+					add_to_variable_list = {
+						name = raid_targets
+						target = prev
+					}
+				}
+			}
+		}
+	}
+}

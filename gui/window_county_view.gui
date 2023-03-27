@@ -23,7 +23,7 @@ window = {
 		name = pan_to_previous_county
 		delay = 0.1
 		on_start = "[HoldingView.PanToCountyCapital]"
-		on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+		on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 		on_start = "[GetScriptedGui('county_holding_list').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
 		on_start = "[GetScriptedGui('find_closest').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 	}
@@ -34,7 +34,7 @@ window = {
 		on_start = "[HoldingView.PanToCountyCapital]"
 		on_start = "[GetVariableSystem.Set( 'county_view_open', 'true' )]"
 		on_start = "[GetVariableSystem.Set( 'hide_bottom_left_HUD', 'true' )]"
-		on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+		on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 		on_start = "[DefaultOnCoatOfArmsRightClick(HoldingView.GetProvince.GetCoATitle.GetID)]"
 		on_start = "[GetScriptedGui('county_holding_list').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
 		on_start = "[GetScriptedGui('find_closest').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
@@ -50,7 +50,7 @@ window = {
 	state = {
 		name = adjacent_counties
 		trigger_on_create = yes
-		on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+		on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 		on_start = "[GetScriptedGui('county_holding_list').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
 		on_start = "[GetScriptedGui('find_closest').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 
@@ -186,16 +186,52 @@ window = {
 			    expand = { }
 			}
 
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Not(GetVariableSystem.Exists('hide_county'))]"
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					margin_left = 5
+					spacing = 3
+
+					text_single = {
+						visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('province', Province.MakeScope).ScriptValue('enemies_in_the_province'), '(CFixedPoint)0' )]"
+						raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('province', Province.MakeScope).ScriptValue('enemies_in_the_province')] enemies in the barony."
+					}
+
+					text_single = {
+						raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('province', Province.MakeScope).ScriptValue('enemies_in_the_county')] enemies in the county."
+						visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('province', Province.MakeScope).ScriptValue('enemies_in_the_county'), GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('province', Province.MakeScope).ScriptValue('enemies_in_the_province'))]"
+					}
+
+					expand = { }
+				}
+			}
+
+
 			# hostile
 			hbox = {
 				visible = "[Not(GetVariableSystem.Exists('hide_county'))]"
 				layoutpolicy_horizontal = expanding
 				spacing = 3
+				datacontext = "[HoldingView.GetProvince]"
 
+				# text_single = {
+				# 	margin_left = 5
+				# 	raw_text = "Friendly"
+				# 	visible = "[GetScriptedGui('is_friendly_county').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', Province.MakeScope ).End )]"
+				# }
 				text_single = {
 					margin_left = 5
 					raw_text = "Hostile county!"
-					visible = "[GetScriptedGui('is_hostile_county').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', HoldingView.GetProvince.MakeScope ).End )]"
+					visible = "[GetScriptedGui('is_hostile_county').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', Province.MakeScope ).End )]"
+				}
+
+				text_single = {
+					margin_left = 5
+					raw_text = "Hostile barony!"
+					visible = "[GetScriptedGui('is_hostile_barony').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', Province.MakeScope ).End )]"
 				}
 
 				### SIEGE AND RAID GOTO BUTTON ###
@@ -244,15 +280,15 @@ window = {
 				# }
 
 				button_text = {
-					visible = "[County.IsFullyOccupied]"
-					datacontext = "[County.GetCountyOccupant]"
-					layoutpolicy_horizontal = expanding
+					visible = "[Province.IsOccupied]"
+					datacontext = "[Province.GetController]"
 					blockoverride "text" {
 						align = left
 						raw_text = "Occupied by [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
 					}
 					using = char_click
 				}
+
 				expand = { }
 			}
 
@@ -1258,19 +1294,19 @@ window = {
 					blockoverride "text" {
 						raw_text = "  [GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties'))] Adjacent counties."
 					}
-					onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+					onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 				}
 
 				button = {
 					onclick = "[GetVariableSystem.Toggle('hide_adjacent')]"
-					onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+					onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 					shortcut = map_mode_1
 				}
 				expand = { }
 			}
 
 			state = {
-				on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+				on_start = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 				trigger_when = "[IsDataModelEmpty(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties'))]"
 			}
 
@@ -3057,42 +3093,54 @@ types CountyViewTypes
 	}
 
 	type adjacent_county_button = button_text {
+		block "datacontext" {
+			datacontext = "[HoldingView.GetProvince]"
+			datacontext = "[Scope.Title]"
+		}
 		blockoverride "extra" {
 			spacing = 3
 			text_single = {
 				raw_text = "Hostile,"
-				visible = "[GetScriptedGui('is_hostile_county').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', Scope.Title.GetProvince.MakeScope ).End )]"
+				visible = "[GetScriptedGui('is_hostile_county').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', Title.GetProvince.MakeScope ).End )]"
 			}
+
 			text_single = {
-				raw_text = "[Scope.Title.GetBaseNameNoTierNoTooltip], "
+				visible = "[GreaterThan_CFixedPoint( GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('province', Title.GetProvince.MakeScope).ScriptValue('enemies_in_the_county'), '(CFixedPoint)0' )]"
+				raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('province', Title.GetProvince.MakeScope).ScriptValue('enemies_in_the_county')] enemies,"
+			}
+
+			text_single = {
+				raw_text = "[Title.GetBaseNameNoTierNoTooltip], "
 			}
 			# text_single = {
 			# 	raw_text = "[Scope.Title.Custom('county_direction')]."
 			# }
 			text_single = {
-				raw_text = "[GuiScope.SetRoot(HoldingView.GetProvince.MakeScope).AddScope('second', Scope.Title.GetProvince.MakeScope).Custom('province_direction')],"
+				raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('second', Title.GetProvince.MakeScope).Custom('province_direction')],"
 			}
 			text_single = {
-				visible = "[Not(ObjectsEqual(Scope.Title.GetHolder.GetTopLiege, GetPlayer))]"
-				raw_text = "in [Scope.Title.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTooltip]."
+				visible = "[Not(Or(ObjectsEqual(Title.GetHolder.GetTopLiege, GetPlayer), ObjectsEqual(Title.GetHolder, GetPlayer)))]"
+				raw_text = "in [Title.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTooltip]."
 			}
 
 			text_single = {
-				raw_text = "your county"
-				visible = "[ObjectsEqual(Scope.Title.GetHolder, GetPlayer)]"
+				raw_text = "your county."
+				visible = "[ObjectsEqual(Title.GetHolder, GetPlayer)]"
 			}
 			text_single = {
-				visible = "[And(ObjectsEqual(Scope.Title.GetHolder.GetTopLiege, GetPlayer), Not(ObjectsEqual(Scope.Title.GetHolder, GetPlayer)))]"
+				visible = "[And(ObjectsEqual(Title.GetHolder.GetTopLiege, GetPlayer), Not(ObjectsEqual(Title.GetHolder, GetPlayer)))]"
 				raw_text = "in your realm."
 			}
 			# [Scope.Title.GetHolder.GetTopLiege.RealmSize] counties.
 		}
+		block "click" {
+			onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Title.GetProvince.GetId))]"
+			onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+			onclick = "[GetVariableSystem.Clear('county_tabs')]"
+			onclick = "[PdxGuiTriggerAllAnimations('adjacent_counties')]"
+			onrightclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+		}
 
-		onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.Title.GetProvince.GetId))]"
-		onclick = "[DefaultOnCoatOfArmsRightClick(Scope.Title.GetProvince.GetTitle.GetID)]"
-		onclick = "[GetVariableSystem.Clear('county_tabs')]"
-
-		onclick = "[PdxGuiTriggerAllAnimations('adjacent_counties')]"
 	}
 
 	type widget_building_item = widget {

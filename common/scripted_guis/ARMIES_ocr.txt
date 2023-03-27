@@ -1,0 +1,558 @@
+﻿sort_armies = {
+	saved_scopes = { location }
+
+	effect = {
+		clear_variable_list = your_armies
+		clear_variable_list = hostiles_inside
+		clear_variable_list = hostiles_inside_liege
+		clear_variable_list = hostiles_outside
+		clear_variable_list = in_the_fog
+		clear_variable_list = allied_units
+		clear_variable_list = battles
+        clear_variable_list = all_enemies
+		remove_variable = closest_enemy
+		save_scope_as = player
+
+		scope:location = {
+			save_scope_as = second
+		}
+
+		if = {
+			limit = { always = yes } # for testing
+
+			# LIEGE WARS
+			every_liege_or_above = {
+				every_war_enemy = {
+                    limit = {
+                        NOR = {
+                            this = root
+                            is_allied_in_war = root
+                        }
+                    }
+					every_army = {
+                        remove_army_variables = yes
+						add_to_list = all_enemies
+					}
+				}
+			}
+
+			# ALLIES
+			every_war_ally = {
+				every_army = {
+					remove_army_variables = yes
+					add_to_list = all_allies
+				}
+			}
+
+			# group allies together
+			every_in_list = {
+				list = all_allies
+				save_scope_as = army
+
+				if = {
+					limit = {
+						NOT = {
+							any_in_list = {
+								list = all_allies
+								has_variable = first_army
+								var:first_army = scope:army.location
+							}
+						}
+					}
+					set_variable = {
+						name = first_army
+						value = location
+						days = 1
+					}
+					set_variable = {
+						name = army_strength
+						value = army_size
+						days = 1
+					}
+					location = {
+						set_variable = {
+							name = ally_here
+							value = prev
+						}
+					}
+					if = {
+						limit = {
+							exists = army_commander
+						}
+						set_variable = {
+							name = commander
+							value = army_commander
+						}
+					}
+
+					add_to_list = grouped_allies
+				}
+
+				else = {
+					set_variable = {
+						name = in_group
+						days = 1
+					}
+					root = {
+						# we going back to the first army
+						random_in_list = {
+							list = all_allies
+							limit = {
+								has_variable = first_army
+								var:first_army = scope:army.location
+							}
+							if = {
+								limit = { NOT = { exists = var:armies} }
+								set_variable = {
+									name = armies
+									value = 1
+									days = 1
+								}
+							}
+							change_variable = {
+								name = armies
+								add = 1
+							}
+							change_variable = {
+								name = army_strength
+								add = scope:army.army_size
+							}
+							if = {
+								limit = {
+									NOT = {
+										exists = var:commander
+									}
+								}
+								if = {
+									limit = {
+										scope:army = {
+											exists = army_commander
+										}
+									}
+									set_variable = {
+										name = commander
+										value = scope:army.army_commander
+									}
+								}
+							}
+							else = {
+								if = {
+									limit = {
+										scope:army = {
+											exists = army_commander
+											army_commander.martial > prev.army_commander.martial
+										}
+									}
+									set_variable = {
+										name = commander
+										value = scope:army.army_commander
+									}
+								}
+							}
+						}
+					}
+				}
+
+				# create separate lists
+			}
+
+			# sort allies by distance
+			ordered_in_list = {
+				list = grouped_allies
+				order_by = {
+					value = location.squared_province_distance
+					multiply = -1
+				}
+				min = 0
+				root = {
+					add_to_variable_list = {
+						name = allied_units
+						target = prev
+					}
+				}
+			}
+
+			# MY WARS
+			# add all enemies
+			every_war_enemy = {
+				every_army = {
+					remove_army_variables = yes
+					add_to_list = all_enemies
+				}
+				#TODO do we have to?
+                # exclude yourself
+				every_vassal_or_below = {
+                    limit = {
+                        NOR = {
+                            is_allied_in_war = root
+                            this = root
+                        }
+                    }
+					every_army = {
+						limit = {
+							NOT = { is_in_list = all_enemies }
+						}
+						remove_army_variables = yes
+						add_to_list = all_enemies
+					}
+				}
+			}
+
+			# enemies of my enemies are my enemies
+			every_primary_war_enemy = {
+				every_war_enemy = {
+					limit = {
+						NOR = {
+							this = root
+							is_allied_in_war = root
+						}
+					}
+					every_army = {
+						limit = {
+							NOT = {
+								is_in_list = all_enemies
+							}
+						}
+						remove_army_variables = yes
+						add_to_list = all_enemies
+					}
+				}
+			}
+
+			every_hostile_raider = {
+				every_army = {
+					remove_army_variables = yes
+					add_to_list = all_enemies
+				}
+			}
+
+            every_in_list = {
+                list = all_enemies
+                root = {
+                    add_to_variable_list = {
+                        name = all_enemies
+                        target = prev
+                    }
+                }
+            }
+
+			# closest enemy, ungrouped
+			ordered_in_list = {
+				list = all_enemies
+				order_by = {
+					value = location.squared_province_distance
+					multiply = -1
+				}
+				max = 1
+				root = {
+					set_variable = {
+						name = closest_enemy
+						value = prev
+					}
+				}
+			}
+
+			# group enemies together
+			# split them into different lists
+			every_in_list = {
+				list = all_enemies
+				save_scope_as = army
+
+				if = {
+					limit = {
+						NOT = {
+							any_in_list = {
+								list = all_enemies
+								has_variable = first_army
+								var:first_army = scope:army.location
+							}
+						}
+					}
+					set_variable = {
+						name = first_army
+						value = location
+						days = 1
+					}
+					set_variable = {
+						name = army_strength
+						value = army_size
+						days = 1
+					}
+					location = {
+						set_variable = {
+							name = enemy_here
+							value = prev
+							days = 1
+						}
+					}
+					if = {
+						limit = {
+							exists = army_commander
+						}
+						set_variable = {
+							name = commander
+							value = army_commander
+						}
+					}
+
+					if = {
+						limit = {
+							exists = location.county
+							location.county.holder = {
+								OR = {
+									this = root
+									any_liege_or_above = {
+										this = root
+									}
+								}
+							}
+						}
+						add_to_list = hostiles_inside
+					}
+
+					else_if = {
+						limit = {
+							exists = location.county
+							exists = root.liege
+							location.county.holder = {
+								any_liege_or_above = {
+									this = root.top_liege
+								}
+							}
+						}
+						add_to_list = hostiles_inside_liege
+					}
+
+					# if the enemy is in battle with us or allies, they are added to the outside list
+					# TODO check battles??
+					else_if = {
+						limit = {
+							OR = {
+								location = {
+									save_temporary_scope_as = enemy_location
+									save_temporary_scope_as = second
+									root = {
+										OR = {
+											any_army = {
+												OR = {
+													location = scope:enemy_location
+													location.squared_province_distance < 500 #TODO test
+												}
+											}
+											#TODO might be bad for performance
+											any_realm_county = {
+												squared_province_distance < 1000
+											}
+											#TODO measure from allied armies and counties
+											any_in_list = {
+												list = all_allies
+												OR = {
+													location = scope:enemy_location
+													location.squared_province_distance < 500 #TODO test
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+						add_to_list = hostiles_outside
+					}
+
+					else = {
+						add_to_list = in_the_fog
+					}
+				}
+
+				else = {
+					set_variable = {
+						name = in_group
+						days = 1
+					}
+					root = {
+						# we going back to the first army
+						random_in_list = {
+							list = all_enemies
+							limit = {
+								has_variable = first_army
+								var:first_army = scope:army.location
+							}
+							if = {
+								limit = { NOT = { exists = var:armies} }
+								set_variable = {
+									name = armies
+									value = 1
+									days = 1
+								}
+							}
+							change_variable = {
+								name = armies
+								add = 1
+							}
+							change_variable = {
+								name = army_strength
+								add = scope:army.army_size
+							}
+							if = {
+								limit = {
+									NOT = {
+										exists = var:commander
+									}
+								}
+								if = {
+									limit = {
+										scope:army = {
+											exists = army_commander
+										}
+									}
+									set_variable = {
+										name = commander
+										value = scope:army.army_commander
+									}
+								}
+							}
+							else = {
+								if = {
+									limit = {
+										scope:army = {
+											exists = army_commander
+											army_commander.martial > prev.army_commander.martial
+										}
+									}
+									set_variable = {
+										name = commander
+										value = scope:army.army_commander
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			scope:location = {
+				save_scope_as = second
+			}
+
+			# sort enemies in your land
+			ordered_in_list = {
+				list = hostiles_inside
+				order_by = {
+					value = location.squared_province_distance
+					multiply = -1
+				}
+				min = 0
+				root = {
+					add_to_variable_list = {
+						name = hostiles_inside
+						target = prev
+					}
+				}
+			}
+
+			# sort enemies in your liege
+			if = {
+				limit = {
+					exists = liege
+				}
+				ordered_in_list = {
+					list = hostiles_inside_liege
+					order_by = {
+						value = location.squared_province_distance
+						multiply = -1
+					}
+					min = 0
+					root = {
+						add_to_variable_list = {
+							name = hostiles_inside_liege
+							target = prev
+						}
+					}
+				}
+			}
+
+			# sort enemies outside
+			ordered_in_list = {
+				list = hostiles_outside
+				order_by = {
+					value = location.squared_province_distance
+					multiply = -1
+				}
+				min = 0
+				root = {
+					add_to_variable_list = {
+						name = hostiles_outside
+						target = prev
+					}
+				}
+			}
+
+			# sort in the fog
+			ordered_in_list = {
+				list = in_the_fog
+				order_by = {
+					value = location.squared_province_distance
+					multiply = -1
+				}
+				min = 0
+				root = {
+					add_to_variable_list = {
+						name = in_the_fog
+						target = prev
+					}
+				}
+			}
+
+			# add armies in combat to a battle list
+			every_army = {
+				limit = {
+					is_army_in_combat = yes
+				}
+				add_to_list = battles
+				root = {
+					add_to_variable_list = {
+						name = battles
+						target = prev
+					}
+				}
+			}
+
+			# if allies are in battles in a different location than us, add to a battle list
+			every_in_list = {
+				list = grouped_allies
+				limit = {
+					is_army_in_combat = yes
+					location = {
+						NOT = {
+							any_in_list = {
+								list = battles
+								location = prev
+							}
+						}
+					}
+				}
+				root = {
+					add_to_variable_list = {
+						name = battles
+						target = prev
+					}
+				}
+			}
+
+			# YOUR OWN
+			ordered_army = {
+				order_by = {
+					value = location.squared_province_distance
+					multiply = -1
+				}
+				min = 0
+				root = {
+					add_to_variable_list = {
+						name = your_armies
+						target = prev
+					}
+				}
+			}
+		}
+	}
+}
