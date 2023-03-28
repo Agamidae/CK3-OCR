@@ -6,11 +6,12 @@ hostile_forts = {
 		clear_variable_list = adjacent_hostile_forts
 		clear_variable_list = adjacent_across_water_hostile_forts
 		clear_variable_list = war_targets
+        clear_variable_list = captured_war_targets
+        clear_variable_list = hostile_war_targets
+        clear_variable_list = adjacent_war_targets
 		clear_variable_list = personal_forts
 		clear_variable_list = hostile_forts
-		clear_variable_list = your_hostile_forts
-		clear_variable_list = captured_war_targets
-		clear_variable_list = hostile_war_targets
+		clear_variable_list = your_captured_forts
 		clear_variable_list = enemy_capitals
 		clear_variable_list = closest_counties
         clear_variable_list = liege_hostile_forts
@@ -42,11 +43,20 @@ hostile_forts = {
                 }
                 # closest capital
                 ordered_primary_war_enemy = {
-                    # limit = {
-                    # 	any_character_war = {
-                    # 		this = root.var:selected_war
-                    # 	}
-                    # }
+                    limit = {
+						is_landed = yes
+                        NOT = {
+                            any_character_war = {
+                                root = {
+                                    is_participant_in_war = prev
+                                    is_target_in_variable_list = {
+                                        name = hidden_wars
+                                        target = prev
+                                    }
+                                }
+                            }
+                        }
+                    }
                     order_by = {
                         value = capital_province.squared_province_distance
                         multiply = -1
@@ -68,6 +78,20 @@ hostile_forts = {
                     order_by = {
                         value = capital_province.squared_province_distance
                         multiply = -1
+                    }
+                    limit = {
+						is_landed = yes
+                        NOT = {
+                            any_character_war = {
+                                root = {
+                                    is_participant_in_war = prev
+                                    is_target_in_variable_list = {
+                                        name = hidden_wars
+                                        target = prev
+                                    }
+                                }
+                            }
+                        }
                     }
                     min = 0
 
@@ -104,6 +128,16 @@ hostile_forts = {
 					}
 					# add war targets to war_targets
 					every_character_war = {
+                        limit = {
+                            NOT = {
+                                root = {
+                                    is_target_in_variable_list = {
+                                        name = hidden_wars
+                                        target = prev
+                                    }
+                                }
+                            }
+                        }
 						casus_belli = {
 							every_target_title = {
 								every_in_de_facto_hierarchy = {
@@ -118,6 +152,22 @@ hostile_forts = {
                                         add_to_list = war_targets
                                     }
 								}
+							}
+						}
+					}
+
+                    ordered_in_list = {
+						list = war_targets
+						order_by = {
+							value = squared_province_distance
+							multiply = -1
+						}
+						min = 0
+
+						root = {
+							add_to_variable_list = {
+								name = war_targets
+								target = prev
 							}
 						}
 					}
@@ -137,6 +187,40 @@ hostile_forts = {
 						add_to_list = hostile_war_targets
 						remove_from_list = war_targets
 					}
+
+                    # make adjacent_war_targets list
+					every_in_list = {
+						list = hostile_war_targets
+
+						limit = {
+							county = {
+                                save_temporary_scope_as = county
+                                any_neighboring_county = {
+                                    county_controller = {
+                                        is_county_friendly = yes
+                                    }
+                                }
+                            }
+						}
+						add_to_list = adjacent_war_targets
+						remove_from_list = hostile_war_targets
+					}
+
+                    ordered_in_list = {
+						list = adjacent_war_targets
+						order_by = {
+							value = squared_province_distance
+							multiply = -1
+						}
+                        min = 0
+
+                        root = {
+                            add_to_variable_list = {
+                                name = adjacent_war_targets
+                                target = prev
+                            }
+                        }
+                    }
 
 					# sort hostile_war_targets and add to a variable list
 					ordered_in_list = {
@@ -172,8 +256,24 @@ hostile_forts = {
 						}
 					}
 
+					###
+
 					# add all enemy holdings
 					every_war_enemy = {
+                        limit = {
+							is_landed = yes
+                            NOT = {
+                                any_character_war = {
+                                    root = {
+                                        is_participant_in_war = prev
+                                        is_target_in_variable_list = {
+                                            name = hidden_wars
+                                            target = prev
+                                        }
+                                    }
+                                }
+                            }
+                        }
 						every_realm_province = {
 							save_scope_as = test
 							limit = {
@@ -182,6 +282,7 @@ hostile_forts = {
 									is_in_list = enemy_capitals
 									is_in_list = war_targets
 									is_in_list = hostile_war_targets
+                                    is_in_list = adjacent_war_targets
 								}
 								barony_controller = {
 									is_county_safe = no
@@ -218,6 +319,23 @@ hostile_forts = {
 						add_to_list = your_captured_forts
 					}
 
+                    # add captured
+                    ordered_in_list = {
+                        list = your_captured_forts
+                        order_by = {
+                            value = squared_province_distance
+                            multiply = -1
+                        }
+                        min = 0
+                        root = {
+                            add_to_variable_list = {
+                                name = your_captured_forts
+                                target = prev
+                            }
+                        }
+                    }
+
+
                     # add liege's
                     every_liege_or_above = {
                         limit = {
@@ -226,6 +344,9 @@ hostile_forts = {
                         every_realm_province = {
                             limit = {
                                 fort_level > 0
+                                NOT = {
+                                    is_in_list = hostile_forts
+                                }
                                 barony_controller = {
                                     is_county_safe = no
                                 }
@@ -235,15 +356,22 @@ hostile_forts = {
                         }
                     }
 
-                    every_in_list = {
-                        list = liege_hostile_forts
-                        root = {
-                            add_to_variable_list = {
-                                name = liege_hostile_forts
-                                target = prev
-                            }
-                        }
-                    }
+                    # add liege's to variable
+                    ordered_in_list = {
+						list = liege_hostile_forts
+						order_by = {
+							value = squared_province_distance
+							multiply = -1
+						}
+						min = 0
+
+						root = {
+							add_to_variable_list = {
+								name = liege_hostile_forts
+								target = prev
+							}
+						}
+					}
 				}
 
                 # add all
@@ -316,13 +444,13 @@ hostile_forts = {
                         county = {
                             save_temporary_scope_as = county
                             any_neighboring_county = {
-                                NOT = {
-                                    any_county_province = {
-                                        is_in_list = hostile_forts
-                                    }
-                                }
+                                # NOT = {
+                                #     any_county_province = {
+                                #         is_in_list = hostile_forts
+                                #     }
+                                # }
                                 county_controller = {
-                                    is_county_safe = yes
+                                    is_county_friendly = yes
                                 }
                             }
                         }

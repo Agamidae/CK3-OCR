@@ -58,10 +58,12 @@ types Notifications {
                                     visible = "[Not(GetVariableSystem.Exists('hide_alert_desc'))]"
                                     raw_text = "DIPLOMATIC_ITEM_TOOLTIP"
                                     max_width = 700
+                                    alwaystransparent = yes
                                 }
                             }
 
                             text_single = {
+                                margin_bottom = 10
                                 visible = "[GetVariableSystem.Exists('hide_alert_desc')]"
                                 raw_text = "DIPLOMATIC_ITEM_TOOLTIP"
                                 max_width = 700
@@ -325,10 +327,12 @@ types Notifications {
 
                                 text_single = {
                                     raw_text = "[GUIAlertItem.GetTooltip]"
+                                    alwaystransparent = yes
                                 }
                             }
 
                             text_multi = {
+                                margin_bottom = 10
                                 visible = "[GetVariableSystem.Exists('hide_alert_desc')]"
                                 raw_text = "[GUIAlertItem.GetImportantAction.GetDescription]"
                                 autoresize = yes
@@ -355,10 +359,6 @@ types Notifications {
         }
 
         container = {
-            button = {
-                shortcut = close_window
-                onclick = "[GetVariableSystem.Toggle('hide_alerts')]"
-            }
             visible = "[GetVariableSystem.Exists('hide_alerts')]"
 
             flowcontainer = {
@@ -368,21 +368,34 @@ types Notifications {
                 alwaystransparent = no
                 visible = "[Or( DataModelHasItems(InGameTopbar.GetAlertItems), DataModelHasItems(InGameTopbar.GetDiplomaticItems) )]"
 
-
                 flowcontainer = {
                     spacing = 5
 
                     text_single = {
                         raw_text = "[Add_int32(GetDataModelSize(InGameTopbar.GetAlertItems), GetDataModelSize(InGameTopbar.GetDiplomaticItems))] alerts."
-                        # visible = "[Not(IsDataModelEmpty(InGameTopbar.GetAlertItems))]"
                     }
+                }
+
+
+                alerts_text = {
+                }
+
+                flowcontainer = {
+                    visible = "[Or(Not(IsDataModelEmpty(InGameTopbar.GetAlertItems)), Not(IsDataModelEmpty(InGameTopbar.GetDiplomaticItems)))]"
+                    ignoreinvisible = yes
+                    direction = vertical
 
                     button_text = {
-                        blockoverride "margins" { }
-                        onclick = "[GetVariableSystem.Toggle('hide_alerts')]"
+                        onclick = "[GetVariableSystem.Toggle('hide_alert_desc')]"
                         blockoverride "text" {
-                            raw_text = "Hide, Shift A."
+                            raw_text = "[Select_CString( GetVariableSystem.Exists('hide_alert_desc'), 'Hide', 'Show' )] descriptions, Shift D."
                         }
+                        shortcut = mapmode_house_secondary
+                    }
+
+                    text_single = {
+                        raw_text = "Click to open, right click to dismiss."
+                        margin_top = 2
                     }
 
                     button_text = {
@@ -393,45 +406,16 @@ types Notifications {
                         shortcut = map_mode_6
                         onclick = "[PdxGuiTriggerAllAnimations('dismiss_alert')]"
                     }
-                }
 
-                flowcontainer = {
-                    visible = "[Or(Not(IsDataModelEmpty(InGameTopbar.GetAlertItems)), Not(IsDataModelEmpty(InGameTopbar.GetDiplomaticItems)))]"
-                    ignoreinvisible = yes
-                    spacing = 3
                     button_text = {
-                        onclick = "[GetVariableSystem.Toggle('hide_alert_desc')]"
-                        # onclick = "[ExecuteConsoleCommand('reload gui/hud.gui')]"
+                        blockoverride "margins" { }
+                        onclick = "[GetVariableSystem.Toggle('hide_alerts')]"
                         blockoverride "text" {
-                            align = left
-                            raw_text = "[Select_CString( GetVariableSystem.Exists('hide_alert_desc'), 'Hide', 'Show' )] descriptions."
+                            raw_text = "Hide, Shift A."
                         }
                     }
 
-                    text_single = {
-                        raw_text = "Click to open, right-click to dismiss."
-                        margin_top = 2
-                    }
                 }
-
-                alerts_text = {
-                    # visible = "[GetVariableSystem.Exists('hide_alert_desc')]"
-                }
-
-                # scrollbox = {
-                #     autoresizescrollarea = yes
-                #     maximumsize = { 730 1000 }
-                #     # visible = "[Or(Not(IsDataModelEmpty(InGameTopbar.GetAlertItems)), Not(IsDataModelEmpty(InGameTopbar.GetDiplomaticItems)))]"
-                #     visible = "[Not(GetVariableSystem.Exists('hide_alert_desc'))]"
-                #     # layoutpolicy_vertical = expanding
-                #     # layoutpolicy_horizontal = expanding
-                #     blockoverride "scrollbox_content" {
-                #
-                #         alerts_text = {
-                #             set_parent_size_to_minimum = yes
-                #         }
-                #     }
-                # }
             }
         }
 
@@ -447,6 +431,7 @@ types Notifications {
             blockoverride "scrollbox_content" {
                 vbox = {
                     widget = {
+                        # this is just for sound
                         size = { 0 0 }
                         visible = "[GetVariableSystem.Exists('hide_alerts')]"
 
@@ -937,13 +922,14 @@ types Notifications {
         name = "action_items"
         visible = "[And(And( Not( IsPauseMenuShown ), And( Not(SinglePlayerShowingPausedSuccession), ActionItemHandler.ShouldBeVisible)), Not(IsRightWindowOpen))]"
         visible_at_creation = no
-        alwaystransparent = no
+        alwaystransparent = yes
         allow_outside = yes
-        size = { 700 0 }
+        size = { 700 100% }
 
         container = {
-            parentanchor = right
+            parentanchor = right|bottom
             visible = "[Not(GetScriptedGui('show_suggestions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ))]"
+            position = { 0 -25 }
 
             button_text = {
                 background = { using = Background_Area_Border_Solid }
@@ -1285,15 +1271,11 @@ types Notifications {
 
                     text_single = {
                         text = "CURRENT_SITUATION_SUGGESTIONS"
-                        # using = Font_Size_Medium
-                        # using = Font_Type_Flavor
-                        # default_format = "#light_background"
                     }
 
                     text_single = {
                         visible = "[IsDataModelEmpty(AccessSuggestionItems)]"
                         text = "CURRENT_SITUATION_SUGGESTIONS_EMPTY"
-                        # default_format = "#light_background;italic"
                     }
 
                     flowcontainer = {
@@ -1339,7 +1321,6 @@ types Notifications {
                     text_single = {
                         visible = "[Not( ActionItemHandler.HasAvailableCurrentSituationItems )]"
                         text = "CURRENT_SITUATION_SUGGESTIONS_EMPTY"
-                        # default_format = "#light_background;italic"
                     }
 
                     scrollbox = {
@@ -1496,6 +1477,9 @@ types Notifications {
             visible = "[Not(IsDataModelEmpty(MessageFeedHandler.GetItems))]"
             autoresizescrollarea = yes
             maximumsize = { 610 500 }
+            blockoverride "scrollbox_background_fade" {
+
+            }
             blockoverride "scrollbox_margins" {
                 margin_top = 20
             }

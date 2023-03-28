@@ -30,6 +30,7 @@ window = {
 		on_start = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
 		on_start = "[GetVariableSystem.Clear('war_selector')]"
 		on_start = "[GetVariableSystem.Clear('sending_army')]"
+		on_start = "[GetVariableSystem.Clear('sending_army_county')]"
 		on_start = "[PdxGuiTriggerAllAnimations('show_army_window')]"
 	}
 
@@ -727,7 +728,7 @@ window = {
 					margin_left = 10
 					margin_bottom = 5
 					margin_top = 5
-					background = { using = Background_Area_Border_Solid }
+					background = { using = Background_Area_Border_Solid margin_bottom = 20 }
 					layoutpolicy_horizontal = expanding
 					visible = "[Not(GetVariableSystem.Exists('mini_army'))]"
 					# visible = no
@@ -788,6 +789,16 @@ window = {
 						}
 					}
 
+					# text_single = {
+					# 	layoutpolicy_horizontal = expanding
+					# 	raw_text = "[GetPlayer.MakeScope.ScriptValue('num_of_wars')] wars"
+					# }
+					#
+					# text_single = {
+					# 	layoutpolicy_horizontal = expanding
+					# 	raw_text = "[GetPlayer.MakeScope.ScriptValue('num_of_primary_enemies')] enemies"
+					# }
+
 					vbox = {
 						visible = "[Not(GetVariableSystem.Exists('army_tabs'))]"
 						layoutpolicy_horizontal = expanding
@@ -808,17 +819,17 @@ window = {
 							layoutpolicy_horizontal = expanding
 							visible = "[GetPlayer.MakeScope.Var('closest_enemy').IsSet]"
 
-							# text_single = {
-							# 	layoutpolicy_horizontal = expanding
-							# 	raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'second', Army.GetLocation.MakeScope ).ScriptValue('enemies_total_nearby')] enemies nearby."
-							# 	visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('all_enemies')), '(int32)1')]"
-							# 	# visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'second', Army.GetLocation.MakeScope ).ScriptValue('enemies_total_nearby'), '(CFixedPoint)0')]"
-							# }
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'county', Army.GetLocation.GetCounty.GetTitle.MakeScope ).ScriptValue('enemies_total_nearby')] enemies nearby."
+								visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'county', Army.GetLocation.GetCounty.GetTitle.MakeScope ).ScriptValue('enemies_total_nearby'), '(CFixedPoint)0')]"
+							}
 
 							text_single = {
 								layoutpolicy_horizontal = expanding
-								raw_text = "Closest enemy out of [GetDataModelSize(GetPlayer.MakeScope.GetList('all_enemies'))],"
+								raw_text = "Closest enemy,"
 							}
+							# [GetDataModelSize(GetPlayer.MakeScope.GetList('all_enemies'))]
 							#TODO hide the number if less than 2
 							#TODO hide in the fog of war
 							# army_button_o = {
@@ -843,11 +854,9 @@ window = {
 							# }
 
 							button_text = {
-								using = army_click
 								datacontext = "[GetPlayer.MakeScope.Var('closest_enemy').Army]"
-								onclick = "[GetVariableSystem.Set('sending_army', Province.GetNameNoTooltip)]"
-								onclick = "[PdxGuiTriggerAllAnimations('hide_army_window')]"
-								datacontext = "[ArmyWindow.GetArmy.GetLocation]"
+								datacontext = "[Army.GetLocation]"
+								using = send_army_click
 								layoutpolicy_horizontal = expanding
 							    blockoverride "text" {
 							        raw_text = " [Army.GetOwner.GetPrimaryTitle.GetNameNoTierNoTooltip],"
@@ -859,25 +868,37 @@ window = {
 								}
 								blockoverride "pre" {
 									flowcontainer = {
+										datacontext = "[ArmyWindow.GetArmy.GetLocation]"
 										spacing = 3
 									    ignoreinvisible = yes
 
-										text_single = {
-											raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('saved_distance', MakeScopeValue(GuiScope.SetRoot(Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).ScriptValue('province_distance'))).Custom('ProvinceDistance')]"
+										flowcontainer = {
+										    ignoreinvisible = yes
+											spacing = 3
+											visible = "[Not(ObjectsEqual(Army.GetLocation.GetId, Province.GetId))]"
+
+											text_single = {
+												raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('saved_distance', MakeScopeValue(GuiScope.SetRoot(Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).ScriptValue('province_distance'))).Custom('ProvinceDistance')]"
+											}
+
+											text_single = {
+												raw_text = "[GuiScope.SetRoot( Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')],"
+											}
 										}
 
 										text_single = {
-											raw_text = "[GuiScope.SetRoot( Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')],"
+											raw_text = "Here."
+											visible = "[ObjectsEqual(Army.GetLocation.GetId, Province.GetId)]"
 										}
 
 										text_single = {
-											raw_text = "[Army.GetSoldierCountString],"
+											raw_text = "[Army.GetSoldierCountString] men,"
 											# visible = "[EqualTo_CFixedPoint(Army.MakeScope.Var('armies').GetValue,]"
 											visible = "[Not(Army.MakeScope.Var('armies').IsSet)]"
 										}
 
 										text_single = {
-											raw_text = "[Army.MakeScope.Var('army_strength').GetValue|0],"
+											raw_text = "[Army.MakeScope.Var('army_strength').GetValue|0] men,"
 											visible = "[Army.MakeScope.Var('armies').IsSet]"
 										}
 
@@ -887,6 +908,11 @@ window = {
 										}
 									}
 								}
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "Total enemies, [GetPlayer.MakeScope.ScriptValue('enemies_total')]."
 							}
 
 							button_text = {
@@ -954,13 +980,19 @@ window = {
 								}
 							}
 
+							text_single = {
+								visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('war_targets'))]"
+								layoutpolicy_horizontal = expanding
+								raw_text = "You control [GetDataModelSize(GetPlayer.MakeScope.GetList('captured_war_targets'))] out of [GetDataModelSize(GetPlayer.MakeScope.GetList('war_targets'))] war targets."
+							}
+
 							button_text = {
 								layoutpolicy_horizontal = expanding
 								onclick = "[GetVariableSystem.Set('army_tabs', 'targets')]"
 								shortcut = speed_3
 
 								blockoverride "text" {
-									raw_text = "View [GetDataModelSize(GetPlayer.MakeScope.GetList('all_forts'))] forts, hotkey 3."
+									raw_text = "View all [GetDataModelSize(GetPlayer.MakeScope.GetList('all_forts'))] forts, hotkey 3."
 								}
 							}
 						}
@@ -1010,8 +1042,17 @@ window = {
 						button_text = {
 							layoutpolicy_horizontal = expanding
 						    blockoverride "text" {
-						        raw_text = "View adjacent counties, hotkey 4."
+						        raw_text = "View [Army.GetLocation.GetCounty.GetTitle.MakeScope.ScriptValue('num_of_adjacent_counties')] adjacent counties"
 						    }
+							blockoverride "extra" {
+								text_single = {
+									visible = "[GreaterThan_CFixedPoint( GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('county', Army.GetLocation.GetCounty.GetTitle.MakeScope ).ScriptValue('num_of_hostile_adjacent_counties'), '(CFixedPoint)0')]"
+									raw_text = ", [GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('county', Army.GetLocation.GetCounty.GetTitle.MakeScope ).ScriptValue('num_of_hostile_adjacent_counties')] of them hostile"
+								}
+								text_single = {
+									raw_text = ", hotkey 4."
+								}
+							}
 							shortcut = speed_4
 							onclick = "[GetVariableSystem.Set('army_tabs', 'adjacent counties')]"
 						}
@@ -1124,14 +1165,13 @@ window = {
 							}
 						}
 					}
-
 				}
 
 				# lists
 				vbox = {
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
-					visible = "[And(Not(GetVariableSystem.Exists('mini_army')), GetVariableSystem.Exists('army_tabs'))]"
+					# visible = "[And(Not(GetVariableSystem.Exists('mini_army')), GetVariableSystem.Exists('army_tabs'))]"
 
 					scrollbox = {
 						layoutpolicy_horizontal = expanding
@@ -1156,6 +1196,7 @@ window = {
 									# distance
 									hbox = {
 									    layoutpolicy_horizontal = expanding
+										visible = "[Not(ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId))]"
 
 										text_single = {
 											raw_text = "ArmyDistance"
@@ -1179,36 +1220,31 @@ window = {
 											visible = "[ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId)]"
 										}
 
-										hbox = {
+										button_text = {
+											datacontext = "[Army.GetLocation.GetTitle]"
+											using = prov_click
+										    blockoverride "extra" {
+												spacing = 3
+												text_single = {
+													visible = "[Army.GetLocation.GetCounty.GetTitle.IsValid]"
+													raw_text = "In [Army.GetLocation.GetCounty.GetTitle.GetNameNoTierNoTooltip],"
+												}
+
+												text_single = {
+													visible = "[Not(Army.IsEmbarked)]"
+													raw_text = "[Army.GetLocation.GetTerrain.GetName] of"
+												}
+
+												text_single = {
+													raw_text = "[Army.GetLocation.GetNameNoTooltip],"
+												}
+
+												text_single = {
+													visible = "[Not(Army.IsEmbarked)]"
+													raw_text = "[Army.GetLocation.GetCounty.GetTitle.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+												}
+										    }
 											visible = "[Not(ObjectsEqual(Army.GetLocation.GetId, GetPlayer.GetCapitalLocation.GetId))]"
-											spacing = 3
-
-											text_single = {
-												visible = "[Army.GetLocation.GetCounty.GetTitle.IsValid]"
-												raw_text = "In [Army.GetLocation.GetCounty.GetTitle.GetNameNoTierNoTooltip],"
-											}
-
-											text_single = {
-												visible = "[Not(Army.IsEmbarked)]"
-												raw_text = "[Army.GetLocation.GetTerrain.GetName] of"
-											}
-
-											text_single = {
-												raw_text = "[Army.GetLocation.GetNameNoTooltip],"
-											}
-
-											text_single = {
-												visible = "[Not(Army.IsEmbarked)]"
-												raw_text = "[Army.GetLocation.GetCounty.GetTitle.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip]."
-											}
-											# text_single = {
-											# 	raw_text = "ArmyDistance"
-											# }
-											#
-											# text_single = {
-											# 	margin_left = 2
-											# 	raw_text = "[GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')] from your capital."
-											# }
 										}
 
 										fixedgridbox = {
@@ -1258,8 +1294,26 @@ window = {
 									    expand = { }
 									}
 
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										tooltip = "[Character.GetCommanderAdvantageDesc]"
+										raw_text = "Advantage [Character.GetCommanderAdvantage]."
+									}
+
 									hbox = {
 									    layoutpolicy_horizontal = expanding
+
+										tooltip = "[Army.GetSupplyStateTooltip]"
+
+										text_single = {
+											visible = "[EqualTo_int32(ArmyWindow.GetSupplyStateFrame, '(int32)3')]"
+											raw_text = "SUPPLY_STATE_2"
+										}
+
+										text_single = {
+											visible = "[EqualTo_int32(ArmyWindow.GetSupplyStateFrame, '(int32)2')]"
+											raw_text = "SUPPLY_STATE_1"
+										}
 
 									    text_single = {
 											visible = "[EqualTo_int32(ArmyWindow.GetSupplyStateFrame, '(int32)1')]"
@@ -1955,6 +2009,10 @@ window = {
 								}
 
 								outliner_armies = {
+									blockoverride "click" {
+										datacontext = "[Army.GetLocation]"
+										using = send_army_click
+									}
 									blockoverride "hide_at_capital" {
 										visible = "[Not(ObjectsEqual(ArmyWindow.GetArmy.GetLocation.GetId, Scope.Army.GetLocation.GetId))]"
 									}
@@ -1984,20 +2042,6 @@ window = {
 									background = { using = Background_Area_Border_Solid margin = { 20 20 } }
 									spacing = 5
 
-									vbox = {
-										layoutpolicy_horizontal = expanding
-										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('enemy_capitals'))]"
-										datamodel = "[GetPlayer.MakeScope.GetList('enemy_capitals')]"
-
-										text_single = {
-											layoutpolicy_horizontal = expanding
-											raw_text = "Enemy capitals."
-										}
-
-										item = {
-											hostile_fort_item = { }
-										}
-									}
 
 									# text_single = {
 									# 	visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('closest_counties'))]"
@@ -2026,194 +2070,331 @@ window = {
 									# 	}
 									# }
 
-									vbox = {
-										layoutpolicy_horizontal = expanding
+									####
+
+									forts_list = {
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('enemy_capitals'))]"
+										blockoverride "hide_all" {
+											on_start = "[GetVariableSystem.Set('enemy_capitals', 'yes')]"
+										}
+										blockoverride "title" {
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('enemy_capitals'))] enemy capitals,"
+										}
+										blockoverride "shortcut" {
+											raw_text =  " hotkey 1"
+										}
+										blockoverride "hide" {
+											shortcut = speed_1
+											onclick = "[GetVariableSystem.Toggle('enemy_capitals')]"
+										}
+										blockoverride "hidden" {
+											visible = "[GetVariableSystem.Exists('enemy_capitals')]"
+										}
+										blockoverride "shown" {
+											visible = "[Not(GetVariableSystem.Exists('enemy_capitals'))]"
+										}
+										blockoverride "expanded" {
+											visible = "[GetVariableSystem.Exists('expand_enemy_capitals')]"
+										}
+										blockoverride "expand" {
+											onclick = "[GetVariableSystem.Toggle('expand_enemy_capitals')]"
+										}
+										blockoverride "collapsed" {
+											visible = "[Not(GetVariableSystem.Exists('expand_enemy_capitals'))]"
+										}
+										blockoverride "datamodel" {
+											datamodel = "[GetPlayer.MakeScope.GetList('enemy_capitals')]"
+										}
+										blockoverride "more" {
+											visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('enemy_capitals')), '(int32)3')]"
+										}
+									}
+
+									forts_list = {
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('adjacent_war_targets'))]"
+										blockoverride "title" {
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_war_targets'))] war targets bordering you or ally,"
+										}
+										blockoverride "shortcut" {
+											raw_text =  " hotkey 2"
+										}
+										blockoverride "hide" {
+											shortcut = speed_2
+											onclick = "[GetVariableSystem.Toggle('adjacent_war_targets')]"
+										}
+										blockoverride "hide_all" {
+											on_start = "[GetVariableSystem.Set('adjacent_war_targets', 'yes')]"
+										}
+										blockoverride "hidden" {
+											visible = "[GetVariableSystem.Exists('adjacent_war_targets')]"
+										}
+										blockoverride "shown" {
+											visible = "[Not(GetVariableSystem.Exists('adjacent_war_targets'))]"
+										}
+										blockoverride "expanded" {
+											visible = "[GetVariableSystem.Exists('expand_adjacent_war_targets')]"
+										}
+										blockoverride "expand" {
+											onclick = "[GetVariableSystem.Toggle('expand_adjacent_war_targets')]"
+										}
+										blockoverride "collapsed" {
+											visible = "[Not(GetVariableSystem.Exists('expand_adjacent_war_targets'))]"
+										}
+										blockoverride "datamodel" {
+											datamodel = "[GetPlayer.MakeScope.GetList('adjacent_war_targets')]"
+										}
+										blockoverride "more" {
+											visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_war_targets')), '(int32)3')]"
+										}
+									}
+
+									forts_list = {
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('adjacent_hostile_forts'))]"
+										blockoverride "shortcut" {
+											raw_text =  " hotkey 3"
+										}
+									}
+
+									forts_list = {
 										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('hostile_war_targets'))]"
-
-										button_text = {
-											layoutpolicy_horizontal = expanding
-											blockoverride "text" {
-												align = left
-												raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostile_war_targets'))] war goals. Click to [Select_CString(GetVariableSystem.Exists('war_targets'), 'Show', 'Hide')]."
-											}
-											onclick = "[GetVariableSystem.Toggle('war_targets')]"
+										blockoverride "title" {
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostile_war_targets'))] war targets,"
 										}
-
-										vbox = {
-											visible = "[Not(GetVariableSystem.Exists('war_targets'))]"
-											layoutpolicy_horizontal = expanding
+										blockoverride "hide" {
+											shortcut = speed_4
+											onclick = "[GetVariableSystem.Toggle('hostile_war_targets')]"
+										}
+										blockoverride "shortcut" {
+											raw_text =  " hotkey 4"
+										}
+										blockoverride "hidden" {
+											visible = "[Not(GetVariableSystem.Exists('hostile_war_targets'))]"
+										}
+										blockoverride "hide_all" {
+											on_start = "[GetVariableSystem.Clear('hostile_war_targets')]"
+										}
+										blockoverride "shown" {
+											visible = "[GetVariableSystem.Exists('hostile_war_targets')]"
+										}
+										blockoverride "expanded" {
+											visible = "[GetVariableSystem.Exists('expand_hostile_war_targets')]"
+										}
+										blockoverride "expand" {
+											onclick = "[GetVariableSystem.Toggle('expand_hostile_war_targets')]"
+										}
+										blockoverride "collapsed" {
+											visible = "[Not(GetVariableSystem.Exists('expand_hostile_war_targets'))]"
+										}
+										blockoverride "datamodel" {
 											datamodel = "[GetPlayer.MakeScope.GetList('hostile_war_targets')]"
-
-											item = {
-												hostile_fort_item = { }
-											}
+										}
+										blockoverride "more" {
+											visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostile_war_targets')), '(int32)3')]"
 										}
 									}
 
-									vbox = {
-										layoutpolicy_horizontal = expanding
-										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('liege_hostile_forts'))]"
-
-										button_text = {
-											layoutpolicy_horizontal = expanding
-											blockoverride "text" {
-												align = left
-												raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('liege_hostile_forts'))] liege's hostile forts. Click to [Select_CString(GetVariableSystem.Exists('liege_hostile_forts'), 'Show', 'Hide')]."
-											}
-											onclick = "[GetVariableSystem.Toggle('liege_hostile_forts')]"
-										}
-
-										vbox = {
-											visible = "[Not(GetVariableSystem.Exists('liege_hostile_forts'))]"
-											layoutpolicy_horizontal = expanding
-											datamodel = "[GetPlayer.MakeScope.GetList('liege_hostile_forts')]"
-
-											item = {
-												hostile_fort_item = { }
-											}
-										}
-									}
-
-									vbox = {
-										layoutpolicy_horizontal = expanding
+									forts_list = {
 										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('captured_war_targets'))]"
-
-										button_text = {
-											layoutpolicy_horizontal = expanding
-											blockoverride "text" {
-												align = left
-												raw_text = "You control [GetDataModelSize(GetPlayer.MakeScope.GetList('captured_war_targets'))] war targets. Click to [Select_CString(GetVariableSystem.Exists('captured_war_targets'), 'Hide', 'Show')]."
-											}
+										blockoverride "title" {
+											raw_text = "You control [GetDataModelSize(GetPlayer.MakeScope.GetList('captured_war_targets'))] war targets."
+										}
+										blockoverride "hide" {
 											onclick = "[GetVariableSystem.Toggle('captured_war_targets')]"
 										}
-
-										vbox = {
+										blockoverride "hidden" {
+											visible = "[Not(GetVariableSystem.Exists('captured_war_targets'))]"
+										}
+										blockoverride "hide_all" {
+											on_start = "[GetVariableSystem.Clear('captured_war_targets')]"
+										}
+										blockoverride "shown" {
 											visible = "[GetVariableSystem.Exists('captured_war_targets')]"
-											layoutpolicy_horizontal = expanding
+										}
+										blockoverride "expanded" {
+											visible = "[GetVariableSystem.Exists('expand_captured_war_targets')]"
+										}
+										blockoverride "expand" {
+											onclick = "[GetVariableSystem.Toggle('expand_captured_war_targets')]"
+										}
+										blockoverride "collapsed" {
+											visible = "[Not(GetVariableSystem.Exists('expand_captured_war_targets'))]"
+										}
+										blockoverride "datamodel" {
 											datamodel = "[GetPlayer.MakeScope.GetList('captured_war_targets')]"
-
-											item = {
-												hostile_fort_item = {
-													blockoverride "border" { }
-												}
-											}
+										}
+										blockoverride "more" {
+											visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('captured_war_targets')), '(int32)3')]"
 										}
 									}
 
-									vbox = {
-										layoutpolicy_horizontal = expanding
-										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('adjacent_hostile_forts'))]"
-
-										text_single = {
-											layoutpolicy_horizontal = expanding
-											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_hostile_forts'))] exposed counties, which can be safely entered."
+									forts_list = {
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('liege_hostile_forts'))]"
+										blockoverride "title" {
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('liege_hostile_forts'))] war targets."
 										}
-
-										vbox = {
-											layoutpolicy_horizontal = expanding
-											datamodel = "[GetPlayer.MakeScope.GetList('adjacent_hostile_forts')]"
-
-											item = {
-												hostile_fort_item = {
-													blockoverride "border" {
-
-													}
-												}
-											}
+										blockoverride "hide" {
+											onclick = "[GetVariableSystem.Toggle('liege_hostile_forts')]"
+										}
+										blockoverride "hidden" {
+											visible = "[Not(GetVariableSystem.Exists('liege_hostile_forts'))]"
+										}
+										blockoverride "hide_all" {
+											on_start = "[GetVariableSystem.Clear('liege_hostile_forts')]"
+										}
+										blockoverride "shown" {
+											visible = "[GetVariableSystem.Exists('liege_hostile_forts')]"
+										}
+										blockoverride "expanded" {
+											visible = "[GetVariableSystem.Exists('expand_liege_hostile_forts')]"
+										}
+										blockoverride "expand" {
+											onclick = "[GetVariableSystem.Toggle('expand_liege_hostile_forts')]"
+										}
+										blockoverride "collapsed" {
+											visible = "[Not(GetVariableSystem.Exists('expand_liege_hostile_forts'))]"
+										}
+										blockoverride "datamodel" {
+											datamodel = "[GetPlayer.MakeScope.GetList('liege_hostile_forts')]"
+										}
+										blockoverride "more" {
+											visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('liege_hostile_forts')), '(int32)3')]"
 										}
 									}
 
-									vbox = {
-										layoutpolicy_horizontal = expanding
-										visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts')))]"
-
-										text_single = {
-											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts'))] adjacent across water."
-
-											layoutpolicy_horizontal = expanding
+									forts_list = {
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts'))]"
+										blockoverride "title" {
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts'))] war targets."
 										}
-
-										vbox = {
-											layoutpolicy_horizontal = expanding
+										blockoverride "hide" {
+											onclick = "[GetVariableSystem.Toggle('adjacent_across_water_hostile_forts')]"
+										}
+										blockoverride "hidden" {
+											visible = "[Not(GetVariableSystem.Exists('adjacent_across_water_hostile_forts'))]"
+										}
+										blockoverride "hide_all" {
+											on_start = "[GetVariableSystem.Clear('adjacent_across_water_hostile_forts')]"
+										}
+										blockoverride "shown" {
+											visible = "[GetVariableSystem.Exists('adjacent_across_water_hostile_forts')]"
+										}
+										blockoverride "expanded" {
+											visible = "[GetVariableSystem.Exists('expand_adjacent_across_water_hostile_forts')]"
+										}
+										blockoverride "expand" {
+											onclick = "[GetVariableSystem.Toggle('expand_adjacent_across_water_hostile_forts')]"
+										}
+										blockoverride "collapsed" {
+											visible = "[Not(GetVariableSystem.Exists('expand_adjacent_across_water_hostile_forts'))]"
+										}
+										blockoverride "datamodel" {
 											datamodel = "[GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts')]"
-
-											item = {
-												hostile_fort_item = { }
-											}
+										}
+										blockoverride "more" {
+											visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_across_water_hostile_forts')), '(int32)3')]"
 										}
 									}
 
-									vbox = {
-										layoutpolicy_horizontal = expanding
-										visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('your_hostile_forts')))]"
-										text_single = {
-											background = { using = Background_Area_Dark }
-											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('your_hostile_forts'))] of your own forts captured by enemies."
-
-											layoutpolicy_horizontal = expanding
+									forts_list = {
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('your_captured_forts'))]"
+										blockoverride "title" {
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('your_captured_forts'))] of your forts captured by enemy,"
 										}
-
-										vbox = {
-											layoutpolicy_horizontal = expanding
-											datamodel = "[GetPlayer.MakeScope.GetList('your_hostile_forts')]"
-
-											item = {
-												hostile_fort_item = {
-													blockoverride "controller" { }
-												}
-											}
+										blockoverride "hide" {
+											shortcut = speed_5
+											onclick = "[GetVariableSystem.Toggle('your_captured_forts')]"
 										}
-									}
-
-									vbox = {
-										layoutpolicy_horizontal = expanding
-										visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('personal_forts')))]"
-
-										text_single = {
-											background = { using = Background_Area_Dark }
-											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('personal_forts'))] personal enemy forts."
-
-											layoutpolicy_horizontal = expanding
+										blockoverride "shortcut" {
+											raw_text =  " hotkey 5"
 										}
-
-										vbox = {
-											layoutpolicy_horizontal = expanding
-											datamodel = "[GetPlayer.MakeScope.GetList('personal_forts')]"
-
-											item = {
-												hostile_fort_item = { }
-											}
+										blockoverride "hidden" {
+											visible = "[GetVariableSystem.Exists('your_captured_forts')]"
+										}
+										blockoverride "hide_all" {
+											on_start = "[GetVariableSystem.Set('your_captured_forts', 'yes')]"
+										}
+										blockoverride "shown" {
+											visible = "[Not(GetVariableSystem.Exists('your_captured_forts'))]"
+										}
+										blockoverride "expanded" {
+											visible = "[GetVariableSystem.Exists('expand_your_captured_forts')]"
+										}
+										blockoverride "expand" {
+											onclick = "[GetVariableSystem.Toggle('expand_your_captured_forts')]"
+										}
+										blockoverride "collapsed" {
+											visible = "[Not(GetVariableSystem.Exists('expand_your_captured_forts'))]"
+										}
+										blockoverride "datamodel" {
+											datamodel = "[GetPlayer.MakeScope.GetList('your_captured_forts')]"
+										}
+										blockoverride "more" {
+											visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('your_captured_forts')), '(int32)3')]"
 										}
 									}
 
-									widget = {
-										size = { 0 5 }
-									}
-
-									vbox = {
-										visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('hostile_forts')))]"
-										layoutpolicy_horizontal = expanding
-
-										button_text = {
-											layoutpolicy_horizontal = expanding
-											blockoverride "text" {
-												raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostile_forts'))] Other hostile forts. Click to [Select_CString(GetVariableSystem.Exists('other_hostile_forts'), 'Hide', 'Show')]."
-											}
-											onclick = "[GetVariableSystem.Toggle('other_hostile_forts')]"
+									forts_list = {
+										visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('hostile_forts'))]"
+										blockoverride "title" {
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('hostile_forts'))] other hostile forts,"
 										}
-
-										vbox = {
-											layoutpolicy_horizontal = expanding
-											visible = "[GetVariableSystem.Exists('other_hostile_forts')]"
+										blockoverride "hide" {
+											shortcut = map_mode_2
+											onclick = "[GetVariableSystem.Toggle('hostile_forts')]"
+										}
+										blockoverride "shortcut" {
+											raw_text =  " hotkey T"
+										}
+										blockoverride "hidden" {
+											visible = "[Not(GetVariableSystem.Exists('hostile_forts'))]"
+										}
+										blockoverride "hide_all" {
+											on_start = "[GetVariableSystem.Clear('hostile_forts')]"
+										}
+										blockoverride "shown" {
+											visible = "[GetVariableSystem.Exists('hostile_forts')]"
+										}
+										blockoverride "expanded" {
+											visible = "[GetVariableSystem.Exists('expand_hostile_forts')]"
+										}
+										blockoverride "expand" {
+											onclick = "[GetVariableSystem.Toggle('expand_hostile_forts')]"
+										}
+										blockoverride "collapsed" {
+											visible = "[Not(GetVariableSystem.Exists('expand_hostile_forts'))]"
+										}
+										blockoverride "datamodel" {
 											datamodel = "[GetPlayer.MakeScope.GetList('hostile_forts')]"
-
-											item = {
-												hostile_fort_item = {
-													blockoverride "controller" { }
-												}
-											}
+										}
+										blockoverride "more" {
+											visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostile_forts')), '(int32)3')]"
 										}
 									}
+
+									# vbox = {
+									# 	layoutpolicy_horizontal = expanding
+									# 	visible = "[Not(IsDataModelEmpty(GetPlayer.MakeScope.GetList('personal_forts')))]"
+									#
+									# 	text_single = {
+									# 		background = { using = Background_Area_Dark }
+									# 		raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('personal_forts'))] personal enemy forts."
+									#
+									# 		layoutpolicy_horizontal = expanding
+									# 	}
+									#
+									# 	fixedgridbox = {
+									# 		layoutpolicy_horizontal = expanding
+									# 		addrow = 23
+									# 		addcolumn = 500
+									# 		maxverticalslots = 3
+									# 		datamodel = "[GetPlayer.MakeScope.GetList('personal_forts')]"
+									#
+									# 		item = {
+									# 			hostile_fort_item = { }
+									# 		}
+									# 	}
+									# }
+
 								}
 
 								vbox = {
@@ -2314,54 +2495,64 @@ window = {
 										layoutpolicy_horizontal = expanding
 										datacontext = "[Army.GetLocation]"
 										blockoverride "click" {
-											onrightclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+											using = send_army_click_county
 										}
 									}
 								}
 							}
+
+							vbox = {
+								margin_top = 25
+								margin_bottom = 5
+								layoutpolicy_horizontal = expanding
+								visible = "[Not(GetVariableSystem.Exists('mini_army'))]"
+
+								background = { using = Background_Area_Border_Solid margin = { 20 0 } }
+
+								button_text = {
+									visible = "[GetVariableSystem.HasValue('army_tabs', 'targets')]"
+									layoutpolicy_horizontal = expanding
+									blockoverride "text" {
+										raw_text = "Collapse all categories, E."
+									}
+									shortcut = map_mode_1
+									onclick = "[PdxGuiTriggerAllAnimations('hide_fort_group')]"
+								}
+
+								# reload lists
+								button_text = {
+									# visible = "[GetVariableSystem.Exists('army_tabs')]"
+									layoutpolicy_horizontal = expanding
+									blockoverride "text" {
+										raw_text = "Reload, Shift E."
+									}
+									shortcut = map_mode_11
+									onclick = "[PdxGuiTriggerAllAnimations('refresh_first_army')]"
+								}
+
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									blockoverride "text" {
+										raw_text = "[Select_CString(GetVariableSystem.Exists('compact_units'), 'Hide', 'Show')] unit details, Shift W."
+									}
+									onclick = "[GetVariableSystem.Toggle('compact_units')]"
+									shortcut = map_mode_10
+								}
+
+								# hide details
+								# button_text = {
+								# 	layoutpolicy_horizontal = expanding
+								# 	onclick = "[GetVariableSystem.Toggle('mini_army')]"
+								# 	blockoverride "text" {
+								# 		raw_text = "Hide all details, E."
+								# 	}
+								# 	shortcut = map_mode_1
+								# }
+							}
+
 						}
 					}
 				}
-
-				vbox = {
-					margin_left = 10
-					margin_bottom = 5
-					layoutpolicy_horizontal = expanding
-					visible = "[Not(GetVariableSystem.Exists('mini_army'))]"
-
-					background = { using = Background_Area_Border_Solid }
-
-					# reload lists
-					button_text = {
-						# visible = "[GetVariableSystem.Exists('army_tabs')]"
-						layoutpolicy_horizontal = expanding
-						blockoverride "text" {
-							raw_text = "Reload, Shift E."
-						}
-						shortcut = map_mode_11
-						onclick = "[PdxGuiTriggerAllAnimations('refresh_first_army')]"
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-					    blockoverride "text" {
-					        raw_text = "[Select_CString(GetVariableSystem.Exists('compact_units'), 'Hide', 'Show')] unit details, Shift W."
-					    }
-						onclick = "[GetVariableSystem.Toggle('compact_units')]"
-						shortcut = map_mode_10
-					}
-
-					# hide details
-					# button_text = {
-					# 	layoutpolicy_horizontal = expanding
-					# 	onclick = "[GetVariableSystem.Toggle('mini_army')]"
-					# 	blockoverride "text" {
-					# 		raw_text = "Hide all details, E."
-					# 	}
-					# 	shortcut = map_mode_1
-					# }
-				}
-
 
 
 				expand = { }
@@ -2530,16 +2721,13 @@ types FortTypes {
 	}
 
 	type hostile_fort_item = button {
-		size = { 0 22 }
+		size = { 500 22 }
 		layoutpolicy_horizontal = expanding
 		datacontext = "[Scope.GetProvince]"
 
 		button_ignore = none
 		# onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Scope.GetProvince.GetId))]"
-		onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
-		onrightclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
-		onclick = "[GetVariableSystem.Set('sending_army', Province.GetNameNoTooltip)]"
-		onclick = "[PdxGuiTriggerAllAnimations('hide_army_window')]"
+		using = send_army_click
 
 		hbox = {
 			# background = { using = Background_Area_Light }
@@ -2576,13 +2764,9 @@ types FortTypes {
 			hbox = {
 				visible = "[Not(ObjectsEqual(Army.GetLocation.GetId, Province.GetId))]"
 				spacing = 3
-				text_single = {
-					raw_text = "FortDistance"
-				}
 
 				text_single = {
-					margin_left = 2
-					raw_text = "[GuiScope.SetRoot(Army.GetLocation.MakeScope).AddScope('second', Province.MakeScope).Custom('province_direction')]."
+					raw_text = "ArmyProvinceDistance"
 				}
 			}
 
@@ -2591,8 +2775,13 @@ types FortTypes {
 			}
 
 			text_single = {
+				visible = "[GreaterThan_CFixedPoint( Province.GetCounty.GetTitle.MakeScope.ScriptValue('num_of_forts_in_county'), '(CFixedPoint)1')]"
 				raw_text = "[Province.GetNameNoTooltip]."
 			}
+
+			# text_single = {
+			# 	raw_text = "[Province.GetController.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+			# }
 
 			hbox = {
 				visible = "[Province.IsOccupied]"
@@ -2651,17 +2840,17 @@ types FortTypes {
 				visible = "[GetScriptedGui('is_riverside_county').IsShown( GuiScope.SetRoot( Province.GetCounty.GetTitle.MakeScope ).End )]"
 			}
 
-			container = {
-				visible = "[Not(GetScriptedGui('is_war_target').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Province.MakeScope).End ))]"
-				ignoreinvisible = yes
-				text_single = {
-					raw_text = "Adjacent to a war goal,"
-					visible = "[GetScriptedGui('adjacent_to_war_target').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Province.MakeScope).End )]"
-				}
-			}
+			# container = {
+			# 	visible = "[Not(GetScriptedGui('is_war_target').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Province.MakeScope).End ))]"
+			# 	ignoreinvisible = yes
+			# 	text_single = {
+			# 		raw_text = "Adjacent to a war goal,"
+			# 		visible = "[GetScriptedGui('adjacent_to_war_target').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Province.MakeScope).End )]"
+			# 	}
+			# }
 
 			text_single = {
-				raw_text = "Fort level [Province.GetFortLevel],"
+				raw_text = "level [Province.GetFortLevel]."
 			}
 
 			hbox = {
@@ -2698,10 +2887,7 @@ types FortTypes {
 	}
 
 	type friendly_county_item = button_text {
-		onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
-		onrightclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
-		onclick = "[GetVariableSystem.Set('sending_army', Province.GetNameNoTooltip)]"
-		onclick = "[PdxGuiTriggerAllAnimations('hide_army_window')]"
+		using = send_army_click
 		datacontext = "[Scope.GetProvince]"
 
 	    blockoverride "text" {
@@ -3744,4 +3930,143 @@ types ArmyWindow
 			}
 		}
 	}
+
+	type forts_list = vbox {
+		layoutpolicy_horizontal = expanding
+
+		state = {
+			name = "hide_fort_group"
+			block "hide_all" {
+				on_start = "[GetVariableSystem.Set('adjacent_hostile_forts', 'yes')]"
+			}
+		}
+
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			blockoverride "text" {
+				block "title" {
+					raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_hostile_forts'))] forts bordering you or ally,"
+				}
+			}
+			blockoverride "extra" {
+				text_single = {
+					block "shortcut" {
+						raw_text = " Click"
+					}
+				}
+				text_single = {
+					raw_text = " to hide."
+					block "shown" {
+						visible = "[Not(GetVariableSystem.Exists('adjacent_hostile_forts'))]"
+					}
+				}
+				text_single = {
+					raw_text = " to show."
+					block "hidden" {
+						visible = "[GetVariableSystem.Exists('adjacent_hostile_forts')]"
+					}
+				}
+
+			}
+			block "hide" {
+				shortcut = speed_3
+				onclick = "[GetVariableSystem.Toggle('adjacent_hostile_forts')]"
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			block "shown" {
+				visible = "[Not(GetVariableSystem.Exists('adjacent_hostile_forts'))]"
+			}
+
+			button_text = {
+				block "expanded" {
+					visible = "[GetVariableSystem.Exists('expand_adjacent_hostile_forts')]"
+				}
+				block "expand" {
+					onclick = "[GetVariableSystem.Toggle('expand_adjacent_hostile_forts')]"
+				}
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					raw_text = "Showing all. Click to limit to 5."
+				}
+			}
+
+			fixedgridbox = {
+				block "collapsed" {
+					visible = "[Not(GetVariableSystem.Exists('expand_adjacent_hostile_forts'))]"
+				}
+				layoutpolicy_horizontal = expanding
+				block "datamodel" {
+					datamodel = "[GetPlayer.MakeScope.GetList('adjacent_hostile_forts')]"
+				}
+				addrow = 23
+				addcolumn = 500
+				maxverticalslots = 3
+
+				item = {
+					hostile_fort_item = {
+						blockoverride "border" {
+						}
+					}
+				}
+			}
+
+			fixedgridbox = {
+				layoutpolicy_horizontal = expanding
+				block "expanded" {
+					visible = "[GetVariableSystem.Exists('expand_adjacent_hostile_forts')]"
+				}
+				block "datamodel" {
+					datamodel = "[GetPlayer.MakeScope.GetList('adjacent_hostile_forts')]"
+				}
+				addrow = 23
+				addcolumn = 500
+
+				item = {
+					hostile_fort_item = {
+						blockoverride "border" {
+						}
+					}
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				block "more" {
+					visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('adjacent_hostile_forts')), '(int32)3')]"
+				}
+				button_text = {
+					block "expand" {
+						onclick = "[GetVariableSystem.Toggle('expand_adjacent_hostile_forts')]"
+					}
+					block "collapsed" {
+						visible = "[Not(GetVariableSystem.Exists('expand_adjacent_hostile_forts'))]"
+					}
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "Show more."
+					}
+				}
+			}
+		}
+	}
+}
+
+
+template send_army_click {
+	onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+	onrightclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+	onclick = "[GetVariableSystem.Set('sending_army', Province.GetNameNoTooltip)]"
+	onclick = "[GetVariableSystem.Set('sending_army_county', Province.GetCounty.GetTitle.GetNameNoTierNoTooltip)]"
+	onclick = "[PdxGuiTriggerAllAnimations('hide_army_window')]"
+}
+
+template send_army_click_county {
+	onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+	onrightclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+	onclick = "[GetVariableSystem.Set('sending_army', Title.GetProvince.GetNameNoTooltip)]"
+	onclick = "[GetVariableSystem.Set('sending_army_county', Title.GetNameNoTierNoTooltip)]"
+	onclick = "[PdxGuiTriggerAllAnimations('hide_army_window')]"
 }
