@@ -632,7 +632,15 @@ hostiles_inside = {
 		}
 		every_in_list = {
 			variable = hostiles_inside
-			add = army_size
+			if = {
+				limit = {
+					exists = var:army_strength
+				}
+				add = var:army_strength
+			}
+			else = {
+				add = army_size
+			}
 		}
 	}
 	divide = 100
@@ -647,7 +655,15 @@ hostiles_inside_liege = {
 		}
 		every_in_list = {
 			variable = hostiles_inside_liege
-			add = army_size
+			if = {
+				limit = {
+					exists = var:army_strength
+				}
+				add = var:army_strength
+			}
+			else = {
+				add = army_size
+			}
 		}
 	}
 	divide = 100
@@ -662,7 +678,15 @@ hostiles_outside = {
 		}
 		every_in_list = {
 			variable = hostiles_outside
-			add = army_size
+			if = {
+				limit = {
+					exists = var:army_strength
+				}
+				add = var:army_strength
+			}
+			else = {
+				add = army_size
+			}
 		}
 	}
 	divide = 100
@@ -877,6 +901,7 @@ enemies_total = {
 	every_in_list = {
 		variable = all_enemies
 		add = army_size
+		# variable?
 	}
 	divide = 100
 	floor = yes
@@ -896,14 +921,86 @@ enemies_total_nearby = {
 				add = army_size
 			}
 		}
-		every_in_list = {
-			variable = adjacent_counties
+		every_neighboring_county = {
 			every_county_province = {
 				every_in_list = {
 					variable = armies_here
 					limit = {
 						army_owner = {
 							is_hostile_to_me = yes
+						}
+					}
+					add = army_size
+				}
+			}
+		}
+	}
+	divide = 100
+	floor = yes
+	multiply = 100
+}
+
+enemies_total_nearby_combat = {
+	scope:province = {
+		county = {
+			save_temporary_scope_as = county
+
+			every_county_province = {
+				limit = {
+					NOT = {
+						this = scope:province
+					}
+				}
+				every_in_list = {
+					variable = armies_here
+					limit = {
+						army_owner = {
+							is_hostile_to_me = yes
+						}
+					}
+					add = army_size
+				}
+			}
+			every_neighboring_county = {
+				every_county_province = {
+					every_in_list = {
+						variable = armies_here
+						limit = {
+							army_owner = {
+								is_hostile_to_me = yes
+							}
+						}
+						add = army_size
+					}
+				}
+			}
+		}
+	}
+	divide = 100
+	floor = yes
+	multiply = 100
+}
+
+allies_total_nearby = {
+	scope:county = {
+		every_county_province = {
+			every_in_list = {
+				variable = armies_here
+				limit = {
+					army_owner = {
+						is_friendly_to_me = yes
+					}
+				}
+				add = army_size
+			}
+		}
+		every_neighboring_county = {
+			every_county_province = {
+				every_in_list = {
+					variable = armies_here
+					limit = {
+						army_owner = {
+							is_friendly_to_me = yes
 						}
 					}
 					add = army_size
@@ -999,5 +1096,193 @@ num_of_hostile_adjacent_counties = {
 			}
 			add = 1
 		}
+	}
+}
+
+in_the_fog = {
+	if = {
+		limit = {
+			has_variable_list = in_the_fog
+		}
+		every_in_list = {
+			variable = in_the_fog
+			add = var:army_strength
+		}
+	}
+	divide = 100
+	floor = yes
+	multiply = 100
+}
+
+supply_limit = {
+	value = 2000
+
+	add = {
+		value = county.development_level
+		multiply =  150
+	}
+
+	multiply = {
+		value = 1
+
+		if = {
+			limit = {
+				is_coastal = yes
+			}
+			add = 0.25
+		}
+
+		if = {
+			limit = {
+				terrain = farmlands
+			}
+			add = 0.5
+		}
+		else_if = {
+			limit = {
+				terrain = hills
+			}
+			add = -0.1
+		}
+		else_if = {
+		    limit = {
+		        terrain = mountains
+		    }
+		    add = -0.5
+		}
+		else_if = {
+		    limit = {
+		        terrain = desert
+		    }
+		    add = -0.3
+		}
+		else_if = {
+		    limit = {
+		        terrain = desert_mountains
+		    }
+		    add = -0.6
+		}
+		else_if = {
+		    limit = {
+		        terrain = oasis
+		    }
+		    add = 0.1
+		}
+		else_if = {
+		    limit = {
+		        terrain = jungle
+		    }
+		    add = -0.25
+		}
+		else_if = {
+		    limit = {
+		        terrain = forest
+		    }
+		    add = -0.1
+		}
+		else_if = {
+		    limit = {
+		        terrain = taiga
+		    }
+		    add = -0.2
+		}
+		else_if = {
+		    limit = {
+		        terrain = wetlands
+		    }
+		    add = -0.25
+		}
+		else_if = {
+		    limit = {
+		        terrain = floodplains
+		    }
+		    add = 0.35
+		}
+		if = {
+			limit = {
+				county = {
+					holder = {
+						OR = {
+							any_liege_or_above = {
+								this = scope:player
+							}
+							this = scope:player
+						}
+					}
+				}
+			}
+			add = 0.3
+		}
+		else_if = {
+			limit = {
+				scope:player = {
+					is_independent_ruler = no
+				}
+				county = {
+					holder = {
+						OR = {
+							is_liege_or_above_of = scope:player
+							any_liege_or_above = {
+								is_liege_or_above_of = scope:player
+							}
+						}
+					}
+				}
+			}
+			add = 0.15
+		}
+		if = {
+			limit = {
+				county = {
+					holder = {
+						has_government = tribal_government
+					}
+				}
+				scope:player = {
+					NOT = {
+						has_government = tribal_government
+					}
+				}
+			}
+			add = -0.5
+		}
+	}
+	floor = yes
+}
+
+supply_limit_true = {
+	value = supply_limit
+
+	every_in_list = {
+		variable = armies_here
+		subtract = army_size
+	}
+}
+
+highest_supply = {
+	ordered_county_province = {
+		order_by = supply_limit_true
+		max = 1
+
+		add = supply_limit_true
+	}
+}
+
+armies_present_here = {
+	every_in_list = {
+		variable = armies_here
+		add = army_size
+	}
+}
+
+holdings_in_county = {
+	every_county_province = {
+		add = 1
+	}
+}
+
+adjacent_counties = {
+	every_neighboring_county = {
+		add = 1
 	}
 }

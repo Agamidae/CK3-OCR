@@ -13,6 +13,11 @@
 		remove_variable = closest_enemy
 		save_scope_as = player
 
+		every_in_list = {
+			variable = army_provinces
+			clear_variable_list = armies_here
+		}
+
 		scope:location = {
 			save_scope_as = second
 		}
@@ -68,12 +73,6 @@
 						name = army_strength
 						value = army_size
 						days = 1
-					}
-					location = {
-						set_variable = {
-							name = ally_here
-							value = prev
-						}
 					}
 					if = {
 						limit = {
@@ -360,6 +359,11 @@
 													location.squared_province_distance < 500 #TODO test
 												}
 											}
+											any_war_ally = {
+												any_realm_county = {
+													squared_province_distance < 500
+												}
+											}
 										}
 									}
 								}
@@ -565,3 +569,103 @@
 		}
 	}
 }
+
+find_resupply_place = {
+	saved_scopes = { army }
+	effect = {
+		clear_variable_list = friendly_provinces
+		save_scope_as = player
+
+		every_realm_county = {
+			limit = {
+				county_controller = {
+					is_county_friendly = yes
+				}
+			}
+			add_to_list = friendly_counties
+		}
+		every_ally = {
+			every_sub_realm_county = {
+				limit = {
+					county_controller = {
+						is_county_friendly = yes
+					}
+					NOT = {
+						is_in_list = friendly_counties
+					}
+				}
+				add_to_list = friendly_counties
+			}
+		}
+		every_in_list = {
+			list = friendly_counties
+			every_county_province = {
+				limit = {
+					NOT = {
+						this = scope:army.location
+					}
+					supply_limit_true > scope:army.army_size
+				}
+				add_to_list = friendly_provinces
+			}
+		}
+		scope:army = {
+			location = {
+				save_scope_as = second
+			}
+		}
+		ordered_in_list = {
+			list = friendly_provinces
+			order_by = {
+				value = squared_province_distance
+				multiply = -1
+			}
+			min = 0
+
+			root = {
+				add_to_variable_list = {
+					name = friendly_provinces
+					target = prev
+				}
+			}
+		}
+	}
+}
+
+
+army_holdings = {
+	saved_scopes = { province }
+	is_valid = {
+		location = {
+			is_sea_province = no
+		}
+	}
+	effect = {
+		army_owner = {
+			save_scope_as = player
+		}
+		scope:player = {
+			clear_variable_list = army_holdings
+		}
+
+		scope:province = {
+			county = {
+				ordered_county_province = {
+					order_by = supply_limit
+					min = 0
+
+					scope:player = {
+						add_to_variable_list = {
+							name = army_holdings
+							target = prev
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+# if hostile, show forts first, then holdings with armies, then distance?
+# if friendly, sort by supply, avoid hostile
+# need to get effective supply

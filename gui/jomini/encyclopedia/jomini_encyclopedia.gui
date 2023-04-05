@@ -18,14 +18,8 @@ window = {
 		name = _hide
 		using = Animation_FadeOut_Standard
 		using = Sound_WindowHide_Standard
-	}
-
-	button_normal = {
-		size = { 100% 100% }
-		onclick = "[Encyclopedia.Hide]"
-
-		# using = Background_Full_Dim
-		using = TooltipFocus
+		on_start = "[PdxGuiTriggerAllAnimations('hide_wiki')]"
+		on_start = "[PdxGuiTriggerAllAnimations('hide_wiki_entries')]"
 	}
 
 	widget = {
@@ -45,6 +39,7 @@ window = {
 
 				button_text = {
 					layoutpolicy_horizontal = expanding
+					shortcut = close_window
 
 					blockoverride "text" {
 						raw_text = "[GetDataModelSize(Encyclopedia.AccessPages)] Categories. Close, Escape."
@@ -61,11 +56,28 @@ window = {
 						item = {
 							button_tab_vertical = {
 								size = { 175 35 }
-								onclick = "[Encyclopedia.SetCurrentPage( EncyclopediaPage.AccessSelf )]"
-								down = "[ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self )]"
-								visible = "[Not(ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self ))]"
-								onclick = "[GetVariableSystem.Clear('select_page')]"
-								onclick = "[PdxGuiTriggerAllAnimations('show_wiki_entries')]"
+								onclick = "[PdxGuiTriggerAllAnimations('hide_wiki_entries')]"
+								onclick = "[PdxGuiWidget.TriggerAnimation('prev_search_in_category')]"
+								# visible = "[Not(ObjectsEqual( Encyclopedia.GetCurrentPage, EncyclopediaPage.Self ))]"
+								# onclick = "[PdxGuiTriggerAllAnimations('prev_search_in_category')]"
+
+								# state = {
+								# 	name = change_page
+								# 	delay = 0.1
+								#
+								# 	next = prev_search_in_category
+								# }
+
+								state = {
+									name = prev_search_in_category
+									delay = 0.2
+									on_finish = "[Encyclopedia.SetCurrentPage( EncyclopediaPage.AccessSelf )]"
+									on_finish = "[Encyclopedia.FilterFromHistoryBack]"
+									on_finish = "[Encyclopedia.FilterFromHistoryForward]"
+									on_finish = "[EncyclopediaPage.FilterFromText]"
+									on_finish = "[GetVariableSystem.Clear('select_page')]"
+									on_finish = "[PdxGuiTriggerAllAnimations('show_wiki_entries')]"
+								}
 
 								text_single = {
 									raw_text = " [EncyclopediaPage.GetTitle]."
@@ -81,6 +93,7 @@ window = {
 			    expand = { }
 			}
 
+
 			header_pattern = {
 				layoutpolicy_horizontal = expanding
 				size = { 0 30 }
@@ -92,9 +105,11 @@ window = {
 
 				blockoverride "button_close"
 				{
+
 					tooltip = "TOOLTIP_CLOSE_ENCYCLOPEDIA"
 					onclick = "[Encyclopedia.Hide]"
 					size = { 0 0 }
+					visible = "[Not(GetVariableSystem.Exists('select_page'))]"
 				}
 
 				hbox = {
@@ -107,6 +122,10 @@ window = {
 					text_single = {
 						state = {
 							name = show_wiki
+							on_start = "[PdxGuiWidget.Show]"
+						}
+						state = {
+							name = show_results
 							on_start = "[PdxGuiWidget.Show]"
 						}
 						state = {
@@ -138,15 +157,7 @@ window = {
 							ontextchanged = "[PdxGuiWidget.FindChild('text').Hide]"
 							onreturnpressed = "[PdxGuiTriggerAllAnimations('show_wiki')]"
 							onreturnpressed = "[PdxGuiTriggerAllAnimations('show_wiki_entries')]"
-							ontextchanged = "[PdxGuiTriggerAllAnimations('type_sound')]"
 
-
-							state = {
-								name = type_sound
-								start_sound = {
-									soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
-								}
-							}
 							text_single = {
 								state = {
 									name = hide_wiki
@@ -172,7 +183,7 @@ window = {
 						name = hide_wiki
 						on_start = "[PdxGuiWidget.Hide]"
 					}
-					raw_text = "You may continue to type."
+					raw_text = "Text field is in focus."
 				}
 
 
@@ -214,6 +225,7 @@ window = {
 						visible = "[Encyclopedia.CanFilterFromHistoryBack]"
 						onclick = "[Encyclopedia.FilterFromHistoryBack]"
 						onclick = "[EncyclopediaPage.FilterFromText]"
+						onclick = "[PdxGuiTriggerAllAnimations('show_results')]"
 						onclick = "[PdxGuiTriggerAllAnimations('show_wiki_entries')]"
 						using = tooltip_se
 					}
@@ -239,6 +251,7 @@ window = {
 						}
 						visible = "[Encyclopedia.CanFilterFromHistoryForward]"
 						onclick = "[Encyclopedia.FilterFromHistoryForward]"
+						onclick = "[PdxGuiTriggerAllAnimations('show_results')]"
 						onclick = "[PdxGuiTriggerAllAnimations('show_wiki_entries')]"
 					}
 				}
@@ -308,6 +321,7 @@ window = {
 						name = search_all
 						delay = 0.1
 						on_finish = "[Encyclopedia.ViewAllEntries]"
+						on_finish = "[PdxGuiTriggerAllAnimations('hide_wiki')]"
 					}
 
 					expand = { }
