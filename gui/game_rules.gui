@@ -9,6 +9,7 @@ window = {
 	state = {
 		name = _show
 		using = Animation_FadeIn_Quick
+		on_start = "[GetVariableSystem.Clear('selected_rule')]"
 		on_start = "[PdxGuiWidget.FindChild('game_rules_window').TriggerAnimation('appear')]"
 	}
 
@@ -26,13 +27,13 @@ window = {
 	widget = {
 		name = "game_rules_window"
 		parentanchor = center
-		size = { 100% 99% }
+		size = { 100% 100% }
 		alwaystransparent = no
 		allow_outside = yes
 		using = TooltipFocus
 
-		using = Window_Decoration_Frontend_Spike
-		using = Window_Background
+		# using = Window_Decoration_Frontend_Spike
+		using = Window_Background_No_Edge
 
 		state = {
 			name = appear
@@ -57,7 +58,9 @@ window = {
 		}
 
 		vbox = {
-			using = Window_Margins
+			visible = "[Not(GetVariableSystem.Exists('selected_rule'))]"
+			margin = { 5 5 }
+			# using = Window_Margins
 			# spacing = 5
 
 			header_pattern = {
@@ -66,7 +69,7 @@ window = {
 
 				blockoverride "header_text"
 				{
-					text = "GAME_RULES_HEADER"
+					raw_text = "[GetDataModelSize(JominiGameRules.GetSettings)] [Localize('GAME_RULES_HEADER')]."
 				}
 
 				blockoverride "button_close"
@@ -81,6 +84,15 @@ window = {
 				name = "ironman_and_achievements"
 				visible = "[Not( GameHasMultiplePlayers )]"
 			}
+
+			# button_text = {
+			# 	layoutpolicy_horizontal = expanding
+			#     blockoverride "text" {
+			#         raw_text = "[Select_CString(GetVariableSystem.Exists('rule_desc'), 'Show', 'Hide')] descriptions, Shift D."
+			#     }
+			# 	onclick = "[GetVariableSystem.Toggle('rule_desc')]"
+			# 	shortcut = mapmode_house_secondary
+			# }
 
 			hbox = {
 				layoutpolicy_horizontal = expanding
@@ -177,68 +189,142 @@ window = {
 
 				blockoverride "scrollbox_content"
 				{
-					# margin_top = 30
-					# margin_left = 25
 
-					vbox = {
+					dynamicgridbox = {
 						datamodel = "[JominiGameRules.GetSettings]"
 						layoutpolicy_horizontal = expanding
-						# addcolumn = 450
-						# addrow = 170
-						# datamodel_wrap = 1
-						# maxhorizontalslots = 1
-						# flipdirection = yes
+						datamodel_wrap = 25
 
 						item = {
-							widget = {
-								size = { 0 0 }
+							button_text = {
 								layoutpolicy_horizontal = expanding
 								datacontext = "[GuiGameRule.GetRule]"
 								datacontext = "[GuiGameRule.GetSetting]"
+								onclick = "[GetVariableSystem.Set('selected_rule', GameRule.GetName)]"
 
-								# background = {
-								# 	using = Background_Area_With_Header
-								# 	alpha = 0.8
-								# 	margin = { 10 5 }
-								# 	margin_bottom = 0
-								# }
-
-								flowcontainer = {
-									margin_bottom = 2
-									direction = vertical
-									ignoreinvisible = yes
-									resizeparent = yes
-
+								blockoverride "pre" {
+									spacing = 3
 									text_single = {
-										text = "[GameRule.GetName]"
-										max_width = 420
-									}
-
-									spacer = {
-										size = { 5 5 }
-									}
-
-									widget_game_rule_option = { }
-
-									text_multi = {
-										# layoutpolicy_horizontal = expanding
-										# layoutpolicy_vertical = expanding
-										text = "[GameRuleSetting.GetDescription]"
-										# default_format = "#low"
-										# margin = { 10 0 }
-										margin_right = 20
-										fontsize_min = 14
-										autoresize = yes
-										max_width = 1900
+										raw_text = "[GameRule.GetName],"
+										max_width = 900
 									}
 								}
+
+							    blockoverride "text" {
+									raw_text = "[GameRuleSetting.GetName]."
+									margin_right = 30
+							    }
 							}
+
+							# widget = {
+							# 	size = { 0 0 }
+							# 	layoutpolicy_horizontal = expanding
+							#
+							#
+							# 	# flowcontainer = {
+							# 	# 	margin_bottom = 2
+							# 	# 	direction = vertical
+							# 	# 	ignoreinvisible = yes
+							# 	# 	resizeparent = yes
+							# 	#
+							# 	# 	text_single = {
+							# 	# 		text = "[GameRule.GetName]"
+							# 	# 		max_width = 420
+							# 	# 	}
+							# 	#
+							# 	# 	widget_game_rule_option = { }
+							# 	#
+							# 	# 	text_multi = {
+							# 	# 		visible = "[Not(GetVariableSystem.Exists('rule_desc'))]"
+							# 	# 		raw_text = "[GameRuleSetting.GetDescription]."
+							# 	# 		autoresize = yes
+							# 	# 		max_width = 1350
+							# 	# 	}
+							# 	# }
+							# }
 						}
 					}
 				}
 			}
 
 			expand = {}
+		}
+
+		vbox = {
+			visible = "[GetVariableSystem.Exists('selected_rule')]"
+			margin = { 5 5 }
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datamodel = "[JominiGameRules.GetSettings]"
+
+				item = {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[GuiGameRule.GetRule]"
+						datacontext = "[GuiGameRule.GetSetting]"
+
+						visible = "[EqualTo_string(GetVariableSystem.Get('selected_rule'), GameRule.GetName)]"
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "[GameRule.GetName]."
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "[GameRuleSetting.GetName]."
+						}
+
+						hbox = {
+						    layoutpolicy_horizontal = expanding
+
+							text_multi = {
+								autoresize = yes
+								max_width = 1300
+								raw_text = "[GameRuleSetting.GetDescription]"
+							}
+
+						    expand = { }
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "Previous option, hotkey 1,"
+							}
+							shortcut = speed_1
+							visible = "[And( IsHost, Not( HasGameStartedForTheFirstTime ) )]"
+							onclick = "[GuiGameRule.Prev]"
+							clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_decrement"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "Next option, hotkey 2."
+							}
+							shortcut = speed_2
+							visible = "[And( IsHost, Not( HasGameStartedForTheFirstTime ) )]"
+							onclick = "[GuiGameRule.Next]"
+							clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_decrement"
+						}
+					}
+				}
+			}
+
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+			    blockoverride "text" {
+			        raw_text = "Close, Escape"
+			    }
+				shortcut = close_window
+				onclick = "[GetVariableSystem.Clear('selected_rule')]"
+			}
+
+			expand = { }
+
 		}
 
 		game_rules_preset_window = {}
@@ -250,11 +336,6 @@ types GameRuleTypes
 {
 	type widget_game_rule_option = widget {
 		size = { 240 30 }
-
-		background = {
-			using = Background_Area_Dark
-			margin = { 5 5 }
-		}
 
 		flowcontainer = {
 			ignoreinvisible = yes
@@ -386,7 +467,7 @@ types GameRuleTypes
 
 		button_text = {
 			blockoverride "text" {
-				text = "APPLY"
+				raw_text = "[Localize('APPLY')], Escape"
 			}
 			visible = "[And( IsHost, Not( HasGameStartedForTheFirstTime ) )]"
 			onclick = "[JominiGameRules.ApplySettings]"

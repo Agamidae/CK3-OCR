@@ -10,11 +10,14 @@ window = {
 	state = {
 		name = _show
 		using = Animation_FadeIn_Standard
+		on_finish = "[GetVariableSystem.Toggle('barber_open')]"
+		on_finish = "[GetVariableSystem.Clear('barber')]"
 	}
 
 	state = {
 		name = _hide
 		using = Animation_FadeOut_Standard
+		on_finish = "[GetVariableSystem.Clear('barber_open')]"
 	}
 
 	vbox = {
@@ -28,46 +31,31 @@ window = {
 
 		background = {
 			texture = "[Illustration.GetTexture( Character.Self )]"
-			fittype = end
-			alpha = 0.5
-			margin = { -39 -20 }
+			visible = "[GetVariableSystem.Exists('barber_bg')]"
+			fittype = centercrop
+			alpha = 1
+		}
 
-			using = Window_Margins
+		flowcontainer = {
+			layoutpolicy_horizontal = expanding
+			margin_left = 10
+			visible = "[Not(GetVariableSystem.Exists('barber'))]"
+		    ignoreinvisible = yes
+			background = { using = Background_Area_Border_Solid }
 
+			text_single = {
+				raw_text = "PCW_TITLE"
+			}
 
-			modify_texture = {
-				texture = "gfx/interface/component_masks/mask_fade_corner.dds"
-				blend_mode = alphamultiply
+			text_single = {
+				raw_text = ", [Character.GetFirstNameNoTooltip]."
 			}
 		}
 
-		header_pattern = {
-			layoutpolicy_horizontal = expanding
-			blockoverride "header_text"
-			{
-				# text = "PCW_TITLE"
-			}
+		button = {
+			shortcut = close_window
 
-			blockoverride "button_close"
-			{
-				onclick = "[PortraitCustomizationWindow.Close]"
-			}
-
-			hbox = {
-			    layoutpolicy_horizontal = expanding
-				margin_left = 10
-
-				text_single = {
-					raw_text = "PCW_TITLE"
-				}
-
-				text_single = {
-					raw_text = ", [Character.GetFirstNameNoTooltip]."
-				}
-
-			    expand = { }
-			}
-
+			onclick = "[PortraitCustomizationWindow.Close]"
 		}
 
 		hbox = {
@@ -77,6 +65,7 @@ window = {
 			spacing = 100
 
 			vbox = {
+				visible = "[Not(GetVariableSystem.Exists('barber'))]"
 				layoutpolicy_vertical = expanding
 				datacontext = "[PortraitCustomizationWindow.GetCharacter]"
 
@@ -86,6 +75,53 @@ window = {
 
 					physical_appearance = {
 						layoutpolicy_horizontal = expanding
+					}
+
+					vbox = {
+						margin = { 10 10 }
+						layoutpolicy_horizontal = expanding
+						alpha = "[Select_float( GetVariableSystem.Exists('barber'), '(float)0', '(float)1' )]"
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							background = { using = Background_Area_Border_Solid }
+							blockoverride "text" {
+								raw_text = "[Select_CString( GetVariableSystem.Exists('barber'), 'Show', 'Hide')] all controls, hotkey C."
+							}
+							shortcut = character_finder
+							onclick = "[GetVariableSystem.Toggle('barber')]"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							background = { using = Background_Area_Border_Solid }
+							blockoverride "text" {
+								raw_text = "[Select_CString( GetVariableSystem.Exists('barber_head'), 'Show the whole body', 'Show head only')] , hotkey H."
+							}
+							shortcut = army_create_new
+							onclick = "[GetVariableSystem.Toggle('barber_head')]"
+						}
+
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							background = { using = Background_Area_Border_Solid }
+							blockoverride "text" {
+								raw_text = "[Select_CString( GetVariableSystem.Exists('barber_bg'), 'Hide', 'Show')] background, hotkey B."
+							}
+							shortcut = go_back
+							onclick = "[GetVariableSystem.Toggle('barber_bg')]"
+						}
+
+						button_primary_text = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Not(GetVariableSystem.Exists('barber'))]"
+							name = "apply_button"
+							blockoverride "text" {
+								text = "PCW_APPLY"
+							}
+							onclick = "[PortraitCustomizationWindow.ApplyAndClose]"
+						}
 					}
 
 					vbox = {
@@ -143,8 +179,8 @@ window = {
 				}
 			}
 
-
 			vbox = {
+				visible = "[Not(GetVariableSystem.Exists('barber'))]"
 				layoutpolicy_vertical = expanding
 
 				hbox = {
@@ -466,6 +502,7 @@ window = {
 				layoutpolicy_vertical = expanding
 
 				portrait_body = {
+					visible = "[Not(GetVariableSystem.Exists('barber_head'))]"
 					name = "portrait"
 					datacontext = "[PortraitCustomizationWindow.GetCharacter]"
 					size = { 100% 100% }
@@ -474,7 +511,7 @@ window = {
 					{
 						alwaystransparent = yes
 						tooltip_enabled = no
-						size = { 900 900 }
+						size = { 100% 100% }
 						portrait_texture = "[PortraitCustomizationWindow.GetPortraitTexture('environment_body', 'camera_lifestyles', 'idle', PdxGetWidgetScreenSize(PdxGuiWidget.Self))]"
 					}
 					blockoverride "opinion_box" { }
@@ -482,20 +519,70 @@ window = {
 					blockoverride "coa" { }
 					blockoverride "portrait_glow" { }
 				}
-			}
 
+				portrait_body = {
+					visible = "[GetVariableSystem.Exists('barber_head')]"
+					datacontext = "[PortraitCustomizationWindow.GetCharacter]"
+					size = { 100% 100% }
+
+					blockoverride "portrait_button"
+					{
+						alwaystransparent = yes
+						tooltip_enabled = no
+						size = { 100% 100% }
+						portrait_texture = "[PortraitCustomizationWindow.GetPortraitTexture('environment_body', 'camera_head', 'idle', PdxGetWidgetScreenSize(PdxGuiWidget.Self))]"
+					}
+					blockoverride "opinion_box" { }
+					blockoverride "status_icons" { }
+					blockoverride "coa" { }
+					blockoverride "portrait_glow" { }
+				}
+			}
 		}
 
 		vbox = {
 			margin = { 10 10 }
 			layoutpolicy_horizontal = expanding
+			alpha = 0
 
 			button_primary_text = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Not(GetVariableSystem.Exists('barber'))]"
 				name = "apply_button"
 				blockoverride "text" {
 					text = "PCW_APPLY"
 				}
 				onclick = "[PortraitCustomizationWindow.ApplyAndClose]"
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				background = { using = Background_Area_Border_Solid }
+				blockoverride "text" {
+					raw_text = "[Select_CString( GetVariableSystem.Exists('barber'), 'Show', 'Hide')] all controls, hotkey C."
+				}
+				shortcut = character_finder
+				onclick = "[GetVariableSystem.Toggle('barber')]"
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				background = { using = Background_Area_Border_Solid }
+				blockoverride "text" {
+					raw_text = "[Select_CString( GetVariableSystem.Exists('barber_head'), 'Show the whole body', 'Show head only')] , hotkey H."
+				}
+				shortcut = army_create_new
+				onclick = "[GetVariableSystem.Toggle('barber_head')]"
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				background = { using = Background_Area_Border_Solid }
+				blockoverride "text" {
+					raw_text = "[Select_CString( GetVariableSystem.Exists('barber_bg'), 'Hide', 'Show')] background, hotkey B."
+				}
+				shortcut = go_back
+				onclick = "[GetVariableSystem.Toggle('barber_bg')]"
 			}
 		}
 	}

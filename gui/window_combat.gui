@@ -78,7 +78,7 @@ window = {
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
 			using = Window_Background_No_Edge
-
+			visible = "[Not(GetVariableSystem.Exists('retreat_window'))]"
 
 			### Battle event
 
@@ -121,44 +121,6 @@ window = {
 					shortcut = mapmode_house_secondary
 				}
 			}
-
-			# container = {
-			# visible = "[CombatWindow.BattleEventIsShown]"
-
-
-
-
-			# flowcontainer = {
-			# 	name = "battle_event"
-			# 	datacontext = "[CombatWindow.GetCurrentBattleEvent]"
-			# 	margin = { 10 10 }
-			# 	allow_outside = yes
-			#
-			# 	portrait_head_small = {
-			# 		name = "left_portrait"
-			# 		datacontext = "[BattleEvent.GetLeftCharacter( CombatWindow.GetLeftCombatSide.IsAttacker )]"
-			# 		visible = "[Character.IsValid]"
-			#
-			# 		blockoverride "opinion_box"	{}
-			# 		blockoverride "coa" {}
-			# 	}
-			#
-			# 	portrait_head_small = {
-			# 		name = "right_portrait"
-			# 		datacontext = "[BattleEvent.GetRightCharacter( CombatWindow.GetLeftCombatSide.IsAttacker )]"
-			# 		visible = "[Character.IsValid]"
-			#
-			# 		blockoverride "opinion_box" {}
-			# 		blockoverride "coa" {}
-			#
-			# 		blockoverride "portrait_button"
-			# 		{
-			# 			portrait_scale = { -1 1 }
-			# 			portrait_offset = { 1 0 }
-			# 		}
-			# 	}
-			# }
-			# }
 
 			hbox = {
 				layoutpolicy_horizontal = expanding
@@ -264,6 +226,12 @@ window = {
 									visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Province.MakeScope ).ScriptValue('enemies_total_nearby_combat'), '(CFixedPoint)0')]"
 								}
 
+								text_single = {
+									datacontext = "[CombatWindow.GetCombat.GetProvince]"
+									raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Province.MakeScope ).ScriptValue('allies_total_nearby_combat')] allies nearby."
+									visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Province.MakeScope ).ScriptValue('allies_total_nearby_combat'), '(CFixedPoint)0')]"
+								}
+
 								flowcontainer = {
 									ignoreinvisible = yes
 									visible = "[CombatSide.IsStillFighting]"
@@ -288,6 +256,25 @@ window = {
 								raw_text = " [CombatSide.GetPursuingRetreatingLabel] with [ArmyComposition.GetSoldierCountString] men."
 							}
 						}
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not(CombatWindow.ShowRetreatIcon)]"
+						raw_text = "Cannot retreat."
+					}
+
+					button_text = {
+						visible = "[CombatWindow.ShowRetreatIcon]"
+						datacontext = "[CombatWindow.GetCombat.GetProvince]"
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+							margin = { 0 5 }
+					        raw_text = "Can retreat, click here to choose where."
+					    }
+						onclick = "[GetVariableSystem.Toggle('retreat_window')]"
+						onclick = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Province.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('retreat_options').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Province.MakeScope ).End )]"
 					}
 
 					hbox = {
@@ -333,6 +320,106 @@ window = {
 								text = "[CombatWindow.GetAdvantageDescription]"
 							}
 						}
+					}
+
+					hbox = {
+					    layoutpolicy_horizontal = expanding
+						spacing = 3
+
+					    text_single = {
+					    	raw_text = "Fighting in"
+					    }
+
+						text_single = {
+							visible = "[GetScriptedGui('is_hostile_barony').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', CombatWindow.GetCombat.GetProvince.MakeScope ).End )]"
+							raw_text = "hostile"
+						}
+
+						text_single = {
+							visible = "[GetScriptedGui('is_friendly_barony').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', CombatWindow.GetCombat.GetProvince.MakeScope ).End )]"
+							raw_text = "friendly"
+						}
+
+						text_single = {
+							datacontext = "[CombatWindow.GetCombat.GetProvince.GetTerrain]"
+							tooltip = "HOLDING_TERRAIN_TOOLTIP"
+							raw_text = "[Terrain.GetNameNoTooltip]."
+						}
+
+					    expand = { }
+					}
+
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+						visible = "[Not(CombatWindow.IsCombatInPursuitPhase)]"
+
+						text_single = {
+							raw_text = "Commanders:"
+						}
+
+						text_single = {
+							visible = "[Character.IsValid]"
+							datacontext = "[CombatWindow.GetLeftSideCommander]"
+							text = "[Character.GetCommanderAdvantage]"
+							tooltip = "[Character.GetCommanderAdvantageDesc]"
+						}
+
+						text_single = {
+							visible = "[Not(Character.IsValid)]"
+							datacontext = "[CombatWindow.GetLeftSideCommander]"
+							raw_text = "0"
+						}
+
+						text_single = {
+							raw_text = "against"
+						}
+
+						text_single = {
+							visible = "[Character.IsValid]"
+							datacontext = "[CombatWindow.GetRightSideCommander]"
+							raw_text = "[Character.GetCommanderAdvantage] advantage."
+							tooltip = "[Character.GetCommanderAdvantageDesc]"
+						}
+
+						text_single = {
+							visible = "[Not(Character.IsValid)]"
+							datacontext = "[CombatWindow.GetRightSideCommander]"
+							raw_text = "[Character.GetCommanderAdvantage] advantage."
+						}
+
+						expand = { }
+					}
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not(CombatWindow.IsCombatInPursuitPhase)]"
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+
+							text_single = {
+								raw_text = "Battle rolls:"
+							}
+
+							text_single = {
+								raw_text = "[CombatWindow.GetLeftRoll]"
+							}
+
+							text_single = {
+								raw_text = "against"
+							}
+
+							text_single = {
+								raw_text = "[CombatWindow.GetRightRoll]."
+							}
+							expand = { }
+						}
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "[CombatWindow.GetCurrentPhaseTooltip]."
 					}
 
 					# maa
@@ -387,79 +474,6 @@ window = {
 								expand = { }
 							}
 						}
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						visible = "[Not(CombatWindow.IsCombatInPursuitPhase)]"
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							spacing = 3
-
-							text_single = {
-								raw_text = "Battle rolls:"
-							}
-
-							text_single = {
-								raw_text = "[CombatWindow.GetLeftRoll]"
-							}
-
-							text_single = {
-								raw_text = "against"
-							}
-
-							text_single = {
-								raw_text = "[CombatWindow.GetRightRoll]."
-							}
-							expand = { }
-						}
-					}
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						spacing = 3
-						visible = "[Not(CombatWindow.IsCombatInPursuitPhase)]"
-
-						text_single = {
-							raw_text = "Commanders:"
-						}
-
-						text_single = {
-							visible = "[Character.IsValid]"
-							datacontext = "[CombatWindow.GetLeftSideCommander]"
-							text = "[Character.GetCommanderAdvantage]"
-							tooltip = "[Character.GetCommanderAdvantageDesc]"
-						}
-
-						text_single = {
-							visible = "[Not(Character.IsValid)]"
-							datacontext = "[CombatWindow.GetLeftSideCommander]"
-							raw_text = "0"
-						}
-
-						text_single = {
-							raw_text = "against"
-						}
-
-						text_single = {
-							visible = "[Character.IsValid]"
-							datacontext = "[CombatWindow.GetRightSideCommander]"
-							raw_text = "[Character.GetCommanderAdvantage] advantage."
-							tooltip = "[Character.GetCommanderAdvantageDesc]"
-						}
-
-						text_single = {
-							visible = "[Not(Character.IsValid)]"
-							datacontext = "[CombatWindow.GetRightSideCommander]"
-							raw_text = "[Character.GetCommanderAdvantage] advantage."
-						}
-
-						expand = { }
-					}
-
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						raw_text = "[CombatWindow.GetCurrentPhaseTooltip]."
 					}
 
 					# leaders
@@ -548,13 +562,6 @@ window = {
 						}
 					}
 
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						datacontext = "[CombatWindow.GetCombat.GetProvince.GetTerrain]"
-						tooltip = "HOLDING_TERRAIN_TOOLTIP"
-						raw_text = "Terrain: [Terrain.GetNameNoTooltip]."
-					}
-
 					button_text = {
 						layoutpolicy_horizontal = expanding
 						blockoverride "text" {
@@ -568,6 +575,140 @@ window = {
 
 
 				expand = { }
+			}
+
+			expand = { }
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			using = Window_Background_No_Edge
+			visible = "[GetVariableSystem.Exists('retreat_window')]"
+			margin = { 5 5 }
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = close_window
+				onclick = "[GetVariableSystem.Clear('retreat_window')]"
+			    blockoverride "text" {
+			        raw_text = "Retreat options. Close with Escape"
+			    }
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[GetPlayer.MakeScope.Var('closest_friendly_place').IsSet]"
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Closest friendly place,"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						using = title_pan_right
+						using = send_army_click
+						datacontext = "[Province.GetCoATitle]"
+						datacontext = "[CombatWindow.GetCombat]"
+						datacontext = "[GetPlayer.MakeScope.Var('closest_friendly_place').GetProvince]"
+						blockoverride "pre" {
+							spacing = 3
+							text_single = {
+								raw_text = "[Province.GetNameNoTooltip],"
+							}
+							text_single = {
+								raw_text = "CombatProvinceDistance"
+							}
+						}
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not(GetPlayer.MakeScope.Var('closest_friendly_place').IsSet)]"
+					raw_text = "Couldn't fight a friendly place to retreat to."
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "Your capital,"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					using = title_pan_right
+					using = send_army_click
+					datacontext = "[Province.GetCoATitle]"
+					datacontext = "[CombatWindow.GetCombat]"
+					datacontext = "[GetPlayer.GetCapitalLocation]"
+					blockoverride "pre" {
+						spacing = 3
+						text_single = {
+							raw_text = "[Province.GetNameNoTooltip],"
+						}
+						text_single = {
+							raw_text = "CombatProvinceDistance"
+						}
+					}
+				}
+
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[GetPlayer.MakeScope.Var('closest_ally').IsSet]"
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Closest ally not in battle,"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						using = title_pan_right
+						using = send_army_click
+						datacontext = "[CombatWindow.GetCombat]"
+						datacontext = "[GetPlayer.MakeScope.Var('closest_ally').Army]"
+						datacontext = "[Army.GetLocation]"
+						datacontext = "[Province.GetCoATitle]"
+						blockoverride "pre" {
+							spacing = 3
+							text_single = {
+								raw_text = "[GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('province', Province.MakeScope).ScriptValue('allies_in_the_province')] men,"
+							}
+							text_single = {
+								raw_text = "[Province.GetNameNoTooltip],"
+							}
+							text_single = {
+								raw_text = "CombatProvinceDistance"
+							}
+						}
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not(GetPlayer.MakeScope.Var('closest_ally').IsSet)]"
+					raw_text = "Couldn't fight an ally to retreat to."
+				}
+
+				button_text = {
+					datacontext = "[CombatWindow.GetCombat.GetProvince]"
+					layoutpolicy_horizontal = expanding
+					shortcut = map_mode_11
+				    blockoverride "text" {
+				        raw_text = "Reload, Shift E."
+				    }
+					onclick = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Province.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('retreat_options').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Province.MakeScope ).End )]"
+				}
 			}
 
 			expand = { }
@@ -982,7 +1123,7 @@ types CombatWindow
 
 		 text_single = {
 			 visible = "[And(EqualTo_int32(CombatMaaItem.GetPerformance, '(int32)2'), Not(CombatWindow.IsCombatInPursuitPhase))]"
-			raw_text = "mild disatvantage."
+			raw_text = "mild disadvantage."
 		 }
 
 		 text_single = {

@@ -1279,8 +1279,21 @@ is_hostile_barony = {
 			barony_controller = {
 				is_county_safe = no
 			}
-			county_controller = {
-				is_county_safe = yes
+			# ???
+			# county_controller = {
+			# 	is_county_safe = yes
+			# }
+		}
+	}
+}
+
+is_friendly_barony = {
+	saved_scopes = { target }
+
+	is_shown = {
+		scope:target = {
+			barony_controller = {
+				is_county_friendly = yes
 			}
 		}
 	}
@@ -1462,3 +1475,241 @@ show_suggestions = {
 	}
 }
 
+
+
+is_overriding_designated_winner = {
+	is_shown = {
+		is_overriding_designated_winner = yes
+	}
+}
+
+counties_in_title = {
+	effect = {
+		clear_variable_list = counties_in_title
+
+		every_de_jure_county = {
+			holder = {
+				add_to_list = county_holders
+			}
+		}
+
+		ordered_in_list = {
+			list = county_holders
+			min = 0
+
+			order_by = {
+				value = 0
+				save_temporary_scope_as = player
+				root = {
+					every_in_de_jure_hierarchy = {
+						limit = {
+							tier = tier_county
+							holder = {
+								OR = {
+									this = scope:player
+									any_liege_or_above = {
+										this = scope:player
+									}
+								}
+							}
+						}
+						add = 1
+					}
+				}
+			}
+
+			save_scope_as = player
+
+			root = {
+				every_de_jure_county = {
+					limit = { holder = scope:player }
+					root = {
+						add_to_variable_list = {
+							name = counties_in_title
+							target = prev
+						}
+					}
+				}
+			}
+
+		}
+
+
+		# ordered_de_jure_county = {
+		# 	order_by = {
+		# 		value = 0
+		# 		holder = {
+		# 			save_temporary_scope_as = player
+		# 			root = {
+		# 				every_in_de_jure_hierarchy = {
+		# 					limit = {
+		# 						tier = tier_county
+		# 						holder = {
+		# 							OR = {
+		# 								this = scope:player
+		# 								any_liege_or_above = {
+		# 									this = scope:player
+		# 								}
+		# 							}
+		# 						}
+		# 					}
+		# 					add = 1
+		# 				}
+		# 			}
+		# 		}
+		# 	}
+		# 	min = 0
+		# 	root = {
+		# 		add_to_variable_list = {
+		# 			name = counties_in_title
+		# 			target = prev
+		# 		}
+		# 	}
+		# }
+	}
+}
+
+is_county_in_fog = {
+	saved_scopes = { this_county }
+	is_shown = {
+		OR = {
+			# is it in or near a friendly county?
+			scope:this_county = {
+				OR = {
+					county_controller = {
+						is_county_friendly = yes
+					}
+					any_neighboring_county = {
+						county_controller = {
+							OR = {
+								is_county_friendly = yes
+								# turns out, lieges of your allies extend vision to you
+								any_liege_or_above = {
+									is_county_safe = yes # stupid name now, but whatever, I'll change later #TODO
+									any_vassal_or_below = {
+										is_allied_in_war = root
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			# are our armies near it?
+			root = {
+				any_army = {
+					location = {
+						trigger_if = {
+							limit = {
+								is_sea_province = no
+							}
+							county = {
+								OR = {
+									this = scope:enemy_location.county
+									any_neighboring_county = {
+										this = scope:enemy_location.county
+									}
+								}
+							}
+						}
+						trigger_else = {
+							squared_province_distance < 500
+						}
+					}
+				}
+			}
+			# are our allies near it?
+			any_in_list = {
+				list = all_allies
+				location = {
+					trigger_if = {
+						limit = {
+							is_sea_province = no
+						}
+						county = {
+							OR = {
+								this = scope:enemy_location.county
+								any_neighboring_county = {
+									this = scope:enemy_location.county
+								}
+							}
+						}
+					}
+					trigger_else = {
+						squared_province_distance < 500
+					}
+				}
+			}
+		}
+	}
+}
+
+is_land = {
+	is_shown = {
+		is_sea_province = no
+	}
+}
+
+raise_army_grouping = {
+	effect = {
+		if = {
+			limit = {
+				NOT = { has_variable = army_grouping }
+			}
+			set_variable = {
+				name = army_grouping
+				value = 0
+			}
+		}
+		if = {
+			limit = {
+				var:army_grouping < 4
+			}
+			change_variable = {
+				name = army_grouping
+				add = 1
+			}
+		}
+	}
+	is_shown = {
+		exists = var:army_grouping
+		var:army_grouping < 4
+	}
+}
+
+lower_army_grouping = {
+	effect = {
+		if = {
+			limit = {
+				NOT = { has_variable = army_grouping }
+			}
+			set_variable = {
+				name = army_grouping
+				value = 0
+			}
+		}
+		if = {
+			limit = {
+				var:army_grouping > 0
+			}
+			change_variable = {
+				name = army_grouping
+				subtract = 1
+			}
+		}
+	}
+	is_shown = {
+		exists = var:army_grouping
+		var:army_grouping > 0
+	}
+}
+
+should_show_any_armies = {
+	is_shown = {
+		OR = {
+			has_variable_list = all_allies
+			has_variable_list = all_enemies
+		}
+	}
+}

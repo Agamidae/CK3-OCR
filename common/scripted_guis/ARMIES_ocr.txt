@@ -9,18 +9,53 @@
 		clear_variable_list = in_the_fog
 		clear_variable_list = allied_units
 		clear_variable_list = battles
+		clear_variable_list = battles_allies
         clear_variable_list = all_enemies
+		clear_variable_list = all_allies
 		remove_variable = closest_enemy
+		remove_variable = enemy_capital
 		save_scope_as = player
+
+		if = {
+			limit = {
+				NOT = { has_variable = army_grouping }
+			}
+			set_variable = {
+				name = army_grouping
+				value = 0
+			}
+		}
 
 		every_in_list = {
 			variable = army_provinces
 			clear_variable_list = armies_here
 		}
 
+		# for distances
 		scope:location = {
 			save_scope_as = second
 		}
+
+		# we go through all armies, remove any variables from them, add them to lists
+		# every army is also added to a variable list armies_here in the province, so we can get them from county view and in the forts list
+		#
+		# we could instead check whether any targets in the variable list have the same location as the province, but it might get bad for performance
+		#
+		# then we filter the armies
+		# every army added to the outliner gets first_army variable
+		# other armies get in_group variable and their size is added to the first one
+		#
+		# we could avoid variables and add grouped armies to variables lists in the fist army
+
+
+		# big question is about multiplayer
+		# so two players don't overwrite each other
+
+		# there are two options:
+		# 1. create army lists when the outliner or army is opened and check everything from them
+		# worse for general performance, but very clean.
+		# 2. Every time we open county view, create province lists and variables. Worse for performance on opening, but better for viewing. Might get complicated in multiplayer.
+		# need to devise a test
 
 		if = {
 			limit = { always = yes } # for testing
@@ -46,12 +81,34 @@
 				every_army = {
 					remove_army_variables = yes
 					add_to_list = all_allies
+
+					root = {
+						add_to_variable_list = {
+							name = all_allies
+							target = prev
+						}
+					}
 				}
 			}
 
 			# group allies together
-			every_in_list = {
+			ordered_in_list = {
 				list = all_allies
+				order_by = {
+					if = {
+						limit = {
+							root = {
+								has_variable = army_sorting
+							}
+						}
+						value = army_size
+					}
+					else = {
+						value = location.squared_province_distance
+						multiply = -1
+					}
+				}
+				min = 0
 				save_scope_as = army
 
 				if = {
@@ -60,7 +117,7 @@
 							any_in_list = {
 								list = all_allies
 								has_variable = first_army
-								var:first_army = scope:army.location
+								group_armies = yes
 							}
 						}
 					}
@@ -98,7 +155,7 @@
 							list = all_allies
 							limit = {
 								has_variable = first_army
-								var:first_army = scope:army.location
+								group_armies = yes
 							}
 							if = {
 								limit = { NOT = { exists = var:armies} }
@@ -159,10 +216,34 @@
 			ordered_in_list = {
 				list = grouped_allies
 				order_by = {
-					value = location.squared_province_distance
-					multiply = -1
+					if = {
+						limit = {
+							root = {
+								has_variable = army_sorting
+							}
+						}
+						value = var:army_strength
+					}
+					else = {
+						value = location.squared_province_distance
+						multiply = -1
+					}
 				}
 				min = 0
+				max = {
+					if = {
+						limit = {
+							root = {
+								has_variable = limit_armies
+							}
+						}
+						value = 5
+					}
+					else = {
+						value = 100
+					}
+				}
+				check_range_bounds = no
 				root = {
 					add_to_variable_list = {
 						name = allied_units
@@ -235,38 +316,6 @@
                 }
             }
 
-			# closest enemy, ungrouped
-			ordered_in_list = {
-				list = all_enemies
-				limit = {
-					#TODO show very close armies even when hidden
-					army_owner = {
-						NOT = {
-                            any_character_war = {
-                                root = {
-                                    is_participant_in_war = prev
-                                    is_target_in_variable_list = {
-                                        name = hidden_wars
-                                        target = prev
-                                    }
-                                }
-                            }
-                        }
-					}
-				}
-				order_by = {
-					value = location.squared_province_distance
-					multiply = -1
-				}
-				max = 1
-				root = {
-					set_variable = {
-						name = closest_enemy
-						value = prev
-					}
-				}
-			}
-
 			# group enemies together
 			# split them into different lists
 			every_in_list = {
@@ -279,7 +328,7 @@
 							any_in_list = {
 								list = all_enemies
 								has_variable = first_army
-								var:first_army = scope:army.location
+								group_armies = yes
 							}
 						}
 					}
@@ -331,36 +380,126 @@
 						add_to_list = hostiles_inside_liege
 					}
 
-					# if the enemy is in battle with us or allies, they are added to the outside list
+					# if the enemy is in battle with us or allies, are they added correctly?
 					# TODO check battles??
 					else_if = {
 						limit = {
-							OR = {
-								location = {
-									save_temporary_scope_as = enemy_location
-									save_temporary_scope_as = second
+							location = {
+								save_temporary_scope_as = enemy_location
+								save_temporary_scope_as = second
+								# if the enemy is not at sea
+								trigger_if = {
+									limit = {
+										is_sea_province = no
+										exists = county
+									}
+
+									OR = {
+										# is it in or near a friendly county?
+										county = {
+											OR = {
+												county_controller = {
+													is_county_friendly = yes
+												}
+												any_neighboring_county = {
+													county_controller = {
+														OR = {
+															is_county_friendly = yes
+															# turns out, lieges of your allies extend vision to you
+															any_liege_or_above = {
+																is_county_safe = yes # stupid name now, but whatever, I'll change later #TODO
+																any_vassal_or_below = {
+																	is_allied_in_war = root
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+
+										# are our armies near it?
+										root = {
+											any_army = {
+												location = {
+													trigger_if = {
+														limit = {
+															is_sea_province = no
+														}
+														county = {
+															OR = {
+																this = scope:enemy_location.county
+																any_neighboring_county = {
+																	this = scope:enemy_location.county
+																}
+															}
+														}
+													}
+													trigger_else = {
+														squared_province_distance < 500
+													}
+												}
+											}
+										}
+										# are our allies near it?
+										any_in_list = {
+											list = all_allies
+											location = {
+												trigger_if = {
+													limit = {
+														is_sea_province = no
+													}
+													county = {
+														OR = {
+															this = scope:enemy_location.county
+															any_neighboring_county = {
+																this = scope:enemy_location.county
+															}
+														}
+													}
+												}
+												trigger_else = {
+													squared_province_distance < 500
+												}
+											}
+										}
+									}
+								}
+
+								# if the enemy is at sea
+								trigger_else = {
 									root = {
 										OR = {
 											any_army = {
-												OR = {
-													location = scope:enemy_location
-													location.squared_province_distance < 500 #TODO test
-												}
+												location.squared_province_distance < 500
 											}
-											#TODO might be bad for performance
-											any_realm_county = {
-												squared_province_distance < 1000
-											}
-											#TODO measure from allied armies and counties
 											any_in_list = {
 												list = all_allies
-												OR = {
-													location = scope:enemy_location
-													location.squared_province_distance < 500 #TODO test
+												location.squared_province_distance < 500
+											}
+											any_realm_county = {
+												is_coastal_county = yes
+												county_controller = {
+													is_county_friendly = yes
 												}
+												squared_province_distance < 500
 											}
 											any_war_ally = {
 												any_realm_county = {
+													is_coastal_county = yes
+													county_controller = {
+														is_county_friendly = yes
+													}
+													squared_province_distance < 500
+												}
+											}
+											# probably need this?
+											any_war_enemy = {
+												any_realm_county = {
+													is_coastal_county = yes
+													county_controller = {
+														is_county_friendly = yes
+													}
 													squared_province_distance < 500
 												}
 											}
@@ -388,7 +527,7 @@
 							list = all_enemies
 							limit = {
 								has_variable = first_army
-								var:first_army = scope:army.location
+								group_armies = yes
 							}
 							if = {
 								limit = { NOT = { exists = var:armies} }
@@ -447,14 +586,74 @@
 				save_scope_as = second
 			}
 
-			# sort enemies in your land
+			# closest enemy, ungrouped
 			ordered_in_list = {
-				list = hostiles_inside
+				list = all_enemies
+				limit = {
+					#TODO show very close armies even when hidden
+					NOT = {
+						# is_in_list = in_the_fog
+						# has_variable = in_group
+					}
+					army_owner = {
+						NOT = {
+							any_character_war = {
+								root = {
+									is_participant_in_war = prev
+									is_target_in_variable_list = {
+										name = hidden_wars
+										target = prev
+									}
+								}
+							}
+						}
+					}
+				}
 				order_by = {
 					value = location.squared_province_distance
 					multiply = -1
 				}
+				max = 1
+				root = {
+					set_variable = {
+						name = closest_enemy
+						value = prev
+					}
+				}
+			}
+
+			# sort enemies in your land
+			ordered_in_list = {
+				list = hostiles_inside
+				order_by = {
+					if = {
+						limit = {
+							root = {
+								has_variable = army_sorting
+							}
+						}
+						value = var:army_strength
+					}
+					else = {
+						value = location.squared_province_distance
+						multiply = -1
+					}
+				}
 				min = 0
+				max = {
+					if = {
+						limit = {
+							root = {
+								has_variable = limit_armies
+							}
+						}
+						value = 5
+					}
+					else = {
+						value = 100
+					}
+				}
+				check_range_bounds = no
 				root = {
 					add_to_variable_list = {
 						name = hostiles_inside
@@ -471,10 +670,34 @@
 				ordered_in_list = {
 					list = hostiles_inside_liege
 					order_by = {
-						value = location.squared_province_distance
-						multiply = -1
+						if = {
+							limit = {
+								root = {
+									has_variable = army_sorting
+								}
+							}
+							value = var:army_strength
+						}
+						else = {
+							value = location.squared_province_distance
+							multiply = -1
+						}
 					}
 					min = 0
+					max = {
+						if = {
+							limit = {
+								root = {
+									has_variable = limit_armies
+								}
+							}
+							value = 5
+						}
+						else = {
+							value = 100
+						}
+					}
+					check_range_bounds = no
 					root = {
 						add_to_variable_list = {
 							name = hostiles_inside_liege
@@ -488,10 +711,42 @@
 			ordered_in_list = {
 				list = hostiles_outside
 				order_by = {
-					value = location.squared_province_distance
-					multiply = -1
+					if = {
+						limit = {
+							root = {
+								has_variable = army_sorting
+							}
+						}
+						if = {
+							limit = {
+								has_variable = army_strength
+							}
+							value = var:army_strength
+						}
+						else = {
+							value = army_size
+						}
+					}
+					else = {
+						value = location.squared_province_distance
+						multiply = -1
+					}
 				}
 				min = 0
+				max = {
+					if = {
+						limit = {
+							root = {
+								has_variable = limit_armies
+							}
+						}
+						value = 5
+					}
+					else = {
+						value = 100
+					}
+				}
+				check_range_bounds = no
 				root = {
 					add_to_variable_list = {
 						name = hostiles_outside
@@ -504,10 +759,34 @@
 			ordered_in_list = {
 				list = in_the_fog
 				order_by = {
-					value = location.squared_province_distance
-					multiply = -1
+					if = {
+						limit = {
+							root = {
+								has_variable = army_sorting
+							}
+						}
+						value = var:army_strength
+					}
+					else = {
+						value = location.squared_province_distance
+						multiply = -1
+					}
 				}
 				min = 0
+				max = {
+					if = {
+						limit = {
+							root = {
+								has_variable = limit_armies
+							}
+						}
+						value = 5
+					}
+					else = {
+						value = 100
+					}
+				}
+				check_range_bounds = no
 				root = {
 					add_to_variable_list = {
 						name = in_the_fog
@@ -516,49 +795,116 @@
 				}
 			}
 
+			every_army = {
+				add_army_to_province = yes
+			}
+
 			# add armies in combat to a battle list
 			every_army = {
 				limit = {
 					is_army_in_combat = yes
 				}
-				add_to_list = battles
-				root = {
-					add_to_variable_list = {
-						name = battles
-						target = prev
+				location = {
+					if = {
+						limit = {
+							NOT = {
+								root = {
+									is_target_in_variable_list = {
+										name = battles
+										target = prev
+									}
+								}
+							}
+						}
+						root = {
+							add_to_variable_list = {
+								name = battles
+								target = prev
+							}
+						}
 					}
 				}
 			}
 
 			# if allies are in battles in a different location than us, add to a battle list
 			every_in_list = {
-				list = grouped_allies
+				list = all_allies
 				limit = {
 					is_army_in_combat = yes
 					location = {
 						NOT = {
-							any_in_list = {
-								list = battles
-								location = prev
+							root = {
+								is_target_in_variable_list = {
+									name = battles
+									target = prev
+								}
 							}
 						}
 					}
 				}
-				root = {
-					add_to_variable_list = {
-						name = battles
-						target = prev
+				location = {
+					if = {
+						limit = {
+							NOT = {
+								root = {
+									is_target_in_variable_list = {
+										name = battles_allies
+										target = prev
+									}
+								}
+							}
+						}
+						root = {
+							add_to_variable_list = {
+								name = battles_allies
+								target = prev
+							}
+						}
 					}
 				}
 			}
 
+			#TODO group armies in battle
+
 			# YOUR OWN
 			ordered_army = {
 				order_by = {
-					value = location.squared_province_distance
-					multiply = -1
+					if = {
+						limit = {
+							root = {
+								has_variable = army_sorting
+							}
+						}
+						if = {
+							limit = {
+								has_variable = army_strength
+							}
+							value = var:army_strength
+						}
+						else = {
+							value = army_size
+						}
+					}
+					else = {
+						value = location.squared_province_distance
+						multiply = -1
+					}
 				}
 				min = 0
+				max = {
+					if = {
+						limit = {
+							root = {
+								has_variable = limit_armies
+							}
+						}
+						value = 5
+					}
+					else = {
+						value = 100
+					}
+				}
+				check_range_bounds = no
 				root = {
 					add_to_variable_list = {
 						name = your_armies
@@ -632,6 +978,124 @@ find_resupply_place = {
 	}
 }
 
+retreat_options = {
+	saved_scopes = { location }
+
+	effect = {
+		clear_variable_list = friendly_provinces
+		remove_variable = closest_friendly_place
+		remove_variable = closest_ally
+		save_scope_as = player
+
+		every_realm_county = {
+			limit = {
+				county_controller = {
+					is_county_friendly = yes
+				}
+				title_province = {
+					save_temporary_scope_as = province
+					enemies_in_the_county = 0
+				}
+			}
+			add_to_list = friendly_counties
+		}
+		every_war_ally = {
+			every_sub_realm_county = {
+				limit = {
+					county_controller = {
+						is_county_friendly = yes
+					}
+					NOT = {
+						is_in_list = friendly_counties
+					}
+					title_province = {
+						save_temporary_scope_as = province
+						enemies_in_the_county = 0
+					}
+				}
+				add_to_list = friendly_counties
+			}
+		}
+
+		scope:location = {
+			save_scope_as = second
+		}
+
+		ordered_in_list = {
+			list = friendly_counties
+			limit = {
+				NOT = {
+					any_county_province = {
+						this = scope:location
+					}
+				}
+			}
+			order_by = {
+				value = squared_province_distance
+				multiply = -1
+			}
+
+			min = 0
+			max = 1
+
+			title_province = {
+				root = {
+					set_variable = {
+						name = closest_friendly_place
+						value = prev
+					}
+				}
+			}
+		}
+
+		if = {
+			limit = {
+				has_variable_list = all_allies
+			}
+			every_in_list = {
+				variable = all_allies
+				limit = {
+					NOT = {
+						location = scope:location
+					}
+				}
+				add_to_list = allies
+			}
+		}
+		every_army = {
+			limit = {
+				NOT = {
+					location = scope:location
+				}
+			}
+			add_to_list = allies
+		}
+		ordered_in_list = {
+			list = allies
+
+			limit = {
+				is_army_in_combat = no
+				location = {
+					is_sea_province = no
+				}
+			}
+
+			order_by = {
+				value = location.squared_province_distance
+				multiply = -1
+			}
+
+			max = 1
+
+			root = {
+				set_variable = {
+					name = closest_ally
+					value = prev
+				}
+			}
+		}
+	}
+}
 
 army_holdings = {
 	saved_scopes = { province }
@@ -669,3 +1133,38 @@ army_holdings = {
 # if hostile, show forts first, then holdings with armies, then distance?
 # if friendly, sort by supply, avoid hostile
 # need to get effective supply
+
+
+army_sorting = {
+	is_shown = {
+		has_variable = army_sorting
+	}
+	effect = {
+		if = {
+			limit = {
+				NOT = { has_variable = army_sorting }
+			}
+			set_variable = army_sorting
+		}
+		else = {
+			remove_variable = army_sorting
+		}
+	}
+}
+
+limit_armies = {
+	is_shown = {
+		has_variable = limit_armies
+	}
+	effect = {
+		if = {
+			limit = {
+				NOT = { has_variable = limit_armies }
+			}
+			set_variable = limit_armies
+		}
+		else = {
+			remove_variable = limit_armies
+		}
+	}
+}
