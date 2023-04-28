@@ -1,0 +1,166 @@
+######################################################
+############## BLACKMAIL INTERACTION ################
+######################################################
+
+window = {
+	name = "blackmail_interaction_window"
+	datacontext = "[BlackmailInteractionWindow.GetCharacterInteractionConfirmationWindow]"
+	# parentanchor = center
+	layer = middle
+	size = { 700 100% }
+	using = TooltipFocus
+
+	using = Window_Background_Subwindow
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+	}
+
+	vbox = {
+		margin = { 10 5 }
+
+		header_pattern_interaction = {
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "header_text" {
+
+			}
+
+			blockoverride "button_close"
+			{
+				onclick = "[BlackmailInteractionWindow.Close]"
+			}
+
+			text_single = {
+				margin_left = 5
+				raw_text = "[SelectLocalization( BlackmailInteractionWindow.IsBlackmail, 'blackmail_interaction', 'INTRIGUE_WINDOW_EXPOSE_TITLE' )] window."
+			}
+		}
+
+		### Portrait / Info
+
+		hbox = {
+			name = "portrait_and_info"
+			datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+			layoutpolicy_horizontal = expanding
+			margin = { 10 5 }
+
+			background = {
+				using = Background_Area
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "[BlackmailInteractionWindow.GetDescription]."
+			}
+		}
+
+		### List
+		scrollbox = {
+			name = "secrets_list"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			blockoverride "scrollbox_empty"
+			{
+				text = "BLACKMAIL_NO_SECRETS"
+				visible = "[Not(BlackmailInteractionWindow.HasSecrets)]"
+			}
+
+			blockoverride "scrollbox_content"
+			{
+				vbox = {
+					datamodel = "[BlackmailInteractionWindow.GetSecretItems]"
+					layoutpolicy_horizontal = expanding
+
+					item = {
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "disabled" {
+								visible = "[Not(BlackmailSecretItem.IsEnabled)]"
+							}
+							blockoverride "pre" {
+								spacing = 3
+								text_single = {
+									visible = "[BlackmailSecretItem.IsSelected]"
+									raw_text = "Selected,"
+								}
+								text_single = {
+									raw_text = "[BlackmailSecretItem.GetSecret.GetName]."
+								}
+								text_single = {
+									visible = "[And( BlackmailInteractionWindow.IsBlackmail, BlackmailSecretItem.IsWeakHook )]"
+
+									datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+									tooltip = "INTRIGUE_WINDOW_BLACKMAIL_WEAK_HOOK_TT"
+									raw_text = "Weak hook."
+								}
+								text_single = {
+									visible = "[And( BlackmailInteractionWindow.IsBlackmail, BlackmailSecretItem.IsStrongHook )]"
+
+									datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+									tooltip = "INTRIGUE_WINDOW_BLACKMAIL_STRONG_HOOK_TT"
+									raw_text = "Strong hook."
+								}
+							}
+							tooltip = "[BlackmailSecretItem.GetTooltip]"
+							onclick = "[BlackmailSecretItem.OnClick]"
+							down = "[BlackmailSecretItem.IsSelected]"
+							enabled = "[BlackmailSecretItem.IsEnabled]"
+						}
+					}
+				}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			margin = { 0 10 }
+			margin_bottom = 15
+			spacing = 10
+
+			hbox_character_interaction_acceptance = {
+				visible = "[And( BlackmailInteractionWindow.IsBlackmail, CharacterInteractionConfirmationWindow.ShouldShowAnswer )]"
+				layoutpolicy_horizontal = expanding
+			}
+
+			text_multi_on_decline_summary = {
+				layoutpolicy_horizontal = expanding
+				max_width = 680
+				visible = "[BlackmailInteractionWindow.IsBlackmail]"
+			}
+
+			### Send Button
+			button_primary_text = {
+				layoutpolicy_horizontal = expanding
+				name = "send_offer_button"
+				enabled = "[BlackmailInteractionWindow.CanSendOffer]"
+				onclick = "[BlackmailInteractionWindow.Send]"
+				blockoverride "text" {
+					text = "[SelectLocalization( BlackmailInteractionWindow.IsBlackmail, CharacterInteractionConfirmationWindow.GetSendName, 'INTRIGUE_WINDOW_SECRET_EXPOSE' )]"
+				}
+				blockoverride "hotkey" {
+					visible = "[BlackmailInteractionWindow.CanSendOffer]"
+				}
+				blockoverride "disabled" {
+					visible = "[Not(BlackmailInteractionWindow.CanSendOffer)]"
+				}
+
+				tooltip = "[BlackmailInteractionWindow.GetSendOfferTooltip]"
+			}
+
+			vbox_character_interaction_effects = {
+				datacontext = "[CharacterInteractionConfirmationWindow.GetEffectsDescription]"
+				visible = "[BlackmailInteractionWindow.IsBlackmail]"
+			}
+		}
+	}
+}

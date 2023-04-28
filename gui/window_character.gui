@@ -333,6 +333,7 @@ window = {
 							layoutpolicy_horizontal = expanding
 							margin_left = 5
 
+
 							button_text = {
 								blockoverride "text" {
 									raw_text = "Unmarried."
@@ -348,6 +349,53 @@ window = {
 								onclick = "[CharacterWindow.Close]"
 								enabled = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
 							}
+
+							hbox = {
+								spacing = 3
+
+								button_text = {
+									datacontext = "[CharacterWindow.GetCharacter.GetPrimarySpouse]"
+									visible = "[Character.GetPrimarySpouse.IsValid]"
+									using = char_click
+
+									blockoverride "text" {
+										raw_text = "Married."
+									}
+								}
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									visible = "[GreaterThan_CFixedPoint( Character.MakeScope.ScriptValue('num_of_living_children'), '(CFixedPoint)0' )]"
+									spacing = 3
+
+									text_single = {
+										raw_text = "[Character.MakeScope.ScriptValue('num_of_living_children')] child[AddTextIf(GreaterThan_CFixedPoint(Character.MakeScope.ScriptValue('num_of_living_children'), '(CFixedPoint)1'), 'ren')],"
+									}
+
+									flowcontainer = {
+										ignoreinvisible = yes
+										spacing = 3
+
+										visible = "[GreaterThan_CFixedPoint(Character.MakeScope.ScriptValue('unmarried_children'), '(CFixedPoint)0')]"
+										text_single = {
+											visible = "[LessThan_CFixedPoint(Character.MakeScope.ScriptValue('unmarried_children'), Character.MakeScope.ScriptValue('num_of_living_children'))]"
+											raw_text = "[Character.MakeScope.ScriptValue('unmarried_children')] unmarried."
+										}
+
+										text_single = {
+											visible = "[EqualTo_CFixedPoint(Character.MakeScope.ScriptValue('unmarried_children'), Character.MakeScope.ScriptValue('num_of_living_children'))]"
+											raw_text = "unmarried."
+										}
+									}
+								}
+
+
+								text_single = {
+									visible = "[IsDataModelEmpty(CharacterWindow.GetChildren)]"
+									raw_text = "No children."
+								}
+							}
+
 
 							text_single = {
 								raw_text = "No heir of [Character.GetHerHis] dynasty!"
@@ -495,6 +543,7 @@ window = {
 							expand = { }
 						}
 					}
+
 
 					vbox = {
 						layoutpolicy_horizontal = expanding
@@ -900,38 +949,6 @@ window = {
 								blockoverride "pre" {
 									spacing = 3
 
-									flowcontainer = {
-									    ignoreinvisible = yes
-										visible = "[GreaterThan_CFixedPoint( Character.MakeScope.ScriptValue('num_of_living_children'), '(CFixedPoint)0' )]"
-										spacing = 3
-
-										text_single = {
-											raw_text = "[Character.MakeScope.ScriptValue('num_of_living_children')] child[AddTextIf(GreaterThan_CFixedPoint(Character.MakeScope.ScriptValue('num_of_living_children'), '(CFixedPoint)1'), 'ren')],"
-										}
-
-										flowcontainer = {
-										    ignoreinvisible = yes
-											spacing = 3
-
-											visible = "[GreaterThan_CFixedPoint(Character.MakeScope.ScriptValue('unmarried_children'), '(CFixedPoint)0')]"
-											text_single = {
-												visible = "[LessThan_CFixedPoint(Character.MakeScope.ScriptValue('unmarried_children'), Character.MakeScope.ScriptValue('num_of_living_children'))]"
-												raw_text = "[Character.MakeScope.ScriptValue('unmarried_children')] unmarried."
-											}
-
-											text_single = {
-												visible = "[EqualTo_CFixedPoint(Character.MakeScope.ScriptValue('unmarried_children'), Character.MakeScope.ScriptValue('num_of_living_children'))]"
-												raw_text = "unmarried."
-											}
-										}
-									}
-
-
-									text_single = {
-										visible = "[IsDataModelEmpty(CharacterWindow.GetChildren)]"
-										raw_text = "No children."
-									}
-
 									text_single = {
 										visible = "[DataModelHasItems(CharacterWindow.GetRelationsOfType( GetRelation( 'lover' ) ))]"
 										raw_text = "[GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'lover' ) ))] lover[AddTextIf(GreaterThan_int32(GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'lover' ) )), '(int32)1'), 's')],"
@@ -947,7 +964,6 @@ window = {
 						}
 					}
 				}
-
 
 				# artifacts and kill list
 				expand = { }
@@ -2017,17 +2033,19 @@ window = {
 
 							blockoverride "find_partner"
 							{
-								hbox = {
+								vbox = {
 									visible = "[Character.IsPlayerInteractionShown('find_concubine')]"
 									layoutpolicy_horizontal = expanding
 									spacing = 3
 
 									text_single = {
+										layoutpolicy_horizontal = expanding
 										margin_left = 3
 										raw_text = "[Character.CalcUnusedConsortSlots] more slots. "
 									}
 
 									button = {
+										layoutpolicy_horizontal = expanding
 										size = { 0 20 }
 										onclick = "[CharacterWindow.GetCharacter.OpenPlayerInteraction('find_concubine')]"
 										enabled = "[CharacterWindow.GetCharacter.IsPlayerInteractionValid('find_concubine')]"
@@ -2048,7 +2066,6 @@ window = {
 										}
 									}
 
-									expand = { }
 								}
 							}
 						}
@@ -4000,36 +4017,51 @@ types CharOCRTypes {
 			visible = "[And(Not(Character.IsIndependentRuler), Character.HasLandedTitles)]"
 		    blockoverride "extra" {
 				text_single = {
-					raw_text = "In [Character.GetLiege.GetPrimaryTitle.GetNameNoTooltip]"
-				}
-				flowcontainer = {
-				    ignoreinvisible = yes
-
-				    visible = "[And(Character.HasRelationTo( GetPlayer ), Not(Character.IsLocalPlayer))]"
-
-					text_single = {
-						raw_text = ", [Character.GetRelationToString( GetPlayer )]"
-						tooltip = "[Character.GetRelationToStringExtended( GetPlayer )]"
-					}
+					raw_text = "Inside [Character.GetLiege.GetPrimaryTitle.GetNameNoTooltip], [Character.GetLiege.RealmSize] counties."
 				}
 
-				flowcontainer = {
-				    ignoreinvisible = yes
-					visible = "[Or(Not(Character.HasRelationTo( GetPlayer )), Character.IsLocalPlayer)]"
-
-					text_single = {
-						visible = "[And(Character.HasRelationTo( Character.GetLiege ), Character.HasLiege)]"
-						raw_text = ", [Character.GetRelationToString( Character.GetLiege )]"
-						tooltip = "[Character.GetRelationToStringExtended( Character.GetLiege )]"
-					}
-				}
 				text_single = {
-					raw_text = ", Page Up."
+					raw_text = " Liege, [Character.GetLiege.GetFirstNameNoTooltip], [Character.GetAge], Page Up."
 				}
 		    }
 			onclick = "[DefaultOnCharacterClick(Character.GetLiege.GetID)]"
 			onclick = "[DefaultOnCharacterClick(Character.GetLiege.GetID)]"
 			onrightclick = "[DefaultOnCharacterRightClick(Character.GetLiege.GetID)]"
+		}
+
+		flowcontainer = {
+			layoutpolicy_horizontal = expanding
+		    ignoreinvisible = yes
+			margin_left = 3
+			spacing = 3
+			visible = "[And(Not(Character.IsIndependentRuler), Character.HasLandedTitles)]"
+
+			text_single = {
+				raw_text = "[Character.GetFirstNameNoTooltip] is"
+			}
+
+			flowcontainer = {
+				ignoreinvisible = yes
+
+				visible = "[And(Character.HasRelationTo( GetPlayer ), Not(Character.IsLocalPlayer))]"
+
+				text_single = {
+					raw_text = "[Character.GetRelationToString( GetPlayer )]"
+					tooltip = "[Character.GetRelationToStringExtended( GetPlayer )]"
+				}
+			}
+
+			flowcontainer = {
+				ignoreinvisible = yes
+				visible = "[Or(Not(Character.HasRelationTo( GetPlayer )), Character.IsLocalPlayer)]"
+
+				text_single = {
+					visible = "[And(Character.HasRelationTo( Character.GetLiege ), Character.HasLiege)]"
+					raw_text = "[Character.GetRelationToString( Character.GetLiege )]"
+					tooltip = "[Character.GetRelationToStringExtended( Character.GetLiege )]"
+				}
+			}
+
 		}
 
 		text_single = {
@@ -4145,7 +4177,7 @@ types CharOCRTypes {
 
 		 text_single = {
 			 visible = "[And(Character.IsFemale, Character.IsAdult)]"
-			 raw_text = "Breast size, [Multiply_float(Character.CalcMorphGeneAttribute('gene_bs_bust', 'bs_body_breast_size_2_max'), '(float)2')|0%]."
+			 raw_text = "Bosom size, [Multiply_float(Character.CalcMorphGeneAttribute('gene_bs_bust', 'bs_body_breast_size_2_max'), '(float)2')|0%]."
 		 }
 	 }
 
@@ -4928,7 +4960,7 @@ types CharacterWindow
 					}
 				}
 				blockoverride "text" {
-					raw_text = "Counties [Character.RealmSize]."
+					raw_text = "[Character.RealmSize] counties."
 				}
 				onclick = "[GetVariableSystem.Set('expand_view', 'counties')]"
 				onclick = "[GetVariableSystem.Clear('counties_tabs')]"
@@ -4950,7 +4982,7 @@ types CharacterWindow
 					}
 				}
 				blockoverride "text" {
-					raw_text = "holdings [Character.GetDomainSize]."
+					raw_text = "[Character.GetDomainSize] holdings."
 				}
 				onclick = "[GetVariableSystem.Set('expand_view', 'counties')]"
 				onclick = "[GetVariableSystem.Set('counties_tabs', 'holdings')]"
@@ -4973,7 +5005,7 @@ types CharacterWindow
 				}
 			}
 			blockoverride "text" {
-				raw_text = "titles [GetDataModelSize(CharacterWindow.GetTitles)]."
+				raw_text = "[GetDataModelSize(CharacterWindow.GetTitles)] titles."
 			}
 			using = expanded_view
 			onclick = "[GetVariableSystem.Set('expand_view', 'counties')]"
@@ -4995,7 +5027,7 @@ types CharacterWindow
 				}
 			}
 			blockoverride "text" {
-				raw_text = "claims [GetDataModelSize(CharacterWindow.GetClaims)]."
+				raw_text = "[GetDataModelSize(CharacterWindow.GetClaims)] claims."
 			}
 			using = expanded_view
 			onclick = "[GetVariableSystem.Set('expand_view', 'counties')]"

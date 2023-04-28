@@ -1,0 +1,329 @@
+######################################################
+################ CREATE CLAIMANT FACTION #############
+######################################################
+window = {
+	name = "create_claimant_faction_against_interaction_window"
+	size = { 700 100% }
+	datacontext = "[CreateClaimantFactionAgainstWindow.GetCharacterInteractionConfirmationWindow]"
+	parentanchor = right
+	position = { 0 0 }
+	movable = no
+	layer = middle
+
+	using = Window_Background_Subwindow
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+	}
+
+	vbox = {
+		using = Window_Margins
+
+		header_pattern_interaction = {
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "header_text"
+			{
+			}
+
+			blockoverride "button_close"
+			{
+				onclick = "[CreateClaimantFactionAgainstWindow.Close]"
+			}
+
+			hbox = {
+			    layoutpolicy_horizontal = expanding
+				margin_left = 5
+				spacing = 3
+				text_single = {
+					text = "create_claimant_faction_against"
+				}
+
+				char_name = {
+					visible = "[Character.IsValid]"
+					datacontext = "[CharacterInteractionConfirmationWindow.GetSecondaryActor]"
+					blockoverride "pre" {
+						spacing =3
+						text_single = {
+							raw_text = "Against"
+						}
+					}
+				}
+
+			    expand = { }
+			}
+
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			button_primary_text = {
+				layoutpolicy_horizontal = expanding
+				name = "send_offer_button"
+				onclick = "[CreateClaimantFactionAgainstWindow.Send]"
+				enabled = "[CreateClaimantFactionAgainstWindow.CanSendOffer]"
+				visible = "[And(CharacterInteractionConfirmationWindow.GetRecipient.IsValid, CreateClaimantFactionAgainstWindow.IsTitleSelected)]"
+				blockoverride "text" {
+
+					raw_text = "[CharacterInteractionConfirmationWindow.GetSendName]."
+				}
+				blockoverride "disabled" {
+					visible = "[Not(CreateClaimantFactionAgainstWindow.CanSendOffer)]"
+				}
+				blockoverride "hotkey" {
+					visible = "[CreateClaimantFactionAgainstWindow.CanSendOffer]"
+				}
+
+				tooltip = "[CreateClaimantFactionAgainstWindow.GetSendOfferTooltip]"
+			}
+
+			char_name = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Character.IsValid]"
+				datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+				blockoverride "pre" {
+					spacing =3
+					text_single = {
+						raw_text = "Claimant,"
+					}
+				}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				name = "change_left_character"
+				visible = "[CharacterInteractionConfirmationWindow.GetRecipient.IsValid]"
+				blockoverride "text" {
+					raw_text = "[Localize('CHANGE_CHARACTER')]."
+				}
+				onclick = "[CreateClaimantFactionAgainstWindow.ClearRecipient]"
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				visible = "[And(CharacterInteractionConfirmationWindow.GetRecipient.IsValid, CreateClaimantFactionAgainstWindow.IsTitleSelected)]"
+				datacontext = "[CreateClaimantFactionAgainstWindow.GetSelectedTitle.GetTitle]"
+			    blockoverride "text" {
+			        raw_text = "Title, [Title.GetNameNoTooltip]."
+			    }
+			}
+		}
+
+
+		vbox = {
+			margin_bottom = 10
+			layoutpolicy_horizontal = expanding
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				name = "select_title_label"
+				visible = "[CharacterInteractionConfirmationWindow.GetRecipient.IsValid]"
+				raw_text = "[Localize('FACTIONS_WINDOW_START_CLAIMANT_FACTION_PICK_TITLE')] out of [GetDataModelSize(CreateClaimantFactionAgainstWindow.GetTitles)]."
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				name = "select_claimant_label"
+				visible = "[Not(CharacterInteractionConfirmationWindow.GetRecipient.IsValid)]"
+				datacontext = "[CreateClaimantFactionAgainstWindow.GetCharacterSelectionList]"
+				raw_text = "[Localize('FACTIONS_WINDOW_START_CLAIMANT_FACTION_PICK_CLAIMANT')] out of [GetDataModelSize(CharacterSelectionList.GetList)]."
+			}
+		}
+
+		### TITLE LIST
+		scrollbox = {
+			name = "titles_list"
+			visible = "[CharacterInteractionConfirmationWindow.GetRecipient.IsValid]"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			blockoverride "scrollbox_empty"
+			{
+				text = "CLAIMANT_TITLES_NO_TITLES"
+				visible = "[Not(CreateClaimantFactionAgainstWindow.HasTitles)]"
+			}
+
+			blockoverride "scrollbox_content"
+			{
+				vbox = {
+					name = "titles_grid"
+					datamodel = "[CreateClaimantFactionAgainstWindow.GetTitles]"
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					item = {
+						button_text = {
+							name = "title_list_item"
+							layoutpolicy_horizontal = expanding
+							onclick = "[ClaimTitleItem.OnClick]"
+							down = "[ClaimTitleItem.IsSelected]"
+							blockoverride "pre" {
+								spacing = 3
+
+								text_single = {
+									visible = "[ClaimTitleItem.IsSelected]"
+									raw_text = "Selected,"
+								}
+
+								text_single = {
+									raw_text = "[ClaimTitleItem.GetTitle.GetNameNoTooltip]."
+								}
+							}
+
+						}
+					}
+				}
+			}
+		}
+
+		### LIST OF POTENTIAL CLAIMANTS
+		scrollbox = {
+			name = "claimants_scroll_area"
+			datacontext = "[CreateClaimantFactionAgainstWindow.GetCharacterSelectionList]"
+			visible = "[Not(CharacterInteractionConfirmationWindow.GetRecipient.IsValid)]"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			blockoverride "scrollbox_empty"
+			{
+				text = "NO_POTENTIAL_CLAIMANTS"
+				visible = "[Not(CharacterSelectionList.HasItems)]"
+			}
+
+			blockoverride "scrollbox_content"
+			{
+				vbox = {
+					name = "potential_claimants_grid"
+					datamodel = "[CharacterSelectionList.GetList]"
+					layoutpolicy_horizontal = expanding
+
+					item = {
+						button_standard = {
+							datacontext = "[CharacterListItem.GetCharacter]"
+							layoutpolicy_horizontal = expanding
+							size = { 0 70 }
+							onclick = "[CharacterListItem.OnClick('character')]"
+							onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+
+							hbox = {
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									margin_left = 5
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										spacing = 3
+										text_single = {
+											layoutpolicy_horizontal = growing
+											raw_text = "[Character.GetNameNoTooltip], [Character.GetAge],"
+										}
+
+										text_single = {
+											name = "character_relation"
+											layoutpolicy_horizontal = expanding
+											raw_text = "[Character.GetRelationToString( GetPlayer )]."
+											tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+											default_format = "#low"
+											visible = "[Not(StringIsEmpty(Character.GetRelationToString( GetPlayer )))]"
+										}
+									}
+
+									hbox = {
+									    layoutpolicy_horizontal = expanding
+
+										text_single = {
+											visible = "[Not( Character.IsPlayer )]"
+											text = "FACTION_WINDOW_OPINION_OF_TARGET"
+											tooltip = "[Character.GetOpinionBreakdownText(CharacterInteractionConfirmationWindow.GetSecondaryActor)]"
+										}
+
+										text_single = {
+											visible = "[Not( Character.IsPlayer )]"
+											raw_text = ", Opinion of you, [Character.GetOpinionOf( GetPlayer )]."
+											tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+										}
+
+
+									    expand = { }
+									}
+
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+
+										tooltipwidget = {
+											container = {
+												alwaystransparent = no
+												using = DefaultTooltipBackground
+
+												flowcontainer = {
+													margin = { 10 10 }
+													dynamicgridbox = {
+														name = "titles_grid"
+														datamodel = "[CharacterListItem.GetTitleItems]"
+
+														item = {
+															button_text = {
+																background = { using = Background_Area_Border_Solid }
+																using = title_click
+																datacontext = "[Claim.GetTitle]"
+																blockoverride "text" {
+																	raw_text = "[Title.GetNameNoTooltip],"
+																}
+															}
+														}
+													}
+
+												}
+											}
+										}
+
+										text_single = {
+											raw_text = "[GetDataModelSize(CharacterListItem.GetTitleItems)] Titles."
+										}
+										dynamicgridbox = {
+											name = "titles_grid"
+											flipdirection = yes
+											maxhorizontalslots = 2
+											datamodel = "[CharacterListItem.GetTitleItems]"
+
+											item = {
+												button_text = {
+													background = { using = Background_Area_Border_Solid }
+													using = title_click
+													datacontext = "[Claim.GetTitle]"
+												    blockoverride "text" {
+														raw_text = "[Title.GetNameNoTooltip],"
+												    }
+												}
+											}
+										}
+
+										text_single = {
+											visible = "[GreaterThan_int32(GetDataModelSize(CharacterListItem.GetTitleItems), '(int32)2')]"
+											raw_text = "+[Subtract_int32(GetDataModelSize(CharacterListItem.GetTitleItems), '(int32)2')]."
+										}
+										expand = { }
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

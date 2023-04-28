@@ -364,7 +364,7 @@ window = {
 										}
 
 										text_single = {
-											raw_text = "[GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')] from capital."
+											raw_text = "[GuiScope.SetRoot(GetPlayer.GetCapitalLocation.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')] from capital. Click to go back."
 										}
 									}
 								}
@@ -381,6 +381,34 @@ window = {
 									expand = { }
 								}
 
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[Not(Army.IsEmbarked)]"
+
+									button_group = {
+										layoutpolicy_horizontal = expanding
+										name = "open_siege_button"
+										datacontext = "[Army.GetLocation.GetSiege]"
+										visible = "[Army.GetLocation.HasActiveSiege]"
+										onclick = "[DefaultOnSiegeClick(Siege.GetID)]"
+										tooltip = "[Siege.GetSiegeDescription]"
+										using = tooltip_se
+										shortcut = confirm
+										using = siege_goto_template
+										blockoverride "key" {
+											shortcut = army_merge
+										}
+										blockoverride "extra" {
+											spacing = 3
+											text_single = {
+												raw_text = "hotkey G."
+											}
+											text_single = {
+												raw_text = "[Siege.GetSiegingRealmCharacter.GetNameNoTooltip]."
+											}
+										}
+									}
+								}
 
 								# warnings
 								hbox = {
@@ -457,6 +485,7 @@ window = {
 
 									expand = { }
 								}
+
 
 								# order
 								hbox = {
@@ -1031,11 +1060,12 @@ window = {
 										visible = "[GetPlayer.MakeScope.Var('closest_enemy').IsSet]"
 										text_single = {
 											layoutpolicy_horizontal = expanding
-											raw_text = "Closest enemy,"
+											raw_text = "Closest enemy, C."
 										}
 
 										# army itself
 										button_text = {
+											shortcut = character_finder
 											datacontext = "[GetPlayer.MakeScope.Var('closest_enemy').Army]"
 											datacontext = "[Army.GetLocation]"
 
@@ -1244,13 +1274,14 @@ window = {
 											}
 
 											text_single = {
-												raw_text = ","
+												raw_text = ", F."
 											}
 
 											expand = { }
 										}
 
 										hostile_fort_item = {
+											shortcut = army_split_half
 											datacontext = "[GetPlayer.MakeScope.Var('closest_hostile_county').Province]"
 										}
 									}
@@ -1276,6 +1307,7 @@ window = {
 									}
 
 									button_text = {
+										visible = "[Not(Army.IsRaidArmy)]"
 										layoutpolicy_horizontal = expanding
 										onclick = "[GetVariableSystem.Set('army_tabs', 'targets')]"
 										shortcut = speed_3
@@ -1314,18 +1346,14 @@ window = {
 									visible = "[And(Not(GetPlayer.MakeScope.Var('enemy_capital').IsSet), GetPlayer.IsAtWar)]"
 								}
 
-								vbox = {
-									layoutpolicy_horizontal = expanding
+								button_text = {
 									visible = "[Army.IsRaidArmy]"
+									layoutpolicy_horizontal = expanding
+									onclick = "[GetVariableSystem.Set('army_tabs', 'targets')]"
+									shortcut = speed_3
 
-									text_single = {
-										layoutpolicy_horizontal = expanding
-										raw_text = "Closest raid target,"
-									}
-
-									text_single = {
-										layoutpolicy_horizontal = expanding
-										raw_text = "Richest county within 2 months,"
+									blockoverride "text" {
+										raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('raid_targets'))] raid targets. View all, hotkey 3."
 									}
 								}
 
@@ -1365,6 +1393,16 @@ window = {
 									onclick = "[GetVariableSystem.Set('army_tabs', 'holdings')]"
 									onclick = "[GetVariableSystem.Set('army_county', Army.GetLocation.GetTitle.GetNameNoTierNoTooltip )]"
 								}
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+							    blockoverride "text" {
+							        raw_text = "View county."
+							    }
+								visible = "[Not(Army.IsEmbarked)]"
+								datacontext = "[Army.GetLocation.GetCoATitle]"
+								using = prov_click
 							}
 
 							vbox = {
@@ -2606,10 +2644,10 @@ window = {
 											button_text = {
 												layoutpolicy_horizontal = expanding
 												blockoverride "text" {
-													raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('raid_targets'))] raid targets, reload with Control E."
+													raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('raid_targets'))] raid targets."
 												}
 												onclick = "[GetScriptedGui('raid_targets').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', ArmyWindow.GetArmy.MakeScope).End )]"
-												shortcut = map_mode_12
+												shortcut = map_mode_11
 											}
 
 											vbox = {
@@ -3098,7 +3136,9 @@ types FortTypes {
 	type raid_target_item = button_text {
 		layoutpolicy_horizontal = expanding
 		datacontext = "[Scope.GetProvince.GetTitle]"
-		using = title_pan
+		datacontext = "[Scope.GetProvince]"
+		using = send_army_click
+		using = title_pan_right
 
 		blockoverride "text" {
 		}
@@ -3126,11 +3166,15 @@ types FortTypes {
 				}
 
 				text_single = {
-					raw_text = "[GuiScope.SetRoot(Army.GetLocation.MakeScope).AddScope('second', Scope.GetProvince.MakeScope).ScriptValue('province_distance')|0]"
+					datacontext = "[Scope.GetProvince]"
+					visible = "[Not(ObjectsEqual(Army.GetLocation.GetId, Province.GetId))]"
+					raw_text = "ArmyProvinceDistance"
 				}
 
 				text_single = {
-					raw_text = "[GuiScope.SetRoot(Army.GetLocation.MakeScope).AddScope('second', Scope.GetProvince.MakeScope).Custom('province_direction')]."
+					datacontext = "[Scope.GetProvince]"
+					visible = "[ObjectsEqual(Army.GetLocation.GetId, Province.GetId)]"
+					raw_text = "Here."
 				}
 
 				text_single = {
@@ -3141,6 +3185,7 @@ types FortTypes {
 				}
 
 				text_single = {
+					visible = "[GreaterThan_int32(Scope.GetProvince.GetHolding.GetCurrentGarrisonSize, Army.GetComposition.GetCurrentNumberOfSoldiers)]"
 					raw_text = "[Scope.GetProvince.GetHolding.GetCurrentGarrisonSize] garrison."
 				}
 
@@ -3150,22 +3195,20 @@ types FortTypes {
 				}
 
 				flowcontainer = {
-					spacing = 3
+					ignoreinvisible = yes
 
 					visible = "[Title.GetHolder.IsIndependentRuler]"
 
 					text_single = {
+						visible = "[GreaterThan_int32( FixedPointToInt(Title.GetHolder.MakeScope.ScriptValue('current_military_strength_sval')), Army.GetComposition.GetCurrentNumberOfSoldiers)]"
 						raw_text = "Owner has [Title.GetHolder.GetMilitaryStrengthText] soldiers,"
 					}
-
 
 					button_text = {
 						datacontext = "[Title.GetHolder]"
 						using = char_click
 					    blockoverride "text" {
-							margin_top = -1
-							align = left
-					        raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip], [Character.GetShortUINameNoTooltip]"
+					        raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip]"
 					    }
 					}
 				}
@@ -3175,6 +3218,7 @@ types FortTypes {
 					visible = "[Not(Title.GetHolder.IsIndependentRuler)]"
 
 					text_single = {
+						visible = "[GreaterThan_int32( FixedPointToInt(Title.GetHolder.GetTopLiege.MakeScope.ScriptValue('current_military_strength_sval')), Army.GetComposition.GetCurrentNumberOfSoldiers)]"
 						raw_text = "Liege has [Title.GetHolder.GetTopLiege.GetMilitaryStrengthText] soldiers,"
 					}
 
@@ -3182,9 +3226,7 @@ types FortTypes {
 						datacontext = "[Title.GetHolder.GetTopLiege]"
 						using = char_click
 					    blockoverride "text" {
-							align = left
-							margin_top = -1
-					        raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip], [Character.GetShortUINameNoTooltip]"
+					        raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip]"
 					    }
 					}
 				}
