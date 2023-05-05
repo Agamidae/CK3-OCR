@@ -74,8 +74,45 @@ widget = {
 
 	state = {
 		name = _show
-		on_start = "[SetMapMode('realms_ocr')]"
+		delay = 0.3
+		on_finish = "[SetMapMode('realms_ocr')]"
+		next = toggle_ocr
 	}
+
+	state = {
+		name = toggle_ocr
+		delay = 1
+		# on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetTitle.GetID)]"
+		on_finish = "[GetVariableSystem.Set('ocr', 'yes')]"
+		next = restore_ocr
+	}
+
+	state = {
+		name = restore_ocr
+		on_finish = "[GetVariableSystem.Clear('ocr')]"
+		delay = 0.5
+		# using = Sound_Window_AmbienceMute_Snapshot
+		using = Sound_WindowHide_Sidebar
+	}
+
+	# vbox = {
+		# button_text = {
+		# 	background = { using = Background_Area_Border_Solid }
+		# 	blockoverride "text" {
+		# 		raw_text = "OCR OFF"
+		# 	}
+		# 	onclick = "[PdxGuiTriggerAllAnimations('restore_ocr')]"
+		# }
+	#
+	# 	button_text = {
+	# 		background = { using = Background_Area_Border_Solid }
+	# 		blockoverride "text" {
+	# 			raw_text = "OCR ON"
+	# 		}
+	# 		onclick = "[GetVariableSystem.Clear('ocr')]"
+	# 	}
+	#
+	# }
 
 	# button = {
 	# 	onclick = "[OpenFromViewHistory]"
@@ -134,12 +171,13 @@ widget = {
 		widgetid = "suggestions_placer"
 	}
 
+
 	flowcontainer = {
 		# visible = "[Not(Or(Or(Or(GetVariableSystem.Exists('suggestions'), IsRightWindowOpen), IsFullScreenWindowOpen), IsGameViewOpen('outliner')))]"
 		parentanchor = bottom|right
 		ignoreinvisible = yes
 		direction = vertical
-		margin_bottom = 5
+		margin_bottom = 3
 		# background = { using = Background_Area_Border_Solid }
 		# margin_right = 5
 
@@ -149,6 +187,12 @@ widget = {
 				raw_text = "[Add_int32(GetDataModelSize(InGameTopbar.GetAlertItems), GetDataModelSize(InGameTopbar.GetDiplomaticItems))] alerts, Shift A."
 			}
 			onclick = "[GetVariableSystem.Toggle('hide_alerts')]"
+		}
+
+		button = {
+			visible = "[GetVariableSystem.Exists('hide_feed')]"
+			onclick = "[GetVariableSystem.Toggle('hide_feed')]"
+			shortcut = go_back_2
 		}
 	}
 
@@ -966,6 +1010,35 @@ widget = {
 					expand = { }
 				}
 
+				button = {
+					datacontext = "[GetPlayer]"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					visible = "[GreaterThan_int32( Character.GetDomainSize, Character.GetDomainLimit )]"
+
+					minimumsize = { 60 0 }
+
+					margin_left = 3
+
+					tooltip = "[Character.GetDomainLimitTooltip]"
+					using = tooltip_ne
+
+					onclick = "[ToggleGameView('my_realm')]"
+
+					flowcontainer = {
+						resizeparent = yes
+						spacing = 5
+						text_single = {
+							raw_text = "Warning, Domain"
+						}
+
+						text_single = {
+							name = "value"
+							raw_text = "[Character.GetDomainSize] out of [Character.GetDomainLimit]."
+						}
+					}
+				}
+
 				hbox = {
 					name = "prestige"
 					datacontext = "[InGameTopbar.GetPrestigeItem]"
@@ -1020,7 +1093,6 @@ widget = {
 
 					expand = { }
 				}
-
 
 				button = {
 					layoutpolicy_horizontal = expanding
@@ -1210,8 +1282,8 @@ widget = {
 
 				button = {
 					layoutpolicy_horizontal = expanding
-					name = "domain_limit"
 					layoutpolicy_vertical = expanding
+					visible = "[Not(GreaterThan_int32( Character.GetDomainSize, Character.GetDomainLimit ))]"
 
 					minimumsize = { 60 0 }
 
@@ -1221,12 +1293,6 @@ widget = {
 					using = tooltip_ne
 
 					onclick = "[ToggleGameView('my_realm')]"
-
-					background = {
-						visible = "[GreaterThan_int32( Character.GetDomainSize, Character.GetDomainLimit )]"
-						using = Status_Bad
-						margin_bottom = -3
-					}
 
 					flowcontainer = {
 						resizeparent = yes
@@ -1238,10 +1304,6 @@ widget = {
 						text_single = {
 							name = "value"
 							raw_text = "[Character.GetDomainSize] out of [Character.GetDomainLimit]."
-							# align = left
-							# margin_bottom = 1
-
-							# max_width = 110
 						}
 					}
 				}
@@ -1364,7 +1426,6 @@ widget = {
 	# 	margin_left = 10
 	# 	raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('mywife', GetPlayer.GetPrimaryTitle.MakeScope).Custom('test_loc')]"
 	# }
-
 }
 
 ### Time Controls
@@ -1382,8 +1443,7 @@ icon = {
 
 	flowcontainer = {
 		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
-		position = { 45 0 }
-		margin_left = 0
+		position = { 35 0 }
 		margin_bottom = 5
 		ignoreinvisible = yes
 		spacing = 3
@@ -1475,7 +1535,7 @@ icon = {
 
 		text_single = {
 			margin_top = 1
-			raw_text = "Game speed [GetCurrentGameSpeed],"
+			raw_text = "Speed [GetCurrentGameSpeed],"
 		}
 
 		text_single = {
@@ -2612,7 +2672,7 @@ widget = {
 					background = { using = Background_Area_Solid margin = { 5 3 } }
 					datacontext = "[GetPlayer]"
 					blockoverride "text" {
-						raw_text = "Click here with Control F to not split armies"
+						raw_text = "Click here with Control slash to not split armies"
 					}
 					blockoverride "dot" { }
 					visible = "[And( Character.IsAtWar, Not(Character.HasRaisedRegiments)))]"
@@ -2962,26 +3022,26 @@ widget = {
 	}
 
 	bottom_huds = { }
+
 }
 
 ######################################################
 ############# MESSAGES AND NOTIFICATIONS #############
 ######################################################
 
-### Message Feed
-notifications_message_feed = {
-	visible = "[And(And(Not( IsPauseMenuShown ), Not(IsLeftWindowOpen)), Not(SinglePlayerShowingPausedSuccession))]"
-	parentanchor = left|bottom
-	layer = middle
-}
-
 ### Toasts
 notifications_toasts = {
-	widgetanchor = center
-	parentanchor = top|hcenter
-	position = { 0 30 }
-	layer = middle
+	visible = "[And(And(ToastMessageHandler.HasMessage, Not(SinglePlayerShowingPausedSuccession)), Not( IsPauseMenuShown ))]"
+	layer = frontend
 }
+
+### Message Feed
+notifications_message_feed = {
+	visible = "[And(Not( IsPauseMenuShown ), Not(SinglePlayerShowingPausedSuccession))]"
+	layer = frontend
+}
+
+
 
 ### Suggestions / Current Situation
 notifications_suggestions = {
