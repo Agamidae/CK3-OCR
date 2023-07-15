@@ -75,7 +75,7 @@ widget = {
 	state = {
 		name = _show
 		delay = 0.3
-		on_finish = "[SetMapMode('realms_ocr')]"
+		# on_finish = "[SetMapMode('realms_ocr')]" #TODO
 		next = toggle_ocr
 	}
 
@@ -743,6 +743,30 @@ widget = {
 						}
 					}
 
+					widget_hud_main_tab = {
+						name = "tab_activities"
+
+						blockoverride "maintab_button"
+						{
+							texture = "gfx/interface/skinned/hud_maintab/maintab_activities.dds"
+
+							onclick = "[ToggleGameView('activity_list_window')]"
+							shortcut = "activity_list_window"
+							tooltip = "ACTIVITY_LIST_BUTTON"
+							down = "[IsGameViewOpen('activity_list_window')]"
+						}
+
+						state = {
+							name = _mouse_hierarchy_enter
+							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_activities_leave','hud_tab_glow_activities_enter')]"
+						}
+
+						state = {
+							name = _mouse_hierarchy_leave
+							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_activities_enter','hud_tab_glow_activities_leave')]"
+						}
+					}
+
 				}
 			}
 		}
@@ -750,7 +774,7 @@ widget = {
 		# Invisible button to ensure that these shortcuts don't get hidden
 		button = {
 			size = { 0 0 }
-			onclick = "[ToggleCharacter( GetPlayer.GetID )]"
+			onclick = "[ToggleGameViewData( 'character', GetPlayer.GetID )]"
 			shortcut = "character_window"
 		}
 
@@ -1098,7 +1122,7 @@ widget = {
 					layoutpolicy_horizontal = expanding
 					name = "piety"
 					datacontext = "[InGameTopbar.GetPietyItem]"
-					onclick = "[DefaultOnFaithClick(GetPlayer.GetFaith.GetID)]"
+					onclick = "[OpenGameViewData( 'faith', GetPlayer.GetFaith.GetID )]"
 
 					using = tooltip_ne
 
@@ -1709,7 +1733,7 @@ widget = {
 				tooltip = "PLAYER_LIFESTYLE_TOOLTIP"
 				using = tooltip_ne
 
-				onclick = "[OpenLifestyleView( GetPlayer )]"
+				onclick = "[OpenGameViewData( 'lifestyle', GetPlayer.GetID )]"
 				size = { 55 55 }
 
 				icon = {
@@ -1826,7 +1850,7 @@ widget = {
 				tooltip = "PLAYER_EDUCATION_FOCUS_TOOLTIP"
 				using = tooltip_ne
 
-				onclick = "[OpenEducationFocusView( GetPlayer )]"
+				onclick = "[ToggleGameViewData( 'character_focus', GetPlayer.GetID )]"
 				size = { 55 55 }
 
 				icon = {
@@ -1836,7 +1860,7 @@ widget = {
 
 				highlight_icon_lifestyle_focus = {
 					texture = "[GetPlayer.GetFocus.GetIcon]"
-					onclick = "[OpenEducationFocusView( GetPlayer )]"
+					onclick = "[ToggleGameViewData( 'character_focus', GetPlayer.GetID )]"
 					size = { 100% 100% }
 					gfxtype = togglepushbuttongfx
 					effectname = "NoHighlight"
@@ -2325,7 +2349,7 @@ widget = {
 				datacontext = "[GetPlayer.GetFaith]"
 				parentanchor = bottom
 
-				onclick = "[DefaultOnFaithClick(GetPlayer.GetFaith.GetID)]"
+				onclick = "[OpenGameViewData( 'faith', GetPlayer.GetFaith.GetID )]"
 
 				tooltipwidget = {
 					faith_tooltip_click = { }
@@ -2349,7 +2373,7 @@ widget = {
 				name = "player_culture_button_tutorial_uses_this"
 				datacontext = "[GetPlayer.GetCulture]"
 				parentanchor = bottom
-				onclick = "[DefaultOnCultureClick(Culture.GetID)]"
+				onclick = "[OpenGameViewData( 'culture_window', Culture.GetID )]"
 
 				tooltipwidget = {
 					culture_tooltip_click = { }
@@ -2368,9 +2392,123 @@ widget = {
 					}
 				}
 			}
+
+			button_hud_character_bar = {
+				#datacontext = "[GetPlayer]"
+				name = "open_diarchy_tutorial_uses_this"
+				parentanchor = bottom
+				onclick = "[ToggleGameViewData( 'diarchy', Character.GetID )]"
+				visible = "[IsDiarchyVisible]"
+				tooltip = "DIARCHY_WINDOW_OPEN_TOOLTIP"
+
+				highlight_icon = {
+					parentanchor = center
+					position = { 0 5 }
+					size = { 40 40 }
+					texture = "gfx/interface/icons/scale_of_power.dds"
+
+					glow = {
+						color = { 0 0 0 0.7 }
+						glow_radius = 2
+						using = Glow_Standard
+					}
+				}
+			}
 		}
 
 		widget_stress_sounds = { }
+	}
+
+	#TODO
+	flowcontainer = {
+		name = "bottom_left_bar_temporary_statuses"
+
+		datacontext = "[GetPlayer]"
+		datacontext = "[Character.GetInvolvedActivity]"
+
+		visible = "[And( Not( IsPauseMenuShown ), And(And(IsDefaultGUIMode, Character.IsValid), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD')))))]"
+		visible_at_creation = no
+		parentanchor = bottom|left
+		position = { 250 -70 }
+		ignoreinvisible = yes
+		alwaystransparent = no
+
+		flowcontainer = {
+			name = "involved_activity"
+
+			visible = "[And( Activity.IsValid, Not( Activity.IsComplete ) )]"
+			visible_at_creation = no
+
+			spacing = 8
+
+			activity_hud_button = {
+				name = "activity_button"
+			}
+
+			button_hud_travel = {
+				name = "activity_travel_button"
+				datacontext = "[Character.GetTravelPlan]"
+				visible = "[Character.IsTraveling]"
+				parentanchor = "vcenter"
+
+				text = "ACTIVITY_VIEW_TRAVEL"
+				tooltip = "TT_AWAY_FROM_CAPITAL_WIDGET"
+
+				max_width = 150
+
+				onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
+				onclick = "[Character.ZoomCameraTo]"
+			}
+		}
+
+		button_normal = {
+			name = "away_from_capital"
+			datacontext = "[Character.GetTravelPlan]"
+
+			visible_at_creation = no
+			visible = "[And( Character.IsTraveling, Or( Not( Activity.IsValid ), Activity.IsComplete ) ) )]"
+
+			size = { 60 60 }
+
+			onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
+			onclick = "[Character.ZoomCameraTo]"
+
+			tooltip = "TT_AWAY_FROM_CAPITAL_WIDGET"
+			using = tooltip_above
+
+			icon = {
+				texture = "gfx/interface/buttons/button_lifestyles_base.dds"
+				size = { 100% 100% }
+			}
+
+			icon = {
+				name = "progress_frame"
+				texture = "gfx/interface/progressbars/action_progress_frame.dds"
+				size = { 100% 100% }
+				parentanchor = center
+				alpha = 0.5
+			}
+
+			progresspie = {
+				name = "progress"
+				size = { 60 60 }
+				texture = "gfx/interface/progressbars/action_progress_thin.dds"
+				framesize = { 124 124 }
+				frame = 2
+				widgetanchor = top|hcenter
+				parentanchor = top|hcenter
+				value = "[TravelPlan.GetData.GetNextDestinationProgress]"
+				min = 0
+				max = 1
+			}
+
+			highlight_icon = {
+				texture = "gfx/interface/icons/travel/icon_travel_hud_placeholder.dds"
+				alwaystransparent = yes
+				size = { 45 45 }
+				parentanchor = center
+			}
+		}
 	}
 
 	######################################################
@@ -2545,10 +2683,10 @@ widget = {
 					text = INSPIRATION_IN_PROGRESS
 				}
 
-				progressbar_segmented = {
+				progressbar_segmented_chance = {
 					name = "progress_bar"
 					tooltip = "INSPIRATION_ITEM_PROGRESS_TOOLTIP"
-					datamodel = "[GetSegmentedProgressBar( GetDefine( 'NInspiration', 'MAX_PROGRESS' ), GetDefine( 'NScheme', 'PROGRESS_FRAMES' ), Inspiration.GetProgress, Inspiration.GetProgressChance )]"
+					datamodel = "[GetSegmentedProgressChanceBar( GetDefine( 'NInspiration', 'MAX_PROGRESS' ), GetDefine( 'NScheme', 'PROGRESS_FRAMES' ), Inspiration.GetProgress, Inspiration.GetProgressChance )]"
 				}
 
 				text_single = {
@@ -2634,6 +2772,16 @@ widget = {
 						onclick = "[InGameBottomBar.ToggleSelectedInspiration( Inspiration.Self )]"
 					}
 				}
+			}
+
+			#TODO
+			button_text = {
+			    blockoverride "text" {
+			        raw_text = "View your regent."
+			    }
+				onclick = "[ToggleGameViewData( 'diarchy', Character.GetID )]"
+				visible = "[IsDiarchyVisible]"
+				tooltip = "DIARCHY_WINDOW_OPEN_TOOLTIP"
 			}
 
 			flowcontainer = {
@@ -2733,7 +2881,8 @@ widget = {
 										align = left
 									}
 								}
-								onclick = "[OpenGreatHolyWarWindow(GreatHolyWar.GetID)]"
+								onclick = "[OpenGameViewData( 'great_holy_war', GreatHolyWar.GetID )]"
+
 							}
 						}
 					}
@@ -2753,7 +2902,8 @@ widget = {
 							# 	visible = "[GreatHolyWar.HasWarStarted]"
 							# }
 						}
-						onclick = "[OpenGreatHolyWarWindow(GreatHolyWar.GetID)]"
+						onclick = "[OpenGameViewData( 'great_holy_war', GreatHolyWar.GetID )]"
+
 						name = "player_faith_ghw"
 						datacontext = "[GetPlayer.GetFaith.GetGreatHolyWar]"
 						visible = "[GetPlayer.GetFaith.HasOffensiveGreatHolyWar]"
@@ -3384,11 +3534,47 @@ types HUD
 		}
 	}
 
+	type button_hud_travel = button_standard {
+		size = { 170 36 }
+		datacontext = "[GetPlayer]"
+		parentanchor = vcenter
+
+		background = {
+			using = Background_Area_Dark_Border
+		}
+
+		margin_left = 30
+
+		using = tooltip_ne
+
+		icon = {
+			texture = "gfx/interface/icons/travel/icon_travel_hud_placeholder.dds"
+			size = { 30 30 }
+			alwaystransparent = yes
+			parentanchor = left|vcenter
+			position = { 10 0 }
+		}
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+			position_y = 0
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+			position_y = 20
+		}
+	}
+
 	type button_war_banner = button_normal {
 		size = { 78 82 }
 		onclick = "[WarItem.OnClick]"
 		tooltip = "[WarItem.GetTooltip]"
 		using = tooltip_ne
+
+		visible = "[Not(IsGameViewOpen('barbershop'))]"
 
 		animation_sonar = {
 			visible = "[WarItem.CanEnforceVictory]"
@@ -4129,7 +4315,8 @@ types HUD
 
 	type button_ghw_banner = button_normal {
 		size = { 78 82 }
-		onclick = "[OpenGreatHolyWarWindow(GreatHolyWar.GetID)]"
+		onclick = "[OpenGameViewData( 'great_holy_war', GreatHolyWar.GetID )]"
+
 
 		block "ghw_tooltip"
 		{
@@ -4164,7 +4351,8 @@ types HUD
 		button = {
 			name = "holy_war_icon_started"
 			visible = "[GreatHolyWar.HasWarStarted]"
-			onclick = "[OpenGreatHolyWarWindow(GreatHolyWar.GetID)]"
+			onclick = "[OpenGameViewData( 'great_holy_war', GreatHolyWar.GetID )]"
+
 			parentanchor = center
 			size = { 100% 100% }
 			texture = "gfx/interface/icons/war_status/holy_war_icon_started.dds"
@@ -4173,7 +4361,8 @@ types HUD
 		button = {
 			name = "holy_war_icon_prep"
 			visible = "[Not(GreatHolyWar.HasWarStarted)]"
-			onclick = "[OpenGreatHolyWarWindow(GreatHolyWar.GetID)]"
+			onclick = "[OpenGameViewData( 'great_holy_war', GreatHolyWar.GetID )]"
+
 			parentanchor = center
 			size = { 100% 100% }
 			texture = "gfx/interface/icons/war_status/holy_war_icon_prep.dds"
@@ -4182,7 +4371,8 @@ types HUD
 		button = {
 			name = "faith_icon"
 			datacontext = "[GreatHolyWar.GetFaith]"
-			onclick = "[OpenGreatHolyWarWindow(GreatHolyWar.GetID)]"
+			onclick = "[OpenGameViewData( 'great_holy_war', GreatHolyWar.GetID )]"
+
 			parentanchor = center
 			position = { 1 -3 }
 			size = { 35 35 }
@@ -4837,7 +5027,7 @@ types HUD
 						name = "piety"
 						datacontext = "[InGameTopbar.GetPietyItem]"
 						layoutpolicy_vertical = expanding
-						onclick = "[DefaultOnFaithClick(GetPlayer.GetFaith.GetID)]"
+						onclick = "[OpenGameViewData( 'faith', GetPlayer.GetFaith.GetID )]"
 
 						minimumsize = { 90 0 }
 						margin_left = 7
@@ -5231,7 +5421,7 @@ types HUD
 								name = "piety"
 								datacontext = "[InGameTopbar.GetPietyItem]"
 								layoutpolicy_vertical = expanding
-								onclick = "[DefaultOnFaithClick(GetPlayer.GetFaith.GetID)]"
+								onclick = "[OpenGameViewData( 'faith', GetPlayer.GetFaith.GetID )]"
 
 								# minimumsize = { 90 0 }
 								margin_left = 7
@@ -5593,7 +5783,7 @@ types HUD
 				button_standard = {
 					name = "legacy_button"
 					text = "SHOW_LEGACY"
-					onclick = "[ToggleLegacy]"
+					onclick = "[ToggleGameViewData( 'lineage_view', GetPlayer.GetID )]"
 					down = "[IsGameViewOpen('succession_event')]"
 					onclick = "[GetVariableSystem.Toggle( 'extra_buttons_expand' )]"
 					tooltip = "IM_TT_SHOW_LEGACY"
@@ -6136,6 +6326,85 @@ types HUD
 
 				widget_gamespeed_sounds = { }
 			}
+		}
+	}
+
+	type activity_hud_button = button_normal
+	{
+		size = { 60 60 }
+
+		tooltip = "TT_ACTIVITY_WIDGET"
+		using = tooltip_above
+		onclick = "[Activity.OpenActivityView]"
+
+		icon = {
+			texture = "gfx/interface/buttons/button_lifestyles_base.dds"
+			size = { 100% 100% }
+		}
+
+		# icon = {
+		# 	texture = "gfx/interface/buttons/button_lifestyles_active_frame.dds"
+		# 	size = { 100% 100% }
+		# }
+
+		icon = {
+			name = "progress_frame"
+			texture = "gfx/interface/progressbars/action_progress_frame.dds"
+			size = { 100% 100% }
+			parentanchor = center
+			alpha = 0.5
+		}
+
+		progresspie = {
+			name = "progress"
+			visible = "[Character.HasActivityState( 'travel' )]"
+			size = { 60 60 }
+
+			texture = "gfx/interface/progressbars/action_progress_thin.dds"
+
+			framesize = { 124 124 }
+			frame = 2
+
+			widgetanchor = top|hcenter
+			parentanchor = top|hcenter
+
+			min = 0
+			max = 1
+			value = "[Character.GetTravelPlan.GetData.GetNextDestinationProgress]"
+		}
+
+		highlight_icon = {
+			texture = "[Activity.GetType.GetIcon]"
+			alwaystransparent = yes
+			size = { 45 45 }
+			parentanchor = center
+		}
+	}
+
+	type icon_hud_background = icon {
+		size = { 200 64 }
+		texture = "gfx/interface/skinned/hud_bg_character_bar.dds"
+		spritetype = corneredtiled
+		spriteborder_left = 70
+		spriteborder_right = 240
+		texture_density = 2
+
+		state = {
+			name = _show
+			using = Animation_Curve_Default
+			duration = 0.21
+
+			position = { 0 0 }
+			alpha = 1
+		}
+
+		state = {
+			name = _hide
+			using = Animation_Curve_Default
+			duration = 0.21
+
+			position = { -36 50 }
+			alpha = 0
 		}
 	}
 }
