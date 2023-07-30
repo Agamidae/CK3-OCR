@@ -8,7 +8,6 @@ types KnightTypes {
 		onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End)]"
 		onclick = "[MilitaryView.SetKnightDefault( GetPlayer.Self )]"
 		blockoverride "extra" {
-			space = { }
 			text_single = {
 				raw_text = "[Select_CString(ScriptedGui.IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End), 'Allowed', 'Not allowed')]"
 			}
@@ -25,13 +24,13 @@ types KnightTypes {
 window = {
 	datacontext = "[KnightsView.GetMilitaryView]"
 	name = "knight_view"
-	parentanchor = top|right
+	parentanchor = top
 	position = { 0 0 }
 	movable = no
 	layer = top
 
-	using = Window_Size_MainTab
-	using = Window_Background_No_Edge
+	using = Window_Size_CharacterList
+	background = { using = Background_Area_Border_Solid }
 
 	state = {
 		name = _show
@@ -67,74 +66,68 @@ window = {
 			}
 		}
 
-		hbox = {
+		vbox = {
+			layoutpolicy_horizontal = expanding
 			margin_left = 10
-			layoutpolicy_horizontal = expanding
 
-			text_single = {
-				name = "knights_cap"
-				text = "MAX_KNIGHT_COUNT"
-				tooltip = "MAX_KNIGHT_TOOLTIP"
-			}
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 3
 
-			space = { }
-
-			text_single = {
-				name = "knights_effectiveness"
-				text = "KNIGHT_EFFECTIVENESS"
-				tooltip = "KNIGHT_EFFECTIVENESS_TOOLTIP"
-			}
-
-			dot = { }
-
-			expand = { }
-		}
-
-		hbox = {
-			margin_left = 10
-			layoutpolicy_horizontal = expanding
-			text_single = {
-				raw_text = "[GetDataModelSize(MilitaryView.GetKnights)]"
-			}
-			space = { }
-			text_single = {
-				name = "knights_effectiveness"
-				text = "KNIGHTS_SUBHEADER"
-			}
-			dot = { }
-			expand = { }
-		}
-
-		button_decision_entry = {
-			layoutpolicy_horizontal = expanding
-			name = "invite_knights_decision"
-			datacontext = "[GetDecisionWithKey('invite_knights_decision')]"
-			visible = "[Decision.IsShownForPlayer]"
-			onclick = "[OpenDecisionDetailView( Decision.Self )]"
-		}
-
-		button_text = {
-			layoutpolicy_horizontal = expanding
-			blockoverride "pre" {
 				text_single = {
-					raw_text = "Show"
-					visible = "[GetVariableSystem.Exists('hide_km')]"
+					raw_text = "[Localize('MAX_KNIGHT_COUNT')]."
+					tooltip = "MAX_KNIGHT_TOOLTIP"
 				}
-				space = { }
+
+				text_single = {
+					raw_text = "[Localize('KNIGHT_EFFECTIVENESS')]."
+					tooltip = "KNIGHT_EFFECTIVENESS_TOOLTIP"
+				}
+
+				expand = { }
 			}
 
-			blockoverride "text" {
-				raw_text = "Knight manager."
-				align = left
-			}
-			blockoverride "extra" {
-				space = { }
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 3
 				text_single = {
-					raw_text = "Hide."
-					visible = "[Not(GetVariableSystem.Exists('hide_km'))]"
+					raw_text = "[GetDataModelSize(MilitaryView.GetKnights)]"
 				}
+				text_single = {
+					raw_text = "[Localize('KNIGHTS_SUBHEADER')]."
+				}
+				expand = { }
 			}
-			onclick = "[GetVariableSystem.Toggle('hide_km')]"
+
+			button_decision_entry_text = {
+				layoutpolicy_horizontal = expanding
+				name = "invite_knights_decision"
+				datacontext = "[GetDecisionWithKey('invite_knights_decision')]"
+				visible = "[Decision.IsShownForPlayer]"
+				onclick = "[OpenGameViewData( 'decision_detail', Decision.Self )]"
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "Show"
+						visible = "[Not(GetVariableSystem.Exists('hide_km'))]"
+					}
+				}
+
+				blockoverride "text" {
+					raw_text = "Knight manager."
+					align = left
+				}
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "Hide."
+						visible = "[GetVariableSystem.Exists('hide_km')]"
+					}
+				}
+				onclick = "[GetVariableSystem.Toggle('hide_km')]"
+			}
 		}
 
 		vbox = {
@@ -146,7 +139,7 @@ window = {
 				layoutpolicy_horizontal = expanding
 				raw_text = "Disallow a group to remove them from the list of knights."
 			}
-			visible = "[Not(GetVariableSystem.Exists('hide_km'))]"
+			visible = "[GetVariableSystem.Exists('hide_km')]"
 
 			knight_setting = {
 				datacontext = "[GetScriptedGui('knight_manager_toggle_kin_cannot_be_knight')]"
@@ -255,105 +248,107 @@ window = {
 			blockoverride "scrollbox_content" {
 				name = "knights"
 				datamodel = "[MilitaryView.GetKnights]"
-				spacing = 2
 
 				item = {
-					widget = {
+					vbox = {
 						layoutpolicy_horizontal = expanding
-						size = { 0 40 }
 
-						using = Background_Guest
-
-						vbox = {
-							set_parent_size_to_minimum = yes
+						hbox = {
 							layoutpolicy_horizontal = expanding
+							spacing = 3
 
 							hbox = {
-								layoutpolicy_horizontal = expanding
-								spacing = 3
+								visible = "[Character.IsGuest]"
 
-								hbox = {
-									visible = "[Character.IsGuest]"
-
-									button_text = {
-										blockoverride "disabled" {
-											visible = "[Not(Character.IsPlayerInteractionValid('recruit_guest_interaction'))]"
-										}
-										blockoverride "text" {
-											raw_text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')]"
-											align = left
-										}
-										blockoverride "extra" {
-											space = { }
-										}
-										visible = "[Character.IsPlayerInteractionShown('recruit_guest_interaction')]"
-										enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
-										onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
+								button_text = {
+									blockoverride "disabled" {
+										visible = "[Not(Character.IsPlayerInteractionValid('recruit_guest_interaction'))]"
 									}
+									blockoverride "text" {
+										raw_text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')],"
+										align = left
+									}
+									blockoverride "extra" {
+									}
+									visible = "[Character.IsPlayerInteractionShown('recruit_guest_interaction')]"
+									enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
+									onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
 								}
-
-								text_single = {
-									raw_text = "Knight,"
-									visible = "[Character.IsKnight]"
-								}
-
-								text_single = {
-									raw_text = "[Character.GetSkill( 'prowess' )] prowess,"
-								}
-								text_single = {
-									raw_text = "[Character.GetNameNoTooltip],"
-								}
-								text_single = {
-									raw_text = "[Character.GetRelationToString( GetPlayer )]."
-									tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-								}
-								expand = { }
-
 							}
 
 							hbox = {
 								visible = "[Not(Character.IsGuest)]"
+
+								text_single = {
+									raw_text = "[Select_CString(Character.IsKnightForced, 'Forced', '')]"
+								}
+
+								text_single = {
+									raw_text = "[Select_CString(Character.IsKnightDisallowed, 'Forbidden,', '')]"
+								}
+							}
+
+							text_single = {
+								raw_text = "Knight,"
+								visible = "[Character.IsKnight]"
+							}
+
+							text_single = {
+								raw_text = "[Character.GetSkill( 'prowess' )] prowess,"
+							}
+							text_single = {
+								raw_text = "[Character.GetNameNoTooltip],"
+							}
+							text_single = {
+								raw_text = "[Character.GetRelationToString( GetPlayer )]."
+								tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+							}
+
+							expand = { }
+						}
+
+						hbox = {
+							visible = "[Not(Character.IsGuest)]"
+							layoutpolicy_horizontal = expanding
+
+							button_text = {
+								visible = "[Not(Character.IsKnightForced)]"
+								onclick = "[MilitaryView.SetKnightForced( Character.Self )]"
+								blockoverride "text" {
+									raw_text = "[Select_CString(Character.IsKnightForced, 'Is forced', 'Force')],"
+								}
+								# tooltip = "KNIGHTS_VIEW_TITLE_FORCE_TT"
+							}
+
+							button_text = {
+								visible = "[Not(Character.IsKnightDefault)]"
+								onclick = "[MilitaryView.SetKnightDefault( Character.Self )]"
+								blockoverride "text" {
+									raw_text = "[Select_CString(Character.IsKnightForced, 'Unforce', 'Allow')],"
+								}
+								# tooltip = "KNIGHTS_VIEW_TITLE_BY_PROWESS_TT"
+							}
+
+							button_text = {
+								onclick = "[MilitaryView.SetKnightDisallowed( Character.Self )]"
+								visible = "[Not(Character.IsKnightDisallowed)]"
+								blockoverride "text" {
+									raw_text = "[Select_CString(Character.IsKnightDisallowed, '', 'Forbid')]."
+								}
+								# tooltip = "KNIGHTS_VIEW_TITLE_FORBID_TT"
+							}
+
+							button_text = {
 								layoutpolicy_horizontal = expanding
-								spacing = 10
+								datacontext = "[GetScriptedGui('knight_manager_toggle_manually_allowed')]"
+								onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( Character.MakeScope ).End)]"
+								onclick = "[MilitaryView.SetKnightDefault( GetPlayer.Self )]"
+								# tooltip = "toggle_exclude_label_tt"
 
-								button_text = {
-									onclick = "[MilitaryView.SetKnightForced( Character.Self )]"
-									blockoverride "text" {
-										raw_text = "[Select_CString(Character.IsKnightForced, 'Is forced', 'Force')],"
-									}
-									# tooltip = "KNIGHTS_VIEW_TITLE_FORCE_TT"
+								blockoverride "text"
+								{
+									raw_text = "[Select_CString( ScriptedGui.IsShown( GuiScope.SetRoot( Character.MakeScope ).End), 'Exclude', 'Is excluded')] from manager."
 								}
-
-								button_text = {
-									onclick = "[MilitaryView.SetKnightDefault( Character.Self )]"
-									blockoverride "text" {
-										raw_text = "[Select_CString(Character.IsKnightDefault, 'Is allowed', 'Allow')],"
-									}
-									# tooltip = "KNIGHTS_VIEW_TITLE_BY_PROWESS_TT"
-								}
-
-								button_text = {
-									onclick = "[MilitaryView.SetKnightDisallowed( Character.Self )]"
-									blockoverride "text" {
-										raw_text = "[Select_CString(Character.IsKnightDisallowed, 'Is forbidden', 'Forbid')]."
-									}
-									# tooltip = "KNIGHTS_VIEW_TITLE_FORBID_TT"
-								}
-
-								button_text = {
-									layoutpolicy_horizontal = expanding
-									datacontext = "[GetScriptedGui('knight_manager_toggle_manually_allowed')]"
-									onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( Character.MakeScope ).End)]"
-									onclick = "[MilitaryView.SetKnightDefault( GetPlayer.Self )]"
-									# tooltip = "toggle_exclude_label_tt"
-
-									blockoverride "text"
-									{
-										raw_text = "[Select_CString( ScriptedGui.IsShown( GuiScope.SetRoot( Character.MakeScope ).End), 'Exclude', 'Is excluded')] from the manager."
-									}
-								}
-
-								expand = { }
 							}
 
 							expand = { }
