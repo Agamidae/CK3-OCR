@@ -1,0 +1,620 @@
+window = {
+	name = "court_window"
+	movable = no
+	allow_outside = yes
+	using = base_ocr_window
+
+	datacontext = "[GetVariableSystem]"
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+		using = Window_Position_MainTab
+		using = Expand_Court_Positions
+
+		# on_start = "[GetVariableSystem.Set( 'council_tabs', 'my_council' )]"
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+		using = Window_Position_MainTab_Hide
+	}
+
+	window = {
+		using = ocr_window
+
+		vbox = {
+			using = Window_Margins
+			margin_bottom = 50
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					raw_text = "Court. 3 Windows:"
+					visible = "[Not(GetVariableSystem.Exists('court_tabs'))]"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[CourtWindow.Close]"
+				}
+			}
+
+			vbox = {
+				visible = "[Not(GetVariableSystem.Exists('court_tabs'))]"
+				layoutpolicy_horizontal = expanding
+
+				button_text = {
+					name = "court_positions_tab_button_tutorial_uses_this"
+					layoutpolicy_horizontal = expanding
+					onclick = "[GetVariableSystem.Set('court_tabs', 'positions')]"
+					shortcut = speed_1
+
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "1,"
+						}
+					}
+
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "[GetDataModelSize(CourtWindow.GetCourtOwner.GetEmployedCourtPositions)] hired."
+						}
+					}
+
+					blockoverride "text" {
+						raw_text = "[Localize('COURT_WINDOW_COURT_POSITIONS')],"
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[GetVariableSystem.Set('court_tabs', 'courtiers')]"
+					shortcut = speed_2
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "2, "
+						}
+					}
+
+					blockoverride "text" {
+						raw_text = "[Localize('COURT_WINDOW_YOUR_COURTIERS')],"
+					}
+
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "[GetPlayer.MakeScope.ScriptValue('num_of_guests')|0] guests."
+						}
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[GetVariableSystem.Set('court_tabs', 'prisoners')]"
+					shortcut = speed_3
+
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "[CourtWindow.GetPrisoners.GetTotalNumber]."
+						}
+					}
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "3,"
+						}
+					}
+
+					blockoverride "text" {
+						raw_text = "[Localize('INTRIGUE_WINDOW_PRISONERS')],"
+					}
+				}
+			}
+
+			button = {
+				visible = "[GetVariableSystem.Exists('court_tabs')]"
+				shortcut = close_window
+				onclick = "[GetVariableSystem.Clear('court_tabs')]"
+			}
+
+			## POSITONS
+			vbox_court_positions_ocr = {
+				name = "court_positions_subtab_tutorial_uses_this"
+				datacontext = "[CourtWindow.AccessCourtPositionWindow]"
+				visible = "[GetVariableSystem.HasValue('court_tabs', 'positions')]"
+
+				using = Animation_Tab_Switch
+
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+			}
+
+			##### YOUR COURTIERS #####
+			widget = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				visible = "[GetVariableSystem.HasValue('court_tabs', 'courtiers')]"
+
+				using = Animation_Tab_Switch
+
+				vbox = {
+					name = "court"
+
+					vbox = {
+						visible = "[Not(IsDataModelEmpty(GetPlayer.GetCourt))]"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						# spacing = 15
+						# margin_top = 15
+
+						text_single = {
+							raw_text = "[Localize('COUNCIL_WINDOW_GUESTS_AND_COURTIERS')]."
+							layoutpolicy_horizontal = expanding
+							autoresize = no
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							# spacing = 10
+
+							button_court_ocr = {
+								layoutpolicy_horizontal = expanding
+								name = "invite_knights_decision"
+								datacontext = "[GetDecisionWithKey('invite_knights_decision')]"
+								visible = "[Decision.IsShownForPlayer]"
+
+								onclick = "[OpenGameViewData( 'decision_detail', Decision.Self)]"
+								using = tooltip_se
+							}
+
+							button_court_ocr = {
+								layoutpolicy_horizontal = expanding
+								name = "invite_claimants_decision"
+								datacontext = "[GetDecisionWithKey('invite_claimants_decision')]"
+								visible = "[Decision.IsShownForPlayer]"
+
+								onclick = "[OpenGameViewData( 'decision_detail', Decision.Self)]"
+								using = tooltip_se
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+							spacing = 5
+
+
+							vbox_character_list = {
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+								# minimumsize = { -1 800 }
+								datacontext = "[CourtWindow.GetCourt]"
+
+								blockoverride "sort_dropdown" {
+									dropdown_sort_characterlist = {
+										# unique name needed to distinct from prisoner sort options
+										name = "court_sort_options"
+									}
+								}
+
+								blockoverride "scrollbox_empty_visibility"
+								{
+									layoutpolicy_vertical = expanding
+									visible = "[And(Not(CharacterSelectionList.IsBuildingList), IsDataModelEmpty(CharacterSelectionList.GetList) )]"
+									text = "COURT_WINDOW_NO_GUESTS_OR_COURTIERS"
+								}
+
+								blockoverride "container_implementation" {
+									fixedgridbox = {
+										name = "characters_grid"
+										datamodel = "[CharacterSelectionList.GetList]"
+										visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+										addcolumn = 600
+										addrow = 90
+										setitemsizefromcell = yes
+
+										item = {
+											widget_character_list_item_finder = {
+												blockoverride "click" {
+													onclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+													onrightclick = "[DefaultOnCharacterRightClick(CharacterListItem.GetCharacter.GetID)]"
+												}
+												blockoverride "action_buttons" { }
+												datacontext = "[CharacterListItem.GetCharacter]"
+												blockoverride "court_window" {
+													visible = "[And(Character.GetLiege.IsValid, Not(ObjectsEqual(Character.GetLiege, GetPlayer)))]"
+													# visible = no
+												}
+
+												blockoverride "description_relation_text" {
+													text = "[SelectLocalization(Character.IsGuest, Character.GetRelationAndGuestDesc, Character.GetRelationToString(GetPlayer.Self))]"
+													tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+					expand = {
+
+					}
+				}
+			}
+
+			## PRISONERS
+			vbox = {
+				datacontext = "[CourtWindow.GetPrisoners]"
+				visible = "[GetVariableSystem.HasValue('court_tabs', 'prisoners')]"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				using = Animation_Tab_Switch
+
+				state = {
+					name = _show
+					using = Animation_FadeIn_Quick
+				}
+
+				state = {
+					name = _hide
+					alpha = 0
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[LessThanOrEqualTo_int32( CharacterSelectionList.GetTotalNumber, '(int32)0' )]"
+					raw_text = "[Localize('PRISON_EMPTY')]."
+				}
+
+				## Layout with more than MAX_PRISONER_COUNT_GRID(4) prisoners
+				vbox_character_list = {
+					# visible = "[GreaterThan_int32( CourtWindow.GetPrisoners.GetTotalNumber, GetDefine( 'NGui', 'MAX_PRISONER_COUNT_GRID' ) )]"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					blockoverride "container_implementation"
+					{
+						fixedgridbox = {
+							name = "characters_grid"
+							datamodel = "[CharacterSelectionList.GetList]"
+							visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+							layoutpolicy_horizontal = expanding
+							addcolumn = 600
+							addrow = 105
+							datamodel_reuse_widgets = yes
+
+							item = {
+								vbox = {
+
+									widget_character_list_item_finder = {
+										blockoverride "click" {
+											onclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+											onrightclick = "[DefaultOnCharacterRightClick(CharacterListItem.GetCharacter.GetID)]"
+										}
+										layoutpolicy_horizontal = expanding
+										blockoverride "divider" {}
+										blockoverride "character_relation" {}
+
+										# blockoverride "gridbox_items"
+										# {
+										# 	datamodel_wrap = 4
+										# 	maxverticalslots = 2
+										# }
+									}
+
+									vbox = {
+										margin_top = -5
+										name = "prisoner_data"
+										layoutpolicy_horizontal = expanding
+
+										hbox = {
+											margin_left = 5
+											name = "info_text"
+											layoutpolicy_horizontal = expanding
+											layoutpolicy_vertical = expanding
+											spacing = 5
+
+											text_single = {
+												visible = "[CharacterListItem.GetCharacter.IsImprisoned]"
+												name = "type"
+												# layoutpolicy_horizontal = expanding
+												raw_text = "[CharacterListItem.GetText('tooltip')],"
+											}
+
+											hbox = {
+												# layoutpolicy_horizontal = expanding
+												spacing = 5
+												visible = "[CharacterListItem.GetCharacter.IsImprisoned]"
+
+												text_single = {
+													name = "imprisoned_time"
+													raw_text = "[CharacterListItem.GetText('imprisoned_time')]."
+													max_width = 300
+												}
+											}
+
+											expand = { }
+										}
+
+										hbox = {
+											layoutpolicy_horizontal = expanding
+											spacing = 1
+
+											button_text = {
+												blockoverride "text" {
+													raw_text = "Ransom"
+												}
+												blockoverride "disabled" {
+													align = left
+													visible = "[Not(CharacterListItem.GetBool('can_ransom'))]"
+													tooltip = "[CharacterListItem.GetText('ransom_tooltip')]"
+												}
+												blockoverride "dot" { }
+												onclick = "[CharacterListItem.OnClick('ransom')]"
+											}
+
+											button_text = {
+												blockoverride "text" {
+													raw_text = "Release"
+												}
+												blockoverride "disabled" {
+													align = left
+													visible = "[Not(CharacterListItem.GetBool('can_release'))]"
+													tooltip = "[CharacterListItem.GetText('release_tooltip')]"
+												}
+												blockoverride "dot" { }
+												onclick = "[CharacterListItem.OnClick('release')]"
+											}
+
+											button_text = {
+												blockoverride "text" {
+													raw_text = "Execute"
+												}
+												blockoverride "disabled" {
+													align = left
+													visible = "[Not(CharacterListItem.GetBool('can_execute'))]"
+													tooltip = "[CharacterListItem.GetText('execute_tooltip')]"
+												}
+												blockoverride "dot" { }
+												onclick = "[CharacterListItem.OnClick('execute')]"
+											}
+
+											button_text = {
+												blockoverride "text" {
+													raw_text = "[Select_CString(CharacterListItem.GetBool('is_mass_action_locked'), 'Already excluded', 'Exclude from mass actions')]."
+												}
+												onclick = "[CharacterListItem.OnClick('mass_action_lock')]"
+												# tooltip = "[CharacterListItem.GetText('mass_action_lock_tooltip')]"
+											}
+
+											expand = { }
+										}
+									}
+
+									expand = { }
+								}
+							}
+						}
+					}
+
+					blockoverride "bottom_bar"
+					{
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[DataModelHasItems(CharacterSelectionList.GetList)]"
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "Ransom all"
+								}
+								blockoverride "disabled" {
+									align = left
+									visible = "[Not(CourtWindow.CanDoMassPrisonerAction('ransom'))]"
+									tooltip = "[CourtWindow.GetMassPrisonerActionTooltip('ransom')]"
+								}
+								blockoverride "dot" { }
+								onclick = "[CourtWindow.MassPrisonerAction('ransom')]"
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "Release all"
+								}
+								blockoverride "disabled" {
+									visible = "[Not(CourtWindow.CanDoMassPrisonerAction('release'))]"
+									tooltip = "[CourtWindow.GetMassPrisonerActionTooltip('release')]"
+								}
+								blockoverride "dot" { }
+								onclick = "[CourtWindow.MassPrisonerAction('release')]"
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "Execute all"
+								}
+								blockoverride "disabled" {
+									visible = "[Not(CourtWindow.CanDoMassPrisonerAction('execute'))]"
+									tooltip = "[CourtWindow.GetMassPrisonerActionTooltip('execute')]"
+								}
+								blockoverride "dot" { }
+								onclick = "[CourtWindow.MassPrisonerAction('execute')]"
+							}
+
+							expand = { }
+						}
+					}
+				}
+			}
+
+			expand = { }
+		}
+	}
+
+	old_court = {
+		state = {
+			name = _show
+			on_start = "[GetVariableSystem.Set( 'council_tabs', 'my_council' )]"
+		}
+	}
+
+	window_character_filter = {
+		name = "court_character_filter_window"
+		datacontext = "[CourtWindow.GetCourt]"
+
+		blockoverride "editbox_properties"
+		{
+			name = "court_text_filter"
+			ontextedited = "[CharacterSelectionList.SetPattern]"
+			oneditingfinished = "[CharacterSelectionList.FinishEdit]"
+		}
+
+		blockoverride "addition_filter" {
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetCategory('age_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('adult_filter')]"
+					}
+				}
+			}
+
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetCategory('politics_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('claim_filter')]"
+					}
+				}
+			}
+
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetCategory('personal_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('religion_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('culture_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('hook_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('married_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('gender_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('health_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('inspiration_filter')]"
+					}
+				}
+			}
+
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+			}
+		}
+	}
+
+	window_character_filter = {
+		datacontext = "[CourtWindow.GetPrisoners]"
+		blockoverride "addition_filter" {
+
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetCategory('age_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('adult_filter')]"
+					}
+				}
+			}
+
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetCategory('politics_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('ruler_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('claim_filter')]"
+					}
+				}
+			}
+
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetCategory('personal_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('religion_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('culture_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('hook_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('married_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('gender_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('health_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('inspiration_filter')]"
+					}
+				}
+			}
+
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+			}
+		}
+	}
+}
