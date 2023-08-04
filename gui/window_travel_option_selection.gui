@@ -1,0 +1,308 @@
+﻿window = {
+	name = "travel_option_selection_window"
+	datacontext = "[TravelOptionSelectionWindow.GetTravelPlanData]"
+	layer = middle
+	size = { 100% 100% }
+	alwaystransparent = yes
+
+	window = {
+		using = ocr_off
+		parentanchor = bottom|left
+		position = { 300 -20 }
+		size = { 400 520 }
+		movable = yes
+		layer = middle
+
+		using = Window_Background_Subwindow
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+
+			position = { 520 -20 }
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+
+			position_x = 300
+		}
+
+		vbox = {
+			margin = { 4 4 }
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "TRAVEL_OPTIONS_HEADER"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[TravelOptionSelectionWindow.Close]"
+				}
+			}
+
+			scrollbox = {
+				name = "characters_scroll_area"
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
+
+						datamodel = "[TravelOptionSelectionWindow.GetShownOptions]"
+
+						spacing = 4
+
+						item = {
+							travel_option_widget = {
+								blockoverride "background_button_overrides"
+								{
+									down = "[TravelOptionSelectionWindow.HasOptionSelected(TravelOption.Self)]"
+								}
+
+								blockoverride "overlay"
+								{
+									using = default_character_list_overlay
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	window = {
+		using = ocr_window
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			using = ocr_margins
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					raw_text = "[GetDataModelSize(TravelOptionSelectionWindow.GetShownOptions)] [Localize('TRAVEL_OPTIONS_HEADER')], [GetDataModelSize(TravelPlanData.GetTravelOptions)] picked."
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[TravelOptionSelectionWindow.Close]"
+				}
+			}
+
+			# Travel Speed
+			vbox = {
+				layoutpolicy_horizontal = expanding
+
+				# Speed icon
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					tooltip = "[TravelPlanData.GetSpeedBreakdown]"
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							text_single = {
+								raw_text = "[SelectLocalization(TravelPlanData.HasNextDestination, 'ACTIVITY_DESTINATION_TOTAL_TRAVEL_TIME', 'ACTIVITY_DESTINATION_NO_TRAVEL_TIME')]."
+								max_width = 600
+							}
+							expand = { }
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+
+							# Speed percentage
+							text_single = {
+								raw_text = "[TravelPlanData.GetSpeedMultiplierAsPercentage|0]%"
+							}
+
+							# Safety concept
+							text_single = {
+								raw_text = "[Localize('TRAVEL_SPEED')]."
+							}
+
+							hbox = {
+								tooltip = "[TravelPlanData.GetSafetyBreakdown]"
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+
+								# Safety value
+								text_single = {
+									text = "[TravelPlanData.GetSafetyValue|0]"
+								}
+
+								# Safety concept
+								text_single = {
+									raw_text = "[Localize('TRAVEL_SAFETY')]."
+								}
+
+								expand = { }
+							}
+
+						}
+					}
+				}
+			}
+
+
+			scrollbox = {
+				name = "characters_scroll_area"
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						datamodel = "[TravelOptionSelectionWindow.GetShownOptions]"
+						item = {
+							travel_option_widget_ocr = {
+								blockoverride "background_button_overrides"
+								{
+									down = "[TravelOptionSelectionWindow.HasOptionSelected(TravelOption.Self)]"
+								}
+							}
+						}
+					}
+				}
+			}
+
+			expand = { }
+		}
+	}
+}
+
+types TravelOptions
+{
+	type travel_option_widget = widget
+	{
+		size = { 350 60 }
+
+		button_standard_hover = {
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+			size = { 100% 100%}
+
+			enabled = "[TravelOptionSelectionWindow.CanSelect(TravelOption.Self)]"
+			onclick = "[TravelOptionSelectionWindow.OnClick(TravelOption.Self)]"
+
+			tooltipwidget = "travel_option_tooltip"
+
+			button_standard = {
+				size = { 50 50 }
+				position = { 5 5 }
+				alwaystransparent = yes
+
+				icon_flat_standard = {
+					visible = "[TravelOption.IsValid]"
+					texture = "[TravelOption.GetIcon]"
+					parentanchor = center
+					size = { 40 40 }
+
+					blockoverride "master_color_frame" {
+						frame = 1
+					}
+				}
+			}
+
+			text_single = {
+				parentanchor = left|top
+				position = { 0 6 }
+
+				text = "[TravelOption.GetNameNoTooltip]"
+				default_format = "#clickable"
+				max_width = 260
+
+				margin_left = 64
+			}
+
+			text_single = {
+				text = "[TravelOption.GetCostString(TravelPlanData.Self)]"
+				parentanchor = left|bottom
+				position = { 0 -10}
+
+				margin_left = 62
+
+				alwaystransparent = yes
+
+			}
+
+			text_single = {
+				visible = "[TravelOptionSelectionWindow.HasOptionSelected(TravelOption.Self)]"
+				parentanchor = right
+				position = { 0 6 }
+
+				text = "TRAVEL_OPTIONS_EQUIPPED"
+				default_format = "#weak"
+				align = left
+				max_width = 90
+
+				margin_right = 8
+
+				alwaystransparent = yes
+
+			}
+
+			block "overlay" {}
+
+			block "background_button_overrides" {}
+		}
+	}
+}
+
+types OCR {
+	type travel_option_widget_ocr = button_text
+	{
+			layoutpolicy_horizontal = expanding
+			shortcuts_list = {
+				blockoverride "click" {
+					onclick = "[TravelOptionSelectionWindow.OnClick(TravelOption.Self)]"
+					enabled = "[TravelOptionSelectionWindow.CanSelect(TravelOption.Self)]"
+				}
+			}
+			visible = "[Not(TravelOptionSelectionWindow.HasOptionSelected(TravelOption.Self))]"
+			enabled = "[TravelOptionSelectionWindow.CanSelect(TravelOption.Self)]"
+			blockoverride "disabled" {
+				visible = "[Not(TravelOptionSelectionWindow.CanSelect(TravelOption.Self))]"
+			}
+			onclick = "[TravelOptionSelectionWindow.OnClick(TravelOption.Self)]"
+
+			tooltipwidget = "travel_option_tooltip"
+			blockoverride "pre" {
+				text_single = {
+					visible = "[TravelOptionSelectionWindow.CanSelect(TravelOption.Self)]"
+					raw_text = "[IndexNumber],"
+				}
+			}
+			blockoverride "text" {
+				raw_text = "[TravelOption.GetNameNoTooltip],"
+			}
+			blockoverride "extra" {
+				text_single = {
+					raw_text = "[TravelOption.GetCostString(TravelPlanData.Self)]."
+				}
+			}
+
+			block "overlay" {}
+
+			block "background_button_overrides" {}
+		}
+	}
+}

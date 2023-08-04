@@ -1,0 +1,364 @@
+######################################################
+############## DECISIONS DETAIL VIEW #################
+######################################################
+
+types OCR {
+	type old_decision_details = window {
+		using = old_window
+		using = Window_Movable
+		using = Window_Background
+		using = Window_Decoration_Spike
+
+		position = "[DecisionDetailView.GetDynamicPosition]"
+		size = { 630 935 }
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+			using = Sound_WindowShow_Standard
+			position = "[DecisionDetailView.GetDynamicPosition]"
+			on_start = "[GetVariableSystem.Clear('show_decision_step_two')]"
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+			using = Sound_WindowHide_Standard
+		}
+
+		vbox = {
+			datacontext = "[DecisionDetailView.GetDecision]"
+			using = Window_Margins
+
+			state = {
+				name = "decisions_detail_refresh"
+				alpha = 0.5
+				duration = 0.2
+				next = "b"
+				using = Animation_Curve_Default
+				on_start = "[GetVariableSystem.Clear('show_decision_step_two')]"
+			}
+
+			state = {
+				name = "b"
+				alpha = 1
+				duration = 0.2
+				using = Animation_Curve_Default
+			}
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+				size = { 0 50 }
+
+				blockoverride "header_text"
+				{
+					text = "[DecisionDetailView.GetTitle]"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[DecisionDetailView.Close]"
+				}
+			}
+
+			decision_detail_view_step_one = {}
+
+			decision_detail_view_step_two = {}
+		}
+	}
+}
+
+types DecisionDetailViewTypes
+{
+	type decision_detail_view_step_one = vbox
+	{
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		visible = "[Not( GetVariableSystem.HasValue( 'show_decision_step_two', 'true' ) )]"
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			minimumsize = { 550 220 }
+			visible = "[Not(DecisionDetailView.IsOpenedFromRoyalCourt) ]"
+
+			background = {
+				name = "illustrations"
+				texture = "[DecisionDetailView.GetPicture]"
+				margin_top = 10
+				alpha = 0.7
+				using = Mask_Rough_Edges
+			}
+		}
+
+		text_multi = {
+			name = "description"
+			minimumsize = { 515 -1 }
+			maximumsize = { 515 -1 }
+			margin = { 15 15 }
+			autoresize = yes
+			text = "[DecisionDetailView.GetDescription]"
+			using = Font_Size_Small
+		}
+
+		scrollbox = {
+			name = "description_scrollarea"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			blockoverride "scrollbox_content"
+			{
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					spacing = 10
+
+					vbox = {
+						name = "effect"
+						visible = "[DecisionDetailView.HasEffect]"
+						layoutpolicy_horizontal = expanding
+
+						background = {
+							name = "illustrations"
+							texture = "gfx/interface/icons/lifestyle_tree_backgrounds/skulduggery.dds"
+							tintcolor = { 0.6 0.8 0.8 0.8 }
+
+							margin = { 0 5 }
+							using = Mask_Rough_Edges
+							alpha = 0.8
+							fittype = centercrop
+							mirror = horizontal
+
+							modify_texture = {
+								texture = "gfx/interface/component_masks/mask_fade_corners_bottom.dds"
+								blend_mode = alphamultiply
+								alpha = 0.6
+							}
+
+							modify_texture = {
+								texture = "gfx/interface/component_masks/mask_rough_edges.dds"
+								blend_mode = overlay
+								alpha = 0.4
+							}
+						}
+
+						text_label_center = {
+							text = "DECISION_DETAIL_EFFECTS"
+						}
+
+						text_multi = {
+							layoutpolicy_horizontal = expanding
+							margin = { 15 15 }
+							max_width = 515
+							autoresize = yes
+							text = "[DecisionDetailView.GetEffectDescription]"
+						}
+					}
+
+					vbox = {
+						name = "requirements"
+						visible = "[DecisionDetailView.HasRequirements]"
+						layoutpolicy_horizontal = expanding
+
+						text_label_center = {
+							text = "DECISION_DETAIL_REQUIREMENTS"
+						}
+
+						text_multi = {
+							alwaystransparent = no
+							minimumsize = { 515 -1 }
+							maximumsize = { 515 -1 }
+							margin = { 15 15 }
+							autoresize = yes
+							text = "[DecisionDetailView.GetRequirementsDescription]"
+						}
+					}
+
+					expand = {}
+
+				}
+			}
+
+			blockoverride "scrollbox_background_fade" {}
+		}
+
+		vbox = {
+			name = "footer"
+			layoutpolicy_horizontal = expanding
+
+			vbox = {
+				margin_bottom = 4
+
+				dynamicgridbox = {
+					name = "custom_widgets_container"
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				margin_top = 4
+				margin_bottom = 10
+				spacing = 5
+
+				text_single = {
+					name = "cost"
+					visible = "[DecisionDetailView.HasCost]"
+					text = "[DecisionDetailView.GetCostDescription]"
+					using = Font_Size_Medium
+					default_format = "#high"
+					align = nobaseline
+				}
+
+				spacer = {
+					size = { 10 2 }
+				}
+
+				button_primary = {
+					name = "next_step"
+					size = { 380 50 }
+
+					visible = "[DecisionDetailView.GetDecision.HasStepTwo]"
+
+					tooltip = "[DecisionDetailView.GetConfirmTooltip]"
+					onclick = "[GetVariableSystem.Set('show_decision_step_two', 'true')]"
+
+					text = "[DecisionDetailView.GetDecision.GetNextStepButtonLabel]"
+					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_advance"
+				}
+
+				button_primary = {
+					name = "confirm"
+					size = { 380 50 }
+					visible = "[Not( DecisionDetailView.GetDecision.HasStepTwo )]"
+
+					enabled = "[DecisionDetailView.CanConfirm]"
+					tooltip = "[DecisionDetailView.GetConfirmTooltip]"
+					onclick = "[DecisionDetailView.Confirm]"
+
+					text = "[DecisionDetailView.GetConfirmText]"
+
+					default_clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+					clicksound = "[DecisionDetailView.GetConfirmClickSound]"
+				}
+
+				spacer = {
+					size = { 0 2 }
+				}
+
+				button_checkbox_label = {
+					name = "major_checkbox"
+					onclick = "[Decision.OnToggleImportantForPlayer]"
+
+					blockoverride "checkbox"
+					{
+						checked = "[Decision.IsImportantForPlayer]"
+					}
+
+					blockoverride "text"
+					{
+						text = "DECISIONS_VIEW_MAJOR_TOGGLE"
+					}
+				}
+
+				expand = {}
+			}
+		}
+	}
+
+	type decision_detail_view_step_two = vbox
+	{
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		visible = "[GetVariableSystem.HasValue( 'show_decision_step_two', 'true' )]"
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			minimumsize = { 550 220 }
+			visible = "[Not( DecisionDetailView.IsOpenedFromRoyalCourt)]"
+
+			background = {
+				name = "illustrations"
+				texture = "[DecisionDetailView.GetPicture]"
+				margin_top = 10
+				alpha = 0.7
+				using = Mask_Rough_Edges
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			dynamicgridbox = {
+				name = "custom_widgets_container_step_two"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+			}
+		}
+
+		vbox = {
+			name = "footer"
+			layoutpolicy_horizontal = expanding
+			margin_top = 4
+			margin_bottom = 10
+			spacing = 5
+
+			text_single = {
+				name = "cost"
+				visible = "[DecisionDetailView.HasCost]"
+				text = "[DecisionDetailView.GetCostDescription]"
+				using = Font_Size_Medium
+				default_format = "#high"
+				align = nobaseline
+			}
+
+			spacer = {
+				size = { 10 2 }
+			}
+
+			hbox = {
+				spacing = 10
+
+				button_standard_back = {
+					name = "back"
+					size = { 180 50 }
+					onclick = "[GetVariableSystem.Clear('show_decision_step_two')]"
+					text = "BACK_LABEL"
+					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_close"
+				}
+
+				button_primary = {
+					name = "step_two_confirm"
+					size = { 250 50 }
+
+					enabled = "[DecisionDetailView.CanConfirm]"
+					tooltip = "[DecisionDetailView.GetConfirmTooltip]"
+					onclick = "[DecisionDetailView.Confirm]"
+
+					text = "[DecisionDetailView.GetConfirmText]"
+					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+				}
+			}
+
+			spacer = {
+				size = { 0 2 }
+			}
+
+			button_checkbox_label = {
+				name = "step_two_major_checkbox"
+				onclick = "[Decision.OnToggleImportantForPlayer]"
+
+				blockoverride "checkbox"
+				{
+					checked = "[Decision.IsImportantForPlayer]"
+				}
+
+				blockoverride "text"
+				{
+					text = "DECISIONS_VIEW_MAJOR_TOGGLE"
+				}
+			}
+
+			expand = {}
+		}
+	}
+}
