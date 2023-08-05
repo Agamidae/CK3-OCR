@@ -108,6 +108,8 @@
 		position = { 710 -280 }
 		visible = "[And( Not( IsPauseMenuShown ), Not(ReleaseMode) )]"
 	}
+
+	window_dangers = { }
 }
 
 
@@ -1657,17 +1659,47 @@ types OCR {
 		}
 
 
-		button_text = {
+		vbox = {
 			layoutpolicy_horizontal = expanding
 			visible = "[Not(TravelPlanner.GetTravelPlan.IsValid)]"
-		    blockoverride "text" {
-		        raw_text = "Change option."
-		    }
-			blockoverride "disabled" {
-				visible = "[TravelPlanner.GetTravelPlan.IsValid]"
+
+			button_text = {
+				visible = "[IsIndexFirst]"
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					raw_text = "Change option."
+				}
+				shortcut = mapmode_kingdoms_secondary
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "hotkey i."
+					}
+				}
+				blockoverride "disabled" {
+					visible = "[TravelPlanner.GetTravelPlan.IsValid]"
+				}
+				enabled = "[Not( TravelPlanner.GetTravelPlan.IsValid )]"
+				onclick = "[TravelPlanner.OpenTravelOptionSelectionWindow]"
 			}
-			enabled = "[Not( TravelPlanner.GetTravelPlan.IsValid )]"
-			onclick = "[TravelPlanner.OpenTravelOptionSelectionWindow]"
+
+			button_text = {
+				visible = "[Not(IsIndexFirst)]"
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					raw_text = "Change option."
+				}
+				shortcut = mapmode_kingdoms_secondary
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "hotkey O."
+					}
+				}
+				blockoverride "disabled" {
+					visible = "[TravelPlanner.GetTravelPlan.IsValid]"
+				}
+				enabled = "[Not( TravelPlanner.GetTravelPlan.IsValid )]"
+				onclick = "[TravelPlanner.OpenTravelOptionSelectionWindow]"
+			}
 		}
 
 		button_text = {
@@ -1677,7 +1709,7 @@ types OCR {
 			onclick = "[TravelPlanData.RemoveTravelOption(TravelOption.Self)]"
 
 			blockoverride "text" {
-				raw_text = "Remove [TravelOption.GetNameNoTooltip]"
+				raw_text = "Cancel [TravelOption.GetNameNoTooltip]"
 			}
 			blockoverride "dot" {
 			}
@@ -1699,10 +1731,14 @@ types OCR {
 			blockoverride "extra" {
 				text_single = {
 					visible = "[Not( TravelPlanner.GetTravelPlan.IsValid )]"
-					raw_text = "hotkey O"
+					block "hotkey name" {
+						raw_text = "hotkey O"
+					}
 				}
 			}
-			shortcut = mapmode_empires_secondary
+			block "hotkey" {
+				shortcut = mapmode_empires_secondary
+			}
 			blockoverride "dot" {
 			}
 			enabled = "[Not( TravelPlanner.GetTravelPlan.IsValid )]"
@@ -1820,13 +1856,13 @@ types OCR {
 					# Travel Safety
 					hbox = {
 						layoutpolicy_horizontal = expanding
-						tooltip = "[TravelPlanData.GetSafetyBreakdown]"
 
 						vbox = {
 							layoutpolicy_horizontal = expanding
 
 							hbox = {
 								layoutpolicy_horizontal = expanding
+								tooltip = "[TravelPlanData.GetSafetyBreakdown]"
 								spacing = 3
 
 								# Safety value
@@ -1889,9 +1925,9 @@ types OCR {
 
 					button_text = {
 						layoutpolicy_horizontal = expanding
-						shortcut = mapmode_house_secondary
+						shortcut = action_list
 						blockoverride "text" {
-							raw_text = "[Localize('CHANGE_DESTINATION_TT')]. Shift D"
+							raw_text = "[Localize('CHANGE_DESTINATION_TT')], Tab"
 						}
 						blockoverride "dot" {
 						}
@@ -2040,6 +2076,12 @@ types OCR {
 							}
 
 							icon_button_empty_travel_option_ocr = {
+								blockoverride "hotkey" {
+									shortcut = mapmode_kingdoms_secondary
+								}
+								blockoverride "hotkey name" {
+									raw_text = "hotkey i"
+								}
 								visible = "[And( Not( TravelPlanner.GetTravelPlan.IsValid ), IsDataModelEmpty(TravelPlanData.GetTravelOptions))]"
 							}
 
@@ -2084,6 +2126,11 @@ types OCR {
 						text = "CANCEL_TRAVEL_PLAN"
 						tooltip = "[TravelPlanner.GetCanCancelTravelPlanTooltip]"
 					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Customizing the route is not accessible yet."
+					}
 				}
 			}
 		}
@@ -2113,8 +2160,43 @@ types OCR {
 				raw_text = "and [TravelPlanner.GetUnlikelyDangers] low risk locations."
 			}
 
+			# [Max_int32(Subtract_int32(TravelPlanner.GetUnlikelyDangers, '(int32)1'), '(int32)0')]
+
 			expand = { }
 		}
+
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			shortcut = mapmode_house_secondary
+		    blockoverride "text" {
+		        raw_text = "View all dangers, Shift D."
+		    }
+			onclick = "[GetVariableSystem.Toggle('show_dangers')]"
+			onclick = "[GetVariableSystem.Set('dangers_done', 'no')]"
+		}
+	}
+
+	type danger_button = vbox {
+		datacontext = "[Scope.GetProvince]"
+		datacontext = "[Province.GetDangerType(TravelPlanData.Self)]"
+		layoutpolicy_horizontal = expanding
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			using = prov_pan
+			blockoverride "text" {
+				raw_text = "[Max_CFixedPoint(Subtract_CFixedPoint(Province.GetDangerValue(TravelPlan.Self), TravelPlanData.GetSafetyValue), '(CFixedPoint)1')|0], [TravelDangerType.GetName], [Province.GetNameNoTooltip]."
+			}
+		}
+
+		tooltip = "[Province.GetTravelDangerTooltip(TravelPlan.Self)]"
+
+		# text_multi = {
+		# 	layoutpolicy_horizontal = expanding
+		# 	using = wide
+		# 	autoresize = yes
+		# 	raw_text = "[Province.GetTravelDangerTooltip(TravelPlan.Self)]"
+		# }
+
 	}
 
 	type travel_leader_selection_widget_ocr = caravan_master_portrait_widget_ocr
@@ -2159,6 +2241,175 @@ types OCR {
 				}
 			}
 			onclick = "[ShowCourtPositionAppointOrReplace( TravelPlanData.GetOwner.GetID, 'travel_leader_court_position' )]"
+		}
+	}
+
+	type window_dangers = window {
+		datacontext = "[TravelPlanner.GetTravelPlan]"
+		# datacontext = "[GetPlayer.GetTravelPlan]"
+		# datacontext = "[TravelPlan.GetData]"
+		# datacontext = "[TravelPlanData.GetCurrentLocation]"
+		name = "dangers_list"
+		using = ocr_window_bg
+		visible = "[GetVariableSystem.Exists('show_dangers')]"
+		# visible_at_creation = no
+		layer = top
+		using = zoom_out_title
+
+		state = {
+			name = _show
+			delay = 0.1
+			next = grab_dangers
+			on_finish = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+			on_finish = "[GetScriptedGui('clear_dangers').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		}
+
+		state = {
+			name = grab_dangers
+			delay = 0.5
+			on_finish = "[PdxGuiTriggerAllAnimations('grab_danger')]"
+			next = order_dangers
+		}
+
+		state = {
+			name = order_dangers
+			delay = 0.1
+			on_finish = "[GetScriptedGui('order_dangers').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+			on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
+			on_finish = "[GetVariableSystem.Clear('dangers_done')]"
+			using = Sound_WindowShow_Standard
+		}
+
+
+		button = {
+			shortcut = close_window
+			shortcut = mapmode_house_secondary
+			onclick = "[GetVariableSystem.Clear('show_dangers')]"
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			using = ocr_margins
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				visible = "[GetVariableSystem.Exists('dangers_done')]"
+				raw_text = "Please scan the screen again."
+			}
+
+			text_single = {
+				visible = "[Not(GetVariableSystem.Exists('dangers_done'))]"
+				layoutpolicy_horizontal = expanding
+				raw_text = "Safety [TravelPlanData.GetSafetyValue]."
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = map_mode_11
+				blockoverride "extra" {
+					text_single = {
+						visible = "[Not(GetVariableSystem.Exists('dangers_done'))]"
+						raw_text = "Reload the list, Shift E."
+					}
+				}
+
+				onclick = "[GetVariableSystem.Set('dangers_done', 'no')]"
+				using = zoom_out_title
+				onclick = "[PdxGuiWidget.TriggerAnimation('check_for_dangers')]"
+
+				state = {
+					name = "check_for_dangers"
+					delay = 0.1
+					next = grab_dangers
+					on_finish = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+					on_finish = "[GetScriptedGui('clear_dangers').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				}
+
+				state = {
+					name = grab_dangers
+					delay = 0.5
+					on_finish = "[PdxGuiTriggerAllAnimations('grab_danger')]"
+					next = order_dangers
+				}
+
+				state = {
+					name = order_dangers
+					delay = 0.1
+					on_finish = "[GetScriptedGui('order_dangers').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
+					on_finish = "[GetVariableSystem.Clear('dangers_done')]"
+					using = Sound_WindowShow_Standard
+				}
+			}
+
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			scrollbox = {
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+				visible = "[Not(GetVariableSystem.Exists('dangers_done'))]"
+
+				blockoverride "scrollbox_content" {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datamodel = "[GetPlayer.MakeScope.GetList('high_dangers')]"
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('high_dangers'))] High percent risk:"
+							}
+
+							item = {
+								danger_button = { }
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datamodel = "[GetPlayer.MakeScope.GetList('medium_dangers')]"
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('medium_dangers'))] medium precent risk:"
+							}
+
+							item = {
+								danger_button = { }
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datamodel = "[GetPlayer.MakeScope.GetList('low_dangers')]"
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('low_dangers'))] low percent risk:"
+							}
+
+							item = {
+								danger_button = { }
+							}
+						}
+
+						expand = { }
+					}
+				}
+			}
+
+			text_single = {
+				visible = "[Not(GetVariableSystem.Exists('dangers_done'))]"
+				layoutpolicy_horizontal = expanding
+				raw_text = "Note: tooltips may use a wrong safety value. The percentage in the list is correct.[AddLine('The summary may also show 1 more low risk danger than there is.')]"
+			}
 		}
 	}
 }
