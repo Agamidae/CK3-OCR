@@ -3,6 +3,8 @@
 	size = { 100% 100% }
 	movable = no
 	layer = middle
+	# visible = "[Not(IsGameViewOpen('character'))]"
+
 
 	alwaystransparent = yes
 
@@ -145,7 +147,8 @@
 	window = {
 		using = ocr_window_bg
 		movable = no
-		visible = "[And(And(Not(GetVariableSystem.Exists('ocr')), Not(TravelPlanner.IsEntourageListWindowOpen)), Not(GetVariableSystem.Exists('show_dangers')))]"
+		visible = "[And(And(And(Not(GetVariableSystem.Exists('ocr')), Not(TravelPlanner.IsEntourageListWindowOpen)), Not(GetVariableSystem.Exists('show_dangers'))), Not(IsGameViewOpen('character')))]"
+
 		vbox = {
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
@@ -153,6 +156,20 @@
 
 			error_button = {
 				layoutpolicy_horizontal = expanding
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[And(ActivityPlanner.IsPlanningStage( 'options' ), And(Not(IsGameViewOpen('court_window')), Not(IsGameViewOpen('travel_route_edit_window'))))]"
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					name = "activity_options"
+					visible = "[Or(ActivityPlanner.IsPlanningStage( 'options' ), ActivityPlanner.PrevMultiDestStageWas('options'))]"
+
+					activity_option_edit_widget_ocr = {
+					}
+				}
 			}
 
 			activity_planner_main_heading_widget_ocr = { }
@@ -308,6 +325,9 @@ types OCR {
 			char_name = {
 				layoutpolicy_horizontal = expanding
 				visible = "[Character.IsValid]"
+				blockoverride "relation" {
+
+				}
 				block "filled_slot"
 				{
 				}
@@ -318,8 +338,17 @@ types OCR {
 			layoutpolicy_horizontal = expanding
 			name = "empty_slot"
 			blockoverride "text" {
-				raw_text = "Add character."
+				block "button_add_visible" { }
+				raw_text = "Add character,"
 			}
+			blockoverride "extra" {
+				text_single = {
+					block "button_add_visible" { }
+					raw_text = "hotkey H."
+				}
+			}
+			shortcut = army_create_new
+
 
 			visible = "[Not(Character.IsValid)]"
 
@@ -406,15 +435,9 @@ types OCR {
 
 					button_text = {
 						layoutpolicy_horizontal = expanding
-						shortcut = map_mode_2
 						onclick = "[ActivityPlanner.OpenSpecialOptionSelection]"
 						blockoverride "text" {
-							raw_text = "[Localize('ACTIVITY_PLANNER_CHANGE_TYPE_TT')],"
-						}
-						blockoverride "extra" {
-							text_single = {
-								raw_text = "hotkey T"
-							}
+							raw_text = "[Localize('ACTIVITY_PLANNER_CHANGE_TYPE_TT')]"
 						}
 						blockoverride "dot" {
 
@@ -429,6 +452,7 @@ types OCR {
 					}
 					onclick = "[ActivityPlanner.Close]"
 					shortcut = "close_window"
+					visible = "[Not(ActivityPlanner.IsEditingOption)]"
 				}
 			}
 		}
@@ -603,6 +627,7 @@ types OCR {
 
 			layoutpolicy_horizontal = expanding
 
+
 			header_pattern = {
 				layoutpolicy_horizontal = expanding
 
@@ -623,20 +648,26 @@ types OCR {
 			vbox = {
 				layoutpolicy_horizontal = expanding
 				datamodel = "[ActivityOptionCategory.GetOptions]"
+				visible = "[HasDlcFeature('advanced_activities')]"
 
 				item = {
-					button_radio = {
+					button_text = {
+						layoutpolicy_horizontal = expanding
 						visible = "[ActivityOption.IsShown( GetPlayer, ActivityPlanner.GetSelectedSpecialOption )]"
-						size = { 30 30 }
-
 						enabled = "[ActivityOption.IsValid( GetPlayer, ActivityPlanner.GetSelectedSpecialOption )]"
 						onclick = "[ActivityPlanner.SelectOption( ActivityOption.Self )]"
-						frame = "[BoolTo1And2( ObjectsEqual( ActiveActivityOption.GetOption, ActivityOption.Self ) )]"
-
-						alwaystransparent = "[ObjectsEqual( ActiveActivityOption.GetOption, ActivityOption.Self )]"
-
 						tooltip = "ACTIVITY_OPTION_TOOLTIP"
-						using = tooltip_ne
+
+					    blockoverride "text" {
+					        raw_text = "[ActivityOption.GetName], level [Add_int32(ActivityOption.GetIndexInCategory, '(int32)1')]"
+					    }
+						blockoverride "pre" {
+							text_single = {
+								visible = "[ObjectsEqual( ActiveActivityOption.GetOption, ActivityOption.Self )]"
+								raw_text = "Selected,"
+							}
+						}
+
 					}
 				}
 			}
@@ -670,6 +701,14 @@ types OCR {
 				}
 
 				expand = { }
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[ActivityPlanner.StopEditingOption]"
+			    blockoverride "text" {
+			        raw_text = "Close option details, Escape."
+			    }
 			}
 		}
 	}
@@ -730,6 +769,17 @@ types OCR {
 			expand = { }
 		}
 
+		selectable_target_portrait_widget_ocr = {
+			block "selectable_target_portrait_properties"
+			{
+			}
+
+			blockoverride "empty_slot"
+			{
+				onclick = "[OpenGameViewData( 'activity_guest_list', ActivitySpecialGuest.AccessSelf )]"
+			}
+		}
+
 		text_single = {
 			layoutpolicy_horizontal = expanding
 			raw_text = "Warning, wrong [ActivitySpecialGuest.GetType.GetNameForHost]."
@@ -764,17 +814,6 @@ types OCR {
 
 			onclick = "[ActivitySpecialGuest.ClearCharacter]"
 			tooltip = "ACTIVITY_PLANNER_CHANGE_SPECIAL_GUEST_TT"
-		}
-
-		selectable_target_portrait_widget_ocr = {
-			block "selectable_target_portrait_properties"
-			{
-			}
-
-			blockoverride "empty_slot"
-			{
-				onclick = "[OpenGameViewData( 'activity_guest_list', ActivitySpecialGuest.AccessSelf )]"
-			}
 		}
 	}
 }
@@ -1581,10 +1620,10 @@ types ActivityPlannerTypes
 			    }
 				blockoverride "extra" {
 					text_single = {
-						raw_text = "[Select_CString(GetVariableSystem.Exists('activity_details'), 'Collapsed', 'Expanded')], hotkey 2."
+						raw_text = "[Select_CString(GetVariableSystem.Exists('activity_details'), 'Collapsed', 'Expanded')], Page Down."
 					}
 				}
-				shortcut = speed_2
+				shortcut = zoom_in
 				onclick = "[GetVariableSystem.Toggle('activity_details')]"
 			}
 
@@ -1601,41 +1640,33 @@ types ActivityPlannerTypes
 					datacontext = "[ActivityPlanner.GetSelectedHostIntent]"
 					datacontext = "[ActivityIntentData.GetType]"
 
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						raw_text = "[intent|E]."
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						visible = "[ActivityIntent.HasTarget]"
-
-						selectable_target_portrait_widget_ocr = {
-							name = "intent_target"
-							datacontext = "[ActivityIntentData.GetTarget]"
-
-							blockoverride "empty_slot"
-							{
-								onclick = "[VariableSystem.Toggle( 'activity_intent_selection_target_list' )]"
-							}
-						}
-
-						text_multi = {
-							name = "intent_effects"
-							raw_text = "[ActivityIntent.GetDescription]."
-							using = wide
-						}
-					}
-
 					button_text = {
 						layoutpolicy_horizontal = expanding
 						datacontext = "[ActivityIntentData.GetType]"
-						visible = "[GreaterThan_int32( GetDataModelSize( ActivityType.GetHostIntents ), '(int32)1' )]"
+						shortcut = mapmode_kingdoms_secondary
+						enabled = "[GreaterThan_int32( GetDataModelSize( ActivityType.GetHostIntents ), '(int32)1' )]"
 
 						onclick = "[ToggleGameViewData( 'activity_intent_selection', ActivityPlanner.AccessSelf )]"
 
 						blockoverride "text" {
-							raw_text = "[ActivityIntent.GetName], click to change."
+							raw_text = "[intent|E]: [ActivityIntent.GetName],"
+						}
+
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "hotkey i."
+							}
+						}
+					}
+
+					selectable_target_portrait_widget_ocr = {
+						visible = "[ActivityIntent.HasTarget]"
+						name = "intent_target"
+						datacontext = "[ActivityIntentData.GetTarget]"
+
+						blockoverride "empty_slot"
+						{
+							onclick = "[VariableSystem.Toggle( 'activity_intent_selection_target_list' )]"
 						}
 					}
 
@@ -1643,20 +1674,80 @@ types ActivityPlannerTypes
 						layoutpolicy_horizontal = expanding
 						name = "intent_effects"
 						using = wide
-						visible = "[Not( ActivityIntent.HasTarget )]"
-
-						raw_text = "[ActivityIntent.GetDescription]."
-					}
-
-
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						datacontext = "[ActivityIntentData.GetType]"
-						visible = "[LessThanOrEqualTo_int32( GetDataModelSize( ActivityType.GetHostIntents ), '(int32)1' )]"
-						raw_text = "[ActivityIntent.GetName]."
 						tooltip = "ACTIVITY_SINGLE_INTENT_TOOLTIP"
+						raw_text = "[ActivityIntent.GetDescription]"
+						tooltip_enabled = "[LessThanOrEqualTo_int32( GetDataModelSize( ActivityType.GetHostIntents ), '(int32)1' )]"
 					}
 				}
+
+				# Activity Options
+				vbox = {
+					name = "activity_options"
+					visible = "[Or(ActivityPlanner.IsPlanningStage( 'options' ), ActivityPlanner.PrevMultiDestStageWas('options'))]"
+					layoutpolicy_horizontal = expanding
+
+					vbox = {
+						name = "contents"
+						layoutpolicy_horizontal = expanding
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "[activity_options|E]."
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							cost_breakdown_vbox = {
+								name = "activity_option_cost"
+								datacontext = "[ActivityPlanner.AccessTotalActivityOptionCostBreakdown]"
+
+								blockoverride "heading_text" {
+									raw_text = "Total cost:"
+								}
+							}
+
+							expand = { }
+						}
+
+
+						vbox = {
+							name = "activity_option_categories"
+							layoutpolicy_horizontal = expanding
+
+							datamodel = "[ActivityPlanner.AccessOptions]"
+
+							item = {
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									name = "activity_button"
+									visible = "[Not( ObjectsEqual( ActiveActivityOption.GetCategory, ActivityType.GetSpecialOptionCategory ) )]"
+
+									onclick = "[ActivityPlanner.ToggleEditingOption( ActiveActivityOption.AccessSelf )]"
+
+									blockoverride "pre" {
+										text_single = {
+											visible = "[Not(ActivityPlanner.IsEditingOption)]"
+											raw_text = "[IndexNumber],"
+										}
+									}
+									blockoverride "text" {
+										raw_text = "[ActiveActivityOption.GetCategory.GetName]: [ActiveActivityOption.GetOption.GetName]."
+									}
+									shortcuts_list = {
+										visible = "[Not(ActivityPlanner.IsEditingOption)]"
+										blockoverride "click" {
+											onclick = "[ActivityPlanner.ToggleEditingOption( ActiveActivityOption.AccessSelf )]"
+										}
+									}
+
+									tooltip = ACTIVITY_PLANNER_OPTION_TT
+								}
+							}
+						}
+					}
+				}
+
 
 				# Special Guests
 				vbox = {
@@ -1685,65 +1776,13 @@ types ActivityPlannerTypes
 						blockoverride "text" {
 							text = "ACTIVITY_OTHER_GUESTS_BUTTON_TEXT"
 						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "hotkey G."
+							}
+						}
+						shortcut = army_merge
 						blockoverride "dot" {
-						}
-					}
-				}
-
-				# Activity Options
-				vbox = {
-					name = "activity_options"
-					visible = "[Or(ActivityPlanner.IsPlanningStage( 'options' ), ActivityPlanner.PrevMultiDestStageWas('options'))]"
-					layoutpolicy_horizontal = expanding
-
-					activity_option_edit_widget_ocr = {
-					}
-
-					vbox = {
-						name = "contents"
-						layoutpolicy_horizontal = expanding
-
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							raw_text = "[activity_options|E]."
-						}
-
-						hbox = {
-						    layoutpolicy_horizontal = expanding
-
-							cost_breakdown_vbox = {
-								name = "activity_option_cost"
-								datacontext = "[ActivityPlanner.AccessTotalActivityOptionCostBreakdown]"
-
-								blockoverride "heading_text" {
-									raw_text = "Cost"
-								}
-							}
-
-						    expand = { }
-						}
-
-
-						vbox = {
-							name = "activity_option_categories"
-							layoutpolicy_horizontal = expanding
-
-							datamodel = "[ActivityPlanner.AccessOptions]"
-
-							item = {
-								button_text = {
-									layoutpolicy_horizontal = expanding
-									name = "activity_button"
-									visible = "[Not( ObjectsEqual( ActiveActivityOption.GetCategory, ActivityType.GetSpecialOptionCategory ) )]"
-
-									onclick = "[ActivityPlanner.ToggleEditingOption( ActiveActivityOption.AccessSelf )]"
-									blockoverride "text" {
-										raw_text = "[ActiveActivityOption.GetCategory.GetName]: [Add_int32( ActiveActivityOption.GetOption.GetIndexInCategory, '(int32)1' )], [ActiveActivityOption.GetOption.GetName]."
-									}
-
-									tooltip = ACTIVITY_PLANNER_OPTION_TT
-								}
-							}
 						}
 					}
 				}
