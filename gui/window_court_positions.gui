@@ -1,9 +1,7 @@
-@position_text = 530
-
 types CourtPositionTypes
 {
 	type vbox_court_positions = vbox {
-		# margin_bottom = 5
+		margin_bottom = 15
 
 		state = {
 			name = _show
@@ -11,74 +9,77 @@ types CourtPositionTypes
 		}
 
 		hbox = {
-			layoutpolicy_horizontal = expanding
+			datamodel = "[GetAllCourtPositionCategories]"
+			visible = "[CourtPositionsWindow.CanShowCategoryTabs]"
 
-			hbox = { #filters
-				datamodel = "[GetAllCourtPositionCategories]"
-				visible = "[CourtPositionsWindow.CanShowCategoryTabs]"
+			spacing = 5
+			margin = { 10 5 }
 
-				spacing = 3
-				margin = { 10 5 }
+			button_position_category = {
+				onclick = "[CourtPositionsWindow.ClearCategoryFilter]"
+				down ="[Not(CourtPositionsWindow.HasCategoryFilter)]"
+				size = { 110 33 }
 
-				text_single = {
-					raw_text = "Filters: "
+				hbox = {
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						align = center|nobaseline
+						text = COURT_POSITIONS_WINDOW_FILTER_ALL
+						default_format = "#low"
+						margin_right = 30
+						max_width = 70
+					}
 				}
 
-				button_text = {
-					blockoverride "text" {
-						raw_text = "COURT_POSITIONS_WINDOW_FILTER_ALL"
-						align = left
-					}
-					blockoverride "extra" {
-						space = { }
-						text_single = {
-							raw_text = "COURT_POSITIONS_WINDOW_FILTER_TAB_ALL_NUM_HIRES"
-						}
-						text_single = {
-							raw_text = ", Selected."
-							visible ="[Not(CourtPositionsWindow.HasCategoryFilter)]"
-
-						}
-					}
-					onclick = "[CourtPositionsWindow.ClearCategoryFilter]"
-				}
-
-				item = {
-					button_text = {
-						blockoverride "text" {
-							raw_text = "[CourtPositionCategory.GetName]"
-							align = left
-						}
-						blockoverride "extra" {
-							space = { }
-							text_single = {
-								raw_text = "COURT_POSITIONS_WINDOW_FILTER_TAB_CATEGORY_NUM_HIRES"
-							}
-							text_single = {
-								raw_text = ", Selected."
-								visible ="[CourtPositionsWindow.IsCategoryFiltering(CourtPositionCategory.Self)]"
-							}
-							dot = { }
-						}
-						onclick = "[CourtPositionsWindow.SetCategoryFilter(CourtPositionCategory.Self)]"
-						visible = "[CourtPositionsWindow.CanShowCategoryTab(CourtPositionCategory.Self)]"
-					}
+				blockoverride "hire_available_text" {
+					text = COURT_POSITIONS_WINDOW_FILTER_TAB_ALL_NUM_HIRES
+					alpha = 0.6
 				}
 			}
 
-			expand = { }
+			item = {
+				button_position_category = {
+					visible = "[CourtPositionsWindow.CanShowCategoryTab(CourtPositionCategory.Self)]"
+					onclick = "[CourtPositionsWindow.SetCategoryFilter(CourtPositionCategory.Self)]"
+					down = "[CourtPositionsWindow.IsCategoryFiltering(CourtPositionCategory.Self)]"
+					size = { 138 33 }
+
+					hbox = {
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							align = center|nobaseline
+							text = "[CourtPositionCategory.GetName]"
+							default_format = "#low"
+							margin_right = 30
+							max_width = 110
+						}
+					}
+
+					blockoverride "hire_available_text" {
+						text = COURT_POSITIONS_WINDOW_FILTER_TAB_CATEGORY_NUM_HIRES
+						alpha = 0.6
+					}
+				}
+			}
 		}
 
-		button_text = {
-			layoutpolicy_horizontal = expanding
-		    blockoverride "text" {
-		        raw_text = "[Select_CString(GetVariableSystem.Exists('show_position_desc'), 'Show', 'Hide')] position effects. Click to appoint or replace, right-click to see the character."
-		    }
-			onclick = "[GetVariableSystem.Toggle('show_position_desc')]"
-		}
 		scrollbox = {
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
+
+			background = {
+				texture = "gfx/interface/skinned/illustrations/councilchamber_bg.dds"
+				margin = { -5 0 }
+				fittype = end
+				alpha = 0.15
+				framesize = { 1200 848 }
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
+					blend_mode = alphamultiply
+					mirror = vertical
+				}
+			}
 
 			blockoverride "scrollbox_margins"
 			{
@@ -96,24 +97,22 @@ types CourtPositionTypes
 
 					using = Animation_Tab_Switch
 
-					button_text = {
+					hbox_court_positions_header_button = {
 						layoutpolicy_horizontal = expanding
-						blockoverride "pre" {
-							text_single = {
-								raw_text = "[GetDataModelSize(CourtPositionsWindow.HeldPositions)]"
-							}
-							space = { }
+
+						blockoverride "onclick"
+						{
+							onclick = "[GetVariableSystem.Toggle( 'expand_held_court_positions' )]"
 						}
-					    blockoverride "text" {
-					        raw_text = "COURT_POSITIONS_your_positions_in_liege_court"
-							align = left
-					    }
-						onclick = "[GetVariableSystem.Toggle( 'expand_held_court_positions' )]"
-						blockoverride "extra" {
-							text_single = {
-								raw_text = ", [Select_CString(GetVariableSystem.Exists('expand_held_court_positions'), 'Expanded', 'Collapsed')]"
-							}
-							dot = { }
+
+						blockoverride "button_expand"
+						{
+							frame = "[Select_int32(GetVariableSystem.Exists( 'expand_held_court_positions'), '(int32)2', '(int32)1')]"
+						}
+
+						blockoverride "text"
+						{
+							text = "COURT_POSITIONS_your_positions_in_liege_court"
 						}
 					}
 
@@ -132,22 +131,15 @@ types CourtPositionTypes
 							margin = { 0 10 }
 						}
 
-						vbox = {
-							name = "my_own_court_positions"
-							datamodel = "[CourtPositionsWindow.HeldPositions]"
-							visible = "[Not(IsDataModelEmpty( CourtPositionsWindow.HeldPositions ))]"
-							layoutpolicy_horizontal = expanding
-							margin_left = 10
-							margin_top = 5
-							margin_right = 10
-							margin_bottom = 10
-							spacing = 10
-
-							using = Animation_Tab_Switch
-
-							item = {
-								widget_your_court_position_item = {
-								}
+						vbox_court_positions_sublist = {
+							blockoverride "cps_root"
+							{
+								datamodel = "[CourtPositionsWindow.HeldPositions]"
+								visible = "[Not(IsDataModelEmpty( CourtPositionsWindow.HeldPositions ))]"
+							}
+							blockoverride "cps_item"
+							{
+								widget_your_court_position_item = {}
 							}
 						}
 					}
@@ -158,24 +150,22 @@ types CourtPositionTypes
 					layoutpolicy_horizontal = expanding
 					visible = "[Not(IsDataModelEmpty( CourtPositionsWindow.EmployedPositions ))]"
 
-					button_text = {
+					hbox_court_positions_header_button = {
 						layoutpolicy_horizontal = expanding
-						blockoverride "pre" {
-							text_single = {
-								raw_text = "[GetDataModelSize(CourtPositionsWindow.EmployedPositions)]"
-							}
-							space = { }
+
+						blockoverride "onclick"
+						{
+							onclick = "[GetVariableSystem.Toggle( 'expand_active_court_positions' )]"
 						}
-					    blockoverride "text" {
-					        raw_text = "COURT_POSITIONS_COURT_VIEW_positions_in_your_court"
-							align = left
-					    }
-						onclick = "[GetVariableSystem.Toggle( 'expand_active_court_positions' )]"
-						blockoverride "extra" {
-							text_single = {
-								raw_text = ", [Select_CString(GetVariableSystem.Exists('expand_active_court_positions'), 'Expanded', 'Collapsed')]"
-							}
-							dot = { }
+
+						blockoverride "button_expand"
+						{
+							frame = "[Select_int32(GetVariableSystem.Exists( 'expand_active_court_positions'), '(int32)2', '(int32)1')]"
+						}
+
+						blockoverride "text"
+						{
+							text = "COURT_POSITIONS_COURT_VIEW_positions_in_your_court"
 						}
 					}
 
@@ -194,22 +184,15 @@ types CourtPositionTypes
 							margin = { 0 10 }
 						}
 
-						vbox = {
-							name = "active_positions"
-							datamodel = "[CourtPositionsWindow.EmployedPositions]"
-							visible = "[Not(IsDataModelEmpty( CourtPositionsWindow.EmployedPositions ))]"
-							layoutpolicy_horizontal = expanding
-							margin_left = 10
-							margin_top = 5
-							margin_right = 10
-							margin_bottom = 10
-							spacing = 10
-
-							using = Animation_Tab_Switch
-
-							item = {
-								widget_hired_court_position_item_ocr = {
-								}
+						vbox_court_positions_sublist = {
+							blockoverride "cps_root"
+							{
+								visible = "[Not(IsDataModelEmpty( CourtPositionsWindow.EmployedPositions ))]"
+								datamodel = "[CourtPositionsWindow.EmployedPositions]"
+							}
+							blockoverride "cps_item"
+							{
+								widget_hired_court_position_item = {}
 							}
 						}
 					}
@@ -219,19 +202,22 @@ types CourtPositionTypes
 					name = "your_empty_court_positions"
 					layoutpolicy_horizontal = expanding
 
-					button_text = {
+					hbox_court_positions_header_button = {
 						layoutpolicy_horizontal = expanding
 
-					    blockoverride "text" {
-					        raw_text = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_HEADER"
-							align = left
-					    }
-						onclick = "[GetVariableSystem.Toggle( 'expand_empty_court_positions' )]"
-						blockoverride "extra" {
-							text_single = {
-								raw_text = ", [Select_CString(GetVariableSystem.Exists('expand_empty_court_positions'), 'Expanded', 'Collapsed')]"
-							}
-							dot = { }
+						blockoverride "onclick"
+						{
+							onclick = "[GetVariableSystem.Toggle( 'expand_empty_court_positions' )]"
+						}
+
+						blockoverride "button_expand"
+						{
+							frame = "[Select_int32(GetVariableSystem.Exists( 'expand_empty_court_positions'), '(int32)2', '(int32)1')]"
+						}
+
+						blockoverride "text"
+						{
+							text = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_HEADER"
 						}
 					}
 
@@ -250,22 +236,15 @@ types CourtPositionTypes
 							margin = { 0 10 }
 						}
 
-						vbox = {
-							name = "active_positions"
-							datamodel = "[CourtPositionsWindow.EmptyPositions]"
-							visible = "[Not(IsDataModelEmpty( CourtPositionsWindow.EmptyPositions ))]"
-							layoutpolicy_horizontal = expanding
-							margin_left = 10
-							# margin_top = 5
-							margin_right = 10
-							# margin_bottom = 10
-							# spacing = 6
-
-							using = Animation_Tab_Switch
-
-							item = {
-								widget_ocr_court_position_item = {
-								}
+						vbox_court_positions_sublist = {
+							blockoverride "cps_root"
+							{
+								datamodel = "[CourtPositionsWindow.EmptyPositions]"
+								visible = "[Not(IsDataModelEmpty( CourtPositionsWindow.EmptyPositions ))]"
+							}
+							blockoverride "cps_item"
+							{
+								widget_empty_court_position_item = {}
 							}
 						}
 					}
@@ -277,9 +256,18 @@ types CourtPositionTypes
 		vbox = {
 			name = "salaries_tutorial_uses_this"
 			layoutpolicy_horizontal = expanding
+			margin_top = 20
 			margin_left = 5
 			spacing = 5
 			margin_right = 5
+
+			background = {
+				using = Background_Area
+				margin = { 0 -15 }
+				margin_bottom = 10
+				margin_left = -15
+				margin_right = -15
+			}
 
 			hbox = {
 				visible = "[CourtPositionsWindow.CourtOwner.HoldsCourtPosition]"
@@ -340,312 +328,168 @@ types CourtPositionTypes
 		}
 	}
 
-	type widget_your_court_position_item = container
+	#TODO TIT-42781: For better performance, change this to a fixedgridbox
+	type vbox_court_positions_sublist = vbox
 	{
-		minimumsize = { 530 50 }
+		block "cps_root"
+		{
 
-		background = {
-			using = Background_Area_Light
-			margin_top = 2
 		}
 
-		background = {
-			using = Background_Frame
-			margin_top = 2
-			margin_bottom = 2
-			margin_right = -3
-		}
+		using = Animation_Tab_Switch
 
-		# Header, name, position, salary, buttons
-		widget = {
-			size = { 530 56 }
+		margin = {8 8}
+		spacing = 4
 
-			tooltipwidget = {
-				court_position_tooltip = { }
+		item = {
+			block "cps_item"
+			{
+
 			}
-
-			#### COMMON BACKGROUND ####
-			background = {
-				spriteType = Corneredtiled
-				using = Color_Blue
-				alpha = 0.3
-				texture = "gfx/interface/colors/white.dds"
-				visible = "[Not(CourtPosition.GetPositionType.CourtPositionRequiresRankOrHigher('kingdom'))]"
-
-				margin_bottom = -1
-				margin_top = 2
-				margin_left = -1
-
-				using = Mask_Rough_Edges
-
-				modify_texture = {
-					name = "mask"
-					texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
-					spriteType = Corneredstretched
-					spriteborder = { 0 0 }
-					blend_mode = alphamultiply
-					mirror = horizontal
-				}
-
-				modify_texture = {
-					texture = "gfx/interface/component_masks/patterns/mask_pattern_02.dds"
-					spriteType = Corneredtiled
-					blend_mode = alphamultiply
-					alpha = 0.2
-				}
-			}
-
-			##### ROYAL BACKGROUND ####
-			background = {
-				visible = "[CourtPosition.GetPositionType.CourtPositionRequiresRankOrHigher('kingdom')]"
-
-				spriteType = Corneredtiled
-				using = Color_Purple
-				alpha = 0.3
-				texture = "gfx/interface/colors/white.dds"
-
-				margin_bottom = -1
-				margin_top = 2
-				margin_left = -1
-
-				using = Mask_Rough_Edges
-
-				modify_texture = {
-					name = "mask"
-					texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
-					spriteType = Corneredstretched
-					spriteborder = { 0 0 }
-					blend_mode = alphamultiply
-					mirror = horizontal
-				}
-
-				modify_texture = {
-					texture = "gfx/interface/component_masks/patterns/mask_pattern_02.dds"
-					spriteType = Corneredtiled
-					blend_mode = alphamultiply
-					alpha = 0.3
-				}
-			}
-
-			###### POSITION ######
-			widget = {
-				size = { 520 40 }
-
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					text = "[CourtPosition.GetNameNoTooltip]"
-					using = Font_Size_Medium
-					align = left
-					margin_left = 15
-					margin_top = 4
-				}
-
-				text_single = {
-					align = right
-					default_format = "#high"
-					text = "[CourtPosition.GetSalaryText]"
-					tooltip = "[CourtPosition.GetSalaryBreakdownTooltip]"
-					margin_right = 10
-					margin_top = 4
-					parentanchor = right
-				}
-			}
-		}
-
-		portrait_head_small = {
-			datacontext = "[CourtPosition.GetEmployer]"
-			position = { 10 60 }
-		}
-
-		##### NAME ######
-		text_single = {
-			name = "name"
-			text = "[CourtPosition.GetEmployer.GetNameNoTooltip]"
-			align = left
-			position = { 15 25 }
-			default_format = "#high"
-		}
-
-		text_multi = {
-			min_width = 400
-			max_width = 400
-			autoresize = yes
-			align = left
-			position = { 100 56 }
-			text = "[CourtPosition.GetEmployeeBonuses]"
 		}
 	}
 
-	type widget_hired_court_position_item = container
+	type widget_your_court_position_item = widget_court_position_entry_base
 	{
-		datacontext = "[EmployedPositionItem.GetPosition]"
-		datacontext = "[CourtPosition.GetEmployee]"
-		visible = "[EmployedPositionItem.CanShow]"
+		blockoverride "cp_root"
+		{
+			size = {537 210}
 
-		minimumsize = { 530 50 }
+			datacontext = "[CourtPosition.GetPositionType]"
 
-		background = {
-			using = Background_Area_Light
-			margin_top = 2
-			alpha = 0.6
+
+			background = {
+				using = Background_Area_Light
+				margin_top = 2
+			}
+
+			background = {
+				using = Background_Frame
+				margin_top = 2
+				margin_bottom = 2
+				margin_right = -3
+			}
 		}
 
-		background = {
-			using = Background_Frame
-			margin_top = 2
-			margin_bottom = 2
-			margin_right = -3
+		blockoverride "cp_salary"
+		{
+			text = "[CourtPosition.GetSalaryText]"
+			tooltip = "[CourtPosition.GetSalaryBreakdownTooltip]"
 		}
 
-		# Header, name, position, salary, buttons
-		widget = {
-			size = { 530 55 }
-
-			tooltipwidget = {
-				court_position_tooltip = { }
+		blockoverride "cp_portrait"
+		{
+			portrait_head_small = {
+				datacontext = "[CourtPosition.GetEmployer]"
 			}
+		}
 
-			#### COMMON BACKGROUND ####
-			background = {
-				spriteType = Corneredtiled
-				using = Color_Blue
-				alpha = 0.3
-				texture = "gfx/interface/colors/white.dds"
-				visible = "[Not(CourtPosition.GetPositionType.CourtPositionRequiresRankOrHigher('kingdom'))]"
+		blockoverride "cp_effects"
+		{
+			text = "[CourtPosition.GetEmployeeBonuses]"
+		}
 
-				margin_bottom = -1
-				margin_top = 2
-				margin_left = -1
-
-				using = Mask_Rough_Edges
-
-				modify_texture = {
-					name = "mask"
-					texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
-					spriteType = Corneredstretched
-					spriteborder = { 0 0 }
-					blend_mode = alphamultiply
-					mirror = horizontal
-				}
-
-				modify_texture = {
-					texture = "gfx/interface/component_masks/patterns/mask_pattern_02.dds"
-					spriteType = Corneredtiled
-					blend_mode = alphamultiply
-					alpha = 0.2
-				}
-			}
-
-			##### ROYAL BACKGROUND ####
-			background = {
-				visible = "[CourtPosition.GetPositionType.CourtPositionRequiresRankOrHigher('kingdom')]"
-
-				spriteType = Corneredtiled
-				using = Color_Purple
-				alpha = 0.3
-				texture = "gfx/interface/colors/white.dds"
-
-				margin_bottom = -1
-				margin_top = 2
-				margin_left = -1
-
-				using = Mask_Rough_Edges
-
-				modify_texture = {
-					name = "mask"
-					texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
-					spriteType = Corneredstretched
-					spriteborder = { 0 0 }
-					blend_mode = alphamultiply
-					mirror = horizontal
-				}
-
-				modify_texture = {
-					texture = "gfx/interface/component_masks/patterns/mask_pattern_02.dds"
-					spriteType = Corneredtiled
-					blend_mode = alphamultiply
-					alpha = 0.3
-				}
-			}
-
-			###### POSITION ######
-			widget = {
-				size = { 520 40 }
+		blockoverride "cp_heading_line_2"
+		{
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				margin = {16 0}
+				margin_bottom = 8
+				spacing = 16
 
 				text_single = {
-					text = "[CourtPosition.GetNameNoTooltip]"
-					default_format = "#medium"
-					parentanchor = left
-					using = Font_Size_Medium
-					align = left
-					margin_left = 15
-					margin_top = 4
+					text = "COURT_POSITION_FOR_EMPLOYER"
+					align = nobaseline
 				}
 
-				flowcontainer = {
-					parentanchor = right
-					margin_top = 4
+				expand = {}
+			}
+		}
+	}
 
-					button_change = {
-						onclick = "[EmployedPositionItem.Replace)]"
-						tooltip = "COURT_POSITION_REPLACE"
-					}
+	type widget_hired_court_position_item = widget_court_position_entry_base
+	{
+		blockoverride "cp_root"
+		{
+			size = {537 210}
 
-					button_cancel = {
-						onclick = "[EmployedPositionItem.Revoke)]"
-						tooltip = "COURT_POSITION_REVOKE"
-					}
+			datacontext = "[EmployedPositionItem.GetPosition]"
+			datacontext = "[CourtPosition.GetEmployee]"
+			datacontext = "[CourtPosition.GetPositionType]"
 
-					spacer = {
-						size = { 4 0 }
-					}
+			#TODO TIT-42781: For better performance, cull these items from the datamodel. Is this line even needed? Why do we hide positions that you have hired?
+			visible = "[EmployedPositionItem.CanShow]"
 
-					text_single = {
-						align = right
-						default_format = "#high"
-						text = "[CourtPosition.GetSalaryText]"
-						tooltip = "[CourtPosition.GetSalaryBreakdownTooltip]"
-						margin_top = 1
-						margin_right = 10
-					}
-				}
+			background = {
+				using = Background_Area_Light
+				margin_top = 2
+				alpha = 0.6
 			}
 
-			text_single = {
-				text = "[CourtPosition.GetEmployee.GetNameNoTooltip]"
-				default_format = "#high"
-				align = left
-				position = { 16 25 }
-			}
-
-			###### YEARS OF SERVICE ######
-			text_single = {
-				default_format = "#weak"
-				text = "[CourtPosition.GetTimeOfService]"
-				align = right
-				parentanchor = right
-				position = { -14 27 }
+			background = {
+				using = Background_Frame
+				margin_top = 2
+				margin_bottom = 2
+				margin_right = -3
 			}
 		}
 
-		portrait_head_small = {
-			position = { 10 60 }
+		blockoverride "cp_heading_top_right_insert"
+		{
+			button_change = {
+				onclick = "[EmployedPositionItem.Replace]"
+				tooltip = "COURT_POSITION_REPLACE"
+				using = tooltip_ne
+			}
+
+			button_cancel = {
+				onclick = "[EmployedPositionItem.Revoke]"
+				tooltip = "COURT_POSITION_REVOKE"
+				using = tooltip_ne
+			}
 		}
 
-		flowcontainer = {
-			direction = vertical
-			name = "aptitude_and_effects"
-			ignoreinvisible = yes
-			margin_bottom = 15
-			margin_left = 100
-			margin_top = 56
+		blockoverride "cp_salary"
+		{
+			text = "[CourtPosition.GetSalaryText]"
+			tooltip = "[CourtPosition.GetSalaryBreakdownTooltip]"
+		}
+
+		blockoverride "cp_portrait"
+		{
+			portrait_head_small = {
+			}
+		}
+
+		blockoverride "cp_ai_score"
+		{
+			text = "[CourtPosition.GetAICandidateScore]"
+		}
+
+		blockoverride "cp_effects"
+		{
+			text = "[CourtPosition.GetEmployerBonuses]"
+		}
+
+		blockoverride "cp_extra_effects"
+		{
 
 			text_single = {
 				name = "aptitude"
 				layoutpolicy_horizontal = expanding
+				align = left|nobaseline
+
+				background = {
+					using = Background_Area
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+						blend_mode = alphamultiply
+					}
+				}
+				margin = {8 8}
+
 				text = "COURT_POSITION_aptitude_description_position"
-				min_width = 400
-				max_width = 400
 
 				tooltipwidget = {
 					court_position_aptitude_breakdown_tooltip = {
@@ -661,525 +505,330 @@ types CourtPositionTypes
 					}
 				}
 			}
+		}
 
-			text_single = {
-				name = "opinion_bonus"
-				min_width = 400
-				max_width = 400
+		blockoverride "cp_heading_line_2"
+		{
+			hbox = {
 				layoutpolicy_horizontal = expanding
-				text = "COURT_POSITION_OPINION_BONUS"
-			}
+				
+				margin = { 16 0 }
+				margin_bottom = 4
+				spacing = 8
 
-			text_multi = {
-				min_width = 400
-				max_width = 400
-				autoresize = yes
-				align = left
-				text = "[CourtPosition.GetEmployerBonuses]"
-			}
+				text_single = {
+					text = "[CourtPosition.GetEmployee.GetUINameNoTooltip]"
+					align = nobaseline
+					max_width = 180
+				}
 
-			#### AI candidate score ####
-			text_single = {
-				name = "ai_score"
-				visible = "[InDebugMode]"
-				text = "[CourtPosition.GetAICandidateScore]"
-				default_format = "#D"
-				min_width = 400
-				max_width = 400
+				expand = {}
+
+				text_single = {
+					default_format = "#weak"
+					text = "[CourtPosition.GetTimeOfService]"
+					align = nobaseline
+					max_width = 160
+				}
+
+				text_single = {
+					name = "opinion_bonus"
+					text = "COURT_POSITION_OPINION_BONUS"
+					align = nobaseline
+					max_width = 160
+				}
 			}
 		}
 	}
 
-	type widget_hired_court_position_item_ocr = container
+	type widget_empty_court_position_item = widget_court_position_entry_base
 	{
-		datacontext = "[EmployedPositionItem.GetPosition]"
-		datacontext = "[CourtPosition.GetEmployee]"
-		visible = "[EmployedPositionItem.CanShow]"
+		blockoverride "cp_root"
+		{
+			size = {537 180}
 
-		minimumsize = { 530 20 }
+			datacontext = "[EmptyCourtPosition.GetType]"
 
-		button = {
-			size = { 100% 100% }
-			onclick = "[EmployedPositionItem.Replace)]"
-			onrightclick = "[DefaultOnCharacterClick(CourtPosition.GetEmployee.GetID)]"
-			button_ignore = none
+			#TODO TIT-42781: For better performance, cull these items from the datamodel
+			visible = "[EmptyCourtPosition.CanShow]"
+
+			background = {
+				visible = "[And(Not(EmptyCourtPosition.IsAppointing), EmptyCourtPosition.CanHirePosition)]"
+				using = Background_Area_Dark
+				using = Mask_Rough_Edges
+				alpha = 0.5
+				margin_top = 2
+			}
+
+			background = {
+				visible = "[Not(EmptyCourtPosition.CanHirePosition)]"
+				using = Background_Frame
+				alpha = 0.5
+				margin_right = -3
+			}
+
+			background = {
+				visible = "[EmptyCourtPosition.IsAppointing]"
+				texture = "gfx/interface/colors/white.dds"
+				spriteType = Corneredtiled
+				using = Color_Blue
+				alpha = 0.3
+
+				using = Mask_Rough_Edges
+
+				modify_texture = {
+					name = "mask"
+					texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
+					spriteType = Corneredstretched
+					spriteborder = { 0 0 }
+					blend_mode = alphamultiply
+					mirror = horizontal
+				}
+			}
 		}
 
-		# Header  name, position, salary, buttons
-		widget = {
-			background = { using = Background_Area_Dark margin_bottom = 5 }
-			size = { 530 40 }
+		blockoverride "cp_salary"
+		{
+			text = "[CourtPositionType.GetSalaryTextFor(CourtPositionsWindow.CourtOwner)]"
+			tooltip = "[CourtPositionType.GetSalaryBreakdownFor(CourtPositionsWindow.CourtOwner)]"
+		}
+
+		blockoverride "cp_portrait"
+		{
+			widget_empty_court_position_portrait = {
+				datacontext = "[EmptyCourtPosition]"
+				tooltip = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_NO_ADD_TT"
+				using = tooltip_ws
+			}
+		}
+
+		blockoverride "cp_ai_score"
+		{
+			text = "[EmptyCourtPosition.GetAiCandidateScore]"
+		}
+
+		blockoverride "cp_effects"
+		{
+			text = "[CourtPositionType.GetLiegeModifierDescription]"
+		}
+
+
+	}
+
+	type widget_court_position_entry_base = widget
+	{
+
+		block "cp_root"
+		{
+			#need to set a size! (width is 537)
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
 
 			vbox = {
+				name = "heading"
 				layoutpolicy_horizontal = expanding
-				margin_left = 5
 
-				hbox = {
-					layoutpolicy_horizontal = expanding
-					spacing = 3
+				margin = { 0 4 }
 
-					text_single = {
-						raw_text = "[CourtPosition.GetNameNoTooltip],"
+				#### COMMON BACKGROUND ####
+				background = {
+					block "cp_common_bg_visible"
+					{
+						visible = "[Not(CourtPositionType.CourtPositionRequiresRankOrHigher('kingdom'))]"
 					}
 
-					text_single = {
-						name = "aptitude"
-						text = "COURT_POSITION_aptitude_description_position"
-
-						tooltipwidget = {
-							court_position_aptitude_breakdown_tooltip = {
-								datacontext = "[CourtPosition.GetAptitudeTooltip]"
-
-								blockoverride "header_text" {
-									text = COURT_POSITION_aptitude_description_position
-								}
-
-								blockoverride "modifier_list" {
-									text = "[CourtPosition.GetEmployerBonuses]"
-								}
-							}
-						}
-					}
-
-					dot = { margin_left = -3}
-
-					text_single = {
-						raw_text = "Salary: [CourtPosition.GetSalaryText]"
-						tooltip = "[CourtPosition.GetSalaryBreakdownTooltip]"
-					}
-
-					text_single = {
-						raw_text = ", tooltip."
-
-						tooltipwidget = {
-							court_position_tooltip = { }
-						}
-					}
-
-					expand = { }
-				}
-
-				hbox = {
-					spacing = 3
-					layoutpolicy_horizontal = expanding
-
-					button_text = {
-					    blockoverride "text" {
-					        raw_text = "Fire"
-							align = left
-					    }
-						onclick = "[EmployedPositionItem.Revoke)]"
-					}
-
-					text_single = {
-						raw_text = "[CourtPosition.GetEmployee.GetNameNoTooltip]"
-					}
-
-					text_single = {
-						raw_text = ", [CourtPosition.GetEmployee.GetRelationToString( GetPlayer)]"
-					}
-
-					###### YEARS OF SERVICE ######
-					text_single = {
-						raw_text = ", [CourtPosition.GetTimeOfService]"
-						visible = "[Not(StringIsEmpty(CourtPosition.GetTimeOfService))]"
-					}
-
-					dot = { margin_left = -3 }
-					expand = { }
-				}
-			}
-		}
-
-		flowcontainer = {
-			visible = "[Not(GetVariableSystem.Exists('show_position_desc'))]"
-			direction = vertical
-			margin_bottom = 0
-			margin_left = 5
-			margin_top = 40
-			ignoreinvisible = yes
-
-			text_single = {
-				name = "opinion_bonus"
-				min_width = @position_text
-				max_width = @position_text
-				layoutpolicy_horizontal = expanding
-				text = "COURT_POSITION_OPINION_BONUS"
-			}
-
-			text_multi = {
-				min_width = @position_text
-				max_width = @position_text
-				autoresize = yes
-				align = left
-				text = "[CourtPosition.GetEmployerBonuses]"
-			}
-
-			#### AI candidate score ####
-			text_single = {
-				name = "ai_score"
-				visible = "[InDebugMode]"
-				text = "[CourtPosition.GetAICandidateScore]"
-				default_format = "#D"
-				min_width = @position_text
-				max_width = @position_text
-			}
-		}
-	}
-
-	type widget_empty_court_position_item = container
-	{
-		datacontext = "[EmptyCourtPosition.GetType]"
-		visible = "[EmptyCourtPosition.CanShow]"
-
-		minimumsize = { 530 40 }
-
-		background = {
-			visible = "[And(Not(EmptyCourtPosition.IsAppointing), EmptyCourtPosition.CanHirePosition)]"
-			using = Background_Area_Dark
-			using = Mask_Rough_Edges
-			alpha = 0.5
-			margin_top = 2
-		}
-
-		background = {
-			visible = "[Not(EmptyCourtPosition.CanHirePosition)]"
-			using = Background_Frame
-			alpha = 0.5
-			margin_right = -3
-		}
-
-		background = {
-			visible = "[EmptyCourtPosition.IsAppointing]"
-			texture = "gfx/interface/colors/white.dds"
-			spriteType = Corneredtiled
-			using = Color_Blue
-			alpha = 0.3
-
-			using = Mask_Rough_Edges
-
-			modify_texture = {
-				name = "mask"
-				texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
-				spriteType = Corneredstretched
-				spriteborder = { 0 0 }
-				blend_mode = alphamultiply
-				mirror = horizontal
-			}
-		}
-
-		button = {
-			size = { 100% 100% }
-			enabled = "[And(EmptyCourtPosition.CanHirePosition, GreaterThan_int32(EmptyCourtPosition.NumValidCourtiers, '(int32)0') )]"
-			onclick = "[EmptyCourtPosition.Appoint]"
-
-			button = {
-				texture = "gfx/interface/colors/grey.dds"
-				using = Color_Blue
-				size = { 100% 100% }
-				alwaystransparent = yes
-				alpha = 0.3
-
-				using = Mask_Rough_Edges
-
-				modify_texture = {
-					name = "mask"
-					texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
-					spriteType = Corneredstretched
-					spriteborder = { 0 0 }
-					blend_mode = alphamultiply
-					mirror = horizontal
-				}
-			}
-		}
-
-		widget_empty_court_position_portrait = {
-			position = { 10 45 }
-		}
-
-		# Header  name, position, salary, buttons
-		widget = {
-			size = { 530 40 }
-
-			tooltipwidget = {
-				court_position_type_tooltip = { }
-			}
-
-			#### COMMON BACKGROUND ####
-			background = {
-				spriteType = Corneredtiled
-				using = Color_Blue
-				alpha = 0.3
-				texture = "gfx/interface/colors/white.dds"
-				visible = "[Not(And(CourtPositionType.CourtPositionRequiresRankOrHigher('kingdom'), Not(EmptyCourtPosition.IsAppointing)))]"
-
-				margin_left = -2
-
-				using = Mask_Rough_Edges
-
-				modify_texture = {
-					name = "mask"
-					texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
-					spriteType = Corneredstretched
-					spriteborder = { 0 0 }
-					blend_mode = alphamultiply
-					mirror = horizontal
-				}
-
-				modify_texture = {
-					texture = "gfx/interface/component_masks/patterns/mask_pattern_02.dds"
 					spriteType = Corneredtiled
-					blend_mode = alphamultiply
-					alpha = 0.2
-				}
-			}
-
-			#### ROYAL BACKGROUND ####
-			background = {
-				visible = "[And(CourtPositionType.CourtPositionRequiresRankOrHigher('kingdom'), Not(EmptyCourtPosition.IsAppointing))]"
-
-				spriteType = Corneredtiled
-				using = Color_Purple
-				alpha = 0.3
-				texture = "gfx/interface/colors/white.dds"
-
-				margin_left = -2
-
-				using = Mask_Rough_Edges
-
-				modify_texture = {
-					name = "mask"
-					texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
-					spriteType = Corneredstretched
-					spriteborder = { 0 0 }
-					blend_mode = alphamultiply
-					mirror = horizontal
-				}
-
-				modify_texture = {
-					texture = "gfx/interface/component_masks/patterns/mask_pattern_02.dds"
-					spriteType = Corneredtiled
-					blend_mode = alphamultiply
+					using = Color_Blue
 					alpha = 0.3
+					texture = "gfx/interface/colors/white.dds"
+
+
+					using = Mask_Rough_Edges
+
+					modify_texture = {
+						name = "mask"
+						texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
+						spriteType = Corneredstretched
+						spriteborder = { 0 0 }
+						blend_mode = alphamultiply
+						mirror = horizontal
+					}
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/patterns/mask_pattern_02.dds"
+						spriteType = Corneredtiled
+						blend_mode = alphamultiply
+						alpha = 0.2
+					}
 				}
+
+				#### ROYAL BACKGROUND ####
+				background = {
+					block "cp_royal_bg_visible"
+					{
+						visible = "[CourtPositionType.CourtPositionRequiresRankOrHigher('kingdom')]"
+					}
+
+					spriteType = Corneredtiled
+					using = Color_Purple
+					alpha = 0.3
+					texture = "gfx/interface/colors/white.dds"
+
+					using = Mask_Rough_Edges
+
+					modify_texture = {
+						name = "mask"
+						texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
+						spriteType = Corneredstretched
+						spriteborder = { 0 0 }
+						blend_mode = alphamultiply
+						mirror = horizontal
+					}
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/patterns/mask_pattern_02.dds"
+						spriteType = Corneredtiled
+						blend_mode = alphamultiply
+						alpha = 0.3
+					}
+				}
+
+				margin_widget = {
+					name = "upper_line"
+					layoutpolicy_horizontal = expanding
+					size = { 0 30 }
+					margin = { 16 16 }
+
+					tooltipwidget = {
+						court_position_type_tooltip = { }
+					}
+					using = tooltip_ws
+
+
+					#### POSITION ####
+					text_single = {
+						text = "[CourtPositionType.GetNameNoTooltip]"
+						default_format = "#high"
+						using = Font_Size_Medium
+						align = nobaseline
+
+						parentanchor = vcenter|left
+					}
+
+
+					#### DEBUG AI SCORE ####
+					text_single = {
+						name = "ai_score"
+						visible = "[InDebugMode]"
+						block "cp_ai_score"
+						{
+							text = ""
+						}
+						default_format = "#D"
+						parentanchor = vcenter|left
+						align = nobaseline
+
+						position = {100 0}
+					}
+
+
+					flowcontainer = {
+						parentanchor = vcenter|right
+						ignoreinvisible = yes
+
+						block "cp_heading_top_right_insert"
+						{
+
+						}
+
+						icon = {
+							name = "powerful_agent_warning"
+							visible = "[CourtPositionType.IsPowerfulAgent]"
+							size = { 30 30 }
+							texture = "gfx/interface/icons/symbols/icon_alert.dds"
+							tooltip = "COURT_POSITION_POWERFUL_AGENT"
+							using = tooltip_ne
+						}
+
+						spacer = {
+							size = { 5 0 }
+						}
+
+						text_single = {
+							default_format = "#high"
+							block "cp_salary"
+							{
+
+							}
+							using = tooltip_ne
+						}
+
+
+					}
+				}
+
+				block "cp_heading_line_2"
+				{
+
+				}
+
 			}
-
-			#### POSITION ####
-			text_single = {
-				name = "character_name_available"
-				visible = "[EmptyCourtPosition.CanHirePosition]"
-				parentanchor = left
-				text = "[CourtPositionType.GetNameNoTooltip]"
-				default_format = "#high"
-				using = Font_Size_Medium
-				align = left
-				margin_top = 7
-				margin_left = 15
-			}
-
-			text_single = {
-				name = "character_name_not_available"
-				visible = "[Not(EmptyCourtPosition.CanHirePosition)]"
-				parentanchor = left
-				text = "[CourtPositionType.GetNameNoTooltip]"
-				default_format = "#weak"
-				using = Font_Size_Medium
-				align = left
-				margin_top = 7
-				margin_left = 15
-			}
-
-			text_single = {
-				name = "salary_available"
-				visible = "[EmptyCourtPosition.CanHirePosition]"
-				parentanchor = right
-				align = right
-				default_format = "#high"
-				text = "[CourtPositionType.GetSalaryTextFor(CourtPositionsWindow.CourtOwner)]"
-				tooltip = "[CourtPositionType.GetSalaryBreakdownFor(CourtPositionsWindow.CourtOwner)]"
-				margin_top = 5
-				margin_right = 15
-			}
-
-			text_single = {
-				name = "salary_not_available"
-				visible = "[Not(EmptyCourtPosition.CanHirePosition)]"
-				parentanchor = right
-				align = right
-				text = "[CourtPositionType.GetSalaryTextFor(CourtPositionsWindow.CourtOwner)]"
-				tooltip = "[CourtPositionType.GetSalaryBreakdownFor(CourtPositionsWindow.CourtOwner)]"
-				default_format = "#weak"
-				margin_top = 5
-				margin_right = 15
-			}
-		}
-
-
-
-		flowcontainer = {
-			direction = vertical
-			margin_bottom = 15
-			margin_left = 90
-			margin_top = 42
-			ignoreinvisible = yes
-
-			#### REQUIREMENTS ####
-			text_single = {
-				visible = "[Not(EmptyCourtPosition.CanHirePosition)]"
-				text = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_YOU_DONT_MEET_REQUIREMENTS"
-				tooltip = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_YOU_DONT_MEET_REQUIREMENTS_TT"
-				min_width = @position_text
-				max_width = @position_text
-			}
-
-			text_single = {
-				visible = "[EqualTo_int32(EmptyCourtPosition.NumValidCourtiers, '(int32)0')]"
-				text = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_NO_ELIGIBLE_COURTIERS"
-				tooltip = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_NO_ELIGIBLE_COURTIERS_TT"
-				min_width = @position_text
-				max_width = @position_text
-			}
-
-			#### APTITUDE AND EFFECTS ####
-			text_single = {
-				name = "aptitude"
-				min_width = @position_text
-				max_width = @position_text
-				text = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_EFFECTS_VARY"
-			}
-
-			text_multi = {
-				min_width = @position_text
-				max_width = @position_text
-				autoresize = yes
-				align = left
-				text = "[CourtPositionType.GetLiegeModifierDescription]"
-			}
-
-			#### DEBUG AI SCORE ####
-			text_single = {
-				name = "ai_score"
-				visible = "[InDebugMode]"
-				text = "[EmptyCourtPosition.GetAiCandidateScore]"
-				default_format = "#D"
-				min_width = @position_text
-				max_width = @position_text
-			}
-		}
-	}
-
-	type widget_ocr_court_position_item = container
-	{
-		datacontext = "[EmptyCourtPosition.GetType]"
-		visible = "[EmptyCourtPosition.CanShow]"
-
-		minimumsize = { 530 20 }
-
-		button = {
-			size = { 100% 100% }
-			enabled = "[And(EmptyCourtPosition.CanHirePosition, GreaterThan_int32(EmptyCourtPosition.NumValidCourtiers, '(int32)0') )]"
-			onclick = "[EmptyCourtPosition.Appoint]"
-		}
-
-		# Header  name, position, salary, buttons
-		widget = {
-			background = { using = Background_Area_Dark margin_bottom = 5 }
-			size = { 530 20 }
 
 			hbox = {
 				layoutpolicy_horizontal = expanding
-				spacing = 3
-				margin_left = 5
+				layoutpolicy_vertical = expanding
 
-				text_single = {
-					raw_text = "Can't hire"
-					visible = "[Not(EmptyCourtPosition.CanHirePosition)]"
-					tooltipwidget = {
-						court_position_type_tooltip = { }
+				margin = { 8 4 }
+				margin_bottom = 4
+				#spacing = 4
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					block "cp_portrait"
+					{
+
 					}
+
+					expand = {}
+
 				}
 
-				#### POSITION ####
-				text_single = {
-					name = "character_name_available"
-					raw_text = "[CourtPositionType.GetNameNoTooltip],"
-				}
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
 
-				text_single = {
-					raw_text = "No one available,"
-					visible = "[EqualTo_int32(EmptyCourtPosition.NumValidCourtiers, '(int32)0')]"
-				}
+						block "cp_extra_effects"
+						{
 
-				text_single = {
-					name = "salary_available"
-					visible = "[And(EmptyCourtPosition.CanHirePosition, GreaterThan_int32(EmptyCourtPosition.NumValidCourtiers, '(int32)0')) ]"
-					raw_text = "salary: [CourtPositionType.GetSalaryTextFor(CourtPositionsWindow.CourtOwner)],"
-					tooltip = "[CourtPositionType.GetSalaryBreakdownFor(CourtPositionsWindow.CourtOwner)]"
-				}
+						}
 
-				text_single = {
-					raw_text = "tooltip."
+						text_multi = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+							margin = { 8 4 }
 
-					tooltipwidget = {
-						court_position_type_tooltip = { }
+							align = top|left|nobaseline
+							block "cp_effects"
+							{
+							}
+						}
+
+
+
+						expand = {}
 					}
+					expand = {}
 				}
-
-				expand = { }
 			}
 		}
 
-		flowcontainer = {
-			visible = "[Not(GetVariableSystem.Exists('show_position_desc'))]"
-			direction = vertical
-			margin_bottom = 0
-			margin_left = 5
-			margin_top = 20
-			ignoreinvisible = yes
 
-			#### REQUIREMENTS ####
-			text_single = {
-				visible = "[Not(EmptyCourtPosition.CanHirePosition)]"
-				text = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_YOU_DONT_MEET_REQUIREMENTS"
-				tooltip = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_YOU_DONT_MEET_REQUIREMENTS_TT"
-				min_width = @position_text
-				max_width = @position_text
-			}
-
-			text_single = {
-				visible = "[EqualTo_int32(EmptyCourtPosition.NumValidCourtiers, '(int32)0')]"
-				text = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_NO_ELIGIBLE_COURTIERS"
-				tooltip = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_NO_ELIGIBLE_COURTIERS_TT"
-				min_width = @position_text
-				max_width = @position_text
-			}
-
-			# #### APTITUDE AND EFFECTS ####
-			# text_single = {
-			# 	name = "aptitude"
-			# 	min_width = @position_text
-			# 	max_width = @position_text
-			# 	text = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_EFFECTS_VARY"
-			# }
-
-			text_multi = {
-				min_width = @position_text
-				max_width = @position_text
-				autoresize = yes
-				align = left
-				raw_text = "[CourtPositionType.GetLiegeModifierDescription]."
-			}
-
-			#### DEBUG AI SCORE ####
-			text_single = {
-				name = "ai_score"
-				visible = "[InDebugMode]"
-				text = "[EmptyCourtPosition.GetAiCandidateScore]"
-				default_format = "#D"
-				min_width = @position_text
-				max_width = @position_text
-			}
-		}
 	}
 
 	type widget_empty_court_position_portrait = widget {
@@ -1309,7 +958,7 @@ types CourtPositionTypes
 
 				text_single = {
 					layoutpolicy_horizontal = expanding
-					align = left
+					align = nobaseline
 					alwaystransparent = yes
 
 					block "text" {}

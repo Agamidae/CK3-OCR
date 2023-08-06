@@ -1,0 +1,321 @@
+######################################################
+################# SELECT COMMANDER ###################
+######################################################
+
+window = {
+	name = "select_commander_window"
+	layer = top
+	allow_outside = yes
+
+	using = Window_Position_CharacterList_Small
+	using = Window_Size_CharacterList_Small
+	minimumsize = { 830 100 }
+	using = Window_Background
+	using = TooltipFocus
+
+	using = Animation_ShowHide_Quick
+
+	datacontext = "[CSelectCommanderWindow.GetArmy]"
+	datacontext = "[CSelectCommanderWindow.GetListItems]"
+
+	vbox = {
+		using = Window_Margins
+
+		header_pattern = {
+			layoutpolicy_horizontal = expanding
+			size = { 0 30 }
+
+			blockoverride "header_text"
+			{
+				raw_text = "Select commander for [CSelectCommanderWindow.GetArmy.GetName]."
+			}
+
+
+			blockoverride "extra" {
+				button_text = {
+				    blockoverride "text" {
+				        raw_text = "DETACH_COMMANDER"
+						align = left
+				    }
+					blockoverride "dot" { }
+					onclick = "[CSelectCommanderWindow.DetachCommander]"
+					visible = "[CSelectCommanderWindow.CanDetachCommander]"
+				}
+			}
+
+			blockoverride "button_close"
+			{
+				onclick = "[CSelectCommanderWindow.Close]"
+			}
+		}
+
+		# hbox = {
+		# 	margin = { 0 10 }
+		#
+		# 	button_standard = {
+		# 		size = { 300 50 }
+		#
+		# 		enabled = "[CSelectCommanderWindow.CanDetachCommander]"
+		# 		onclick = "[CSelectCommanderWindow.DetachCommander]"
+		#
+		# 		text = "DETACH_COMMANDER"
+		# 		default_format = "#high"
+		# 		using = tooltip_es
+		# 	}
+		# }
+
+		### List of Commanders
+		vbox_character_list = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			blockoverride "skill_sort_buttons" {}
+
+			blockoverride "container_implementation" {
+				fixedgridbox = {
+					name = "commanders_grid"
+					datamodel = "[CharacterSelectionList.GetList]"
+					datamodel_reuse_widgets = yes
+					visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+					addcolumn = 715
+					addrow = 55
+
+					item = {
+						widget = {
+							size = { 715 60 }
+
+							widget_character_list_item_finder = {
+								size = { 715 60 }
+								visible = "[Not(Character.IsPlayerInteractionShown('recruit_guest_interaction'))]"
+
+								blockoverride "click" {
+									enabled = "[CharacterListItem.IsSelectable]"
+									onclick = "[CharacterListItem.OnClick('character')]"
+									onclick = "[GetVariableSystem.Clear('expand_view')]"
+									onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+								}
+
+								datacontext = "[CharacterListItem.GetCharacter]"
+								datacontext = "[CSelectCommanderWindow.GetArmy]"
+								tooltip = "[CharacterListItem.GetText('tooltip')]"
+
+
+								blockoverride "portrait_button"
+								{
+									grayscale = "[Not(CharacterListItem.IsSelectable)]"
+								}
+
+								blockoverride "widget"
+								{
+									background = {
+										visible = "[Not(CharacterListItem.IsSelectable)]"
+										using = Background_Area
+										margin_bottom = -4
+									}
+								}
+
+								blockoverride "button_content"
+								{
+									button_commander_list_item = {}
+								}
+							}
+
+							widget = {
+								size = { 715 60 }
+								visible = "[Character.IsPlayerInteractionShown('recruit_guest_interaction')]"
+
+								datacontext = "[CharacterListItem.GetCharacter]"
+								datacontext = "[CSelectCommanderWindow.GetArmy]"
+								tooltip = "[CharacterListItem.GetText('tooltip')]"
+
+								blockoverride "portrait_button"
+								{
+									grayscale = "[Not(CharacterListItem.IsSelectable)]"
+								}
+
+								background = {
+									visible = "[Not(CharacterListItem.IsSelectable)]"
+									using = Background_Area
+									margin_bottom = -4
+								}
+
+								hbox = {
+									# portrait_head_small = {}
+
+									spacer = {
+										size = { 15 20 }
+									}
+
+									button_commander_list_item = {
+										using = Background_Guest
+
+										layoutpolicy_horizontal = expanding
+										layoutpolicy_vertical = expanding
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	window_character_filter = {
+		# position = { -600 20 }
+		blockoverride "addition_filter" {
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('ruler_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('religion_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('culture_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+			}
+		}
+	}
+}
+
+types army_select_commander
+{
+	type button_commander_list_item = vbox {
+		margin = { 10 0 }
+		spacing = -5
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 5
+
+			# icon = {
+			# 	name = "commander_is_leader"
+			# 	visible = "[Character.IsLocalPlayer]"
+			# 	size = {30 30}
+			# 	texture = "gfx/interface/icons/commander_is_leader.dds"
+			# 	tooltip = "POTENTIAL_COMMANDER_IS_LEADER_TOOLTIP"
+			# }
+
+			text_single = {
+				raw_text = "Disabled."
+				visible = "[Not(CharacterListItem.IsSelectable)]"
+			}
+			text_single = {
+				raw_text = "[Character.GetUINameNoTooltip]."
+
+				fontsize_min = 14
+				max_width = 400
+			}
+
+			text_single = {
+				name = "character_relation"
+				raw_text = "[Character.GetRelationToString( GetPlayer )]."
+				tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+				fontsize_min = 14
+				max_width = 300
+			}
+
+			button_text = {
+			    blockoverride "text" {
+			        raw_text = "Recruit."
+					align = left
+			    }
+				blockoverride "extra" {
+					text_single = {
+						raw_text = " Disabled."
+						visible = "[Not(Character.IsPlayerInteractionValid('recruit_guest_interaction'))]"
+					}
+				}
+				visible = "[Character.IsPlayerInteractionShown('recruit_guest_interaction')]"
+				enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
+				onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
+				tooltip = "[Character.GetPlayerInteractionTooltip('recruit_guest_interaction')]"
+			}
+			expand = {}
+		}
+
+		hbox = {
+			name = "skill_and_traits"
+			layoutpolicy_horizontal = expanding
+			margin_right = 15
+			spacing = 5
+
+			hbox = {
+				spacing = 5
+				tooltip = "[Character.GetCommanderLeadingOwnAdvantageDesc( GetPlayer )]"
+
+				text_single = {
+					raw_text = "Advantage:"
+				}
+
+				text_single = {
+					name = "skill_value"
+					raw_text = "[CharacterListItem.GetInt('')]."
+				}
+			}
+			hbox = {
+				visible = "[Character.IsKnightInArmy]"
+				tooltip = "[Character.GetProwessBreakdown]"
+				spacing = 5
+				text_single = {
+					raw_text = "Prowess:"
+				}
+
+				text_single = {
+					name = "prowess_value"
+					raw_text = "[Character.GetProwess|0]."
+					default_format = "#high"
+				}
+			}
+			dynamicgridbox = {
+				name = "traits_grid"
+				datamodel = "[CharacterListItem.GetTraits]"
+				flipdirection = yes
+				datamodel_wrap = 3
+
+				item = {
+					text_single = {
+						tooltip = "trait_tooltip"
+						margin_left = 5
+						raw_text = "[Trait.GetNameNoTooltip(Character.Self)],"
+					}
+				}
+			}
+
+			hbox = {
+				visible = "[Not(Character.IsPlayerInteractionShown('recruit_guest_interaction'))]"
+
+				background = {
+					visible = "[Character.IsKnightInSpecificArmy( Army.Self )]"
+					using = Background_Area
+					margin = { 10 0 }
+					margin_bottom = 3
+				}
+
+				text_single = {
+					raw_text = "KNIGHT_IN_THIS_ARMY_TOOLTIP"
+					visible = "[Character.IsKnightInSpecificArmy( Army.Self )]"
+				}
+
+
+				expand = { }
+
+				# text_single = {
+				# 	name = "knight_in_an_army"
+				# 	visible = "[Not( Character.IsKnightInSpecificArmy( Army.Self ) )]"
+				# 	text = "KNIGHT_IN_ARMY_TOOLTIP"
+				# 	fontsize_min = 14
+				# 	max_width = 200
+				# }
+			}
+
+			expand = { }
+		}
+	}
+}

@@ -1,0 +1,1145 @@
+window = {
+	name = "combat_window"
+	size = { 100% 100% }
+	gfxtype = windowgfx
+	alwaystransparent = yes
+	movable = no
+	layer = windows_layer
+	allow_outside = yes
+
+
+	state = {
+		name = _show
+
+		alpha = 1
+
+		start_sound = {
+			soundeffect = "event:/SFX/UI/Generic/Windows/sfx_ui_generic_window_standard_show"
+		}
+
+		# on_start = "[GetScriptedGui('save_combat_position').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', CombatWindow.GetCombat.MakeScope).End )]"
+		on_start = "[PdxGuiWidget.FindChild('pause').TriggerAnimation('pause')]"
+	}
+
+	widget = {
+		name = pause
+		visible = "[Not(IsGamePaused)]"
+
+		state = {
+			name = pause
+			on_start = "[OnPause]"
+		}
+	}
+
+	widget = {
+		datacontext = "[CombatWindow.GetCombat.GetProvince]"
+		visible = "[And(IsGamePaused, Not(GetVariableSystem.Exists('ocr')))]"
+
+		state = {
+			trigger_on_create = yes
+			name = daily_tick
+			# on_start = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Province.MakeScope ).End )]"
+		}
+	}
+
+	state = {
+		name = _hide
+		alpha = 0
+
+		start_sound = {
+			soundeffect = "event:/SFX/UI/Generic/Windows/sfx_ui_generic_window_standard_hide"
+		}
+	}
+
+	state = {
+		name = "phase_change"
+		alpha = 1
+	}
+
+	# state = {
+	# 	name = "daily_tick"
+	# 	alpha = 1
+	# 	on_start = "[GetScriptedGui('save_army_position').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', CombatWindow.GetCombat.MakeScope).End )]"
+	# 	on_start = "[CombatWindow.GoToProvince]"
+	# }
+
+	state = {
+		name = "new_battle_event"
+		alpha = 1
+	}
+
+	buttons_window_control = {
+
+		blockoverride "button_close"
+		{
+			onclick = "[CombatWindow.CloseAndDeselect]"
+		}
+	}
+
+	old_combat = {
+		visible = "[GetVariableSystem.Exists('ocr')]"
+	}
+
+	widget = {
+		alwaystransparent = yes
+		size = { 630 100% }
+		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			using = Window_Background_No_Edge
+			visible = "[Not(GetVariableSystem.Exists('retreat_window'))]"
+
+			### Battle event
+
+			flowcontainer = {
+				visible = "[CombatWindow.BattleEventIsShown]"
+				margin_left = 5
+				layoutpolicy_horizontal = expanding
+
+				state = {
+					name = _show
+					start_sound = {
+						soundeffect = "event:/SFX/UI/Generic/Windows/sfx_ui_generic_window_small"
+					}
+				}
+
+				state = {
+					name = _hide
+					start_sound = {
+						soundeffect = "event:/SFX/UI/Generic/Windows/sfx_ui_generic_window_small"
+					}
+				}
+
+				ignoreinvisible = yes
+				direction = vertical
+
+				button_text = {
+					datacontext = "[CombatWindow.GetCurrentBattleEvent]"
+					blockoverride "text" {
+						text = "[CombatWindow.GetCurrentBattleEvent.GetTitle( CombatWindow.GetLeftCombatSide.IsAttacker )]"
+						max_width = 630
+					}
+					shortcut = mapmode_house_secondary
+				}
+
+				button_text = {
+					onclick = "[CombatWindow.IncrementBattleEvent]"
+					blockoverride "text" {
+						raw_text = "Dismiss this event, Shift D."
+					}
+					shortcut = mapmode_house_secondary
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					margin_left = 10
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 2
+
+						text_single = {
+							margin_top = 1
+							raw_text = "[Multiply_float(Subtract_float(CombatWindow.GetCombat.GetPowerSlider, '(float)50'), '(float)2')|0]%,"
+						}
+
+						hbox = {
+							margin_top = 1
+							visible = "[CombatWindow.IsCombatInPursuitPhase]"
+							text_single = {
+								visible = "[CombatWindow.IsRightSideWinning]"
+								text = "game_concept_defeat"
+							}
+
+							text_single = {
+								visible = "[CombatWindow.IsLeftSideWinning]"
+								text = "game_concept_victory"
+							}
+
+							dot = { }
+						}
+
+						text_single = {
+							margin_top = 1
+							raw_text = "[CombatWindow.GetName],"
+						}
+
+						button_text = {
+							datacontext = "[CombatWindow.GetLeftSideMainParticipant]"
+							blockoverride "text" {
+								raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip]"
+								align = left
+							}
+						}
+
+						text_single = {
+							margin_top = 1
+							raw_text = "against"
+						}
+
+						button_text = {
+							datacontext = "[CombatWindow.GetRightSideMainParticipant]"
+							blockoverride "text" {
+								raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+								align = left
+							}
+						}
+
+						expand = { }
+					}
+
+
+					flowcontainer = {
+						layoutpolicy_horizontal = expanding
+						name = "troop_counters"
+						direction = vertical
+						ignoreinvisible = yes
+
+						flowcontainer = {
+							name = "left_soldiers"
+							datacontext = "[CombatWindow.GetLeftCombatSide]"
+							datacontext = "[CombatSide.GetComposition]"
+							tooltip = "[ArmyComposition.GetArmyCompositionTooltip]"
+							ignoreinvisible = yes
+
+							text_single = {
+								visible = "[CombatWindow.IsCombatInPursuitPhase]"
+								raw_text = "[CombatWindow.GetLeftCombatSide.GetPursuingRetreatingLabel] with [ArmyComposition.GetSoldierCountString] men."
+							}
+
+							flowcontainer = {
+								visible = "[Not(CombatWindow.IsCombatInPursuitPhase)]"
+								direction = vertical
+								ignoreinvisible = yes
+
+								flowcontainer = {
+
+									text_single = {
+										raw_text = "[CombatSide.GetCurrentFightingMen|0] against"
+									}
+
+									text_single = {
+										datacontext = "[CombatSide.GetComposition]"
+										tooltip = "[ArmyComposition.GetArmyCompositionTooltip]"
+										raw_text = " [CombatWindow.GetRightCombatSide.GetCurrentFightingMen|0]."
+									}
+								}
+
+								text_single = {
+									datacontext = "[CombatWindow.GetCombat.GetProvince]"
+									raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Province.MakeScope ).ScriptValue('enemies_total_nearby_combat')] enemies nearby."
+									visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Province.MakeScope ).ScriptValue('enemies_total_nearby_combat'), '(CFixedPoint)0')]"
+								}
+
+								text_single = {
+									datacontext = "[CombatWindow.GetCombat.GetProvince]"
+									raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Province.MakeScope ).ScriptValue('allies_total_nearby_combat')] allies nearby."
+									visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Province.MakeScope ).ScriptValue('allies_total_nearby_combat'), '(CFixedPoint)0')]"
+								}
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									visible = "[CombatSide.IsStillFighting]"
+
+									text_single = {
+										raw_text = "You lost [CombatWindow.GetLeftCombatSide.GetSoftCasualties|0]"
+										tooltip = "COW_TT_SOFT_CASUALTIES_LEFT"
+									}
+									text_single = {
+										datacontext = "[CombatWindow.GetRightCombatSide]"
+										datacontext = "[CombatSide.GetComposition]"
+										raw_text = ", they lost [CombatSide.GetSoftCasualties|0]."
+										tooltip = "COW_TT_SOFT_CASUALTIES_RIGHT"
+									}
+								}
+							}
+
+							text_single = {
+								datacontext = "[CombatWindow.GetRightCombatSide]"
+								datacontext = "[CombatSide.GetComposition]"
+								visible = "[CombatWindow.IsCombatInPursuitPhase]"
+								raw_text = " [CombatSide.GetPursuingRetreatingLabel] with [ArmyComposition.GetSoldierCountString] men."
+							}
+						}
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not(CombatWindow.ShowRetreatIcon)]"
+						raw_text = "Cannot retreat."
+					}
+
+					button_text = {
+						visible = "[CombatWindow.ShowRetreatIcon]"
+						datacontext = "[CombatWindow.GetCombat.GetProvince]"
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+							margin = { 0 5 }
+					        raw_text = "Can retreat, click here to choose where."
+					    }
+						onclick = "[GetVariableSystem.Toggle('retreat_window')]"
+						onclick = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Province.MakeScope ).End )]"
+						onclick = "[GetScriptedGui('retreat_options').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Province.MakeScope ).End )]"
+					}
+
+					hbox = {
+						name = "knights"
+						layoutpolicy_horizontal = expanding
+
+
+						hbox = {
+							visible = "[Not(And(LessThanOrEqualTo_int32( CombatWindow.GetLeftKnightCount, '(int32)0' ), LessThanOrEqualTo_int32( CombatWindow.GetRightKnightCount, '(int32)0' )))]"
+							layoutpolicy_horizontal = expanding
+
+							spacing = 3
+
+							text_single = {
+								raw_text = "[CombatWindow.GetLeftKnightCount] [CombatWindow.GetLeftSideMainParticipant.Custom('KnightCulturePluralNoTooltip')]"
+								tooltip = "COW_TT_KNIGHT_COUNT_LEFT"
+							}
+
+							text_single = {
+								raw_text = "against"
+							}
+
+							text_single = {
+								raw_text = "[CombatWindow.GetRightKnightCount] [CombatWindow.GetRightSideMainParticipant.Custom('KnightCulturePluralNoTooltip')]."
+								tooltip = "COW_TT_KNIGHT_COUNT_RIGHT"
+							}
+
+							expand = { }
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not(CombatWindow.IsCombatInPursuitPhase)]"
+
+						widget = {
+							size = { 600 45 }
+							scissor = yes
+							tooltip = "[CombatWindow.GetAdvantageDescription]"
+
+							text_single = {
+								name = "advantage"
+								text = "[CombatWindow.GetAdvantageDescription]"
+							}
+						}
+					}
+
+					hbox = {
+					    layoutpolicy_horizontal = expanding
+						spacing = 3
+
+					    text_single = {
+					    	raw_text = "Fighting in"
+					    }
+
+						text_single = {
+							visible = "[GetScriptedGui('is_hostile_barony').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', CombatWindow.GetCombat.GetProvince.MakeScope ).End )]"
+							raw_text = "hostile"
+						}
+
+						text_single = {
+							visible = "[GetScriptedGui('is_friendly_barony').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', CombatWindow.GetCombat.GetProvince.MakeScope ).End )]"
+							raw_text = "friendly"
+						}
+
+						text_single = {
+							datacontext = "[CombatWindow.GetCombat.GetProvince.GetTerrain]"
+							tooltip = "HOLDING_TERRAIN_TOOLTIP"
+							raw_text = "[Terrain.GetNameNoTooltip]."
+						}
+
+					    expand = { }
+					}
+
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+						visible = "[Not(CombatWindow.IsCombatInPursuitPhase)]"
+
+						text_single = {
+							raw_text = "Commanders:"
+						}
+
+						text_single = {
+							visible = "[Character.IsValid]"
+							datacontext = "[CombatWindow.GetLeftSideCommander]"
+							text = "[Character.GetCommanderAdvantage]"
+							tooltip = "[Character.GetCommanderAdvantageDesc]"
+						}
+
+						text_single = {
+							visible = "[Not(Character.IsValid)]"
+							datacontext = "[CombatWindow.GetLeftSideCommander]"
+							raw_text = "0"
+						}
+
+						text_single = {
+							raw_text = "against"
+						}
+
+						text_single = {
+							visible = "[Character.IsValid]"
+							datacontext = "[CombatWindow.GetRightSideCommander]"
+							raw_text = "[Character.GetCommanderAdvantage] advantage."
+							tooltip = "[Character.GetCommanderAdvantageDesc]"
+						}
+
+						text_single = {
+							visible = "[Not(Character.IsValid)]"
+							datacontext = "[CombatWindow.GetRightSideCommander]"
+							raw_text = "[Character.GetCommanderAdvantage] advantage."
+						}
+
+						expand = { }
+					}
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not(CombatWindow.IsCombatInPursuitPhase)]"
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+
+							text_single = {
+								raw_text = "Battle rolls:"
+							}
+
+							text_single = {
+								raw_text = "[CombatWindow.GetLeftRoll]"
+							}
+
+							text_single = {
+								raw_text = "against"
+							}
+
+							text_single = {
+								raw_text = "[CombatWindow.GetRightRoll]."
+							}
+							expand = { }
+						}
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "[CombatWindow.GetCurrentPhaseTooltip]."
+					}
+
+					# maa
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						vbox = {
+							name = "MAA"
+							layoutpolicy_horizontal = expanding
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								vbox = {
+									datamodel = "[CombatWindow.GetLeftSideMaaTypes]"
+									datacontext = "[CombatWindow.GetLeftCombatSide]"
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "[GetDataModelSize(CombatWindow.GetLeftSideMaaTypes)] men at arms on your side."
+									}
+
+									item = {
+										maa_text_item = {
+											layoutpolicy_horizontal = expanding
+										}
+									}
+								}
+
+								expand = { }
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								vbox = {
+									datamodel = "[CombatWindow.GetRightSideMaaTypes]"
+									datacontext = "[CombatWindow.GetRightCombatSide]"
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "[GetDataModelSize(CombatWindow.GetRightSideMaaTypes)] enemy men at arms."
+									}
+
+									item = {
+										maa_text_item = {
+											layoutpolicy_horizontal = expanding
+										}
+									}
+								}
+
+								expand = { }
+							}
+						}
+					}
+
+					# leaders
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+							datacontext = "[CombatWindow.GetLeftSideCommander]"
+
+							text_single = {
+								visible = "[Not(Character.IsValid)]"
+								raw_text = "No [Select_CString(CombatWindow.IsAttackerOnLeftSide, 'attacking', 'defending')] commander"
+							}
+
+							button_text = {
+								visible = "[Character.IsValid]"
+								using = char_click
+								blockoverride "text" {
+									raw_text = "[Select_CString(CombatWindow.IsAttackerOnLeftSide, 'Attacker', 'Defender')]:"
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = " [Character.GetShortUINameNoTooltip],"
+										align = left
+									}
+								}
+							}
+
+							expand = { }
+						}
+
+						dynamicgridbox = {
+							layoutpolicy_horizontal = expanding
+							datamodel = "[CombatWindow.GetLeftCommanderTraits]"
+							datamodel_wrap = 5
+
+							item = {
+								text_single = {
+									margin_left = 3
+									tooltip = "[Trait.GetFullDescription( CombatWindow.GetLeftSideCommander.Self, CombatWindow.GetLeftSideCommander.GetFaith.Self )]"
+									raw_text = "[Trait.GetNameNoTooltip( GetPlayer )],"
+								}
+							}
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+							datacontext = "[CombatWindow.GetRightSideCommander]"
+
+							text_single = {
+								visible = "[Not(Character.IsValid)]"
+								raw_text = "No [Select_CString(CombatWindow.IsAttackerOnLeftSide, 'defending', 'attacking')] commander"
+							}
+
+							button_text = {
+								visible = "[Character.IsValid]"
+								using = char_click
+								blockoverride "text" {
+									raw_text = "[Select_CString(CombatWindow.IsAttackerOnLeftSide, 'Defender', 'Attacker')]:"
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = " [Character.GetShortUINameNoTooltip],"
+										align = left
+									}
+								}
+							}
+
+							expand = { }
+						}
+
+						dynamicgridbox = {
+							layoutpolicy_horizontal = expanding
+							datamodel = "[CombatWindow.GetRightCommanderTraits]"
+							datamodel_wrap = 5
+
+							item = {
+								text_single = {
+									margin_left = 3
+									tooltip = "[Trait.GetFullDescription( CombatWindow.GetRightSideCommander.Self, CombatWindow.GetRightSideCommander.GetFaith.Self )]"
+									raw_text = "[Trait.GetNameNoTooltip( GetPlayer )],"
+								}
+							}
+						}
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "Pan camera, Shift Q."
+							align = left
+						}
+						onclick = "[CombatWindow.GoToProvince]"
+						shortcut = map_mode_9
+					}
+				}
+
+
+				expand = { }
+			}
+
+			expand = { }
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			using = Window_Background_No_Edge
+			visible = "[GetVariableSystem.Exists('retreat_window')]"
+			margin = { 5 5 }
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = close_window
+				onclick = "[GetVariableSystem.Clear('retreat_window')]"
+			    blockoverride "text" {
+			        raw_text = "Retreat options. Close with Escape"
+			    }
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[GetPlayer.MakeScope.Var('closest_friendly_place').IsSet]"
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Closest friendly place,"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						using = title_pan_right
+						using = send_army_click
+						datacontext = "[Province.GetCoATitle]"
+						datacontext = "[CombatWindow.GetCombat]"
+						datacontext = "[GetPlayer.MakeScope.Var('closest_friendly_place').GetProvince]"
+						blockoverride "pre" {
+							spacing = 3
+							text_single = {
+								raw_text = "[Province.GetNameNoTooltip],"
+							}
+							text_single = {
+								raw_text = "CombatProvinceDistance"
+							}
+						}
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not(GetPlayer.MakeScope.Var('closest_friendly_place').IsSet)]"
+					raw_text = "Couldn't fight a friendly place to retreat to."
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "Your capital,"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					using = title_pan_right
+					using = send_army_click
+					datacontext = "[Province.GetCoATitle]"
+					datacontext = "[CombatWindow.GetCombat]"
+					datacontext = "[GetPlayer.GetCapitalLocation]"
+					blockoverride "pre" {
+						spacing = 3
+						text_single = {
+							raw_text = "[Province.GetNameNoTooltip],"
+						}
+						text_single = {
+							raw_text = "CombatProvinceDistance"
+						}
+					}
+				}
+
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[GetPlayer.MakeScope.Var('closest_ally').IsSet]"
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Closest ally not in battle,"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						using = title_pan_right
+						using = send_army_click
+						datacontext = "[CombatWindow.GetCombat]"
+						datacontext = "[GetPlayer.MakeScope.Var('closest_ally').Army]"
+						datacontext = "[Army.GetLocation]"
+						datacontext = "[Province.GetCoATitle]"
+						blockoverride "pre" {
+							spacing = 3
+							text_single = {
+								raw_text = "[GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('province', Province.MakeScope).ScriptValue('allies_in_the_province')] men,"
+							}
+							text_single = {
+								raw_text = "[Province.GetNameNoTooltip],"
+							}
+							text_single = {
+								raw_text = "CombatProvinceDistance"
+							}
+						}
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not(GetPlayer.MakeScope.Var('closest_ally').IsSet)]"
+					raw_text = "Couldn't fight an ally to retreat to."
+				}
+
+				button_text = {
+					datacontext = "[CombatWindow.GetCombat.GetProvince]"
+					layoutpolicy_horizontal = expanding
+					shortcut = map_mode_11
+				    blockoverride "text" {
+				        raw_text = "Reload, Shift E."
+				    }
+					onclick = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Province.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('retreat_options').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Province.MakeScope ).End )]"
+				}
+			}
+
+			expand = { }
+		}
+	}
+
+}
+
+types CombatWindow
+{
+	type icon_advantage_progressbar = icon {
+		size = { 0 0 }
+		texture = "gfx/interface/colors/white.dds"
+		shaderfile = "gfx/FX/pdxgui_repeat_texture.shader"
+		alpha = 0.7
+
+		block "color" {}
+
+		modify_texture = {
+			name = "arrows"
+			texture = "gfx/interface/window_combat/combat_advantage_progressbar.dds"
+			blend_mode = alphamultiply
+			spritetype = corneredtiled
+			texture_density = 2
+			spriteborder = { 0 5 }
+
+			block "modify_texture" {}
+		}
+
+		modify_texture = {
+			texture = "gfx/interface/component_masks/mask_fade_horizontal_short.dds"
+			blend_mode = alphamultiply
+			spritetype = corneredtiled
+			spriteborder_right = 6
+		}
+
+		state = {
+			name = a
+			next = b
+			trigger_on_create = yes
+
+			duration = 0
+
+			modify_texture = {
+				name = "arrows"
+				translate_uv = { 0 0 }
+			}
+		}
+
+		state = {
+			name = b
+			next = a
+			trigger_on_create = yes
+
+			duration = 4
+
+			modify_texture = {
+				name = "arrows"
+				block "animation_uv"
+				{
+					translate_uv = { -1 0 }
+				}
+			}
+		}
+	}
+
+	type animation_soldier_loss = icon {
+		widgetanchor = center
+		size = { 15 15 }
+		texture = "gfx/interface/colors/white.dds"
+		using = Color_Red
+		alpha = 0
+
+		modify_texture = {
+			name = "mask_1"
+			texture = "gfx/interface/component_masks/mask_glow.dds"
+			blend_mode = alphamultiply
+			rotate_uv = 1
+		}
+
+		modify_texture = {
+			name = "mask_2"
+			texture = "gfx/interface/component_masks/mask_glow.dds"
+			blend_mode = alphamultiply
+			rotate_uv = -1
+		}
+
+		modify_texture = {
+			name = "mask_3"
+			texture = "gfx/interface/component_masks/mask_clouds.dds"
+			blend_mode = alphamultiply
+			alpha = 0.1
+		}
+
+		modify_texture = {
+			name = "mask_4"
+			texture = "gfx/interface/component_masks/mask_circle.dds"
+			blend_mode = mask
+		}
+
+		modify_texture = {
+			name = "mask_3"
+			texture = "gfx/interface/colors/gold.dds"
+			blend_mode = add
+		}
+
+		state = {
+			block "animation_trigger_name"
+			{
+				name = "name"
+			}
+			next = b
+			trigger_on_create = yes
+
+			using = Animation_Curve_Default
+			scale = 1
+			alpha = 0
+		}
+
+		state = {
+			name = b
+			next = c
+
+			duration = 0.3
+			bezier = { 0.5 0 1 0.5 }
+
+			scale = 5
+			alpha = 0.7
+		}
+
+		state = {
+			name = c
+			duration = 0.3
+			alpha = 0
+			scale = 6
+		}
+
+		state = {
+			name = rotate_a
+			next = rotate_b
+			trigger_on_create = yes
+
+			modify_texture = {
+				name = "mask_1"
+				rotate_uv = 1
+			}
+		}
+
+		state = {
+			name = rotate_a
+			next = rotate_b
+
+			duration = 0.5
+
+			modify_texture = {
+				name = "mask_1"
+				rotate_uv = 180
+			}
+		}
+
+		state = {
+			name = rotate_a_2
+			next = rotate_b_2
+			trigger_on_create = yes
+
+			modify_texture = {
+				name = "mask_2"
+				rotate_uv = -1
+			}
+		}
+
+		state = {
+			name = rotate_a_2
+			next = rotate_b_2
+
+			duration = 0.5
+
+			modify_texture = {
+				name = "mask_2"
+				rotate_uv = -180
+			}
+		}
+
+		state = {
+			name = rotate_a_3
+			next = rotate_b_3
+			trigger_on_create = yes
+
+			modify_texture = {
+				name = "mask_3"
+				rotate_uv = 0
+				alpha = 0.1
+			}
+		}
+
+		state = {
+			name = rotate_a_3
+			next = rotate_b_3
+
+			duration = 0.5
+
+			modify_texture = {
+				name = "mask_3"
+				rotate_uv = 40
+				alpha = 0.8
+			}
+		}
+	}
+
+	type icon_maa_combat = icon {
+		name = "maa_icon"
+		datacontext = "[CombatMaaItem.GetMenAtArmsType]"
+		size = { 40 40 }
+		texture = "[MenAtArmsType.GetIcon]"
+
+		alwaystransparent = yes
+		using = tooltip_nw
+
+		tooltipwidget = {
+			maa_tooltip_widget = {}
+		}
+
+		glow = {
+			glow_radius = 3
+			using = Glow_Standard
+
+			block "glow"
+			{
+				using = Color_Green
+			}
+		}
+
+	}
+
+	type maa_tooltip_widget = widget {
+		direction = vertical
+		alwaystransparent = no
+
+		widget = {
+			name = "background"
+			using = DefaultTooltipBackground
+			size = { 100% 100% }
+			alwaystransparent = no
+		}
+
+		vbox = {
+			margin = { 10 3 }
+			margin_bottom = 10
+			minimumsize = { 380 0 }
+			spacing = 5
+			set_parent_size_to_minimum = yes
+
+			vbox_maa_stats = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "siege_stat"
+				{
+					text = "COMBAT_REGIMENT_SIEGE"
+				}
+				blockoverride "siege_tt"
+				{
+					tooltip = "COMBAT_REGIMENT_SIEGE_TT"
+				}
+				blockoverride "damage_stat"
+				{
+					text = "[CombatMaaItem.GetStat( 'damage' )|0]"
+				}
+				blockoverride "damage_tt"
+				{
+					tooltip = "COMBAT_REGIMENT_DAMAGE_TT"
+				}
+				blockoverride "toughness_stat"
+				{
+					text = "[CombatMaaItem.GetStat( 'toughness' )|0]"
+				}
+				blockoverride "toughness_tt"
+				{
+					tooltip = "COMBAT_REGIMENT_TOUGHNESS_TT"
+				}
+				blockoverride "pursuit_stat"
+				{
+					text = "[CombatMaaItem.GetStat( 'pursuit' )|0]"
+				}
+				blockoverride "pursuit_tt"
+				{
+					tooltip = "COMBAT_REGIMENT_PURSUIT_TT"
+					# fade out if 0
+					alpha = "[Select_float(GreaterThan_CFixedPoint(CombatMaaItem.GetStat( 'pursuit' ),'(CFixedPoint)0'), '(float)1.0','(float)0.4'))]"
+				}
+				blockoverride "screen_stat"
+				{
+					text = "[CombatMaaItem.GetStat( 'screen' )|0]"
+				}
+				blockoverride "screen_tt"
+				{
+					tooltip = "COMBAT_REGIMENT_SCREEN_TT"
+					# fade out if 0
+					alpha = "[Select_float(GreaterThan_CFixedPoint(CombatMaaItem.GetStat( 'screen' ),'(CFixedPoint)0'), '(float)1.0','(float)0.4'))]"
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				margin = { 10 0 }
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					text = "[CombatMaaItem.GetCurrentStrength|0]/[CombatMaaItem.GetMaxStrength]"
+				}
+
+				text_single = {
+					text = "COMBAT_WINDOW_MAA_TT_REGIMENTS"
+				}
+			}
+
+			text_single = {
+				margin = { 10 0 }
+				layoutpolicy_horizontal = expanding
+				visible = "[And(Not(CombatWindow.IsCombatInPursuitPhase), GreaterThan_int32(CombatMaaItem.GetTerrainBonus, '(int32)0'))]"
+				text = "COMBAT_WINDOW_MAA_TT_TERRAIN_GOOD"
+			}
+
+
+			text_single = {
+				margin = { 10 0 }
+				layoutpolicy_horizontal = expanding
+				visible = "[And(Not(CombatWindow.IsCombatInPursuitPhase), LessThan_int32(CombatMaaItem.GetTerrainBonus, '(int32)0'))]"
+				text = "COMBAT_WINDOW_MAA_TT_TERRAIN_BAD"
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				text_single = {
+					margin = { 6 0 }
+					layoutpolicy_horizontal = expanding
+					visible = "[And(Not(CombatWindow.IsCombatInPursuitPhase), LessThan_CFixedPoint(CombatMaaItem.GetCountered, '(CFixedPoint)1'))]"
+					text = "COMBAT_WINDOW_MAA_TT_EFFICIENCY"
+				}
+
+				flowcontainer = {
+					layoutpolicy_horizontal = expanding
+					visible = "[And( DataModelHasItems(CombatMaaItem.GetCounteredByMaa), Not( CombatWindow.IsCombatInPursuitPhase ) )]"
+					margin = { 10 0 }
+					margin_left = 30
+					direction = vertical
+					datamodel = "[CombatMaaItem.GetCounteredByMaa]"
+
+					item = {
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							text = "COMBAT_WINDOW_MAA_TT_COUNTERED_BY"
+						}
+					}
+				}
+			}
+
+			flowcontainer = {
+				layoutpolicy_horizontal = expanding
+				visible = "[And( DataModelHasItems(CombatMaaItem.GetCountersMaa), Not( CombatWindow.IsCombatInPursuitPhase ) )]"
+				margin = { 10 0 }
+				direction = vertical
+				datamodel = "[CombatMaaItem.GetCountersMaa]"
+
+				item = {
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						text = "COMBAT_WINDOW_MAA_TT_COUNTERS"
+					}
+				}
+			}
+
+			text_single = {
+				margin = { 10 0 }
+				layoutpolicy_horizontal = expanding
+				visible = "[And(And(CombatWindow.IsCombatInPursuitPhase, GreaterThan_CFixedPoint(MenAtArmsType.GetStat(GetPlayer, 'screen'), '(CFixedPoint)0')), Not( CombatSide.IsStillFighting ) )]"
+				text = "COMBAT_WINDOW_MAA_TT_SCREEN"
+			}
+
+			text_single = {
+				margin = { 10 0 }
+				layoutpolicy_horizontal = expanding
+				visible = "[And( And(CombatWindow.IsCombatInPursuitPhase, GreaterThan_CFixedPoint(MenAtArmsType.GetStat(GetPlayer, 'pursuit'), '(CFixedPoint)0')), CombatSide.IsStillFighting )]"
+				text = "COMBAT_WINDOW_MAA_TT_PURSUIT"
+			}
+		}
+	}
+
+	type maa_text_item = flowcontainer {
+		ignoreinvisible = yes
+
+		 margin_left = 3
+		 spacing = 3
+		 datacontext = "[CombatMaaItem.GetMenAtArmsType]"
+
+		 tooltipwidget = {
+			 maa_tooltip_widget = { }
+		 }
+
+		 text_single = {
+			 raw_text = "[CombatMaaItem.GetCurrentStrength] [MenAtArmsType.GetNameNoTooltip],"
+		 }
+
+		 text_single = {
+			 visible = "[And(CombatWindow.IsCombatInPursuitPhase, CombatMaaItem.IsGoodAftermath(CombatSide.IsStillFighting))]"
+			raw_text = "at advantage."
+		 }
+
+		 text_single = {
+			 visible = "[And(EqualTo_int32(CombatMaaItem.GetPerformance, '(int32)3'), Not(CombatWindow.IsCombatInPursuitPhase))]"
+			raw_text = "disadvantage."
+		 }
+
+		 text_single = {
+			 visible = "[And(EqualTo_int32(CombatMaaItem.GetPerformance, '(int32)2'), Not(CombatWindow.IsCombatInPursuitPhase))]"
+			raw_text = "mild disadvantage."
+		 }
+
+		 text_single = {
+			 visible = "[And(EqualTo_int32(CombatMaaItem.GetPerformance, '(int32)1'), Not(CombatWindow.IsCombatInPursuitPhase))]"
+			raw_text = "at advantage."
+		 }
+	}
+}

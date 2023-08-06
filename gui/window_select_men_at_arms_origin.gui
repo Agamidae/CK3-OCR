@@ -1,0 +1,305 @@
+﻿widget = {
+	name = "select_men_at_arms_origin_window"
+	size = { 100% 100% }
+	datacontext = "[SelectMenAtArmsOriginView.GetRegiment]"
+	datacontext = "[Regiment.GetMAAType]"
+
+	# datacontext = "[GetPlayer.GetCapitalLocation.GetCounty.GetTitle]"
+	# onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+
+	using = zoom_out_title
+
+	state = {
+		name = hide_maa_window
+		position = { -1500 0 }
+	}
+	state = {
+		name = show_maa_window
+		# on_start = "[PdxGuiTriggerAllAnimations('pan_to_army')]"
+		position = { 0 0 }
+	}
+
+	state = {
+		name = _hide
+		on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
+	}
+
+	state = {
+		name = _show
+		next = "clear_maa_list"
+		on_finish = "[PdxGuiTriggerAllAnimations('show_army_window')]"
+	}
+
+	state = {
+		name = "clear_maa_list"
+		delay = 0.3
+		alpha = 1
+		next = grab_origins
+		on_finish = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+		on_start = "[GetScriptedGui('clear_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+	}
+
+	state = {
+		name = grab_origins
+		delay = 0.3
+		on_finish = "[PdxGuiTriggerAllAnimations('grab_maa_origin')]"
+		next = order_origins
+	}
+
+	state = {
+		name = order_origins
+		delay = 0.3
+		on_finish = "[GetScriptedGui('order_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+	}
+
+	window = {
+		using = Window_Size_CharacterList
+		background = { using = Background_Area_Border_Solid }
+
+
+		vbox_select_from_map = { }
+	}
+
+	flowcontainer = {
+		parentanchor = top|hcenter
+		direction = vertical
+
+		position = { 0 100 }
+
+		text_label_center = {
+			text = "SELECT_MEN_AT_ARMS_LOCATION"
+			parentanchor = hcenter
+			align = nobaseline
+			margin = { 10 4 }
+		}
+
+		text_label_center = {
+			text = "RALLY_POINT_CHOOSE_LOCATION"
+			default_format = "#high"
+			using = Font_Size_Medium
+			parentanchor = hcenter
+			align = nobaseline
+			margin = { 10 4 }
+		}
+
+		text_label_center = {
+			text = "RALLY_POINT_MAP_INSTRUCTION"
+			parentanchor = hcenter
+			align = nobaseline|hcenter
+			margin = { 50 4 }
+		}
+	}
+
+
+	button_primary_big = {
+		name = "close_assignment_window"
+		text = "BACK_LABEL"
+
+		parentanchor = bottom|hcenter
+		position = { 0 -50}
+
+		onclick = "[SelectMenAtArmsOriginView.Close]"
+		shortcut = "close_window"
+	}
+}
+
+types OCR {
+	type vbox_select_from_map = vbox {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		using = ocr_margins
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			block "debug" {
+				visible = "[Not(ReleaseMode)]"
+			}
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					raw_text = "Refresh"
+				}
+				block "refresh" {
+					onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+				}
+			}
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					raw_text = "Clear"
+				}
+				datacontext = "[GetPlayer.GetCapitalLocation.GetCounty.GetTitle]"
+				onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+				block "clear" {
+					onclick = "[GetScriptedGui('clear_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					raw_text = "Order"
+				}
+				block "order" {
+					onclick = "[GetScriptedGui('order_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				}
+			}
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			text_single = {
+				block "temp" {
+					raw_text = "[GetDataModelSize( GetPlayer.MakeScope.GetList('maa_origins_temp'))] temp targets"
+				}
+				layoutpolicy_horizontal = expanding
+			}
+		}
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			block "action" {
+				raw_text = "Station [Regiment.GetName],"
+			}
+		}
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			block "targets" {
+				raw_text = "[GetDataModelSize( GetPlayer.MakeScope.GetList('maa_origins'))] targets:"
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			datamodel = "[GetPlayer.MakeScope.GetList('maa_origins')]"
+
+			item = {
+				vbox = {
+					block "maa" {
+						visible = "[Not(Province.GetMaaOriginHere.IsValid)]"
+					}
+					layoutpolicy_horizontal = expanding
+					datacontext = "[Scope.GetProvince]"
+
+					#TODO hide screen
+
+					button_text = {
+						block "target click" { }
+						onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+						onclick = "[GetVariableSystem.Set('station_regiment', Province.GetNameNoTooltip)]"
+						onclick = "[PdxGuiTriggerAllAnimations('hide_maa_window')]"
+						layoutpolicy_horizontal = expanding
+
+						shortcuts_list = {
+							blockoverride "click" {
+								block "target click" { }
+								onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+								onclick = "[GetVariableSystem.Set('station_regiment', Province.GetNameNoTooltip)]"
+								onclick = "[PdxGuiTriggerAllAnimations('hide_maa_window')]"
+							}
+						}
+
+						blockoverride "pre" {
+
+							text_single = {
+								raw_text = "[IndexNumber],"
+							}
+
+							block "maa" {
+								text_single = {
+									visible = "[ObjectsEqual(Regiment.GetOriginProvince, Scope.GetProvince)]"
+									raw_text = "Current station:"
+								}
+							}
+						}
+
+
+						blockoverride "text" {
+							raw_text = "[Province.GetNameNoTooltip]."
+						}
+
+						blockoverride "extra" {
+							text_single = {
+								visible = "[Not(ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation))]"
+								raw_text = "OutlinerProvinceDistance"
+							}
+							text_single = {
+								visible = "[ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation)]"
+								raw_text = "Your capital."
+							}
+						}
+					}
+
+					block "travel" { }
+
+					block "maa" {
+						vbox_maa_province_stats_numbers = {
+							layoutpolicy_horizontal = expanding
+						}
+					}
+				}
+			}
+		}
+
+		block "maa" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datamodel = "[GetPlayer.MakeScope.GetList('maa_origins')]"
+
+				item = {
+					vbox = {
+						visible = "[Province.GetMaaOriginHere.IsValid]"
+						layoutpolicy_horizontal = expanding
+						datacontext = "[Scope.GetProvince]"
+
+						button_text = {
+							onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+							onclick = "[GetVariableSystem.Set('station_regiment', Province.GetNameNoTooltip)]"
+							onclick = "[PdxGuiTriggerAllAnimations('hide_maa_window')]"
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "text" {
+								raw_text = "[Province.GetNameNoTooltip]."
+							}
+							blockoverride "pre" {
+								text_single = {
+									visible = "[ObjectsEqual(Regiment.GetOriginProvince, Scope.GetProvince)]"
+									raw_text = "Current station:"
+								}
+							}
+
+							blockoverride "extra" {
+								container = {
+									ignoreinvisible = yes
+									visible = "[Not(ObjectsEqual(Regiment.GetOriginProvince, Scope.GetProvince))]"
+
+									text_single = {
+										visible = "[Province.GetMaaOriginHere.IsValid]"
+										raw_text = "Already used by [Province.GetMaaOriginHere.GetName]."
+									}
+									text_single = {
+										visible = "[Not(ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation))]"
+										raw_text = "OutlinerProvinceDistance"
+									}
+									text_single = {
+										visible = "[ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation)]"
+										raw_text = "Your capital."
+									}
+								}
+							}
+
+						}
+
+						vbox_maa_province_stats_numbers = {
+							layoutpolicy_horizontal = expanding
+						}
+					}
+				}
+			}
+		}
+
+		expand = { }
+	}
+}

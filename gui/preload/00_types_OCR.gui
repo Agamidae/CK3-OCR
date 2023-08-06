@@ -1,0 +1,639 @@
+template fullscreen_window {
+	margin = { 10 5 }
+}
+
+template ocr_off {
+	visible = "[GetVariableSystem.Exists('ocr')]"
+}
+
+template ocr_on {
+	visible = "[Not(GetVariableSystem.Exists('ocr'))]"
+}
+
+template "char_click" {
+	onclick = "[DefaultOnCharacterClick(Character.GetID)]"
+	onclick = "[GetVariableSystem.Clear('expand_view')]"
+	# onclick = "[DefaultOnCharacterClick(Character.GetID)]"
+	onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
+}
+
+template realm_char_name {
+	raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip], [Character.GetTitledFirstNameNicknamedNoTooltip]."
+}
+
+template realm_char_name_no_nick {
+	raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip], [Character.GetTitledFirstNameNoTooltip]."
+}
+
+template title_pan {
+	onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+}
+
+template title_pan_right {
+	onrightclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+	button_ignore = none
+}
+template title_click {
+	onclick = "[DefaultOnCoatOfArmsClick(Title.GetID)]"
+	onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+}
+
+template prov_click {
+	onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Title.GetProvince.GetID))]"
+	onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetProvince.GetTitle.GetID)]"
+}
+template prov_pan {
+	onclick = "[Province.PanCameraTo]"
+}
+## Generic scrollarea. Remember that "scrollbox_content" can only contain one child without siblings.
+types Scrollbar
+{
+
+	type expand = hbox {
+        name = "expander"
+        layoutpolicy_horizontal = growing
+        layoutpolicy_vertical = growing
+    }
+
+	type scrollbox = scrollarea {
+		size = { 100 100 }
+
+		scrollbarpolicy_horizontal = always_off
+
+		scrollbar_vertical = {
+			using = Scrollbar_Vertical
+			blockoverride "text" {
+				text_single = {
+					# position = { 0 -1 }
+					background = { using = Background_Area_Solid margin = { 1000 3 } }
+					widgetanchor = right
+					align = left
+					parentanchor = left
+					raw_text = "List can be scrolled."
+					layoutpolicy_horizontal = expanding
+					alwaystransparent = yes
+				}
+			}
+		}
+
+		block "scrollbox_background"
+		{
+			background = {
+				using = Background_Area
+			}
+		}
+
+		scrollwidget = {
+			block "scrollbox_replace_vbox"
+			{
+				vbox = {
+					block "scrollbox_margins"
+					{
+						using = Scrollbox_Margins
+					}
+
+					block "scrollbox_content"
+					{
+						# debug_square = { }
+					}
+
+					text_single = {
+						layoutpolicy_vertical = expanding
+						default_format = "#low;italic"
+
+						block "scrollbox_empty"
+						{
+							visible = no
+						}
+					}
+
+					block "scrollbox_expand"
+					{
+						expand = {
+							layoutpolicy_vertical = growing
+						}
+					}
+				}
+			}
+		}
+
+		block "scrollbox_background_fade" {
+			icon = {
+				name = "scrollbar_fade"
+				texture = "gfx/interface/scrollbars/scrollbar_fade.dds"
+				size = { 100% 100% }
+				alwaystransparent = yes
+
+				spriteType = Corneredtiled
+				spriteborder = { 0 30 }
+			}
+		}
+	}
+}
+
+## Vertical scrollbar
+template Scrollbar_Vertical
+{
+	scrollbar = {
+		name = "vertical_scrollbar"
+		block "scrollsize" {
+			size = { 100 12 }
+		}
+		wheelstep = 60
+		direction = vertical
+		block "text" { }
+		allow_outside = yes
+
+		track = {
+			button = {
+				alwaystransparent = yes
+				size = { 12 12 }
+				gfxtype = buttongfx
+
+				# texture = "gfx/interface/scrollbars/scrollbar_track_vertical.dds"
+				spriteType = Corneredtiled
+				spriteborder = { 0 3 }
+				effectname = "NoHighlight"
+			}
+		}
+
+		slider = {
+			button = {
+				gfxtype = framedbuttongfx
+				effectname = "NoHighlight"
+				alwaystransparent = yes
+
+				# texture = "gfx/interface/scrollbars/scrollbar_slider.dds"
+				spriteType = Corneredtiled
+				spriteborder = { 0 3 }
+				framesize = { 12 40 }
+				minimumsize = { -1 40 }
+
+				upframe = 1
+				overframe = 2
+				downframe = 2
+
+				oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+
+				state = {
+					name = _mouse_press
+					start_sound = {
+						soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+					}
+				}
+
+				state = {
+					name = _mouse_release
+					start_sound = {
+						soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+					}
+				}
+			}
+		}
+
+		block "scrollbuttons" {
+			dec_button = {
+				button = {
+					size = { 100 20 }
+					background = { using = Background_Area_Solid }
+					text_single = {
+						raw_text = " Scroll up."
+					}
+				}
+			}
+			inc_button = {
+				button = {
+					size = { 100 20 }
+					background = { using = Background_Area_Solid margin_left = 10 margin_bottom = 2 }
+					text_single = {
+						raw_text = " Scroll down."
+					}
+				}
+			}
+		}
+	}
+}
+
+types OcrSharedTypes {
+
+	type mod_version_preview = flowcontainer {
+		direction = vertical
+
+		mod_version = { }
+
+		mod_changes = { }
+	}
+
+	type mod_version = text_single {
+		raw_text = "mod_version"
+	}
+	type mod_changes = text_multi {
+		autoresize = yes
+		text = "mod_changes"
+		max_width = 900
+	}
+
+	type dot = text_single {
+		raw_text = "."
+	}
+	type dot_l = text_single {
+		raw_text = "."
+		margin_left = -3
+	}
+	type dot_left = text_single {
+		raw_text = "."
+		margin_left = -3
+	}
+	type space = text_single {
+		raw_text = " "
+	}
+
+	type button_text = button {
+		size = { 0 22 }
+		button_ignore = none
+
+		block "bg" {
+			background = { alpha = 0.1 using = Background_Area_Border_Solid margin = { 1 1 } margin_top = -4 }
+		}
+
+		flowcontainer = {
+			# margins are necessary, because NVDA places the cursor right on the edge of the word, where the button isn't clickable
+			block "margins" {
+				margin_left = 4
+				# margin_top = 1
+				spacing = 3
+			}
+
+			ignoreinvisible = yes
+			resizeparent = yes
+			alwaystransparent = yes
+
+			text_single = {
+				block "disabled text" {
+					raw_text = "Can't"
+				}
+				# margin_right = 3
+				block "disabled" {
+					visible = no
+				}
+			}
+
+			block "pre" { }
+
+			text_single = {
+				block "text" {
+					raw_text = ""
+				}
+			}
+
+			block "extra" { }
+
+			block "primary" {
+				# dot = {
+				# 	block "dot" {
+				# 		visible = no
+				# 	}
+				# }
+				dot = {
+					margin_left = -3
+					block "dot" {
+						visible = no
+					}
+				}
+			}
+		}
+	}
+	type button_primary_text = button_text {
+		shortcut = "confirm"
+
+		blockoverride "primary" {
+			text_single = {
+				block "hotkey" { }
+				raw_text = ", hotkey Enter"
+				margin_left = -3
+			}
+			block "dot" {
+				dot = {
+					margin_left = -3
+				}
+			}
+		}
+	}
+
+	type char_name = button_text {
+		block "onclick" {
+			onclick = "[GetVariableSystem.Clear('expand_view')]"
+			onclick = "[DefaultOnCharacterClick(Character.GetID)]"
+			onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
+		}
+
+		blockoverride "text" {
+			block "text2" {
+				raw_text = "[Character.GetNameOrMeNoTooltip]."
+				block "width" {
+					max_width = 450
+				}
+			}
+		}
+		blockoverride "extra" {
+			text_single = {
+				raw_text = "[Character.GetRelationToString( GetPlayer )]."
+				block "relation" {
+					visible = no
+				}
+			}
+		}
+	}
+	type realm_name = button_text {
+		block "onclick" {
+			onclick = "[GetVariableSystem.Clear('expand_view')]"
+			onclick = "[DefaultOnCharacterClick(Character.GetID)]"
+			onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
+		}
+		blockoverride "text" {
+			raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip], [Character.GetTitleAsNameNoTooltip] [Character.GetFirstNameNoTooltip]."
+			block "width" {
+				max_width = 450
+			}
+		}
+	}
+
+	# "checkbox"
+	type button_checked = button {
+		button_ignore = none
+		background = { using = Background_Area_Dark margin = { 4 2 }}
+
+		flowcontainer = {
+			margin_left = 3
+			spacing = 0
+			ignoreinvisible = yes
+			resizeparent = yes
+
+			flowcontainer = {
+				block "enabled" {
+				}
+				ignoreinvisible = yes
+
+				text_single = {
+					raw_text = "un"
+					block "visible" { }
+				}
+				text_single = {
+					raw_text = "checked,"
+				}
+				text_single = {
+					raw_text = " "
+				}
+			}
+
+			text_single = {
+				raw_text = "Disabled, "
+				block "disabled" {
+					visible = no
+				}
+			}
+		}
+	}
+	# checkbox with text
+	type button_checked_text = button_group {
+
+        using = tooltip_se
+        clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_checkbox"
+
+        flowcontainer = {
+			ignoreinvisible = yes
+			# spacing = 8
+			button_checked = {
+
+			}
+
+			text_single = {
+				# parentanchor = vcenter
+								# default_format = "#clickable"
+
+				block "text" {
+					text = "DEFAULT_TEXT"
+				}
+				alwaystransparent = yes
+			}
+
+			text_single = {
+				block "extra_text" {
+					visible = no
+					raw_text = ""
+				}
+							}
+
+			dot = {
+				block "dot" {
+					visible = no
+				}
+			}
+
+			block "extra" { }
+
+			# text_single = {
+			# 	raw_text = ",  "
+			# 				# }
+			#
+			# text_single = {
+			# 	raw_text = "Un"
+			# 				# 	block "checkbox" {
+			# 	}
+			# }
+			#
+            # text_single = {
+			# 	raw_text = "checked."
+			# 				# }
+        }
+    }
+
+	type hotkeys_window = flowcontainer {
+		direction = vertical
+		margin = { 20 10 }
+		background = { using = Background_Area_Dark }
+
+		text_single = {
+			raw_text = "33 items."
+		}
+		text_single = {
+			raw_text = "R, your resources."
+		}
+		text_single = {
+			raw_text = "F one, Your character."
+		}
+		text_single = {
+			raw_text = "F 2, Realm."
+		}
+		text_single = {
+			raw_text = "F 3, Military."
+		}
+		text_single = {
+			raw_text = "F 4, Council."
+		}
+		text_single = {
+			raw_text = "F 5, Courtiers."
+		}
+		text_single = {
+			raw_text = "F 6, Intrigue."
+		}
+		text_single = {
+			raw_text = "F 7, Factions."
+		}
+		text_single = {
+			raw_text = "F 8, Decisions."
+		}
+		text_single = {
+			raw_text = "F 9, Encyclopedia."
+		}
+		text_single = {
+			raw_text = "Escape, close any window."
+		}
+		text_single = {
+			raw_text = "Ctrl D, dismiss tooltips, requires Autohotkey."
+		}
+		text_single = {
+			raw_text = "Tab, suggestions."
+		}
+		text_single = {
+			raw_text = "O, outliner. Shows armies during war."
+		}
+		text_single = {
+			raw_text = "Space, pause or unpause."
+		}
+		text_single = {
+			raw_text = "Numpad minus and plus, or Z and X, increase and decrease speed."
+		}
+		text_single = {
+			raw_text = "one through 5, set game speed, also used for tabs in many windows."
+		}
+		text_single = {
+			raw_text = "B, go to the previous window. Works with characters, counties, titles."
+		}
+		text_single = {
+			raw_text = "Right-click a character name, open interactions. You can also left click it in the character window."
+		}
+		text_single = {
+			raw_text = "Shift S, your capital."
+		}
+		text_single = {
+			raw_text = "Shift one, click in the center of the screen. Use for council tasks. Autohotkey."
+		}
+		text_single = {
+			raw_text = "Control 2, right-click the center. Use it for moving armies. Autohotkey."
+		}
+		text_single = {
+			raw_text = "Shift 3, same, but adds the move order, so you can queue multiple. Autohotkey."
+		}
+		text_single = {
+			raw_text = "Control G, selects armies in the center of the screen. Press G to merge them. Autohotkey."
+		}
+		text_single = {
+			raw_text = "Control slash, performs control left click. Needed sometimes, to raise armies without splitting them. Autohotkey."
+		}
+		text_single = {
+			raw_text = "Control L, lifestyle window."
+		}
+		text_single = {
+			raw_text = "i, Inventory."
+		}
+		text_single = {
+			raw_text = "C, character finder."
+		}
+		text_single = {
+			raw_text = "V, title finder."
+		}
+		text_single = {
+			raw_text = "F eleven, toggle debug mode. Enables the console and cheat character interactions."
+		}
+		text_single = {
+			raw_text = "Windows F2, open and close the console window. Autohotkey."
+		}
+		text_single = {
+			raw_text = "Shift F eleven, toggle OCR mode. Also zooms out the camera, if you want to show the map to sighted friends."
+		}
+		text_single = {
+			raw_text = "Grav key, below Escape. Exits current OCR results and presses Caps R for another scan. Autohotkey."
+		}
+		# text_single = {
+		# 	raw_text = "Page Down, Page Up, zoom in, zoom out."
+		# }
+		# text_single = {
+		# 	raw_text = "Y, show tooltips."
+		# }
+	}
+
+	type error_button = button_text {
+		shortcut = undo
+		visible = "[Not(ReleaseMode)]"
+		blockoverride "text" {
+		}
+		blockoverride "extra" {
+			spacing = 3
+			text_single = {
+				visible = "[GreaterThan_int32(NumberOrErrors, '(int32)0')]"
+				raw_text = "Errors: [NumberOrErrors],"
+			}
+			text_single = {
+				raw_text = "FPS: [GetCurrentFps|0]"
+			}
+		}
+		onclick = "[ClearErrorLog]"
+	}
+
+	#experimental/unused
+	type block_tooltip = button {
+		visible = "[GetVariableSystem.Exists('enable_tooltips')]"
+		tooltipwidget = {
+			widget = {
+				visible = "[GetVariableSystem.Exists('enable_tooltips')]"
+			}
+		}
+		tooltip_enabled = "[GetVariableSystem.Exists('enable_tooltips')]"
+		size = { 100% 100% }
+		alwaystransparent = yes
+	}
+
+	type hide_tooltip = widget {
+		alwaystransparent = yes
+		size = { 0 1080 }
+		visible = "[GetVariableSystem.Exists('hide_all_tooltips')]"
+	}
+
+	type shortcuts_list = container {
+		button = {
+			block "click" { }
+			visible = "[IsIndex('(int32)0')]"
+			shortcut = speed_1
+		}
+
+		button = {
+			block "click" { }
+			visible = "[IsIndex('(int32)1')]"
+			shortcut = speed_2
+		}
+
+		button = {
+			block "click" { }
+			visible = "[IsIndex('(int32)2')]"
+			shortcut = speed_3
+		}
+
+		button = {
+			block "click" { }
+			visible = "[IsIndex('(int32)3')]"
+			shortcut = speed_4
+		}
+
+		button = {
+			block "click" { }
+			visible = "[IsIndex('(int32)4')]"
+			shortcut = speed_5
+		}
+	}
+}
+
+template wide {
+	min_width = 700
+	max_width = 700
+}

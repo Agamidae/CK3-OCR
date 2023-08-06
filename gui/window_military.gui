@@ -7,13 +7,13 @@ window = {
 	name = "military_view"
 	datacontext = "[GetVariableSystem]"
 	datacontext = "[GetPlayer]"
-	parentanchor = top|right
 
 	layer = windows_layer
 	movable = no
 
 	using = Window_Size_MainTab
-	using = Window_Background_No_Edge
+	size = { 100% 100% }
+	alwaystransparent = yes
 
 	state = {
 		name = _show
@@ -36,15 +36,24 @@ window = {
 		using = Window_Position_MainTab_Hide
 	}
 
-	margin_widget = {
-		size = { 100% 100% }
-		margin = { 0 0 }
+	widget = {
+		using = Window_Size_CharacterList
+		background = { using = Background_Area_Border_Solid }
+		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
 
-		widget = {
-			size = { 100% 100% }
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			using = ocr_margins
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
 
 			### WINDOW CONTENT
 			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
 				# using = Window_Margins
 				margin_bottom = 30
 
@@ -56,7 +65,7 @@ window = {
 					}
 
 					blockoverride "illustration_texture" {
-						texture = "gfx/interface/illustrations/window_headers/header_military.dds"
+						# texture = "gfx/interface/illustrations/window_headers/header_military.dds"
 					}
 
 					blockoverride "button_close" {
@@ -84,7 +93,11 @@ window = {
 						}
 
 						text_single = {
-							raw_text = "[GetKnightCount( GetPlayer.Self )] knights."
+							raw_text = "KNIGHTS_CURRENT_MAX"
+						}
+
+						text_single = {
+							raw_text = "knights."
 						}
 					    expand = { }
 					}
@@ -163,6 +176,18 @@ window = {
 					}
 				}
 
+				button_text = {
+					shortcut = character_finder
+					layoutpolicy_horizontal = expanding
+					onclick = "[MilitaryView.ShowKnights]"
+					datacontext = "[MilitaryItem.GetComposition]"
+
+					blockoverride "text" {
+						raw_text = "Manage knights, C."
+						raw_text = "Knights,"
+					}
+				}
+
 				vbox = {
 					name = "rally_points"
 					layoutpolicy_horizontal = expanding
@@ -211,15 +236,15 @@ window = {
 									blockoverride "extra" {
 										spacing = 3
 										text_single = {
-											visible = "[ObjectsEqual(Province.GetId, GetPlayer.GetCapitalLocation.GetId)]"
+											visible = "[ObjectsEqual(Province.GetID, GetPlayer.GetCapitalLocation.GetID)]"
 											raw_text = "your capital"
 										}
 										text_single = {
-											visible = "[Not(ObjectsEqual(Province.GetId, GetPlayer.GetCapitalLocation.GetId))]"
+											visible = "[Not(ObjectsEqual(Province.GetID, GetPlayer.GetCapitalLocation.GetID))]"
 											raw_text = "AnyProvinceDistance"
 										}
 										text_single = {
-											visible = "[Not(ObjectsEqual(Province.GetId, GetPlayer.GetCapitalLocation.GetId))]"
+											visible = "[Not(ObjectsEqual(Province.GetID, GetPlayer.GetCapitalLocation.GetID))]"
 											raw_text = "AnyProvinceDirection"
 										}
 										dot = { margin_left = -3 }
@@ -346,21 +371,6 @@ window = {
 							alpha = 0
 						}
 
-						background = {
-							texture = "gfx/interface/skinned/illustrations/moving.dds"
-							fittype = end
-							alpha = 0.3
-
-							using = Mask_Rough_Edges
-
-							using = Mask_Rough_Edges
-
-							modify_texture = {
-								texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
-								blend_mode = alphamultiply
-								mirror = vertical
-							}
-						}
 
 						blockoverride "scrollbox_content" {
 							datacontext = "[MilitaryView.GetMilitaryItem]"
@@ -439,30 +449,6 @@ window = {
 
 									}
 								}
-
-								button_text = {
-									layoutpolicy_horizontal = expanding
-									onclick = "[MilitaryView.ShowKnights]"
-									datacontext = "[MilitaryItem.GetComposition]"
-								    blockoverride "text" {
-								        raw_text = "Knights"
-										align = left
-								    }
-									blockoverride "extra" {
-										space = { }
-										text_single = {
-											text = "KNIGHTS_CURRENT_MAX"
-										}
-										space = { }
-										text_single = {
-											raw_text = "Click to manage"
-										}
-									}
-									blockoverride "dot" {
-									}
-								}
-
-
 								vbox = {
 									name = "maa_area"
 									layoutpolicy_horizontal = expanding
@@ -540,189 +526,54 @@ window = {
 										item = {
 											vbox = {
 												layoutpolicy_horizontal = expanding
+												datacontext = "[Regiment.GetMAAType]"
+												datacontext = "[Regiment.GetOriginProvince]"
+
 												button_text = {
-												layoutpolicy_horizontal = expanding
-												onclick = "[MAAItem.OnClick]"
-												datacontext = "[MAAItem.GetMenAtArmsType]"
-												datacontext = "[MAAItem.GetRegiment]"
+													layoutpolicy_horizontal = expanding
+													onclick = "[Regiment.ToggleMaaView]"
 
-												blockoverride "text" {
-													text = "[MAAItem.GetMAAString|V]"
-													align = left
+													blockoverride "text" {
+														text = "[Regiment.BuildCurrentRegimentCountString|V]"
+													}
+
+													blockoverride "extra" {
+														text_single = {
+															raw_text = "[Regiment.GetName],"
+														}
+
+														text_single = {
+															visible = "[And( Not( Regiment.GetOriginProvince.IsValid ), GetPlayer.HasDomainProvincesForMAAOrigin )]"
+															raw_text = "[Localize('MAA_UNSTATIONED')]!"
+														}
+
+														text_single = {
+															visible = "[And( Not(Regiment.IsRaised), GetPlayer.IsAtWar)]"
+															raw_text = "[Localize('MAA_UNRAISED')]."
+														}
+
+														text_single = {
+															visible = "[Not(And( Not(Regiment.IsRaised), GetPlayer.IsAtWar))]"
+															raw_text = "[Localize('MAA_CURRENT_SIZE')],"
+														}
+
+														text_single = {
+															text = "TOTAL_MAA_COST"
+															tooltip = "TOTAL_MAA_COST_TOOLTIP"
+														}
+
+														dot = { }
+													}
 												}
-
-												blockoverride "extra" {
-													datacontext = "[MAAItem.GetRegiment]"
-													space = { }
-
-													text_single = {
-														raw_text = "[MAAItem.GetName],"
-													}
-
-													space = { }
-
-													text_single = {
-														visible = "[And( Not(MAAItem.GetRegiment.IsRaised), GetPlayer.IsAtWar)]"
-														text = "MAA_UNRAISED"
-													}
-
-													text_single = {
-														visible = "[Not(And( Not(MAAItem.GetRegiment.IsRaised), GetPlayer.IsAtWar))]"
-														text = "MAA_CURRENT_SIZE"
-													}
-
-													text_single = {
-														text = "TOTAL_MAA_COST"
-														tooltip = "TOTAL_MAA_COST_TOOLTIP"
-													}
-
-													dot = { }
-												}
-											}
 
 												siege_stat = {
-													datacontext = "[MAAItem.GetMenAtArmsType]"
 												}
 
 												hbox_maa_stats = {
-													datacontext = "[MAAItem.GetMenAtArmsType]"
 												}
 											}
 										}
 									}
-								}
-
-								hbox = {
-									visible = "[GetVariableSystem.Exists('ocr')]"
-									layoutpolicy_horizontal = expanding
-									name = "maa_tiles"
-
-									fixedgridbox = {
-										datamodel = "[MilitaryItem.GetMAA]"
-										flipdirection = yes
-										datamodel_wrap = 3
-										addcolumn = 166
-										addrow = 93
-
-										item = {
-											container = {
-												datacontext = "[MAAItem.GetMenAtArmsType]"
-												datacontext = "[MAAItem.GetRegiment]"
-												using = tooltip_ne
-
-												background = {
-													texture = "[MAAItem.GetMenAtArmsType.GetHorizontalImage]"
-													alpha = 0.7
-												}
-
-												background = {
-													using = Background_Button_Illustration
-													visible = "[MAAItem.IsSelected]"
-												}
-
-												background = {
-													texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
-													spriteType = Corneredtiled
-													spriteborder = { 5 5 }
-													margin = { -2 -2 }
-												}
-
-												tooltipwidget = {
-													using = regiment_container_text_tooltip
-
-													blockoverride "extra_info" {
-														divider_light = {
-															layoutpolicy_horizontal = expanding
-														}
-														text_single = {
-															layoutpolicy_horizontal = expanding
-															text = "CLICK_TO_SELECT"
-															margin = { 10 0 }
-														}
-													}
-												}
-
-												button_standard_clean = {
-													name = "maa_entry"
-													size = { 164 90 }
-
-													vbox = {
-														expand = { }
-
-														hbox = {
-															margin = { 8 4 }
-															spacing = 2
-															layoutpolicy_horizontal = expanding
-
-															background = {
-																using = Background_Area_Dark
-															}
-
-															icon = {
-																name = "icon_maa"
-																texture = [MenAtArmsType.GetIcon]
-																size = { 20 20 }
-															}
-
-															text_single = {
-																text = "[MAAItem.GetMAAString|V]"
-																default_format = "#high"
-															}
-
-															expand = { }
-
-															text_single = {
-																datacontext = "[MAAItem.GetRegiment]"
-
-																text = "TOTAL_MAA_COST"
-																tooltip = "TOTAL_MAA_COST_TOOLTIP"
-
-																default_format = "#high"
-															}
-														}
-													}
-
-													button_normal = {
-														visible = "[Not(MAAItem.IsSelected)]"
-														size = { 100% 100% }
-														onclick = "[MAAItem.OnClick]"
-													}
-
-
-													text_label_right = {
-														visible = "[And( Not(MAAItem.GetRegiment.IsRaised), GetPlayer.IsAtWar)]"
-														text = "MAA_UNRAISED"
-														using = Font_Size_Small
-														default_format = "#X"
-														parentanchor = top|right
-														position = {-10 1}
-													}
-
-													text_label_right = {
-														visible = "[Not(And( Not(MAAItem.GetRegiment.IsRaised), GetPlayer.IsAtWar))]"
-														text = "MAA_CURRENT_SIZE"
-														using = Font_Size_Small
-														parentanchor = top|right
-														position = {-10 1}
-													}
-
-													button_normal = {
-														visible = "[GetVariableSystem.Exists( 'menatarms_open' )]"
-														size = { 100% 100% }
-														onclick = "[PdxGuiTriggerAllAnimations('menatarms_refresh')]"
-
-														state = {
-															name = _mouse_click
-															delay = 0.2
-															on_finish = "[MAAItem.OnClick]"
-														}
-													}
-												}
-											}
-										}
-									}
-
-									expand = { }
 								}
 
 								vbox = {
@@ -1133,13 +984,12 @@ window = {
 								}
 							}
 
-							button_decision_entry = {
+							button_decision_entry_text = {
 								name = "hired_troops_view_create_holy_order_item"
 								datacontext = "[GetDecisionWithKey('create_holy_order_decision')]"
 								visible = "[Decision.IsShownForPlayer]"
 								layoutpolicy_horizontal = expanding
-								onclick = "[OpenDecisionDetailView(Decision.Self)]"
-								size = { 430 50 }
+								onclick = "[OpenGameViewData( 'decision_detail', Decision.Self)]"
 							}
 
 							item = {
@@ -1352,171 +1202,182 @@ window = {
 					}
 				}
 			}
+		}
 
-			vbox = {
-				using = Window_Background_No_Edge
-				layoutpolicy_vertical = expanding
-				layoutpolicy_horizontal = expanding
-				visible = "[GetVariableSystem.Exists('war_sorting')]"
-				margin = { 5 0 }
-				alwaystransparent = no
+		vbox = {
+			using = Window_Background_No_Edge
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+			visible = "[GetVariableSystem.Exists('war_sorting')]"
+			margin = { 5 0 }
+			alwaystransparent = no
 
-				button = {
-					onclick = "[GetVariableSystem.Clear('war_sorting')]"
-					shortcut = close_window
-					shortcut = map_mode_2
-				}
-
-				vbox = {
-					layoutpolicy_vertical = expanding
-					layoutpolicy_horizontal = expanding
-					spacing = 3
-
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						raw_text = "Sort by:"
-						margin_bottom = 5
-						background = { using = Background_Area_Border_Solid }
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-						blockoverride "text" {
-							raw_text = "Total soldiers."
-						}
-						onclick = "[GetScriptedGui('sort_wars_total').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetVariableSystem.Clear('war_sorting')]"
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-					    blockoverride "text" {
-					        raw_text = "Sort by date."
-					    }
-						onclick = "[GetScriptedGui('sort_wars_time').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetVariableSystem.Clear('war_sorting')]"
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-					    blockoverride "text" {
-					        raw_text = "Amount of attackers."
-					    }
-						onclick = "[GetScriptedGui('sort_wars_attackers').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetVariableSystem.Clear('war_sorting')]"
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-					    blockoverride "text" {
-					        raw_text = "Amount of defenders."
-					    }
-						onclick = "[GetScriptedGui('sort_wars_defenders').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetVariableSystem.Clear('war_sorting')]"
-					}
-
-					expand = { }
-				}
+			button = {
+				onclick = "[GetVariableSystem.Clear('war_sorting')]"
+				shortcut = close_window
+				shortcut = map_mode_2
 			}
 
 			vbox = {
-				using = Window_Background_No_Edge
 				layoutpolicy_vertical = expanding
 				layoutpolicy_horizontal = expanding
-				visible = "[GetVariableSystem.Exists('war_filters')]"
-				margin = { 5 5 }
-				alwaystransparent = no
+				spacing = 3
 
-				button = {
-					onclick = "[GetVariableSystem.Clear('war_filters')]"
-					shortcut = close_window
-					shortcut = army_split_half
-				}
-
-				vbox = {
-					layoutpolicy_vertical = expanding
+				text_single = {
 					layoutpolicy_horizontal = expanding
-					spacing = 3
-
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						raw_text = "Filter by:"
-						margin_bottom = 5
-						background = { using = Background_Area_Border_Solid }
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-						blockoverride "text" {
-							raw_text = "Show all."
-						}
-
-						onclick = "[GetScriptedGui('filter_wars_all').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetVariableSystem.Clear('war_filters')]"
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-					    blockoverride "text" {
-					        raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('vassal_wars')] Vassal wars."
-					    }
-						onclick = "[GetScriptedGui('filter_wars_your_realm').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetVariableSystem.Clear('war_filters')]"
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-						visible = "[Not(GetPlayer.IsIndependentRuler)]"
-					    blockoverride "text" {
-					        raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('realm_wars')] wars in your realm."
-					    }
-						onclick = "[GetScriptedGui('filter_wars_top_liege_realm').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetVariableSystem.Clear('war_filters')]"
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-					    blockoverride "text" {
-					        raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('holy_wars')] Holy wars."
-					    }
-						onclick = "[GetScriptedGui('filter_wars_holy_wars').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetVariableSystem.Clear('war_filters')]"
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-					    blockoverride "text" {
-					        raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('great_holy_wars')] Crusades."
-					    }
-						onclick = "[GetScriptedGui('filter_wars_great_holy_wars').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetVariableSystem.Clear('war_filters')]"
-					}
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-						blockoverride "text" {
-							raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('civil_wars')] Civil wars."
-						}
-						onclick = "[GetScriptedGui('filter_wars_civil_wars').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						onclick = "[GetVariableSystem.Clear('war_filters')]"
-					}
-
-					expand = { }
-
+					raw_text = "Sort by:"
+					margin_bottom = 5
+					background = { using = Background_Area_Border_Solid }
 				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "Total soldiers."
+					}
+					onclick = "[GetScriptedGui('sort_wars_total').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetVariableSystem.Clear('war_sorting')]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "Sort by date."
+					}
+					onclick = "[GetScriptedGui('sort_wars_time').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetVariableSystem.Clear('war_sorting')]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "Amount of attackers."
+					}
+					onclick = "[GetScriptedGui('sort_wars_attackers').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetVariableSystem.Clear('war_sorting')]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "Amount of defenders."
+					}
+					onclick = "[GetScriptedGui('sort_wars_defenders').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetVariableSystem.Clear('war_sorting')]"
+				}
+
+				expand = { }
 			}
 		}
+
+		vbox = {
+			using = Window_Background_No_Edge
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+			visible = "[GetVariableSystem.Exists('war_filters')]"
+			margin = { 5 5 }
+			alwaystransparent = no
+
+			button = {
+				onclick = "[GetVariableSystem.Clear('war_filters')]"
+				shortcut = close_window
+				shortcut = army_split_half
+			}
+
+			vbox = {
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+				spacing = 3
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "Filter by:"
+					margin_bottom = 5
+					background = { using = Background_Area_Border_Solid }
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "Show all."
+					}
+
+					onclick = "[GetScriptedGui('filter_wars_all').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetVariableSystem.Clear('war_filters')]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('vassal_wars')] Vassal wars."
+					}
+					onclick = "[GetScriptedGui('filter_wars_your_realm').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetVariableSystem.Clear('war_filters')]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not(GetPlayer.IsIndependentRuler)]"
+					blockoverride "text" {
+						raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('realm_wars')] wars in your realm."
+					}
+					onclick = "[GetScriptedGui('filter_wars_top_liege_realm').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetVariableSystem.Clear('war_filters')]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('holy_wars')] Holy wars."
+					}
+					onclick = "[GetScriptedGui('filter_wars_holy_wars').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetVariableSystem.Clear('war_filters')]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('great_holy_wars')] Crusades."
+					}
+					onclick = "[GetScriptedGui('filter_wars_great_holy_wars').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetVariableSystem.Clear('war_filters')]"
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).ScriptValue('civil_wars')] Civil wars."
+					}
+					onclick = "[GetScriptedGui('filter_wars_civil_wars').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetScriptedGui('ongoing_wars_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					onclick = "[GetVariableSystem.Clear('war_filters')]"
+				}
+
+				expand = { }
+
+			}
+		}
+
 	}
+
+	widget = {
+		using = Window_Size_MainTab
+		parentanchor = right
+		visible = "[GetVariableSystem.Exists('ocr')]"
+
+		military_old = {
+		}
+	}
+
 }
 
 ######################################################

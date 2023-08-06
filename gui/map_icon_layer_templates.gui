@@ -65,54 +65,58 @@ template combat_prediction_tooltip
 	}
 }
 
+template siege_goto_template
+{
+	button_text = {
+	    blockoverride "text" {
+	        raw_text = "Siege [Siege.GetProgress|0]%, go to."
+			align = left
+	    }
+		block "key" { }
+		onclick = "[DefaultOnSiegeClick(Siege.GetID)]"
+	}
+}
+
+template raid_goto_template
+{
+	container = {
+		ignoreinvisible = yes
+		button_group = {
+			onclick = "[DefaultOnRaidClick( Raid.Self )]"
+			oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+			visible = "[GetVariableSystem.Exists('ocr')]"
+			filter_mouse = left
+			block "tooltip"
+			{
+				tooltip = "MAP_RAID_TOOLTIP"
+			}
+
+			highlight_icon = {
+				parentanchor = vcenter
+				widgetanchor = vcenter
+				size = { 40 40 }
+				name = "blocked_icon"
+				texture = "gfx/interface/icons/map_icons/onmap_raid_icon.dds"
+			}
+		}
+		button_text = {
+			visible = "[Not(GetVariableSystem.Exists('ocr'))]"
+		    blockoverride "text" {
+		        raw_text = "Open raid."
+				align = left
+		    }
+			onclick = "[DefaultOnRaidClick( Raid.Self )]"
+			shortcut = confirm
+		}
+	}
+}
+
+
 types MapIcons {
-	type icon_unit_quality = icon {
-		name = "unit_quality"
-		texture = "gfx/interface/icons/army_quality_icon.dds"
-		framesize = { 32 32 }
-		size = { 22 22 }
-		frame = "[UnitItem.GetQualityLevel]"
-	}
 
-	type container_supply_icon = widget {
-		size = { 35 30 }
-		name = "supplies"
-		visible = "[UnitItem.ShowSupplyIcon]"
+	#######
 
-		icon = {
-			name = "bg"
-			position = { 0 0 }
-			size = { 30 30 }
-			texture = "gfx/interface/icons/icon_bg_small.dds"
-		}
-
-		icon = {
-			name = "supply_icon"
-			position = { 2 2 }
-			framesize = { 30 30 }
-			size = { 25 25 }
-			frame = "[UnitItem.GetSupplyStateFrame]"
-			texture = "gfx/interface/icons/icon_supplies_small.dds"
-		}
-
-		icon = {
-			name = "supply_trend_icon"
-			visible = "[UnitItem.ShowSupplyTrend]"
-			position = { 17 10 }
-			size = { 20 20 }
-			texture = "gfx/interface/icons/symbols/icon_supplies_trend.dds"
-		}
-	}
-
-	type icon_raider = icon {
-		name = "raider"
-		visible = "[Army.IsRaidArmy]"
-		size = { 30 30 }
-		texture = "gfx/interface/icons/map_coa/icon_raider.dds"
-		tooltip = "RAID_ARMY_TOOLTIP"
-	}
-
-	# UNITS
 	type widget_unit_icon_item = widget {
 		datacontext = "[UnitMapIcon.GetDisplayedUnitItem]"
 		allow_outside = "[GetVariableSystem.Exists('ocr')]"
@@ -160,14 +164,12 @@ types MapIcons {
 				container_hostile_unit_icon_item = { }
 			}
 		}
-
 	}
 
 	type container_allied_unit_icon_item = container {
 		name = "allied_unit_icon_item"
 		datacontext = "[UnitItem.GetArmy]"
 		visible = "[Not(Or(UnitItem.IsUnitItemEnemy, UnitItem.IsUnitItemHostile))]"
-		# alwaystransparent = yes
 
 		state = {
 			name = _mouse_hierarchy_enter
@@ -192,7 +194,6 @@ types MapIcons {
 
 		button_group = {
 			position = { 28 0 }
-			# alwaystransparent = yes
 
 			block "onclick" {
 				onclick = "[UnitMapIcon.OnClickArmyGroup( Army.Self )]"
@@ -265,12 +266,12 @@ types MapIcons {
 				}
 
 				flowcontainer = {
-					visible = "[GetVariableSystem.Exists('ocr')]"
 					spacing = 3
 					ignoreinvisible = yes
-					alwaystransparent = yes
 
 					block "unit_items" {
+						visible = "[GetVariableSystem.Exists('ocr')]"
+						alwaystransparent = yes
 
 						text_single = {
 							visible = "[GreaterThanOrEqualTo_int32(UnitMapIcon.GetShownCount, '(int32)2')]"
@@ -368,6 +369,7 @@ types MapIcons {
 		}
 	}
 
+
 	type container_hostile_unit_icon_item = container {
 		datacontext = "[UnitItem.GetArmy]"
 		allow_outside = yes
@@ -432,8 +434,8 @@ types MapIcons {
 				}
 
 				widget = {
-					visible = "[GetVariableSystem.Exists('ocr')]"
 					size = { 22 22 }
+					visible = "[GetVariableSystem.Exists('ocr')]"
 
 					icon_unit_quality = {
 						parentanchor = vcenter
@@ -456,15 +458,14 @@ types MapIcons {
 				}
 
 				text_single = {
-					visible = "[GetVariableSystem.Exists('ocr')]"
 					name = "soldiers"
+					visible = "[GetVariableSystem.Exists('ocr')]"
 					text = "[UnitItem.GetCombatStrength]"
 					default_format = "#high;glow_color:{0.1,0.1,0.1,1.0}"
 					using = Font_Size_Medium
 					snap_to_pixels = no
 				}
 			}
-
 
 			block "siege_window"
 			{
@@ -496,6 +497,52 @@ types MapIcons {
 				container_supply_icon = {}
 			}
 		}
+	}
+
+	type icon_unit_quality = icon {
+		name = "unit_quality"
+		texture = "gfx/interface/icons/army_quality_icon.dds"
+		framesize = { 32 32 }
+		size = { 22 22 }
+		frame = "[UnitItem.GetQualityLevel]"
+	}
+
+	type container_supply_icon = widget {
+		size = { 35 30 }
+		name = "supplies"
+		visible = "[UnitItem.ShowSupplyIcon]"
+
+		icon = {
+			name = "bg"
+			position = { 0 0 }
+			size = { 30 30 }
+			texture = "gfx/interface/icons/icon_bg_small.dds"
+		}
+
+		icon = {
+			name = "supply_icon"
+			position = { 2 2 }
+			framesize = { 30 30 }
+			size = { 25 25 }
+			frame = "[UnitItem.GetSupplyStateFrame]"
+			texture = "gfx/interface/icons/icon_supplies_small.dds"
+		}
+
+		icon = {
+			name = "supply_trend_icon"
+			visible = "[UnitItem.ShowSupplyTrend]"
+			position = { 17 10 }
+			size = { 20 20 }
+			texture = "gfx/interface/icons/symbols/icon_supplies_trend.dds"
+		}
+	}
+
+	type icon_raider = icon {
+		name = "raider"
+		visible = "[Army.IsRaidArmy]"
+		size = { 30 30 }
+		texture = "gfx/interface/icons/map_coa/icon_raider.dds"
+		tooltip = "RAID_ARMY_TOOLTIP"
 	}
 
 	type container_unit_effect_icons = flowcontainer {
@@ -549,68 +596,6 @@ types MapIcons {
 
 				using = Animation_ShowHide_Standard
 			}
-		}
-	}
-}
-
-template siege_goto_template
-{
-	button_text = {
-	    blockoverride "text" {
-	        raw_text = "Siege [Siege.GetProgress|0]%, go to."
-			align = left
-	    }
-		block "key" {}
-		onclick = "[DefaultOnSiegeClick(Siege.GetID)]"
-	}
-	# button_group = {
-	# 	filter_mouse = left
-	# 	block "tooltip"
-	# 	{
-	# 		tooltip = "[Siege.GetSiegeDescription]"
-	# 	}
-	#
-	# 	highlight_icon = {
-	# 		parentanchor = vcenter
-	# 		widgetanchor = vcenter
-	# 		size = { 40 40 }
-	# 		name = "blocked_icon"
-	# 		texture = "gfx/interface/icons/map_icons/onmap_siege_icon.dds"
-	# 	}
-	# }
-}
-
-template raid_goto_template
-{
-	container = {
-		ignoreinvisible = yes
-		button_group = {
-			onclick = "[DefaultOnRaidClick( Raid.Self )]"
-			oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
-			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
-			visible = "[GetVariableSystem.Exists('ocr')]"
-			filter_mouse = left
-			block "tooltip"
-			{
-				tooltip = "MAP_RAID_TOOLTIP"
-			}
-
-			highlight_icon = {
-				parentanchor = vcenter
-				widgetanchor = vcenter
-				size = { 40 40 }
-				name = "blocked_icon"
-				texture = "gfx/interface/icons/map_icons/onmap_raid_icon.dds"
-			}
-		}
-		button_text = {
-			visible = "[Not(GetVariableSystem.Exists('ocr'))]"
-		    blockoverride "text" {
-		        raw_text = "Open raid."
-				align = left
-		    }
-			onclick = "[DefaultOnRaidClick( Raid.Self )]"
-			shortcut = confirm
 		}
 	}
 }
