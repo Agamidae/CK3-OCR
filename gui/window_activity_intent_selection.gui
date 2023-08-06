@@ -6,6 +6,7 @@ window = {
 	using = base_ocr_window
 
 	window = {
+		movable = no
 		using = ocr_window
 
 		state = {
@@ -32,99 +33,126 @@ window = {
 				{
 					onclick = "[ActivityIntentSelectionWindow.Close]"
 				}
+				visible = "[Not(VariableSystem.Exists( 'activity_intent_selection_target_list' ))]"
+			}
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
 			}
 
 			hbox = {
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding
 
-				datacontext = "[GetIllustration( 'activity_intent_selection' )]"
-
-				background = {
-					texture = "[Illustration.GetTexture( ActivityType.MakeScope )]"
-					alpha = 0.3
-					fittype = centercrop
-
-					using = Mask_Rough_Edges
-
-					modify_texture = {
-						texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
-						blend_mode = alphamultiply
-					}
-				}
-
-				portrait_intent_selection = {
-					datacontext = "[GetPlayer]"
-					datacontext = "[ActivityIntentData.GetType]"
-					layoutpolicy_vertical = expanding
-
-					alwaystransparent = yes
-				}
-
 				vbox = {
 					name = "intent_selection_step_1"
 					visible = "[Not(VariableSystem.Exists( 'activity_intent_selection_target_list' ))]"
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
-					margin_top = 8
 
-					background = {
-						using = Background_Area_Dark
-						alpha = 0.8
 
-						margin_left = 100
+					vbox = {
+						name = "selected_intent_details"
+						datacontext = "[ActivityIntentData.GetType]"
 
-						modify_texture = {
-							texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
-							blend_mode = alphamultiply
-							mirror = horizontal
+						layoutpolicy_horizontal = expanding
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							char_name = {
+								layoutpolicy_horizontal = expanding
+								datacontext = "[ActivityIntentData.GetTarget]"
+								visible = "[And(ActivityIntent.HasTarget, Character.IsValid)]"
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "Target:"
+									}
+								}
+								blockoverride "relation" {
+								}
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_multi = {
+									name = "intent_effects"
+									# visible = "[Or( Not( ActivityIntent.HasTarget ), ActivityIntentData.GetTarget.IsValid )]"
+
+									raw_text = "Your intent: [ActivityIntent.GetDescription]"
+									autoresize = yes
+									using = wide
+								}
+							}
+
+							expand = { }
 						}
+
+						hbox = {
+							visible = "[ActivityIntent.HasTarget]"
+							layoutpolicy_horizontal = expanding
+
+							button_text = {
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "[Select_CString(ActivityIntentData.GetTarget.IsValid, 'Change', 'Select')]"
+									}
+								}
+								blockoverride "text" {
+									raw_text = "ACTIVITY_INTENT_TARGET_LABEL"
+								}
+								blockoverride "extra" {
+									text_single = {
+										margin_left = -3
+										raw_text = ", hotkey T"
+									}
+								}
+								shortcut = map_mode_2
+								blockoverride "dot" {
+
+								}
+								onclick = "[VariableSystem.Toggle( 'activity_intent_selection_target_list' )]"
+							}
+
+							expand = { }
+						}
+
+						expand = { }
 					}
 
 					text_single = {
 						layoutpolicy_horizontal = expanding
 
 						text = "ACTIVITY_INTENT_SELECTION_TEXT"
-						default_format = "#I"
-						align = center|nobaseline
-
-						margin = { 16 8 }
 					}
 
-					hbox = {
-						layoutpolicy_horizontal = expanding
-
-						divider_light = {
-							layoutpolicy_horizontal = expanding
-
-							modify_texture = {
-								texture = "gfx/interface/component_masks/mask_fade_horizontal_middle.dds"
-								blend_mode = alphamultiply
-							}
-						}
-					}
 
 					scrollbox = {
 						name = "host_intents"
 						layoutpolicy_horizontal = expanding
 						layoutpolicy_vertical = expanding
 
-						minimumsize = { 0 200 }
-
 						blockoverride "scrollbox_content"
 						{
 							vbox = {
 								datamodel = "[ActivityIntentSelectionWindow.GetPotentialIntents]"
 								layoutpolicy_horizontal = expanding
-								spacing = 4
-
 								item = {
-									button_standard = {
+									button_text = {
+										shortcuts_list = {
+											blockoverride "click" {
+												onclick = "[ActivityIntentSelectionWindow.SelectIntent( ActivityIntent.Self )]"
+												onclick = "[VariableSystem.ClearIf( 'activity_intent_selection_target_list', Not( ActivityIntent.HasTarget ) )]"
+											}
+										}
 										layoutpolicy_horizontal = expanding
-										size = { 0 50 }
 
 										onclick = "[ActivityIntentSelectionWindow.SelectIntent( ActivityIntent.Self )]"
 										onclick = "[VariableSystem.ClearIf( 'activity_intent_selection_target_list', Not( ActivityIntent.HasTarget ) )]"
+										blockoverride "disabled" {
+											visible = "[Not(ActivityIntentSelectionWindow.CanPickIntent( ActivityIntent.Self ))]"
+										}
 										enabled = "[ActivityIntentSelectionWindow.CanPickIntent( ActivityIntent.Self )]"
 
 										tooltip = "ACTIVITY_CHANGE_INTENT_TOOLTIP"
@@ -133,34 +161,18 @@ window = {
 
 										alwaystransparent = "[ObjectsEqual( ActivityIntentData.GetType, ActivityIntent.Self )]"
 
-										hbox = {
-											size = { 100% 100% }
-											margin = { 8 0 }
-											spacing = 8
+										blockoverride "text" {
+											text = "[ActivityIntent.GetName]"
+										}
 
-											highlight_icon = {
-												size = { 40 40 }
-												texture = "[ActivityIntent.GetIcon]"
-
-												modify_texture = {
-													texture = "gfx/interface/colors/colors_textured.dds"
-													blend_mode = normal
-													framesize = { 96 96 }
-
-													block "master_color_frame" {
-														frame = 1
-													}
-												}
-											}
-
+										blockoverride "pre" {
 											text_single = {
-												text = "[ActivityIntent.GetName]"
-												align = nobaseline
-												default_format = "#clickable"
-												using = Font_Size_Medium
+												raw_text = "[IndexNumber],"
 											}
-
-											expand = { }
+											text_single = {
+												visible = "[ObjectsEqual( ActivityIntentData.GetType, ActivityIntent.Self )]"
+												raw_text = "Selected,"
+											}
 										}
 									}
 								}
@@ -170,107 +182,6 @@ window = {
 						blockoverride "scrollbox_background" { }
 
 						blockoverride "scrollbox_background_fade" { }
-					}
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-
-						divider_light = {
-							layoutpolicy_horizontal = expanding
-
-							modify_texture = {
-								texture = "gfx/interface/component_masks/mask_fade_horizontal_middle.dds"
-								blend_mode = alphamultiply
-							}
-						}
-					}
-
-					vbox = {
-						name = "selected_intent_details"
-						datacontext = "[ActivityIntentData.GetType]"
-
-						layoutpolicy_horizontal = expanding
-
-						margin = {16 0}
-						margin_top = 8
-						margin_bottom = 16
-
-
-						hbox = {
-							visible = "[ActivityIntent.HasTarget]"
-							layoutpolicy_horizontal = expanding
-
-							margin = { 8 0 }
-							margin_bottom = 8
-
-							text_label_left = {
-								text = "ACTIVITY_INTENT_TARGET_LABEL"
-
-								margin_right = 8
-							}
-
-							button_change = {
-								onclick = "[VariableSystem.Toggle( 'activity_intent_selection_target_list' )]"
-
-								tooltip = "ACTIVITY_CHANGE_INTENT_TARGET_TOOLTIP"
-							}
-
-							expand = { }
-						}
-
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							margin = { 8 0 }
-
-							selectable_target_portrait_widget = {
-								name = "intent_target"
-								datacontext = "[ActivityIntentData.GetTarget]"
-								visible = "[ActivityIntent.HasTarget]"
-
-								blockoverride "empty_slot"
-								{
-									onclick = "[VariableSystem.Toggle( 'activity_intent_selection_target_list' )]"
-								}
-							}
-
-							expand = {
-								visible = "[ActivityIntent.HasTarget]"
-							}
-
-							vbox = {
-								layoutpolicy_vertical = expanding
-								layoutpolicy_horizontal = expanding
-
-								margin = { 8 0 }
-
-								expand = { }
-
-								text_single = {
-									name = "select_target"
-									visible = "[And( ActivityIntent.HasTarget, Not( ActivityIntentData.GetTarget.IsValid ) )]"
-
-									text = "ACTIVITY_CHANGE_INTENT_SELECT_TARGET"
-								}
-
-								text_multi = {
-									name = "intent_effects"
-									visible = "[Or( Not( ActivityIntent.HasTarget ), ActivityIntentData.GetTarget.IsValid )]"
-
-									text = "[ActivityIntent.GetDescription]"
-									autoresize = yes
-									max_width = 360
-								}
-
-								expand = {
-									visible = "[ActivityIntent.HasTarget]"
-								}
-							}
-
-							expand = { }
-						}
-
-						expand = { }
 					}
 				}
 
@@ -282,51 +193,15 @@ window = {
 					layoutpolicy_vertical = expanding
 					layoutpolicy_horizontal = expanding
 
-					margin_right = 8
-					margin_top = 4
-
-					background = {
-						using = Background_Area_Dark
-						alpha = 0.8
-
-						margin_left = 100
-
-						modify_texture = {
-							texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
-							blend_mode = alphamultiply
-							mirror = horizontal
-						}
+					button = {
+						shortcut = close_window
+						shortcut = map_mode_2
+						onclick = "[GetVariableSystem.Toggle('activity_intent_selection_target_list')]"
 					}
 
 					text_single = {
 						layoutpolicy_horizontal = expanding
 						text = "ACTIVITY_CHANGE_INTENT_SELECT_TARGET_FOR_ACTIVITY"
-						default_format = "#I"
-						align = center|nobaseline
-
-						margin = { 16 8 }
-
-						button_change = {
-							parentanchor = vcenter|right
-							position = {-8 0 }
-
-							onclick = "[VariableSystem.Toggle( 'activity_intent_selection_target_list' )]"
-
-							tooltip = ACTIVITY_CHANGE_INTENT_TT
-						}
-					}
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-
-						divider_light = {
-							layoutpolicy_horizontal = expanding
-
-							modify_texture = {
-								texture = "gfx/interface/component_masks/mask_fade_horizontal_middle.dds"
-								blend_mode = alphamultiply
-							}
-						}
 					}
 
 					vbox_character_list = {
@@ -336,11 +211,6 @@ window = {
 
 						datacontext = "[ActivityIntentSelectionWindow.AccessTargetList]"
 
-						blockoverride "scrollbox_properties"
-						{
-							size = { 475 0 }
-						}
-
 						blockoverride "skill_sort_buttons" { }
 
 						blockoverride "container_implementation" {
@@ -348,17 +218,17 @@ window = {
 								name = "characters_grid"
 								datamodel = "[CharacterSelectionList.GetList]"
 								visible = "[Not(CharacterSelectionList.IsBuildingList)]"
-								addcolumn = 475
-								addrow = 96
+								addcolumn = 700
+								addrow = 25
 
 								item = {
-									potential_selectable_target_portrait_widget = {
-										size = { 475 94 }
+									potential_selectable_target_portrait_widget_ocr = {
 										datacontext = "[CharacterListItem.GetCharacter]"
 
 										blockoverride "onclick" {
 											onclick = "[CharacterListItem.OnClick( 'select_intent_target' )]"
 	    	                            	onclick = "[VariableSystem.Clear( 'activity_intent_selection_target_list' )]"
+											onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
 										}
 									}
 								}
@@ -368,28 +238,33 @@ window = {
 				}
 			}
 
-			hbox = {
+			vbox = {
 				name = "cancel_or_confirm"
 				layoutpolicy_horizontal = expanding
 
-				margin = {16 16}
-				spacing = 16
 
-				background = {
-					using = Background_Area
-				}
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						text = "CANCEL"
+					}
+					blockoverride "dot" {
 
-				expand = { }
-
-				button_standard = {
-					text = "CANCEL"
+					}
 
 					onclick = "[ActivityIntentSelectionWindow.Close]"
 					shortcut = "close_window"
+					visible = "[Not(VariableSystem.Exists( 'activity_intent_selection_target_list' ))]"
 				}
 
-				button_primary = {
-					text = "CONFIRM"
+				button_primary_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						text = "CONFIRM"
+					}
+					blockoverride "disabled" {
+						visible = "[Not(ActivityIntentSelectionWindow.CanConfirm)]"
+					}
 
 					onclick = "[ActivityIntentSelectionWindow.Confirm]"
 					onclick = "[ActivityIntentSelectionWindow.Close]"
