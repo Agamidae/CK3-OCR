@@ -2591,38 +2591,60 @@ widget = {
 
 		error_button = { }
 
+		widget = {
+			size = { 0 120 }
+			visible = "[Is('toasted')]"
+		}
+
 		flowcontainer = {
 			direction = vertical
 			name = "involved_activity"
 
-			visible = "[And( Activity.IsValid, Not( Activity.IsComplete ) )]"
+			visible = "[Activity.IsValid]"
 			visible_at_creation = no
 			ignoreinvisible = yes
 			datacontext = "[Character.GetTravelPlan]"
 
 			button_text = {
+				shortcut = map_mode_6
 				layoutpolicy_horizontal = expanding
-				onclick = "[Activity.OpenActivityView]"
+				onclick = "[ToggleGameViewData('activity_window', Activity.Self)]"
 				blockoverride "text" {
-					raw_text = "Activity: [Activity.GetType.GetName]."
+					raw_text = "Activity: [Activity.GetType.GetName], Control A."
 				}
 			}
+		}
 
-			button_text = {
-				# visible = "[Character.HasActivityState( 'travel' )]"
-				visible = "[Character.IsTraveling]"
-				onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
-				onclick = "[Character.ZoomCameraTo]"
-				blockoverride "extra" {
-					text_single = {
-						raw_text = "Travelling to [Character.GetTravelPlan.GetData.GetFinalDestination.GetProvince.GetNameNoTooltip],"
-					}
-					text_single = {
-						raw_text = "[Character.GetTravelPlan.GetData.GetFinalDestination.GetEstimatedArrivalDate.GetTimeDiffFromNow] left, [Character.GetTravelPlan.GetData.GetFinalDestinationProgress]%."
+		flowcontainer = {
+		    ignoreinvisible = yes
+			direction = vertical
+			visible = "[Character.IsTraveling]"
+
+			flowcontainer = {
+			    ignoreinvisible = yes
+				direction = vertical
+				datacontext = "[Character.GetTravelPlan.GetData]"
+
+				button_text = {
+					# visible = "[Character.HasActivityState( 'travel' )]"
+					onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
+					onclick = "[Character.ZoomCameraTo]"
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "Travelling to [TravelPlanData.GetFinalDestination.GetProvince.GetNameNoTooltip],"
+						}
+						text_single = {
+							raw_text = "[TravelPlanData.GetFinalDestination.GetEstimatedArrivalDate.GetTimeDiffFromNow] left, [TravelPlanData.GetFinalDestinationProgress|%0]."
+						}
 					}
 				}
-			}
 
+				button_text = {
+				    blockoverride "text" {
+				        raw_text = "Currently in [TravelPlanData.GetCurrentLocation.GetName], moving to [TravelPlanData.GetNextDestination.GetProvince.GetName], [TravelPlanData.GetNextDestination.GetEstimatedArrivalDate.GetTimeDiffFromNow] left."
+				    }
+				}
+			}
 
 			button_text = {
 				name = "activity_travel_button"
@@ -2642,41 +2664,45 @@ widget = {
 			}
 		}
 
-		button_normal = {
-			name = "away_from_capital"
-			datacontext = "[Character.GetTravelPlan]"
+		container = {
+			using = ocr_off
+			button_normal = {
+				name = "away_from_capital"
+				datacontext = "[Character.GetTravelPlan]"
 
-			visible_at_creation = no
-			visible = "[And( Character.IsTraveling, Or( Not( Activity.IsValid ), Activity.IsComplete ) ) )]"
+				visible_at_creation = no
+				visible = "[And( Character.IsTraveling, Or( Not( Activity.IsValid ), Activity.IsComplete ) ) )]"
 
-			size = { 60 60 }
-
-			onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
-			onclick = "[Character.ZoomCameraTo]"
-
-			tooltip = "TT_AWAY_FROM_CAPITAL_WIDGET"
-			using = tooltip_above
-
-			progresspie = {
-				name = "progress"
 				size = { 60 60 }
-				texture = "gfx/interface/progressbars/action_progress_thin.dds"
-				framesize = { 124 124 }
-				frame = 2
-				widgetanchor = top|hcenter
-				parentanchor = top|hcenter
-				value = "[TravelPlan.GetData.GetNextDestinationProgress]"
-				min = 0
-				max = 1
-			}
 
-			highlight_icon = {
-				texture = "gfx/interface/icons/travel/icon_travel_hud_placeholder.dds"
-				alwaystransparent = yes
-				size = { 45 45 }
-				parentanchor = center
+				onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
+				onclick = "[Character.ZoomCameraTo]"
+
+				tooltip = "TT_AWAY_FROM_CAPITAL_WIDGET"
+				using = tooltip_above
+
+				progresspie = {
+					name = "progress"
+					size = { 60 60 }
+					texture = "gfx/interface/progressbars/action_progress_thin.dds"
+					framesize = { 124 124 }
+					frame = 2
+					widgetanchor = top|hcenter
+					parentanchor = top|hcenter
+					value = "[TravelPlan.GetData.GetNextDestinationProgress]"
+					min = 0
+					max = 1
+				}
+
+				highlight_icon = {
+					texture = "gfx/interface/icons/travel/icon_travel_hud_placeholder.dds"
+					alwaystransparent = yes
+					size = { 45 45 }
+					parentanchor = center
+				}
 			}
 		}
+
 	}
 
 	######################################################
@@ -3431,7 +3457,7 @@ widget = {
 
 				button_text = {
 					blockoverride "text" {
-						raw_text = "Encyclopedia, F10."
+						raw_text = "Encyclopedia, F ten."
 					}
 					onclick = "[ToggleEncyclopedia]"
 					shortcut = "encyclopedia"
@@ -3473,6 +3499,55 @@ widget = {
 	}
 
 	# bottom_huds = { }
+
+	flowcontainer = {
+	    ignoreinvisible = yes
+		position = { 10 600 }
+		background = { using = Background_Area_Border_Solid }
+		direction = vertical
+		visible = no
+
+		button_text = {
+			shortcut = redo
+		    blockoverride "text" {
+		        raw_text = "Clear"
+		    }
+			onclick = "[Clear('toast_1')]"
+			onclick = "[Clear('toast_2')]"
+			onclick = "[Clear('toast_3')]"
+			onclick = "[Clear('toast_desc_1')]"
+			onclick = "[Clear('toast_desc_2')]"
+			onclick = "[Clear('toast_desc_3')]"
+			onclick = "[GetScriptedGui('clear_toasts').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		}
+
+		text_single = {
+			raw_text = "[GetPlayer.MakeScope.Var('toasts').GetValue|0] toasts"
+		}
+
+		text_single = {
+			raw_text = "[Get('toast_1')]"
+		}
+		text_single = {
+			raw_text = "[Get('toast_desc_1')]"
+		}
+
+		text_single = {
+			raw_text = "[Get('toast_2')]"
+		}
+		text_single = {
+			raw_text = "[Get('toast_desc_2')]"
+		}
+
+		text_single = {
+			raw_text = "[Get('toast_3')]"
+		}
+		text_single = {
+			raw_text = "[Get('toast_desc_3')]"
+		}
+
+	}
+
 
 }
 
