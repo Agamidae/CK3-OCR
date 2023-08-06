@@ -2469,7 +2469,7 @@ widget = {
 		datacontext = "[GetPlayer]"
 		datacontext = "[Character.GetInvolvedActivity]"
 
-		visible = "[And( Not( IsPauseMenuShown ), And(And(IsDefaultGUIMode, Character.IsValid), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD')))))]"
+		visible = "[And(And( Not( IsPauseMenuShown ), And(And(IsDefaultGUIMode, Character.IsValid), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD')))), Is('ocr'))]"
 		visible_at_creation = no
 		parentanchor = bottom|left
 		position = { 250 -70 }
@@ -2531,6 +2531,110 @@ widget = {
 				parentanchor = center
 				alpha = 0.5
 			}
+
+			progresspie = {
+				name = "progress"
+				size = { 60 60 }
+				texture = "gfx/interface/progressbars/action_progress_thin.dds"
+				framesize = { 124 124 }
+				frame = 2
+				widgetanchor = top|hcenter
+				parentanchor = top|hcenter
+				value = "[TravelPlan.GetData.GetNextDestinationProgress]"
+				min = 0
+				max = 1
+			}
+
+			highlight_icon = {
+				texture = "gfx/interface/icons/travel/icon_travel_hud_placeholder.dds"
+				alwaystransparent = yes
+				size = { 45 45 }
+				parentanchor = center
+			}
+		}
+	}
+
+	# OCR
+	flowcontainer = {
+		datacontext = "[GetPlayer]"
+		datacontext = "[Character.GetInvolvedActivity]"
+
+		visible = "[And(And( Not( IsPauseMenuShown ), And(And(IsDefaultGUIMode, Character.IsValid), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD')))), Isnt('ocr'))]"
+		visible_at_creation = no
+		direction = vertical
+		position = { 10 10 }
+		ignoreinvisible = yes
+		alwaystransparent = no
+		margin_left = 5
+		background = { using = Background_Area_Border_Solid }
+
+		error_button = { }
+
+		flowcontainer = {
+			direction = vertical
+			name = "involved_activity"
+
+			visible = "[And( Activity.IsValid, Not( Activity.IsComplete ) )]"
+			visible_at_creation = no
+			ignoreinvisible = yes
+			datacontext = "[Character.GetTravelPlan]"
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[Activity.OpenActivityView]"
+				blockoverride "text" {
+					raw_text = "Activity: [Activity.GetType.GetName]."
+				}
+			}
+
+			button_text = {
+				# visible = "[Character.HasActivityState( 'travel' )]"
+				visible = "[Character.IsTraveling]"
+				onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
+				onclick = "[Character.ZoomCameraTo]"
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "Travelling to [Character.GetTravelPlan.GetData.GetFinalDestination.GetProvince.GetNameNoTooltip],"
+					}
+					text_single = {
+						raw_text = "[Character.GetTravelPlan.GetData.GetFinalDestination.GetEstimatedArrivalDate.GetTimeDiffFromNow] left, [Character.GetTravelPlan.GetData.GetFinalDestinationProgress]%."
+					}
+				}
+			}
+
+
+			button_text = {
+				name = "activity_travel_button"
+				datacontext = "[Character.GetTravelPlan]"
+				# visible = "[Character.IsTraveling]"
+				visible = no
+				blockoverride "dot" {
+				}
+
+				blockoverride "text" {
+					text = "ACTIVITY_VIEW_TRAVEL"
+				}
+				tooltip = "TT_AWAY_FROM_CAPITAL_WIDGET"
+
+				onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
+				onclick = "[Character.ZoomCameraTo]"
+			}
+		}
+
+		button_normal = {
+			name = "away_from_capital"
+			datacontext = "[Character.GetTravelPlan]"
+
+			visible_at_creation = no
+			visible = "[And( Character.IsTraveling, Or( Not( Activity.IsValid ), Activity.IsComplete ) ) )]"
+
+			size = { 60 60 }
+
+			onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
+			onclick = "[Character.ZoomCameraTo]"
+
+			tooltip = "TT_AWAY_FROM_CAPITAL_WIDGET"
+			using = tooltip_above
 
 			progresspie = {
 				name = "progress"
@@ -2781,11 +2885,11 @@ widget = {
 				clicksound = ""
 			}
 			button_text = {
-				visible = "[GetVariableSystem.Exists('hide_event')]"
+				# visible = "[GetVariableSystem.Exists('hide_event')]"
 				onclick = "[GetVariableSystem.Toggle('hide_event')]"
 				shortcut = map_mode_1
 				blockoverride "text" {
-					raw_text = "Show event window, hotkey E."
+					raw_text = "[Select_CString(Is('hide_event'), 'Show', 'Hide')] event window, hotkey E."
 				}
 			}
 
@@ -6520,6 +6624,10 @@ types HUD
 			size = { 45 45 }
 			parentanchor = center
 		}
+	}
+
+	type activity_hud_button_ocr = button_text
+	{
 	}
 
 	type icon_hud_background = icon {
