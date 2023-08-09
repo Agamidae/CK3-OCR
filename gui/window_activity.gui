@@ -86,9 +86,67 @@
 					expand = { }
 				}
 
+				hbox = {
+					name = "conclusion"
+					visible = "[Not( ActivityWindow.HasActiveEvent )]"
+					layoutpolicy_horizontal = expanding
+
+					vbox_activity_conclusion_ocr = {
+						layoutpolicy_horizontal = expanding
+						name = "activity_conclusion"
+						visible = "[Activity.IsComplete]"
+
+
+						blockoverride "close_activity_onclick"
+						{
+							onclick = "[ActivityWindow.Close]"
+						}
+					}
+
+					expand = { }
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Activity.IsComplete]"
+					raw_text = "Closing the window will end the activity."
+				}
+
 				hbox_activity_progress_ocr = {
 					visible = "[And(Not( Activity.IsComplete ),Not(ActivityWindow.HasActiveEvent))]"
 					name = "activity_progress"
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not(Activity.IsComplete)]"
+
+					datacontext = "[Activity.GetLastWeeklyPulseAction]"
+					datacontext = "[Activity.GetCurrentPhase.GetPhase]"
+
+					text_multi = {
+						layoutpolicy_horizontal = expanding
+						using = wide
+						autoresize = yes
+						raw_text = "ACTIVITY_WINDOW_PHASE_IN_PROGRESS_TOOLTIP"
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					name = "activity_log"
+					blockoverride "text" {
+						text = "ACTIVITY_WINDOW_LOG"
+					}
+					blockoverride "extra" {
+						text_single = {
+							margin_left = -3
+							raw_text = ", hotkey O."
+						}
+					}
+					shortcut = mapmode_empires_secondary
+					down = "[IsGameViewDataShown( 'activity_log', Activity.Self )]"
+					onclick = "[ToggleGameViewData( 'activity_log', Activity.Self )]"
 				}
 
 				vbox = {
@@ -131,75 +189,12 @@
 					name = "main_content"
 					layoutpolicy_horizontal = expanding
 
-					hbox = {
-						name = "conclusion"
-						visible = "[Not( ActivityWindow.HasActiveEvent )]"
-						layoutpolicy_vertical = expanding
-						layoutpolicy_horizontal = expanding
 
-						margin = { 22 0 }
-
-						vbox_activity_conclusion = {
-							name = "activity_conclusion"
-							visible = "[Activity.IsComplete]"
-							layoutpolicy_vertical = expanding
-
-							margin_bottom = 26
-							margin_top = 60
-
-							background = {
-								using = Background_Area_ExtraDark
-								margin_bottom = 16
-								margin_right = 4
-							}
-
-							blockoverride "close_activity_onclick"
-							{
-								onclick = "[ActivityWindow.Close]"
-							}
-						}
-
-						expand = { }
+					#
+					activity_pulse_action_popup_right_ocr = {
+						datacontext = "[ActivityWindow.GetActivity]"
+						datacontext = "[ActivityWindow.GetLastWeeklyPulseEffectData]"
 					}
-
-					vbox = {
-						# name = "activity_event_widgets"
-						name = "activity_event"
-						datacontext = "[ActivityWindow.GetEventWindowInsert( PdxGuiWidget.AccessSelf )]"
-						datacontext = "[EventWindowViewInsert.GetOpenEvent]"
-						visible = "[ActivityWindow.HasActiveEvent]"
-						layoutpolicy_horizontal = expanding
-
-						base_event_ocr = {
-							blockoverride "activity scroll" {
-								minimumsize = { 700 -1 }
-								maximumsize = { 700 600 }
-							}
-							blockoverride "activity desc" {
-								minimumsize = { 700 -1 }
-								maximumsize = { 700 -1 }
-							}
-							blockoverride "activity option" {
-								size = { 700 36 }
-							}
-							blockoverride "activity event" { }
-							blockoverride "visible event" {
-								visible = "[EventWindowViewInsert.HasOpenEvent]"
-
-								# using = Event_Window_Debug_OptionTooltips
-
-								state = {
-									name = activity_new_event_shown
-									on_start = "[PdxGuiTriggerAllAnimations( 'activity_event_appear' )]"
-								}
-							}
-						}
-					}
-					# 
-					# activity_pulse_action_popup_right_ocr = {
-					# 	datacontext = "[ActivityWindow.GetActivity]"
-					# 	datacontext = "[ActivityWindow.GetLastWeeklyPulseEffectData]"
-					# }
 
 
 					vbox = {
@@ -383,23 +378,6 @@
 											down = "[IsGameViewDataShown( 'activity_guest_list', Activity.Self )]"
 											onclick = "[ToggleGameViewData( 'activity_guest_list', Activity.Self )]"
 										}
-
-										button_text = {
-											layoutpolicy_horizontal = expanding
-											name = "activity_log"
-											blockoverride "text" {
-												text = "ACTIVITY_WINDOW_LOG"
-											}
-											blockoverride "extra" {
-												text_single = {
-													margin_left = -3
-													raw_text = ", hotkey O."
-												}
-											}
-											shortcut = mapmode_empires_secondary
-											down = "[IsGameViewDataShown( 'activity_log', Activity.Self )]"
-											onclick = "[ToggleGameViewData( 'activity_log', Activity.Self )]"
-										}
 									}
 								}
 							}
@@ -438,6 +416,82 @@
 
 		old_activity = { }
 	}
+
+	widget = {
+		using = base_ocr_window
+		name = "activity_event"
+		datacontext = "[ActivityWindow.GetEventWindowInsert( PdxGuiWidget.AccessSelf )]"
+		datacontext = "[EventWindowViewInsert.GetOpenEvent]"
+		visible = "[ActivityWindow.HasActiveEvent]"
+
+		state = {
+			name = _show
+			on_finish = "[Set('act_event', 'yes')]"
+		}
+
+		state = {
+			name = _hide
+			on_finish = "[Clear('act_event')]"
+		}
+
+		window = {
+			using = ocr_window
+			size = { 930 100% }
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				using = ocr_margins
+
+				base_event_ocr = {
+					# blockoverride "activity scroll" {
+					# 	minimumsize = { 700 -1 }
+					# 	maximumsize = { 700 600 }
+					# }
+					# blockoverride "activity desc" {
+					# 	minimumsize = { 700 -1 }
+					# 	maximumsize = { 700 -1 }
+					# }
+					# blockoverride "activity option" {
+					# 	size = { 700 36 }
+					# }
+					blockoverride "activity event" { }
+					blockoverride "visible event" {
+						visible = "[EventWindowViewInsert.HasOpenEvent]"
+
+						# using = Event_Window_Debug_OptionTooltips
+
+						state = {
+							name = activity_new_event_shown
+							on_start = "[PdxGuiTriggerAllAnimations( 'activity_event_appear' )]"
+						}
+					}
+				}
+
+				expand = { }
+			}
+		}
+
+		window = {
+			name = "activity_event_widgets"
+			using = ocr_off
+
+			size = { 1390 750 }
+			parentanchor = center
+
+			using = Window_Background
+			using = Window_Movable
+			using = Window_Decoration
+
+			activity_event_widget = {
+				# name = "activity_event"
+				size = { 100% 100% }
+			}
+		}
+
+	}
+
 }
 
 types ActivityWindowTypes
@@ -2255,6 +2309,60 @@ types ActivityWindowTypes
 
 
 types OCR {
+	type vbox_activity_conclusion_ocr = vbox {
+
+		vbox = {
+			datacontext = "[AccessLocalPlayerCachedData.AccessActivityData]"
+			layoutpolicy_horizontal = expanding
+
+			text_multi = {
+				layoutpolicy_horizontal = expanding
+				text = "[Activity.GetConclusionDescription( GetPlayer )]"
+				autoresize = yes
+				using = wide
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				name = "effects_header"
+				text = "ACTIVITY_CONCLUSION_EFFECTS_HEADER"
+				visible = "[Not( StringIsEmpty( LocalPlayerActivityData.GetCompletionEffectsString ) )]"
+			}
+
+			text_multi = {
+				layoutpolicy_horizontal = expanding
+				autoresize = yes
+				text = "[LocalPlayerActivityData.GetCompletionEffectsString]"
+				using = wide
+			}
+
+			hbox = {
+				name = "activity_plugin_widgets_conclusion"
+				visible = "[Activity.IsComplete]"
+
+				state = {
+					trigger_on_create = yes
+					name = appear_test
+					using = Animation_Curve_Default
+					alpha = 1
+					duration = 0.1
+				}
+			}
+		}
+
+
+		button_primary_text = {
+			layoutpolicy_horizontal = expanding
+			blockoverride "text" {
+				text = "ACTIVITY_CONCLUSION_CLOSE"
+			}
+
+			block "close_activity_onclick"
+			{
+			}
+		}
+	}
+
 	type activity_phase_progress_timline_widget_ocr = vbox {
 		layoutpolicy_horizontal = expanding
 
@@ -2270,7 +2378,6 @@ types OCR {
 			    }
 				# onclick = "[Toggle('activity_phases')]"
 			}
-
 
 			item = {
 				vbox = {
@@ -2295,7 +2402,7 @@ types OCR {
 						}
 
 						text_single = {
-							visible = "[Not(EqualTo_int32( Activity.GetPhaseIndexOf( PlannedActivityPhase.Self ), Activity.GetCurrentPhaseIndex ))]"
+							# visible = "[Not(EqualTo_int32( Activity.GetPhaseIndexOf( PlannedActivityPhase.Self ), Activity.GetCurrentPhaseIndex ))]"
 							raw_text = "[ActivityPhase.GetName]."
 						}
 
@@ -2307,19 +2414,19 @@ types OCR {
 						expand = { }
 					}
 
-					hbox = {
-					    layoutpolicy_horizontal = expanding
-						visible = "[EqualTo_int32( Activity.GetPhaseIndexOf( PlannedActivityPhase.Self ), Activity.GetCurrentPhaseIndex )]"
-
-						text_multi = {
-							layoutpolicy_horizontal = expanding
-							using = wide
-							autoresize = yes
-							raw_text = "ACTIVITY_WINDOW_PHASE_IN_PROGRESS_TOOLTIP"
-						}
-
-					    expand = { }
-					}
+					# hbox = {
+					#     layoutpolicy_horizontal = expanding
+					# 	visible = "[EqualTo_int32( Activity.GetPhaseIndexOf( PlannedActivityPhase.Self ), Activity.GetCurrentPhaseIndex )]"
+					#
+					# 	text_multi = {
+					# 		layoutpolicy_horizontal = expanding
+					# 		using = wide
+					# 		autoresize = yes
+					# 		raw_text = "ACTIVITY_WINDOW_PHASE_IN_PROGRESS_TOOLTIP"
+					# 	}
+					#
+					#     expand = { }
+					# }
 				}
 			}
 
@@ -2609,18 +2716,6 @@ types OCR {
 				}
 
 				expand = { }
-			}
-
-			widget = {
-				name = "activity_event_widgets"
-				visible = "[ActivityWindow.HasActiveEvent]"
-				layoutpolicy_vertical = expanding
-				layoutpolicy_horizontal = expanding
-
-				activity_event_widget = {
-					# name = "activity_event"
-					size = { 100% 100% }
-				}
 			}
 
 			vbox = {

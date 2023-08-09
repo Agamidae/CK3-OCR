@@ -196,7 +196,7 @@ widget = {
 			ignoreinvisible = yes
 
 			button_text = {
-				visible = "[And(Not(GetVariableSystem.Exists('hide_alerts')), Or(DataModelHasItems(InGameTopbar.GetAlertItems), DataModelHasItems(InGameTopbar.GetDiplomaticItems)) )]"
+				visible = "[And(Not(GetVariableSystem.Exists('hide_alerts')), Or(DataModelHasItems(InGameTopbar.GetAlertItems), DataModelHasItems(InGameTopbar.GetDiplomaticItems)))]"
 				blockoverride "text" {
 					raw_text = "[Add_int32(GetDataModelSize(InGameTopbar.GetAlertItems), GetDataModelSize(InGameTopbar.GetDiplomaticItems))] alerts, Shift A."
 				}
@@ -254,6 +254,7 @@ widget = {
 			name = "outliner_button"
 			size = { 0 0 }
 			alpha = 0.7
+			visible = "[Not(IsGameViewOpen('activity_window'))]"
 			shortcut = "mapmode_empires_secondary"
 
 			onclick = "[CloseGameView('holding_view')]"
@@ -2610,7 +2611,7 @@ widget = {
 				layoutpolicy_horizontal = expanding
 				onclick = "[ToggleGameViewData('activity_window', Activity.Self)]"
 				blockoverride "text" {
-					raw_text = "Activity: [Activity.GetType.GetName], Control A."
+					raw_text = "Activity: [Activity.GetType.GetName], [AddTextIf( Is('act_event'), 'Event pending, ')]Control A."
 				}
 			}
 		}
@@ -2618,12 +2619,13 @@ widget = {
 		flowcontainer = {
 		    ignoreinvisible = yes
 			direction = vertical
-			visible = "[Character.IsTraveling]"
+			datacontext = "[Character.GetTravelPlan]"
+			datacontext = "[Character.GetTravelPlan.GetData]"
+			visible = "[And(Character.IsTraveling, TravelPlanData.HasNextDestination)]"
 
 			flowcontainer = {
 			    ignoreinvisible = yes
 				direction = vertical
-				datacontext = "[Character.GetTravelPlan.GetData]"
 
 				button_text = {
 					# visible = "[Character.HasActivityState( 'travel' )]"
@@ -2640,8 +2642,19 @@ widget = {
 				}
 
 				button_text = {
+					datacontext = "[TravelPlanData.GetCurrentLocation]"
+					visible = "[Not(ObjectsEqual(MyCapital, Province.Self))]"
+					blockoverride "text" {
+						raw_text = "Currently in [TravelPlanData.GetCurrentLocation.GetName], [DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+					}
+				}
+
+				button_text = {
+					using = prov_click
+					datacontext = "[TravelPlanData.GetNextDestination.GetProvince]"
+					visible = "[Not(ObjectsEqual(TravelPlanData.GetNextDestination, TravelPlanData.GetFinalDestination))]"
 				    blockoverride "text" {
-				        raw_text = "Currently in [TravelPlanData.GetCurrentLocation.GetName], moving to [TravelPlanData.GetNextDestination.GetProvince.GetName], [TravelPlanData.GetNextDestination.GetEstimatedArrivalDate.GetTimeDiffFromNow] left."
+						raw_text = "moving to [TravelPlanData.GetNextDestination.GetProvince.GetName], [TravelPlanData.GetNextDestination.GetEstimatedArrivalDate.GetTimeDiffFromNow] left."
 				    }
 				}
 			}
@@ -3491,10 +3504,309 @@ widget = {
 
 			button_text = {
 			    blockoverride "text" {
-			        raw_text = "[Select_CString(Is('hide_shortcuts'), 'Show', 'Hide')] shortcuts."
+			        raw_text = "[Select_CString(Is('hide_shortcuts'), 'Show', 'Hide')] shortcuts, Control Y."
 			    }
+				shortcut = redo
 				onclick = "[Toggle('hide_shortcuts')]"
 			}
+		}
+	}
+
+	### WARS SCHEMES AND MAPMODES AND INSPIRATIONS
+	flowcontainer = {
+		visible = "[And(And(IsDefaultGUIMode, Not(IsRightWindowOpen)), Is('ocr'))]"
+		parentanchor = bottom|right
+		widgetanchor = top|right
+		position = { 0 -155 }
+		alwaystransparent = yes
+		ignoreinvisible = yes
+		filter_mouse = all
+		allow_outside = yes
+		spacing = 30
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+		}
+
+		# In progress systems
+		flowcontainer = {
+			name = "in_progress_systems"
+			ignoreinvisible = yes
+			margin_top = 35
+			visible = "[Not(IsGameViewOpen('barbershop'))]"
+
+			flowcontainer = {
+				name = "player_inspirations"
+				datamodel = "[GetPlayer.GetSponsoredInspirations]"
+				parentanchor = vcenter
+				spacing = 5
+				margin = { 5 0 }
+				allow_outside = yes
+
+				item = {
+					button_normal = {
+						datacontext = "[Inspiration.GetOwner]"
+						size = { 60 60 }
+						tooltip = "TT_INSPIRATION_WIDGET"
+						using = tooltip_above
+						onclick = "[InGameBottomBar.ToggleSelectedInspiration( Inspiration.Self )]"
+
+						icon = {
+							texture = "gfx/interface/buttons/button_lifestyles_base.dds"
+							size = { 100% 100% }
+						}
+
+						icon = {
+							visible = "[ObjectsEqual( InGameBottomBar.GetSelectedInspiration, Inspiration.Self )]"
+							texture = "gfx/interface/buttons/button_lifestyles_active_frame.dds"
+							size = { 100% 100% }
+						}
+
+						icon = {
+							name = "progress_frame"
+							texture = "gfx/interface/progressbars/action_progress_frame.dds"
+							size = { 100% 100% }
+							parentanchor = center
+							alpha = 0.5
+						}
+
+						progresspie = {
+							name = "progress"
+							visible = "[And( Inspiration.GetSponsor.IsValid, Not( Inspiration.IsComplete ) )]"
+
+							size = { 60 60 }
+							texture = "gfx/interface/progressbars/action_progress_thin.dds"
+							framesize = { 124 124 }
+							frame = 2
+
+							widgetanchor = top|hcenter
+							parentanchor = top|hcenter
+
+							min = 0
+							max = 100
+
+							value = "[Select_float( GreaterThan_int32( Inspiration.GetProgress, '(int32)0' ), CurrentAndMaxToProgressbarValueInt32( Inspiration.GetProgress, GetDefine( 'NInspiration', 'MAX_PROGRESS' ) ), '(float)2' )]"
+						}
+
+						highlight_icon = {
+							texture = "[Inspiration.GetType.GetIcon]"
+							alwaystransparent = yes
+							size = { 45 45 }
+							position = { 1 1 }
+							parentanchor = center
+						}
+					}
+				}
+			}
+
+			flowcontainer = {
+				name = "player_schemes"
+				datamodel = "[InGameBottomBar.GetSchemes]"
+				parentanchor = vcenter
+				spacing = 5
+				margin = { 5 0 }
+
+				item = {
+					button_normal = {
+						name = "tutorial_highlight_lifestyle_HUD_button"
+						onclick = "[BottomBarSchemeItem.OnClick]"
+						datacontext = "[BottomBarSchemeItem.GetScheme]"
+						tooltip = "BOTTOMBAR_SCHEME_TOOLTIP"
+						size = { 60 60 }
+
+						icon = {
+							texture = "gfx/interface/buttons/button_lifestyles_base.dds"
+							size = { 100% 100% }
+						}
+
+						icon = {
+							name = "progress_frame"
+							texture = "gfx/interface/progressbars/action_progress_frame.dds"
+							size = { 100% 100% }
+							parentanchor = center
+							alpha = 0.5
+						}
+
+						progresspie = {
+							name = "progress"
+							size = { 60 60 }
+							texture = "gfx/interface/progressbars/action_progress_thin.dds"
+							framesize = { 124 124 }
+							frame = 2
+							widgetanchor = top|hcenter
+							parentanchor = top|hcenter
+							value = "[Scheme.GetProgressBar]"
+							min = 0
+							max = 1
+						}
+
+						highlight_icon = {
+							texture = "[Scheme.GetSchemeType.GetIcon]"
+							alwaystransparent = yes
+							size = { 45 45 }
+							parentanchor = center
+						}
+					}
+				}
+			}
+
+			button_raise_disband_armies = {
+				name = "tutorial_highlight_raise_troops"
+				visible = "[And( And( Character.IsAtWar, Not(Character.HasRaisedRegiments)), Not(IsGameViewOpen('barbershop')))]"
+				visible_at_creation = no
+
+				enabled = "[PlayerCanRaiseAnyRallyPoint]"
+				onclick = "[PlayerRaiseAllRegiments]"
+				clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_raise_army"
+
+				onclick = "[PdxGuiTriggerAllAnimations('button_army')]"
+
+				tooltip = "[GetPlayerRaiseAllTooltip]"
+
+				animation_aggressive = {}
+			}
+
+			button_raise_disband_armies = {
+				visible = "[And( PlayerShouldDisbandAll, Not(IsGameViewOpen('barbershop')))]"
+				visible_at_creation = no
+
+				onclick = "[PlayerDisbandAll]"
+				enabled = "[PlayerCanDisbandAll]"
+				clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_unit_army_disband"
+
+				blockoverride "text" {
+					text = "DISBAND_ALL"
+				}
+
+				tooltip = "[GetDisbandAllTooltip]"
+			}
+
+			spacer = {
+				datacontext = "[GetPlayer]"
+				visible = "[Or(And(Character.IsAtWar, Not(Character.HasRaisedRegiments)), PlayerShouldDisbandAll)]"
+
+				size = { 5 20 }
+			}
+
+			flowcontainer = {
+				name = "wars"
+				parentanchor = vcenter
+				ignoreinvisible = yes
+
+				flowcontainer = {
+					name = "great_holy_wars"
+					parentanchor = vcenter
+					ignoreinvisible = yes
+
+					flowcontainer = {
+						datamodel = "[GetPlayer.GetFaith.GetDefensiveGreatHolyWars]"
+						ignoreinvisible = yes
+						parentanchor = vcenter
+
+						item = {
+							button_ghw_banner = {
+								name = "defensive_ghw"
+								parentanchor = vcenter
+
+								blockoverride "ghw_tooltip"
+								{
+									tooltip = "GHW_OPEN_TOOLTIP_DEFENDER"
+									using = tooltip_ne
+								}
+							}
+						}
+					}
+
+					button_ghw_banner = {
+						name = "player_faith_ghw"
+						datacontext = "[GetPlayer.GetFaith.GetGreatHolyWar]"
+						visible = "[GetPlayer.GetFaith.HasOffensiveGreatHolyWar]"
+						visible_at_creation = no
+						parentanchor = vcenter
+
+						blockoverride "ghw_tooltip"
+						{
+							tooltip = "GHW_OPEN_TOOLTIP_ATTACKER"
+							using = tooltip_ne
+						}
+					}
+				}
+
+				flowcontainer = {
+					name = "raids_on_me"
+					datamodel = "[GetPlayer.GetHostileRaiders]"
+					parentanchor = vcenter
+
+					item = {
+						button_raid_banner = {
+							parentanchor = vcenter
+							tooltip = "RAID_ON_ME_TOOLTIP"
+						}
+					}
+				}
+
+				flowcontainer = {
+					name = "raids_by_me"
+					datamodel = "[GetPlayer.GetRaidTargets]"
+					parentanchor = vcenter
+
+					item = {
+						button_raid_banner = {
+							parentanchor = vcenter
+							tooltip = "RAID_BY_ME_TOOLTIP"
+						}
+					}
+				}
+
+				flowcontainer = {
+					name = "regular_wars"
+					datamodel = "[InGameBottomBar.GetWarItems]"
+					ignoreinvisible = yes
+
+					item = {
+						button_war_banner = {}
+					}
+				}
+			}
+
+			flowcontainer = {
+				name = "involved_struggles"
+				datamodel = "[GetPlayer.GetInvolvedStruggles]"
+				parentanchor = vcenter
+				ignoreinvisible = yes
+
+				item = {
+					button_struggle_banner = {
+						blockoverride "texture" {
+							texture = "gfx/interface/icons/struggle_banners/involved_banner.dds"
+						}
+					}
+				}
+			}
+
+			flowcontainer = {
+				name = "interloper_struggles"
+				datamodel = "[GetPlayer.GetInterloperStruggles]"
+				parentanchor = vcenter
+				ignoreinvisible = yes
+
+				item = {
+					button_struggle_banner = {}
+				}
+			}
+		}
+
+		## Map Modes
+		map_modes = {
+			visible = "[Not(IsGameViewOpen('barbershop'))]"
+			filter_mouse = all
+			alwaystransparent = no
 		}
 	}
 

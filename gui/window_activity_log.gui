@@ -1,0 +1,326 @@
+window = {
+	name = "activity_log"
+	using = base_ocr_window
+	layer = top
+
+	window = {
+		using = ocr_window
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			using = ocr_margins
+
+			datacontext = "[ActivityLogWindow.GetActivity]"
+
+			hbox = {
+			    layoutpolicy_horizontal = expanding
+
+				text_single = {
+					text = "ACTIVITY_LOG_HEADER"
+				}
+
+				text_single = {
+					raw_text = ", [GetDataModelSize(Activity.GetLogEntries)] events."
+				}
+
+				button_close = {
+					shortcut = close_window
+					onclick = "[ActivityLogWindow.Close]"
+				}
+
+			    expand = { }
+			}
+
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
+
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Is('reverse_act_log')]"
+				blockoverride "text" {
+					raw_text = "Reverse order, Page Down to switch."
+				}
+				onclick = "[Toggle('reverse_act_log')]"
+				shortcut = zoom_in
+			}
+			button_text = {
+				shortcut = zoom_out
+				layoutpolicy_horizontal = expanding
+				visible = "[Isnt('reverse_act_log')]"
+				blockoverride "text" {
+					raw_text = "Chronological order, Page Up to reverse."
+				}
+				onclick = "[Toggle('reverse_act_log')]"
+			}
+
+			scrollbox = {
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "scrollbox_empty"
+				{
+					visible = "[IsDataModelEmpty( Activity.GetLogEntries )]"
+					text = "ACTIVITY_LOG_NO_ENTRIES"
+				}
+
+				blockoverride "scrollbox_content"
+				{
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datamodel = "[Activity.GetLogEntries]"
+						bottomtotop = yes
+						visible = "[Is('reverse_act_log')]"
+
+						item = {
+							vbox_log_item = {}
+						}
+					}
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datamodel = "[Activity.GetLogEntries]"
+						visible = "[Isnt('reverse_act_log')]"
+
+						item = {
+							vbox_log_item = {}
+						}
+					}
+				}
+			}
+
+			expand = { }
+		}
+	}
+
+	old_act_log = { }
+}
+
+types OCR {
+	type old_act_log = window {
+		using = old_window
+		allow_outside = yes
+		size = { 800 710 }
+		# position = { 600 120 }
+
+		using = Window_Movable
+		using = Window_Background
+		using = Window_Decoration
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+			position_y = 120
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+			position_y = 200
+		}
+
+		vbox = {
+			using = Window_Margins
+
+			datacontext = "[ActivityLogWindow.GetActivity]"
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "ACTIVITY_LOG_HEADER"
+				}
+				blockoverride "button_close"
+				{
+					onclick = "[ActivityLogWindow.Close]"
+				}
+			}
+
+			scrollbox = {
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "scrollbox_empty"
+				{
+					visible = "[IsDataModelEmpty( Activity.GetLogEntries )]"
+					text = "ACTIVITY_LOG_NO_ENTRIES"
+				}
+
+				blockoverride "scrollbox_content"
+				{
+					fixedgridbox = {
+						name = "log_entries_list"
+						datamodel = "[Activity.GetLogEntries]"
+						addcolumn = 690
+						addrow = 224
+
+						item = {
+							widget = {
+								name = "log_entry"
+								size = { 690 224 }
+
+								background = {
+									using = Background_Area_With_Header
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									layoutpolicy_vertical = expanding
+
+									margin = { 16 4 }
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+
+										text_single = {
+											name = "log_title"
+											text = "[ActivityLogEntry.GetTitle]"
+											default_format = "#high"
+											max_width = 480
+										}
+
+										expand = { }
+
+										text_single = {
+											name = "log_date"
+											text = "[ActivityLogEntry.GetDate.GetString]"
+											max_width = 200
+										}
+									}
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										layoutpolicy_vertical = expanding
+
+										margin = { 0 16 }
+
+										text_multi = {
+											name = "log_desc_only_text"
+											text = "[ActivityLogEntry.GetFullDescription]"
+
+											size = { 440 164 }
+											multiline = yes
+										}
+
+										expand = { }
+
+										vbox = {
+											layoutpolicy_vertical = expanding
+
+											portrait_head = {
+												name = "log_character"
+												datacontext = "[ActivityLogEntry.GetCharacter]"
+											}
+
+											expand = { }
+										}
+
+										vbox = {
+											datacontext = "[ActivityLogEntry.GetArtifact]"
+											datacontext = "[ActivityLogEntry.GetTarget]"
+											layoutpolicy_vertical = expanding
+
+											portrait_head = {
+												name = "log_target"
+												datacontext = "[ActivityLogEntry.GetTarget]"
+												visible = "[And( Character.IsValid, Not( Artifact.IsValid ) )]"
+											}
+
+											portrait_head_small = {
+												name = "log_target_small"
+												datacontext = "[ActivityLogEntry.GetTarget]"
+												visible = "[And( Character.IsValid, Artifact.IsValid )]"
+											}
+
+											icon_artifact = {
+												visible = "[Artifact.IsValid]"
+											}
+
+											expand = { }
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	type vbox_log_item = vbox {
+		layoutpolicy_horizontal = expanding
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			spacing = 3
+			text_single = {
+				name = "log_date"
+				# visible = "[Not(EqualTo_string(GetCurrentDate.GetString, ActivityLogEntry.GetDate.GetString))]"
+				raw_text = "[ActivityLogEntry.GetDate.GetStringShortNoYear],"
+			}
+
+			text_single = {
+				name = "log_title"
+				raw_text = "[ActivityLogEntry.GetTitle]."
+			}
+
+
+			expand = { }
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+
+			text_multi = {
+				name = "log_desc_only_text"
+				raw_text = "[ActivityLogEntry.GetFullDescription]."
+
+				using = wide
+				autoresize = yes
+			}
+
+			char_name = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[ActivityLogEntry.GetCharacter]"
+				visible = "[And(Not(Character.IsLocalPlayer), Character.IsValid)]"
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "Select"
+					}
+				}
+				blockoverride "relation" {
+				}
+			}
+
+			char_name = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[ActivityLogEntry.GetTarget]"
+				visible = "[And(Not(Character.IsLocalPlayer), Character.IsValid)]"
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "Select"
+					}
+				}
+				blockoverride "relation" {
+				}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					raw_text = "Select [Artifact.GetName]"
+				}
+				onclick = "[OpenGameViewData('artifact_details', Artifact.Self)]"
+				datacontext = "[ActivityLogEntry.GetArtifact]"
+				visible = "[Artifact.IsValid]"
+			}
+		}
+	}
+}
