@@ -188,12 +188,16 @@ widget = {
 	container = {
 		using = NoWindowsOpen
 		background = { using = Background_Area_Border_Solid }
-		position = { 5 5 }
+		position = { 15 5 }
 		ignoreinvisible = yes
 
 		container = {
 			visible = "[Isnt('suggestions')]"
 			ignoreinvisible = yes
+			background = {
+				using = Background_Area_Border_Solid
+				margin = { 5 0 }
+			}
 
 			button_text = {
 				visible = "[And(Not(GetVariableSystem.Exists('hide_alerts')), Or(DataModelHasItems(InGameTopbar.GetAlertItems), DataModelHasItems(InGameTopbar.GetDiplomaticItems)))]"
@@ -224,8 +228,8 @@ widget = {
 		}
 
 		button = {
-			visible = "[GetVariableSystem.Exists('hide_feed')]"
-			onclick = "[GetVariableSystem.Toggle('hide_feed')]"
+			visible = "[Is('updates')]"
+			onclick = "[GetVariableSystem.Toggle('show_feed')]"
 			shortcut = go_back_2
 		}
 	}
@@ -988,7 +992,7 @@ widget = {
 	window = {
 		# layer = debug
 		movable = no
-		parentanchor = right
+		# parentanchor = right
 		position = { 0 0 }
 		using = TooltipFocus
 		alwaystransparent = no
@@ -1542,9 +1546,18 @@ icon = {
 			clicksound = ""
 		}
 		button = {
+			datacontext = "[GetPlayer]"
 			shortcut = zoom_out
+			visible = "[Not(IsDiarchyVisible)]"
 			clicksound = ""
 		}
+
+		button = {
+			onclick = "[OpenGameViewData('holding_view', GetPlayer.GetCapitalLocation)]"
+			onclick = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetTitle.GetID)]"
+			shortcut = "mapmode_culture_secondary"
+		}
+
 
 		hotkeys_HUD = { }
 
@@ -2513,7 +2526,7 @@ widget = {
 			button_hud_travel = {
 				name = "activity_travel_button"
 				datacontext = "[Character.GetTravelPlan]"
-				visible = "[Character.IsTraveling]"
+				visible = "[And(Character.IsTraveling, Not(Activity.IsCurrentPhaseActive))]"
 				parentanchor = "vcenter"
 
 				text = "ACTIVITY_VIEW_TRAVEL"
@@ -2592,12 +2605,46 @@ widget = {
 
 		error_button = { }
 
-		widget = {
-			size = { 0 120 }
-			visible = "[Is('toasted')]"
-		}
+		flowcontainer = {
+			direction = vertical
+			ignoreinvisible = yes
+	        alpha = 0
+	        # widget = {
+	        #     size = { 0 50 }
+	        # }
+	        text_single = {
+	            raw_text = "[Get('toast_1')]"
+	        }
+	        text_multi = {
+	            using = wide
+	            autoresize = yes
+	            raw_text = "[Get('toast_desc_1')]"
+	        }
+	        # not sure where this comes from
+	        # widget = {
+	        #     size = { 0 10 }
+	        # }
+	        widget = {
+	            size = { 0 25 }
+	            visible = "[Is('toast_extras')]"
+	        }
+	        text_single = {
+	            raw_text = "Dismiss"
+	        }
+
+	        # widget = {
+	        #     size = { 0 25 }
+	        # }
+	        visible = "[Is('toasted')]"
+	    }
+
+		# widget = {
+		# 	size = { 0 120 }
+		# 	visible = "[Is('toasted')]"
+		# }
 
 		flowcontainer = {
+			# margin_top = 50
 			direction = vertical
 			name = "involved_activity"
 
@@ -2642,10 +2689,16 @@ widget = {
 				}
 
 				button_text = {
+					using = prov_pan
 					datacontext = "[TravelPlanData.GetCurrentLocation]"
 					visible = "[Not(ObjectsEqual(MyCapital, Province.Self))]"
 					blockoverride "text" {
 						raw_text = "Currently in [TravelPlanData.GetCurrentLocation.GetName], [DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+					}
+					button = {
+						shortcut = map_mode_9
+						datacontext = "[GetPlayer.GetCurrentLocation]"
+						using = prov_pan
 					}
 				}
 
@@ -2655,6 +2708,15 @@ widget = {
 					visible = "[Not(ObjectsEqual(TravelPlanData.GetNextDestination, TravelPlanData.GetFinalDestination))]"
 				    blockoverride "text" {
 						raw_text = "moving to [TravelPlanData.GetNextDestination.GetProvince.GetName], [TravelPlanData.GetNextDestination.GetEstimatedArrivalDate.GetTimeDiffFromNow] left."
+				    }
+				}
+
+				button_text = {
+					using = prov_pan
+					datacontext = "[TravelPlanData.GetCurrentLocation]"
+					layoutpolicy_horizontal = expanding
+				    blockoverride "text" {
+				        raw_text = "Pan camera to your character, Shift Q."
 				    }
 				}
 			}
@@ -2983,12 +3045,14 @@ widget = {
 
 			#TODO
 			button_text = {
+				datacontext = "[GetPlayer]"
 			    blockoverride "text" {
-			        raw_text = "View your regent."
+			        raw_text = "View [Character.GetDiarchyTypeName], Page Up."
 			    }
+				shortcut = zoom_out
 				onclick = "[ToggleGameViewData( 'diarchy', Character.GetID )]"
 				visible = "[IsDiarchyVisible]"
-				tooltip = "DIARCHY_WINDOW_OPEN_TOOLTIP"
+				# tooltip = "DIARCHY_WINDOW_OPEN_TOOLTIP"
 			}
 
 			flowcontainer = {
@@ -3386,7 +3450,8 @@ widget = {
 			direction = vertical
 
 			flowcontainer = {
-				visible = "[Isnt('hide_shortcuts')]"
+				# visible = "[Isnt('hide_shortcuts')]"
+				visible = "[Show('toggle_hud_hotkeys')]"
 			    ignoreinvisible = yes
 				direction = vertical
 
@@ -3504,10 +3569,12 @@ widget = {
 
 			button_text = {
 			    blockoverride "text" {
-			        raw_text = "[Select_CString(Is('hide_shortcuts'), 'Show', 'Hide')] shortcuts, Control Y."
+			        raw_text = "[Select_CString(Show('toggle_hud_hotkeys'), 'Show', 'Hide')] shortcuts, Control Y."
 			    }
 				shortcut = redo
-				onclick = "[Toggle('hide_shortcuts')]"
+				onclick = "[Click('toggle_hud_hotkeys')]"
+				# onclick = "[Sgui('toggle_hud_hotkeys', Execute, GetPlayer)]"
+				# onclick = "[Toggle('hide_shortcuts')]"
 			}
 		}
 	}
@@ -3870,13 +3937,13 @@ widget = {
 ### Toasts
 notifications_toasts = {
 	visible = "[And(And(ToastMessageHandler.HasMessage, Not(SinglePlayerShowingPausedSuccession)), Not( IsPauseMenuShown ))]"
-	layer = frontend
+	layer = top
 }
 
 ### Message Feed
 notifications_message_feed = {
 	visible = "[And(Not( IsPauseMenuShown ), Not(SinglePlayerShowingPausedSuccession))]"
-	layer = frontend
+	layer = top
 }
 
 
@@ -6415,6 +6482,7 @@ types HUD
 					using = Animation_FadeOut_Standard
 				}
 			}
+
 
 			hotkeys_HUD = { }
 

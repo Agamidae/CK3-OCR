@@ -149,6 +149,15 @@
 		movable = no
 		visible = "[And(And(And(Not(GetVariableSystem.Exists('ocr')), Not(TravelPlanner.IsEntourageListWindowOpen)), Not(GetVariableSystem.Exists('show_dangers'))), Not(IsGameViewOpen('character')))]"
 
+		state = {
+			name = hide_maa_window
+			position = { -1500 0 }
+		}
+		state = {
+			name = show_maa_window
+			# on_start = "[PdxGuiTriggerAllAnimations('pan_to_army')]"
+			position = { 0 0 }
+		}
 		vbox = {
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
@@ -158,152 +167,152 @@
 				layoutpolicy_horizontal = expanding
 			}
 
-			vbox = {
+			scrollbox = {
 				layoutpolicy_horizontal = expanding
-				visible = "[And(ActivityPlanner.IsPlanningStage( 'options' ), And(Not(IsGameViewOpen('court_window')), Not(IsGameViewOpen('travel_route_edit_window'))))]"
+				layoutpolicy_vertical = expanding
 
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					name = "activity_options"
-					visible = "[Or(ActivityPlanner.IsPlanningStage( 'options' ), ActivityPlanner.PrevMultiDestStageWas('options'))]"
+				blockoverride "scrollbox_content" {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[And(ActivityPlanner.IsPlanningStage( 'options' ), And(Not(IsGameViewOpen('court_window')), Not(IsGameViewOpen('travel_route_edit_window'))))]"
 
-					activity_option_edit_widget_ocr = {
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							name = "activity_options"
+							visible = "[Or(ActivityPlanner.IsPlanningStage( 'options' ), ActivityPlanner.PrevMultiDestStageWas('options'))]"
+
+							activity_option_edit_widget_ocr = {
+							}
+						}
 					}
-				}
-			}
 
-			activity_planner_main_heading_widget_ocr = { }
+					activity_planner_main_heading_widget_ocr = { }
 
-			# Cost & Confirm Planning
-			vbox = {
-				visible = "[And(ActivityPlanner.IsPlanningStage( 'options' ), And(Not(IsGameViewOpen('court_window')), Not(IsGameViewOpen('travel_route_edit_window'))))]"
-				layoutpolicy_horizontal = expanding
+					# Cost & Confirm Planning
+					vbox = {
+						visible = "[And(ActivityPlanner.IsPlanningStage( 'options' ), And(Not(IsGameViewOpen('court_window')), Not(IsGameViewOpen('travel_route_edit_window'))))]"
+						layoutpolicy_horizontal = expanding
 
-				hbox = {
-					layoutpolicy_horizontal = expanding
+						hbox = {
+							layoutpolicy_horizontal = expanding
 
-					cost_breakdown_vbox = {
-						datacontext = "[ActivityPlanner.AccessCostBreakdown]"
-						name = "activity_cost"
+							cost_breakdown_vbox = {
+								datacontext = "[ActivityPlanner.AccessCostBreakdown]"
+								name = "activity_cost"
+							}
+
+							expand = { }
+						}
+
+						button_primary_text = {
+							layoutpolicy_horizontal = expanding
+							name = "progress_planning"
+							blockoverride "disabled" {
+								visible = "[Not(ActivityPlanner.CanProgressPlanningStage)]"
+							}
+							blockoverride "text" {
+								text = "ACTIVITY_PLANNER_START"
+							}
+
+							onclick = "[ActivityPlanner.ProgressPlanningStage]"
+							enabled = "[ActivityPlanner.CanProgressPlanningStage]"
+
+
+							tooltip = "[ActivityPlanner.GetCanProgressPlanningStageTooltip]"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								text = "ACTIVITY_ALL_GUESTS_BUTTON_TEXT"
+							}
+							visible = "[And(Not(DataModelHasItems(ActivityPlanner.AccessSpecialGuests)), DataModelHasItems(ActivityType.GetGuestInviteRules))]"
+							onclick = "[OpenGameViewData( 'activity_guest_list', ActivityPlanner.AccessSelf )]"
+
+						}
+					}
+
+					activity_special_option_selection_widget_ocr = { }
+
+					travel_planning_window_ocr = { }
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[ActivityPlanner.IsPlanningStage( 'location' )]"
+
+						using = zoom_out_title
+
+
+						state = {
+							name = _hide
+							on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
+							on_finish = "[GetVariableSystem.Clear('travel_type')]"
+						}
+
+						state = {
+							name = _show
+							next = "clear_maa_list"
+							on_finish = "[GetVariableSystem.Set('travel_type', 'pilgrimage')]"
+							on_finish = "[PdxGuiTriggerAllAnimations('show_army_window')]"
+						}
+
+						state = {
+							name = "clear_maa_list"
+							delay = 0.3
+							alpha = 1
+							next = grab_origins
+							on_finish = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+							on_start = "[GetScriptedGui('clear_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						}
+
+						state = {
+							name = grab_origins
+							delay = 0.3
+							on_finish = "[PdxGuiTriggerAllAnimations('grab_maa_origin')]"
+							next = order_origins
+						}
+
+						state = {
+							name = order_origins
+							delay = 0.3
+							on_finish = "[GetScriptedGui('order_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						}
+
+						vbox_select_from_map = {
+							blockoverride "maa" {
+							}
+							blockoverride "action" {
+							}
+							blockoverride "debug" {
+								visible = no
+							}
+						}
+
+						text_multi = {
+							layoutpolicy_horizontal = expanding
+							text = "ACTIVITY_DESTINATION_SELECTION"
+							autoresize = yes
+							max_width = 700
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						name = "bottom_right_area"
+						visible = "[And(ActivityPlanner.IsPlanningStage( 'options' ), And(Not(IsGameViewOpen('court_window')), Not(IsGameViewOpen('travel_route_edit_window'))))]"
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							activity_planner_activity_details_hbox_ocr = { }
+						}
 					}
 
 					expand = { }
-				}
-
-				button_primary_text = {
-					layoutpolicy_horizontal = expanding
-					name = "progress_planning"
-					blockoverride "disabled" {
-						visible = "[Not(ActivityPlanner.CanProgressPlanningStage)]"
-					}
-					blockoverride "text" {
-						text = "ACTIVITY_PLANNER_START"
-					}
-
-					onclick = "[ActivityPlanner.ProgressPlanningStage]"
-					enabled = "[ActivityPlanner.CanProgressPlanningStage]"
-
-
-					tooltip = "[ActivityPlanner.GetCanProgressPlanningStageTooltip]"
-				}
-
-				button_text = {
-					layoutpolicy_horizontal = expanding
-					blockoverride "text" {
-						text = "ACTIVITY_ALL_GUESTS_BUTTON_TEXT"
-					}
-					visible = "[And(Not(DataModelHasItems(ActivityPlanner.AccessSpecialGuests)), DataModelHasItems(ActivityType.GetGuestInviteRules))]"
-					onclick = "[OpenGameViewData( 'activity_guest_list', ActivityPlanner.AccessSelf )]"
 
 				}
 			}
 
-			activity_special_option_selection_widget_ocr = { }
-
-			travel_planning_window_ocr = { }
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				visible = "[ActivityPlanner.IsPlanningStage( 'location' )]"
-
-				using = zoom_out_title
-
-				state = {
-					name = hide_maa_window
-					position = { -1500 0 }
-				}
-				state = {
-					name = show_maa_window
-					# on_start = "[PdxGuiTriggerAllAnimations('pan_to_army')]"
-					position = { 0 0 }
-				}
-
-				state = {
-					name = _hide
-					on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
-					on_finish = "[GetVariableSystem.Clear('travel_type')]"
-				}
-
-				state = {
-					name = _show
-					next = "clear_maa_list"
-					on_finish = "[GetVariableSystem.Set('travel_type', 'pilgrimage')]"
-					on_finish = "[PdxGuiTriggerAllAnimations('show_army_window')]"
-				}
-
-				state = {
-					name = "clear_maa_list"
-					delay = 0.3
-					alpha = 1
-					next = grab_origins
-					on_finish = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
-					on_start = "[GetScriptedGui('clear_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-				}
-
-				state = {
-					name = grab_origins
-					delay = 0.3
-					on_finish = "[PdxGuiTriggerAllAnimations('grab_maa_origin')]"
-					next = order_origins
-				}
-
-				state = {
-					name = order_origins
-					delay = 0.3
-					on_finish = "[GetScriptedGui('order_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-				}
-
-				vbox_select_from_map = {
-					blockoverride "maa" {
-					}
-					blockoverride "action" {
-					}
-					blockoverride "debug" {
-						visible = no
-					}
-				}
-
-				text_multi = {
-					layoutpolicy_horizontal = expanding
-					text = "ACTIVITY_DESTINATION_SELECTION"
-					autoresize = yes
-					max_width = 700
-				}
-			}
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				name = "bottom_right_area"
-				visible = "[And(ActivityPlanner.IsPlanningStage( 'options' ), And(Not(IsGameViewOpen('court_window')), Not(IsGameViewOpen('travel_route_edit_window'))))]"
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-
-					activity_planner_activity_details_hbox_ocr = { }
-				}
-			}
-
-			expand = { }
 		}
 	}
 

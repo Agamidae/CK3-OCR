@@ -811,13 +811,19 @@ types Notifications {
             # on_finish = "[GetScriptedGui('add_toast').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
             # on_finish = "[PdxGuiTriggerAllAnimations('pause_game')]"
             # on_finish = "[PdxGuiTriggerAllAnimations('save_toast')]"
-            # next = dismiss
+            next = toast_1
         }
 
         state = {
             name = toast_1
             on_finish = "[Set('toast_1', PlayerMessageItem.GetTitle)]"
             on_finish = "[Set('toast_desc_1', PlayerMessageItem.GetDescription)]"
+        }
+
+        state = {
+            name = toast_extras
+            trigger_when = "[Or(PlayerMessageItem.HasLeftIcon, PlayerMessageItem.HasRightIcon)]"
+            on_finish = "[Set('toast_extras', 'yes')]"
         }
 
         container = {
@@ -835,6 +841,9 @@ types Notifications {
         state = {
             name = _hide
             on_finish = "[GetVariableSystem.Clear('toasted')]"
+            on_finish = "[GetVariableSystem.Clear('toast_1')]"
+            on_finish = "[GetVariableSystem.Clear('toast_desc_1')]"
+            on_finish = "[GetVariableSystem.Clear('toast_extras')]"
         }
 
         flowcontainer = {
@@ -845,7 +854,7 @@ types Notifications {
             direction = vertical
             margin_left = 10
             resizeparent = yes
-            visible = "[And(Not(SinglePlayerShowingPausedSuccession), Not(GetVariableSystem.Exists('hide_feed')))]"
+            visible = "[And(Not(SinglePlayerShowingPausedSuccession), Isnt('show_feed'))]"
             # margin_bottom = 20
 
             # background = {
@@ -868,7 +877,7 @@ types Notifications {
                 fontsize_min = 15
                 # size = { 700 120 }
 
-                raw_text = "[PlayerMessageItem.GetDescription]."
+                raw_text = "[PlayerMessageItem.GetDescription][AddTextIf(Not(StringIsEmpty(PlayerMessageItem.GetDescription)), '.')]"
                 # tooltip = "[PlayerMessageItem.GetDescription]"
             }
 
@@ -999,14 +1008,17 @@ types Notifications {
 
         container = {
             using = NoWindowsOpen
-            position = { 5 25 }
+            position = { 15 25 }
 
             container = {
-                visible = "[Not(GetScriptedGui('show_suggestions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ))]"
+                visible = "[And(Not(GetScriptedGui('show_suggestions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )), Isnt('show_feed'))]"
                 ignoreinvisible = yes
 
                 button_text = {
-                    background = { using = Background_Area_Border_Solid }
+                    background = {
+                        using = Background_Area_Border_Solid
+                        margin = { 5 0 }
+                    }
                     onclick = "[ActionItemHandler.ToggleList]"
                     visible = "[Not(GetVariableSystem.Exists('ocr'))]"
                     shortcut = "action_list"
@@ -1028,7 +1040,10 @@ types Notifications {
                 ignoreinvisible = yes
 
                 button_text = {
-                    background = { using = Background_Area_Border_Solid }
+                    background = {
+                        using = Background_Area_Border_Solid
+                        margin = { 5 0 }
+                    }
                     onclick = "[ActionItemHandler.ToggleList]"
                     visible = "[Not(GetVariableSystem.Exists('ocr'))]"
                     shortcut = "action_list"
@@ -1409,13 +1424,16 @@ types Notifications {
                             raw_text = ", [ActionItemHandler.GetNumberOfActions] suggestions."
                         }
 
-                        text_single = {
-                            raw_text = " "
-                        }
                         expand = { }
                     }
 
                     text_single = {
+                        layoutpolicy_horizontal = expanding
+                        raw_text = "Every entry has a tooltip."
+                    }
+
+                    text_single = {
+                        layoutpolicy_horizontal = expanding
                         visible = "[Not( ActionItemHandler.HasAvailableCurrentSituationItems )]"
                         text = "CURRENT_SITUATION_SUGGESTIONS_EMPTY"
                     }
@@ -1547,34 +1565,34 @@ types Notifications {
         name = "message_feed_widget"
         visible_at_creation = no
         alwaystransparent = yes
+        # state = {
+        #     name = _show
+        #     on_finish = "[Set('updates', 'yes')]"
+        # }
+        # state = {
+        #     name = _show
+        #     on_finish = "[Clear('updates')]"
+        # }
 
-        widget = {
-            size = { 700 100% }
-            background = { using = Background_Area_Border_Solid }
-            alwaystransparent = yes
-            # visible = "[And(Or(DataModelHasItems(MessageFeedHandler.GetItems), GetVariableSystem.Exists('toasted')), Not(GetVariableSystem.Exists('hide_feed')))]"
-            visible = "[And(DataModelHasItems(MessageFeedHandler.GetItems), Not(GetVariableSystem.Exists('hide_feed')))]"
+        window = {
+            using = ocr_window_bg
+            # visible = "[And(Or(DataModelHasItems(MessageFeedHandler.GetItems), GetVariableSystem.Exists('toasted')), Not(GetVariableSystem.Exists('show_feed')))]"
+            visible = "[And(DataModelHasItems(MessageFeedHandler.GetItems), Is('show_feed'))]"
 
-            flowcontainer = {
-                ignoreinvisible = yes
-                direction = vertical
+            vbox = {
+                layoutpolicy_horizontal = expanding
+                layoutpolicy_vertical = expanding
+                using = ocr_margins
 
-                flowcontainer = {
-                    visible = "[Not(GetVariableSystem.Exists('hide_feed'))]"
-                    ignoreinvisible = yes
-                    background = { using = Background_Area_Light margin = { 5 5 } }
-                    direction = vertical
+                vbox = {
+                    # visible = "[Is('show_feed')]"
+                    layoutpolicy_horizontal = expanding
+                    layoutpolicy_vertical = expanding
+                    margin = { 5 5 }
 
-                    widget = {
-                        size = { 0 120 }
-                        visible = "[GetVariableSystem.Exists('toasted')]"
-                    }
-
-                    flowcontainer = {
+                    hbox = {
+                        layoutpolicy_horizontal = expanding
                         visible = "[Not(IsDataModelEmpty(MessageFeedHandler.GetItems))]"
-                        background = { using = Background_Area_Dark }
-                        margin_left = 5
-                        ignoreinvisible = yes
 
                         text_single = {
                             visible = "[EqualTo_int32(GetDataModelSize(MessageFeedHandler.GetItems), '(int32)1')]"
@@ -1584,12 +1602,19 @@ types Notifications {
                             visible = "[GreaterThan_int32(GetDataModelSize(MessageFeedHandler.GetItems), '(int32)1')]"
                             raw_text = "[GetDataModelSize(MessageFeedHandler.GetItems)] Updates."
                         }
+
+                        expand = { }
+                    }
+
+                    error_button = {
+                      layoutpolicy_horizontal = expanding
                     }
 
                     scrollbox = {
+                        layoutpolicy_horizontal = expanding
+                        layoutpolicy_vertical = expanding
                         visible = "[Not(IsDataModelEmpty(MessageFeedHandler.GetItems))]"
-                        autoresizescrollarea = yes
-                        maximumsize = { 700 -1 }
+
                         blockoverride "scrollbox_background_fade" {
 
                         }
@@ -1599,123 +1624,142 @@ types Notifications {
                         blockoverride "scrollbox_content" {
 
                             vbox = {
-                                # background = { using = Background_Area_Light margin = { 5 0 } }
-                                name = "message_feed"
-                                datamodel = "[MessageFeedHandler.GetItems]"
-                                set_parent_size_to_minimum = yes
-                                bottomtotop = yes
-                                margin_bottom = 5
+                                layoutpolicy_horizontal = expanding
+                                layoutpolicy_vertical = expanding
 
-                                item = {
-                                    vbox = {
-                                        layoutpolicy_vertical = growing
-                                        layoutpolicy_horizontal = expanding
-                                        datacontext = "[FeedMessageItem.GetPlayerMessageItem]"
-                                        spacing = 2
-                                        alwaystransparent = no
-                                        filter_mouse = all
+                                vbox = {
+                                    # background = { using = Background_Area_Light margin = { 5 0 } }
+                                    name = "message_feed"
+                                    layoutpolicy_horizontal = expanding
+                                    datamodel = "[MessageFeedHandler.GetItems]"
+                                    # set_parent_size_to_minimum = yes
+                                    bottomtotop = yes
 
-                                        state = {
-                                            name = "mark_to_delete"
-                                            trigger_when = "[FeedMessageItem.IsSetToDelete]"
-                                            on_start = "[FeedMessageItem.StartAnimation]"
-                                            on_finish = "[FeedMessageItem.EndAnimation]"
-                                            on_finish = "[FeedMessageItem.Delete]"
-                                            # duration = 0.3
-                                            # alpha = 0
-                                            using = Animation_Curve_Default
-                                        }
-
-                                        button = {
-                                            name = "message_feed_text_area"
+                                    item = {
+                                        vbox = {
                                             layoutpolicy_horizontal = expanding
-                                            size = { 700 0 }
-                                            onrightclick = "[FeedMessageItem.MarkToDelete]"
-                                            button_ignore = none
+                                            datacontext = "[FeedMessageItem.GetPlayerMessageItem]"
 
+                                            state = {
+                                                name = "mark_to_delete"
+                                                trigger_when = "[FeedMessageItem.IsSetToDelete]"
+                                                on_finish = "[FeedMessageItem.StartAnimation]"
+                                                on_finish = "[FeedMessageItem.EndAnimation]"
+                                                on_finish = "[FeedMessageItem.Delete]"
+                                                # duration = 0.3
+                                                # alpha = 0
+                                                # using = Animation_Curve_Default
+                                            }
 
                                             vbox = {
                                                 layoutpolicy_horizontal = expanding
-                                                resizeparent = yes
                                                 name = "text_and_icons"
-                                                # margin_right = 10
-                                                margin = { 5 0 }
 
-                                                text_single = {
+                                                text_multi = {
                                                     layoutpolicy_horizontal = expanding
-                                                    raw_text = "[PlayerMessageItem.GetTitle]."
+                                                    raw_text = "[PlayerMessageItem.GetTitle], [Subtract_int32(GetCurrentDate.GetDateAsTotalDays, PlayerMessageItem.GetDate.GetDateAsTotalDays)] days ago."
+                                                    using = wide
+                                                    autoresize = yes
                                                 }
 
                                                 text_multi = {
                                                     layoutpolicy_horizontal = expanding
                                                     visible = "[Not(StringIsEmpty(PlayerMessageItem.GetDescription))]"
-                                                    name = "text"
-                                                    raw_text = "[AddTextIf( Not(EqualTo_string( PlayerMessageItem.GetDate.GetString, GetCurrentDate.GetString )), PlayerMessageItem.GetDate.GetTimeDiffFromNow )][AddTextIf( Not(EqualTo_string( PlayerMessageItem.GetDate.GetString, GetCurrentDate.GetString )), ' ago, ' )][PlayerMessageItem.GetDescription]."
-                                                    elide = right
-                                                    max_width = 700
+
+                                                    raw_text = "[PlayerMessageItem.GetDescription]."
+                                                    using = wide
                                                     autoresize = yes
                                                 }
 
-                                                hbox = {
+                                                vbox = {
                                                     layoutpolicy_horizontal = expanding
 
                                                     button_text = {
+                                                        layoutpolicy_horizontal = expanding
+                                                        datacontext = "[PlayerMessageItem.GetLeftArtifact]"
+                                                        onclick = "[Toggle('show_feed')]"
+                                                        visible = "[Artifact.IsValid]"
+                                                        blockoverride "text" {
+                                                            raw_text = "Select [Artifact.GetNameNoTooltip]."
+                                                        }
+                                                        onclick = "[ToggleGameViewData('artifact_details', Artifact.Self)]"
+                                                    }
+
+                                                    button_text = {
+                                                        layoutpolicy_horizontal = expanding
+                                                        datacontext = "[PlayerMessageItem.GetRightArtifact]"
+                                                        onclick = "[Toggle('show_feed')]"
+                                                        visible = "[Artifact.IsValid]"
+                                                        blockoverride "text" {
+                                                            raw_text = "Select [Artifact.GetNameNoTooltip]."
+                                                        }
+                                                        onclick = "[ToggleGameViewData('artifact_details', Artifact.Self)]"
+                                                    }
+
+                                                    button_text = {
+                                                        layoutpolicy_horizontal = expanding
                                                         blockoverride "text" {
                                                             raw_text = "Select [PlayerMessageItem.GetLeftCharacter.GetFirstNameNoTooltip]."
                                                         }
                                                         using = char_click
-                                                        onclick = "[GetVariableSystem.Toggle('hide_feed')]"
+                                                        onclick = "[GetVariableSystem.Toggle('show_feed')]"
                                                         datacontext = "[PlayerMessageItem.GetLeftCharacter]"
                                                         visible = "[And(Character.IsValid, Not(Character.IsLocalPlayer))]"
                                                     }
 
                                                     button_text = {
+                                                        layoutpolicy_horizontal = expanding
                                                         blockoverride "text" {
                                                             raw_text = "Select [PlayerMessageItem.GetRightCharacter.GetFirstNameNoTooltip]."
                                                         }
                                                         using = char_click
-                                                        onclick = "[GetVariableSystem.Toggle('hide_feed')]"
+                                                        onclick = "[GetVariableSystem.Toggle('show_feed')]"
                                                         datacontext = "[PlayerMessageItem.GetRightCharacter]"
                                                         visible = "[Character.IsValid]"
                                                     }
 
                                                     button_text = {
+                                                        layoutpolicy_horizontal = expanding
                                                         datacontext = "[PlayerMessageItem.GetLeftTitle]"
+                                                        datacontext = "[PlayerMessageItem.GetLeftTitle.GetProvince]"
                                                         blockoverride "text" {
                                                             raw_text = "Go to [PlayerMessageItem.GetLeftTitle.GetNameNoTierNoTooltip]."
                                                         }
                                                         using = prov_click
-                                                        onclick = "[GetVariableSystem.Toggle('hide_feed')]"
+                                                        onclick = "[GetVariableSystem.Toggle('show_feed')]"
                                                         visible = "[And(Title.IsValid, LessThan_int32(Title.GetTierFrame, '(int32)4'))]"
                                                     }
 
                                                     button_text = {
+                                                        layoutpolicy_horizontal = expanding
                                                         datacontext = "[PlayerMessageItem.GetLeftTitle]"
                                                         blockoverride "text" {
                                                             raw_text = "Select title of [PlayerMessageItem.GetLeftTitle.GetNameNoTierNoTooltip]."
                                                         }
                                                         using = title_click
-                                                        onclick = "[GetVariableSystem.Toggle('hide_feed')]"
+                                                        onclick = "[GetVariableSystem.Toggle('show_feed')]"
                                                         visible = "[And(Title.IsValid, GreaterThanOrEqualTo_int32(Title.GetTierFrame, '(int32)4'))]"
                                                     }
 
                                                     button_text = {
+                                                      layoutpolicy_horizontal = expanding
                                                         datacontext = "[PlayerMessageItem.GetRightTitle]"
                                                         blockoverride "text" {
                                                             raw_text = "Select [PlayerMessageItem.GetRightTitle.GetNameNoTooltip]."
                                                         }
                                                         using = title_click
-                                                        onclick = "[GetVariableSystem.Toggle('hide_feed')]"
+                                                        onclick = "[GetVariableSystem.Toggle('show_feed')]"
                                                         visible = "[And(Title.IsValid, GreaterThanOrEqualTo_int32(Title.GetTierFrame, '(int32)4'))]"
                                                     }
 
                                                     button_text = {
+                                                        layoutpolicy_horizontal = expanding
                                                         datacontext = "[PlayerMessageItem.GetRightTitle]"
                                                         blockoverride "text" {
                                                             raw_text = "Go to [PlayerMessageItem.GetRightTitle.GetNameNoTooltip]."
                                                         }
                                                         using = prov_click
-                                                        onclick = "[GetVariableSystem.Toggle('hide_feed')]"
+                                                        onclick = "[GetVariableSystem.Toggle('show_feed')]"
                                                         visible = "[And(Title.IsValid, LessThan_int32(Title.GetTierFrame, '(int32)4'))]"
                                                     }
 
@@ -1765,64 +1809,134 @@ types Notifications {
                                         }
                                     }
                                 }
+
+                                expand = { }
+
                             }
                         }
                     }
 
                     button_text = {
+                        layoutpolicy_horizontal = expanding
                         visible = "[Not(IsDataModelEmpty(MessageFeedHandler.GetItems))]"
                         blockoverride "text" {
                             raw_text = "Dismiss all, Shift D."
                             align = left
                         }
                         onclick = "[MessageFeedHandler.MarkAllForDelete]"
+                        onclick = "[PdxGuiTriggerAllAnimations('close_feed')]"
+                        # onclick = "[Toggle('show_feed')]"
                         # onclick = "[PdxGuiTriggerAllAnimations('dismiss_toast')]"
                         shortcut = mapmode_house_secondary
+
                     }
                 }
 
+                state = {
+                    name = "close_feed"
+                    delay = 0.2
+                    on_finish = "[Clear('show_feed')]"
+                }
 
                 button_text = {
+                    layoutpolicy_horizontal = expanding
                     shortcut = close_window
                     shortcut = go_back_2
-                    visible = "[Not(GetVariableSystem.Exists('hide_feed'))]"
-                    onclick = "[GetVariableSystem.Toggle('hide_feed')]"
+                    # visible = "[Not(GetVariableSystem.Exists('show_feed'))]"
+                    onclick = "[GetVariableSystem.Toggle('show_feed')]"
                     blockoverride "text" {
                         raw_text = "Hide, backspace Or Escape."
                     }
                 }
-            }
 
+                expand = { }
+            }
+        }
+
+        widget = {
+            parentanchor = right
+            size = { 650 200 }
+            alwaystransparent = yes
+            visible = "[And(DataModelHasItems(MessageFeedHandler.GetItems), Isnt('show_feed'))]"
+            # visible = "[Isnt('show_feed')]"
+            position = { 0 5 }
+
+
+            flowcontainer = {
+                background = { using = Background_Area_Border_Solid }
+                margin = { 5 0 }
+                margin_bottom = 5
+                direction = vertical
+
+                button_text = {
+                    shortcut = go_back_2
+                    onclick = "[Toggle('show_feed')]"
+                    blockoverride "extra" {
+                        text_single = {
+                            raw_text = "[GetDataModelSize(MessageFeedHandler.GetItems)]"
+                        }
+
+                        text_single = {
+                            raw_text = "Update[AddTextIf( GreaterThan_int32(GetDataModelSize(MessageFeedHandler.GetItems), '(int32)1'), 's' )],"
+                        }
+
+                        text_single = {
+                            raw_text = "Backspace."
+                        }
+                    }
+                }
+
+                # button = {
+                #     onclick = "[MessageFeedHandler.MarkAllForDelete]"
+                #     shortcut = mapmode_house_secondary
+                # }
+
+
+                text_single = {
+                    visible = "[GreaterThan_int32(GetDataModelSize(MessageFeedHandler.GetItems), '(int32)3')]"
+                    raw_text = "3 Most recent:"
+                }
+
+                flowcontainer = {
+                    ignoreinvisible = yes
+                    direction = vertical
+                    bottomtotop = yes
+
+                    datamodel = "[DataModelLast(MessageFeedHandler.GetItems, Min_int32('(int32)3', GetDataModelSize(MessageFeedHandler.GetItems)))]"
+
+                    item = {
+                        text_single = {
+                            state = {
+                                name = "mark_to_delete"
+                                trigger_when = "[FeedMessageItem.IsSetToDelete]"
+                                on_finish = "[FeedMessageItem.StartAnimation]"
+                                on_finish = "[FeedMessageItem.EndAnimation]"
+                                on_finish = "[FeedMessageItem.Delete]"
+                            }
+                            datacontext = "[FeedMessageItem.GetPlayerMessageItem]"
+                            raw_text = "[PlayerMessageItem.GetTitle]."
+                            max_width = 650
+                            margin_right = 15
+                            fontsize_min = 15
+                        }
+                    }
+                }
+            }
         }
 
         container = {
             parentanchor = bottom|right
-            visible = "[GetVariableSystem.Exists('hide_feed')]"
+            # visible = "[Isnt('show_feed')]"
+            visible = no
             position = { -120 -3 }
             flowcontainer = {
-                visible = "[Or(GetVariableSystem.Exists('toasted'), DataModelHasItems(MessageFeedHandler.GetItems))]"
+                visible = "[DataModelHasItems(MessageFeedHandler.GetItems)]]"
                 background = { using = Background_Area_Dark }
                 spacing = 3
 
-                ignoreinvisible = yes
-                flowcontainer = {
-                    ignoreinvisible = yes
-                    spacing = 3
-                    visible = "[GetVariableSystem.Exists('toasted')]"
-
-                    text_single = {
-                        raw_text = "[Add_int32(GetDataModelSize(MessageFeedHandler.GetItems), '(int32)1')]"
-                    }
-
-                    text_single = {
-                        raw_text = "Update[AddTextIf( DataModelHasItems(MessageFeedHandler.GetItems), 's' )],"
-                    }
-                }
-
                 flowcontainer = {
                     spacing = 3
                     ignoreinvisible = yes
-                    visible = "[Not(GetVariableSystem.Exists('toasted'))]"
 
                     text_single = {
                         raw_text = "[GetDataModelSize(MessageFeedHandler.GetItems)]"
@@ -1908,7 +2022,7 @@ template situation_entry_child_hover_states
 
 types Suggestions
 {
-    type button_suggestion_item = button_standard {
+    type button_suggestion_item = button {
         onclick = "[SuggestionItem.OnClick]"
         onclick = "[ActionItemHandler.ToggleList]"
         onrightclick = "[SuggestionItem.Dismiss]"
@@ -1936,7 +2050,6 @@ types Suggestions
 
             text_single = {
                 layoutpolicy_horizontal = expanding
-                align = left
                 text = "[SuggestionItem.GetLabel]"
             }
 
@@ -1950,7 +2063,7 @@ types Suggestions
         }
     }
 
-    type button_current_situation_item = button_standard {
+    type button_current_situation_item = button {
         visible = "[ImportantActionItem.IsVisible]"
         minimumsize = { @sug_width 0 }
 
@@ -1983,17 +2096,17 @@ types Suggestions
                 autoresize = yes
                 max_width = @sug_width
                 text = "ACTION_IS_VISIBLE_READ_UNREAD"
-                align = left
-            }
-
-            text_single = {
-                raw_text = " Tooltip."
+                # align = left
                 tooltip = "[ImportantActionItem.GetTooltip]"
             }
+
+            # text_single = {
+            #     raw_text = " Tooltip."
+            # }
         }
     }
 
-    type button_current_situation_item_multiple = button_standard {
+    type button_current_situation_item_multiple = button {
         onclick = "[GuiActionItem.OnClick]"
         onrightclick = "[GuiActionItem.Dismiss]"
         button_ignore = none
@@ -2030,18 +2143,18 @@ types Suggestions
             }
 
             text_single = {
-                raw_text = ", [GuiActionItem.GetNumberOfVisibleItems],"
+                raw_text = ", [GuiActionItem.GetNumberOfVisibleItems]."
             }
 
+            tooltip = "[GuiActionItem.GetCombinedTooltip]"
 
-            text_single = {
-                raw_text = " Tooltip."
-                tooltip = "[GuiActionItem.GetCombinedTooltip]"
-            }
+            # text_single = {
+            #     raw_text = " Tooltip."
+            # }
         }
     }
 
-    type button_current_situation_item_combined = button_standard {
+    type button_current_situation_item_combined = button {
         visible = "[ImportantActionItem.IsVisible]"
         onclick = "[ImportantActionItem.OnClick]"
         onclick = "[ActionItemHandler.ToggleList]"
@@ -2076,12 +2189,12 @@ types Suggestions
                 text = "ACTION_IS_VISIBLE_READ_UNREAD_COMBINED"
                 alwaystransparent = yes
             }
-            text_single = {
-                margin_top = 1
-                tooltip = "[ImportantActionItem.GetTooltip]"
-                raw_text = " Tooltip."
-                align = left
-            }
+            tooltip = "[ImportantActionItem.GetTooltip]"
+            # text_single = {
+            #     margin_top = 1
+            #     raw_text = " Tooltip."
+            #     align = left
+            # }
         }
     }
 }
