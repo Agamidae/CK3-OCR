@@ -1,0 +1,243 @@
+### RAID WINDOW
+window = {
+	name = "raid_window"
+	size = { 625 230 }
+	parentanchor = left
+	movable = no
+	layer = middle
+	datacontext = "[RaidWindow.GetRaid]"
+	datacontext = "[Raid.GetArmy]"
+	datacontext = "[Raid.GetProvince]"
+
+	using = Window_Background_No_Edge
+
+	state = {
+		name = _show
+		on_start = "[GetVariableSystem.Set( 'hide_bottom_left_HUD', 'true' )]"
+
+		using = Animation_FadeIn_Standard
+		using = Sound_WindowShow_Standard
+		using = Animation_FadeIn_BottomLeft
+	}
+
+	state = {
+		name = _hide
+		on_start = "[GetVariableSystem.Clear( 'hide_bottom_left_HUD' )]"
+
+		using = Animation_FadeOut_Standard
+		using = Sound_WindowHide_Standard
+		using = Animation_FadeOut_BottomLeft
+	}
+
+	widget = {
+		datacontext = "[Raid.GetProvince]"
+		visible = "[And(IsGamePaused, Not(GetVariableSystem.Exists('ocr')))]"
+
+		state = {
+			trigger_on_create = yes
+			name = daily_tick
+			on_start = "[GetScriptedGui('sort_armies').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'location', Province.MakeScope ).End )]"
+		}
+	}
+
+	vbox = {
+		name = "window_content"
+		spacing = 2
+		using = ocr_margins
+
+		##Header###
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			margin_left = 5
+			margin_top = 5
+			margin_bottom = 5
+
+			background = {
+				using = Background_Area_Dark
+				margin_left = 5
+			}
+
+			text_single = {
+				name = "time_left"
+				visible = "[Not(Raid.IsBlocked)]"
+				text = "RW_TIME_LEFT"
+			}
+
+			text_single = {
+				visible = "[Not(Raid.IsBlocked)]"
+				raw_text = ","
+			}
+
+			text_single = {
+				name = "title"
+				raw_text = "[Raid.GetName]"
+				margin_left = 3
+			}
+
+			space = { }
+
+			text_single = {
+				raw_text = "by [Army.GetOwner.GetPrimaryTitle.GetNameNoTierNoTooltip]"
+			}
+
+			dot = { }
+
+			expand = { }
+
+			buttons_window_control = {
+
+
+				blockoverride "button_close"
+				{
+					onclick = "[RaidWindow.Close]"
+				}
+			}
+		}
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			margin_left = 5
+			name = "desc"
+			text = "RAID_BLOCKED_BY_COMBAT"
+			visible = "[Raid.IsBlocked]"
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			tooltip = "RAID_TROOPS_TOOLTIP"
+			spacing = 3
+			margin_left = 5
+
+			text_single = {
+				name = "attacker_side"
+				raw_text = "[Raid.GetAttackerMen] raiders,"
+			}
+			text_single = {
+				name = "defender_side"
+				raw_text = "[Raid.GetDefenderMen] garrison."
+			}
+
+			text_single = {
+				margin_left = 2
+				raw_text = "Raid balance [Raid.GetRaidMenBalance|0]%."
+			}
+			expand = { }
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			datacontext = "[Raid.GetProvince]"
+			spacing = 3
+
+			text_single = {
+				raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Province.MakeScope ).ScriptValue('enemies_total_nearby_combat')] enemies nearby."
+				visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Province.MakeScope ).ScriptValue('enemies_total_nearby_combat'), '(CFixedPoint)0')]"
+			}
+
+			text_single = {
+				raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Province.MakeScope ).ScriptValue('allies_total_nearby_combat')] allies nearby."
+				visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Province.MakeScope ).ScriptValue('allies_total_nearby_combat'), '(CFixedPoint)0')]"
+			}
+
+			expand = { }
+		}
+
+		hbox = {
+		    layoutpolicy_horizontal = expanding
+			spacing = 3
+			margin_left = 5
+
+			text_single = {
+				tooltip = "[Province.GetRaidLootTooltip]"
+				raw_text = "Loot: [Province.GetRaidLoot|0]."
+			}
+
+			text_single = {
+				tooltip = "[Province.GetFortLevelTooltip]"
+				raw_text = "Fort level: [Province.GetFortLevel]."
+			}
+
+		    expand = { }
+		}
+
+		widget = {
+			size = { 0 45 }
+			layoutpolicy_horizontal = expanding
+			scissor = yes
+			tooltip = "RAID_PROGRESS_TOOLTIP"
+
+			text_single = {
+				margin_left = 5
+				layoutpolicy_horizontal = expanding
+				text = "RAID_PROGRESS_TOOLTIP"
+			}
+		}
+
+		hbox = {
+		    layoutpolicy_horizontal = expanding
+
+
+			### RAIDING ARMIES SELECT
+			button_text = {
+				blockoverride "text" {
+
+					align = left
+				}
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "View holding, hotkey V."
+					}
+				}
+				shortcut = find_title_shortcut
+				onclick = "[RaidWindow.OpenHoldingView]"
+			}
+
+			button_text = {
+				blockoverride "text" {
+					raw_text = "SW_TT_OPEN_ARMY_WINDOW"
+					align = left
+				}
+				blockoverride "dot" {
+
+				}
+				blockoverride "extra" {
+					text_single = {
+						raw_text = ", Enter"
+					}
+				}
+				shortcut = confirm
+				onclick = "[RaidWindow.OpenArmyWindow]"
+				visible = "[Army.GetOwner.IsLocalPlayer]"
+			}
+
+			button_text = {
+				blockoverride "text" {
+					raw_text = "Pan camera, Shift Q."
+					align = left
+				}
+				onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCounty.GetTitle.GetID)]"
+				tooltip = "GOTO_PROVINCE_TT"
+				using = tooltip_ne
+				oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+				clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+				shortcut = map_mode_9
+			}
+		    expand = { }
+		}
+		####################################
+		########### RAID INFO ############
+		####################################
+
+		char_name = {
+			layoutpolicy_horizontal = expanding
+			datacontext = "[Raid.GetProvince.GetTitle.GetHolder]"
+			blockoverride "pre" {
+				text_single = {
+					raw_text = "Defender:"
+				}
+			}
+		}
+
+		expand = { }
+	}
+}

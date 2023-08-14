@@ -1,0 +1,952 @@
+######################################################
+################### LIFESTYLES #######################
+######################################################
+
+window = {
+	name = "character_lifestyle_window"
+	size = { 100% 100% }
+	parentanchor = center|hcenter
+	#	position = { 80 20 }
+	movable = no
+	filter_mouse = all
+	layer = middle
+
+	datacontext = "[CharacterLifestyleWindow.GetCharacter]"
+	datacontext = "[CharacterLifestyleWindow.GetSelectedLifestyle]"
+
+	using = Window_Background_No_Edge
+
+	background = {
+		texture = "gfx/interface/component_masks/mask_fade_corner.dds"
+		color = { 0.12 0.12 0.12 1 }
+		mirror = horizontal
+		margin_right = -1200
+		alpha = 0.6
+	}
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Standard
+		using = Sound_WindowShow_Standard
+		using = Sound_Window_AmbienceMute_Snapshot
+
+		on_start = "[GetVariableSystem.Set( 'lifestyle_open', 'true' )]"
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Standard
+		using = Sound_WindowHide_Standard
+
+		on_start = "[GetVariableSystem.Clear( 'lifestyle_open' )]"
+	}
+
+	widget = {
+		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
+		size  = { 100% 100% }
+		### Select Focus start screen
+		vbox = {
+			name = "lifestyle_selection"
+			visible = "[Not( Lifestyle.IsValid )]"
+
+			using = ocr_margins
+
+			state = {
+				name = _show
+				using = Animation_FadeIn_Quick
+			}
+
+			state = {
+				name = _hide
+				using = Animation_FadeOut_Quick
+			}
+
+			header_standard = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "CHARACTER_LIFESTYLE_HEADER"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[CharacterLifestyleWindow.Close]"
+				}
+			}
+
+			background = {
+				using = Background_Bottom_Fade
+			}
+
+			background = {
+				using = Background_Area_Dark
+				margin = { 0 -100 }
+				alpha = 0.3
+			}
+
+			hbox = {
+				name = "lifestyles"
+				datamodel = "[CharacterLifestyleWindow.GetLifestyles]"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				margin = { 0 150 }
+				margin_left = 230
+				margin_right = 80
+				spacing = 10
+				max_width = 2080
+
+				item = {
+					button_normal = {
+						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
+						onclick = "[CharacterLifestyleWindow.OpenLifestyle( Lifestyle.Self )]"
+						onclick = "[PlaySfxEvent( Concatenate( 'event:/SFX/UI/Character/Lifestyle/sfx_ui_character_lifestyle_', Lifestyle.GetKey ) )]"
+						#clicksound =
+						maximumsize = { -1 900 }
+
+						effectname = "NoHighlight"
+						#gfxtype = propstretchedicongfx
+						#shaderfile = "gfx/FX/pdxgui_default.shader"
+
+						texture = "[Lifestyle.GetBackground]"
+
+						modify_texture = {
+							texture = "gfx/interface/window_lifestyles/lifestyles_illustration_mask.dds"
+							blend_mode = alphamultiply
+							spriteType = Corneredstretched
+							spriteborder = { 30 30 }
+						}
+
+						button = {
+							size = { 100% 100% }
+							alpha = 0
+							onclick = "[CharacterLifestyleWindow.OpenLifestyle( Lifestyle.Self )]"
+							onclick = "[PlaySfxEvent( Concatenate( 'event:/SFX/UI/Character/Lifestyle/sfx_ui_character_lifestyle_', Lifestyle.GetKey ) )]"
+
+							state = {
+								name = _mouse_enter
+								alpha = 1
+							}
+
+							state = {
+								name = _mouse_leave
+								alpha = 0
+							}
+
+							background = {
+								texture = "gfx/interface/window_lifestyles/lifestyles_illustration_hover.dds"
+								spriteType = Corneredtiled
+								spriteborder = { 30 30 }
+								alpha = 1
+
+								modify_texture = {
+									texture = "gfx/interface/window_lifestyles/lifestyles_illustration_mask.dds"
+									blend_mode = alphamultiply
+									spriteType = Corneredtiled
+									spriteborder = { 30 30 }
+								}
+							}
+						}
+
+						icon = {
+							size = { 100% 100% }
+							using = Background_Bottom_Fade
+							mirror = vertical
+
+							modify_texture = {
+								texture = "gfx/interface/window_lifestyles/lifestyles_illustration_mask.dds"
+								blend_mode = alphamultiply
+								spriteType = Corneredtiled
+								spriteborder = { 30 30 }
+							}
+						}
+
+						icon = {
+							parentanchor = top|hcenter
+							position = { 0 -50 }
+							size = { 120 120 }
+							texture = "[Lifestyle.GetIcon]"
+							framesize = { 160 160 }
+						}
+
+						vbox = {
+							margin = { 10 30 }
+							margin_top = 60
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								margin_top = 15
+								spacing = 20
+
+								text_single = {
+									raw_text = "[Lifestyle.GetNameNoTooltip]."
+									default_format = "#high"
+									using = Font_Type_Flavor
+									fontsize = 25
+								}
+
+								text_multi = {
+									text = "[Lifestyle.GetDescription]"
+									size = { 100 90 }
+									align = top|hcenter
+									layoutpolicy_horizontal = expanding
+									margin = { 5 0 }
+								}
+
+								text_multi = {
+									visible = "[Lifestyle.IsHighlightedForCharacter( Character.Self )]"
+									layoutpolicy_horizontal = expanding
+									size = { 100 80 }
+									margin = { 5 0 }
+									text = "[Lifestyle.GetHighlightDescription]"
+									align = center
+
+									background = {
+										using = Background_Area_Dark
+									}
+								}
+
+								expand = {}
+							}
+
+							hbox = {
+								visible = "[GreaterThan_int32( Character.GetPerkPointsUsed( Lifestyle.Self ), '(int32)0' )]"
+								text_single = {
+									raw_text = "LIFESTYLE_POINTS_ALREADY_USED_TEXT"
+								}
+								dot = { margin_top = 22 }
+								background = {
+									using = Background_Area_Dark
+									margin = { 10 0 }
+									margin_bottom = 5
+								}
+							}
+
+							vbox = {
+								text_single = {
+									visible = "[GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' )]"
+									text = "LIFESTYLE_POINTS_TO_USE_TEXT"
+									default_format = "#low"
+									max_width = 280
+
+									# animation_attention = {}
+
+									background = {
+										using = Background_Area_Dark
+										margin = { 10 0 }
+										margin_bottom = 5
+									}
+								}
+							}
+
+							expand = {}
+						}
+					}
+				}
+			}
+		}
+
+		hbox = {
+			visible = "[Lifestyle.IsValid]"
+
+			state = {
+				name = "lifestyle_tabs_refresh"
+				next = a
+				alpha = 0.5
+			}
+
+			state = {
+				name = "a"
+				alpha = 1
+				duration = 0.5
+				using = Animation_Curve_Default
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				layoutstretchfactor_horizontal = 3
+
+				background = {
+					texture = "[Lifestyle.GetBackground]"
+					alpha = 0.3
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+						blend_mode = alphamultiply
+					}
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				layoutstretchfactor_horizontal = 7
+			}
+		}
+
+		widget = {
+			parentanchor = bottom|left
+			size = { 270 560 }
+			allow_outside = no
+
+			portrait_lifestyles = {
+				parentanchor = bottom|left
+				position = { -110 0 }
+				visible = no
+			}
+		}
+
+		### Focus View
+		vbox = {
+			name = "focus_view"
+			visible = "[Lifestyle.IsValid]"
+			alwaystransparent = no
+
+			using = ocr_margins
+
+			state = {
+				name = _show
+				using = Animation_FadeIn_Quick
+			}
+
+			state = {
+				name = _hide
+				using = Animation_FadeOut_Quick
+			}
+
+			state = {
+				name = show_all_perks
+				trigger_when = "[Not(GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' ))]"
+				on_start = "[GetVariableSystem.Clear('focus_on_perks')]"
+			}
+
+			background = {
+				texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
+				margin_top = -500
+				color = { 0 0 0 0.7 }
+				alpha = 0.7
+				mirror = vertical
+			}
+
+			### HEADER
+			widget = {
+				name = "header_bar"
+				layoutpolicy_horizontal = expanding
+				size = { 0 85 }
+				allow_outside = yes
+				alwaystransparent = no
+
+				background = {
+					texture = "gfx/interface/component_tiles/tile_background_window_header.dds"
+					spriteType = Corneredtiled
+					spriteborder = { 20 20 }
+					margin = { 12 0 }
+				}
+
+				text_single = {
+					# parentanchor = vcenter
+					position = { 0 5 }
+					margin_left = 5
+					text = "LIFESTYLE_WINDOW_TITLE"
+					using = Font_Type_Flavor
+					# fontsize = 35
+
+					state = {
+						name = "lifestyle_tabs_refresh"
+						next = a
+						alpha = 0.5
+					}
+
+					state = {
+						name = "a"
+						alpha = 1
+						duration = 0.5
+						using = Animation_Curve_Default
+					}
+				}
+
+				flowcontainer = {
+					position = { 5 25 }
+					spacing = 5
+					# layoutpolicy_horizontal = expanding
+					visible = "[Not(GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' ))]"
+
+					container = {
+						visible = "[Not(GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' ))]"
+						ignoreinvisible = yes
+
+						button_text = {
+							blockoverride "text" {
+								raw_text = "Show all."
+								align = left
+							}
+							onclick = "[GetVariableSystem.Clear('focus_on_perks')]"
+							visible = "[GetVariableSystem.Exists('focus_on_perks')]"
+						}
+					}
+					text_single = {
+						text = "UNLOCKED_PERKS"
+					}
+					text_single = {
+						text = "EXPERIENCE"
+					}
+				}
+
+				flowcontainer = {
+					allow_outside = yes
+					visible = "[GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' )]"
+					ignoreinvisible = yes
+					position = { 5 25 }
+
+					button_text = {
+						blockoverride "pre" {
+							text_single = {
+								text = "LIFESTYLE_POINTS_TO_USE_TEXT"
+							}
+							text_single = {
+								raw_text = "."
+							}
+							text_single = {
+								raw_text = " "
+							}
+						}
+						blockoverride "text" {
+							raw_text = "Show only unlockable perks."
+						}
+						blockoverride "extra" {
+
+							text_single = {
+								margin_left = 3
+								raw_text = "Warning, you need to select a focus before you can unlock perks."
+								visible = "[Not( GetPlayer.GetLifestyle.IsValid )]"
+							}
+						}
+						onclick = "[GetVariableSystem.Toggle('focus_on_perks')]"
+						visible = "[Not(GetVariableSystem.Exists('focus_on_perks'))]"
+					}
+
+					button_text = {
+						blockoverride "text" {
+							raw_text = "Show all."
+							align = left
+						}
+						onclick = "[GetVariableSystem.Clear('focus_on_perks')]"
+						visible = "[GetVariableSystem.Exists('focus_on_perks')]"
+					}
+				}
+
+
+				flowcontainer = {
+					visible = "[Not(GetVariableSystem.Exists('focus_on_perks'))]"
+					name = "lifestyles"
+					datamodel = "[CharacterLifestyleWindow.GetLifestyles]"
+					ignoreinvisible = yes
+					position = { 5 50 }
+
+					text_single = {
+						raw_text = "Change lifestyle:"
+						align = left
+					}
+
+					item = {
+						button_text = {
+							visible = "[Not(EqualTo_string( Lifestyle.GetKey, CharacterLifestyleWindow.GetSelectedLifestyle.GetKey ))]"
+							blockoverride "text" {
+								raw_text = "[Lifestyle.GetNameNoTooltip],"
+							}
+							onclick = "[CharacterLifestyleWindow.OpenLifestyle( Lifestyle.Self )]"
+							onclick = "[PdxGuiTriggerAllAnimations('lifestyle_tabs_refresh')]"
+							blockoverride "extra" {
+								text_single = {
+									raw_text = " Perk points: [Character.GetPerkPoints( Lifestyle.Self )]."
+									max_width = 180
+									align = left
+									visible = "[And(GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' ), Character.IsLocalPlayer)]"
+								}
+							}
+						}
+					}
+				}
+
+				flowcontainer = {
+					parentanchor = right|vcenter
+					position = { -10 0 }
+
+					button_text = {
+						onclick = "[CharacterLifestyleWindow.OpenRefundPerks]"
+						visible = "[And(CharacterLifestyleWindow.CanRefundPerks, Character.IsLocalPlayer)]" #TODO enabled
+					    blockoverride "text" {
+					        raw_text = "REFUND_PERKS"
+					    }
+					}
+
+					dot = { }
+
+					buttons_window_control = {
+						blockoverride "button_close"
+						{
+							size = { 0 0 }
+							onclick = "[CharacterLifestyleWindow.Close]"
+						}
+					}
+				}
+			}
+
+			### MAIN BODY
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				spacing = 100
+				margin_top = 10
+
+				## LEFT BAR
+				vbox = {
+					visible = "[Not(GetVariableSystem.Exists('focus_on_perks'))]"
+					layoutpolicy_vertical = expanding
+					minimumsize = { 270 0 }
+
+					vbox = {
+						# minimumsize = { 0 100 }
+						spacing = 10
+
+						state = {
+							name = "lifestyle_tabs_refresh"
+							next = a
+							alpha = 0.5
+						}
+
+						state = {
+							name = "a"
+							alpha = 1
+							duration = 0.5
+							using = Animation_Curve_Default
+						}
+
+						vbox = {
+							spacing = 10
+							visible = "[Character.IsLocalPlayer]"
+
+							text_multi = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Lifestyle.IsHighlightedForCharacter( Character.Self )]"
+								text = "[Lifestyle.GetHighlightDescription]"
+								default_format = "#high;italic"
+								autoresize = yes
+								max_width = 300
+
+							}
+						}
+
+						expand = {}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						vbox = {
+							name = "focus_area"
+							datamodel = "[CharacterLifestyleWindow.GetFocuses]"
+							margin = { 10 0 }
+							# spacing = 8
+
+							state = {
+								name = "lifestyle_tabs_refresh"
+								next = a
+								alpha = 0.5
+							}
+
+							state = {
+								name = "a"
+								alpha = 1
+								duration = 0.5
+								using = Animation_Curve_Default
+							}
+
+							hbox = {
+								text_label_center = {
+									text = "LIFESTYLE_FOCUS_HEADER"
+								}
+								dot = { }
+							}
+
+							hbox = {
+								visible = "[GetPlayer.GetLifestyle.IsValid]"
+								text_single = {
+									text = "FOCUS_CANCHANGE"
+									default_format = "#low"
+								}
+								dot = { }
+							}
+
+
+							hbox = {
+								visible = "[Not( GetPlayer.GetLifestyle.IsValid )]"
+								text_single = {
+									text = "FOCUS_CANCHANGE_NO_FOCUS"
+									default_format = "#low"
+									# animation_attention_text = {}
+								}
+								dot = { }
+							}
+
+							text_multi = {
+								margin_top = 5
+								raw_text = "[GetLifestyleTooltipWarnings( GetPlayer )]."
+								visible = "[GetPlayer.GetLifestyle.IsValid]"
+								max_width = 300
+								autoresize = yes
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+							    blockoverride "text" {
+							        raw_text = "[Select_CString(GetVariableSystem.Exists('hide_foci'), 'Show focuses', 'Hide focuses')]."
+							    }
+								onclick = "[GetVariableSystem.Toggle('hide_foci')]"
+							}
+
+							widget = {
+								size = { 0 5 }
+							}
+
+
+							item = {
+								button_standard_clean = {
+									visible = "[Not(GetVariableSystem.Exists('hide_foci'))]"
+									layoutpolicy_horizontal = expanding
+									size = { 300 100 }
+									background = { using = Background_Area_Dark }
+
+									enabled = "[Or(CharacterLifestyleWindow.CanSelectFocus( FocusType.Self ), EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey ))]"
+									down = "[EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )]"
+									onclick = "[CharacterLifestyleWindow.SelectFocus( FocusType.Self )]"
+									alwaystransparent = "[EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )]"
+
+
+									blockoverride "disabled" {}
+
+
+									vbox = {
+										margin = { 10 5 }
+										margin_bottom = 10
+										resizeparent = yes
+										# spacing = 10
+
+										hbox = {
+											layoutpolicy_horizontal = expanding
+											margin_top = 3
+											spacing = 4
+
+											text_single = {
+												raw_text = "[FocusType.GetNameNoTooltip]."
+												# layoutpolicy_horizontal = expanding
+												default_format = "#high"
+												using = Font_Size_Medium
+												align = left
+												# autoresize = no
+											}
+
+											text_single = {
+												visible = "[EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )]"
+												align = left
+												text = "CURRENT_FOCUS"
+												default_format = "#low;italic"
+												margin_right = 5
+											}
+
+											text_single = {
+												margin_right = 5
+												align = left
+												raw_text = "Disabled."
+												visible = "[Not(Or(CharacterLifestyleWindow.CanSelectFocus( FocusType.Self ), EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )))]"
+											}
+
+											expand = { }
+										}
+
+										text_multi = {
+											autoresize = yes
+											max_width = 350
+											layoutpolicy_horizontal = expanding
+											layoutpolicy_vertical = expanding
+											alwaystransparent = yes
+											text = "LONG_FOCUS_TEXT"
+											align = left
+										}
+									}
+
+								}
+							}
+						}
+					}
+
+					expand = {}
+				}
+
+				## CENTER AREA
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						margin = { 20 0 }
+						# margin_top = 15
+
+						background = {
+							#using = Background_Area_Dark
+							texture = "gfx/interface/window_lifestyles/lifestyles_tree_area_bg.dds"
+							margin = { 5 5 }
+							spriteType = Corneredtiled
+							spriteborder = { 200 200 }
+							#	alpha = 0.8
+
+							# modify_texture = {
+							# 	texture = "gfx/interface/window_lifestyles/lifestyles_dark_bg_mask.dds"
+							# 	blend_mode = alphamultiply
+							# }
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							background = {
+								using = Background_Frame
+								margin_top = -5
+								alpha = 0.5
+							}
+
+							hbox = {
+								visible = "[Character.IsLocalPlayer]"
+								margin = { 10 0 }
+								layoutpolicy_horizontal = expanding
+
+								state = {
+									name = "lifestyle_tabs_refresh"
+									next = a
+									alpha = 0.5
+								}
+
+								state = {
+									name = "a"
+									alpha = 1
+									duration = 0.5
+									using = Animation_Curve_Default
+								}
+
+								expand = { }
+							}
+						}
+
+						## Trees
+						hbox = {
+							datamodel = "[CharacterLifestyleWindow.GetPerkTrees]"
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+							margin_bottom = 20
+							margin_top = 20
+							# spacing = 10
+							# margin_right = 400
+
+							state = {
+								name = "lifestyle_tabs_refresh"
+								next = a
+								alpha = 0.5
+							}
+
+							state = {
+								name = "a"
+								alpha = 1
+								duration = 0.5
+								using = Animation_Curve_Default
+							}
+
+							item = {
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									max_width = 400
+									layoutpolicy_vertical = expanding
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										layoutpolicy_vertical = expanding
+
+										background = {
+											visible = "[Not(PerkGuiTree.IsCompleted)]"
+											texture = "[PerkGuiTree.GetBackground]"
+											alpha = 0.15
+
+											modify_texture = {
+												texture = "gfx/interface/window_lifestyles/lifestyles_perk_tree_bg.dds"
+												spriteType = Corneredtiled
+												spriteborder = { 200 200 }
+												blend_mode = alphamultiply
+											}
+										}
+
+										container = {
+											text_label_center = {
+												parentanchor = top|hcenter
+												position = { 0 25 }
+												raw_text = "[PerkGuiTree.GetName] perks."
+												default_format = "#low"
+												using = Font_Size_Medium
+											}
+											ignoreinvisible = yes
+
+											divider_light = {
+												position = { 0 65 }
+												size = { 100% 3 }
+												alpha = 0.25
+											}
+
+											flowcontainer = {
+												name = "perk_tree_item_line_area" # Name used in code do not change
+												parentanchor = hcenter
+												direction = vertical
+												position = { 0 50 }
+												ignoreinvisible = yes
+
+												datamodel = "[PerkGuiTree.GetItems]"
+
+												item = {
+													container = {
+														ignoreinvisible = yes
+														datacontext = "[PerkLineItem.GetItem]"
+														# position = "[PerkGuiTree.GetItemPosition( Perk.Self )]"
+
+														container = {
+															ignoreinvisible = yes
+															visible = "[Not(GetVariableSystem.Exists('focus_on_perks'))]"
+
+															button_text = {
+																onclick = "[CharacterLifestyleWindow.SelectPerk( Perk.Self )]"
+																tooltipwidget = {
+												                    using = perk_tooltip_contents
+												                }
+																enabled = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
+																blockoverride "pre" {
+																	spacing = 4
+																	text_single = {
+																		raw_text = "Unlock"
+																		visible = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
+																	}
+																	text_single = {
+																		raw_text = "Trait"
+																		visible = "[Perk.IsFinisher]"
+																	}
+																}
+															    blockoverride "text" {
+															        raw_text = "[Perk.GetNameNoTooltip( Character.Self )]."
+																	align = left
+															    }
+																blockoverride "extra" {
+																	text_single = {
+																		raw_text = "Unlocked."
+																		visible = "[Character.HasPerk( Perk.Self )]"
+																	}
+																	# text_single = {
+																	# 	raw_text = "Can't unlock."
+																	# 	visible = "[And(Not(Character.HasPerk( Perk.Self )), Not(CharacterLifestyleWindow.CanSelectPerk( Perk.Self )))]"
+																	# }
+																}
+															}
+														}
+
+														container = {
+															ignoreinvisible = yes
+															visible = "[GetVariableSystem.Exists('focus_on_perks')]"
+
+															button_text = {
+																onclick = "[CharacterLifestyleWindow.SelectPerk( Perk.Self )]"
+																tooltipwidget = {
+												                    using = perk_tooltip_contents
+												                }
+																visible = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
+																enabled = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
+																blockoverride "pre" {
+																	spacing = 4
+																	text_single = {
+																		raw_text = "Unlock"
+																		visible = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
+																	}
+																	text_single = {
+																		raw_text = "trait"
+																		visible = "[Perk.IsFinisher]"
+																	}
+																}
+															    blockoverride "text" {
+															        raw_text = "[Perk.GetNameNoTooltip( Character.Self )]."
+																	align = left
+															    }
+																blockoverride "extra" {
+																	text_single = {
+																		raw_text = "Unlocked."
+																		visible = "[Character.HasPerk( Perk.Self )]"
+																	}
+																	# text_single = {
+																	# 	raw_text = "Can't unlock."
+																	# 	visible = "[And(Not(Character.HasPerk( Perk.Self )), Not(CharacterLifestyleWindow.CanSelectPerk( Perk.Self )))]"
+																	# }
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+
+										expand = { }
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		flowcontainer = {
+			parentanchor = bottom|left
+			position = { 20 -10 }
+			spacing = 10
+			direction = vertical
+
+			background = {
+				using = Background_Area_Dark
+				margin_top = 150
+				margin_bottom = 20
+				margin_right = 280
+				margin_left = 20
+				mirror = horizontal
+				 modify_texture = {
+				 	texture = "gfx/interface/component_masks/mask_fade_corner.dds"
+				 	blend_mode = alphamultiply
+				}
+			}
+
+			# background = {
+			# 	texture = "gfx/interface/window_character/characterlist_skills_bg.dds"
+			# 	spriteType = Corneredstretched
+			# 	spriteborder = { 10 10 }
+			# 	margin = { 15 5 }
+			# }
+
+			# background = {
+			# 	using = Background_Area_Dark
+			# 	margin = { 10 5 }
+			# }
+
+		}
+	}
+
+	widget = {
+		size  = { 100% 100% }
+		visible = "[GetVariableSystem.Exists('ocr')]"
+		window_lifestyle_old = {
+		}
+	}
+}

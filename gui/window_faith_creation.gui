@@ -1,0 +1,1244 @@
+######################################################
+################## FAITH CREATION ####################
+######################################################
+
+window = {
+	name = "faith_creation_window"
+	datacontext = "[FaithCreationWindow.GetVassalConversionWindow]"
+	datacontext = "[GetVariableSystem]"
+	parentanchor = center
+	size = { 100% 100% }
+	layer = middle
+
+	using = Window_Background_No_Edge
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		on_start = "[GetVariableSystem.Set( 'faith_creation_doctrine_page', 'main_group' )]"
+		on_start = "[GetVariableSystem.Set( 'faith_creation_icon_selection', 'false' )]"
+		on_start = "[GetVariableSystem.Clear('faith_creation_right_view')]"
+		on_start = "[GetVariableSystem.Clear('conversion_view_vassals')]"
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+	}
+
+	vbox = {
+		visible = "[Not(VariableSystem.Exists('faith_creation_right_view'))]"
+		using = ocr_margins
+
+		header_pattern = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Not( GetPlayer.GetFaith.IsUnreformed )]"
+
+			blockoverride "header_text"
+			{
+				text = "CREATE_FAITH_WINDOW_TITLE"
+			}
+
+			blockoverride "button_close"
+			{
+				onclick = "[FaithCreationWindow.Close]"
+			}
+
+			blockoverride "button_back"
+			{
+				visible = "[HasViewHistory]"
+				onclick = "[OpenFromViewHistory]"
+				tooltip = "[GetViewHistoryTooltip]"
+			}
+		}
+
+		header_pattern = {
+			layoutpolicy_horizontal = expanding
+			visible = "[GetPlayer.GetFaith.IsUnreformed]"
+
+			blockoverride "header_text"
+			{
+				text = "REFORM_FAITH_WINDOW_TITLE"
+			}
+
+			blockoverride "button_close"
+			{
+				onclick = "[FaithCreationWindow.Close]"
+			}
+		}
+
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			shortcut = confirm
+		    blockoverride "text" {
+		        raw_text = "Finalize faith"
+		    }
+		    blockoverride "disabled" {
+				visible = "[Not(FaithCreationWindow.CanCreateFaith)]"
+		    }
+			blockoverride "extra" {
+				text_single = {
+					visible = "[Not(FaithCreationWindow.CanCreateFaith)]"
+					raw_text = ". Click to see details"
+					align = left
+				}
+				text_single = {
+					raw_text = ". Hotkey Enter"
+					align = left
+				}
+			}
+			onclick = "[GetVariableSystem.Set('faith_creation_right_view', 'yes')]"
+			# tooltip = "FAITH_CREATION_BUTTON_TOOLTIP"
+			blockoverride "dot" { }
+		}
+
+		widget = {
+			name = "left_side"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Not(VariableSystem.Exists( 'conversion_view_vassals' ))]"
+
+				flowcontainer = {
+					layoutpolicy_horizontal = expanding
+					using = tooltip_se
+
+					text_single = {
+						tooltip = "FAITH_CREATION_COST_TOOLTIP"
+						text = "FAITH_CREATION_TOTAL_COST"
+					}
+
+					dot = { }
+
+					text_single = {
+						raw_text = " You have [GetPlayer.GetPiety]."
+						visible = "[GreaterThan_int32( FaithCreationWindow.CalcPietyMissing, '(int32)0' )]"
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "FAITH_WINDOW_FAITH_NAME"
+					}
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "[Select_CString( StringIsEmpty( FaithCreationWindow.GetNewFaithName ), '', ', click to change name.' )]"
+							align = left
+						}
+					}
+					visible = "[Not( GetPlayer.GetFaith.IsUnreformed )]"
+					onclick = "[GetVariableSystem.Set( 'faith_creation_right_view', 'name_selection' )]"
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "Click any tenet or doctrine to replace it."
+				}
+
+				vbox = {
+					name = "doctrines"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					scrollbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						blockoverride "scrollbox_content"
+						{
+							vbox = {
+								name = "tenets"
+								layoutpolicy_horizontal = expanding
+
+								text_single = {
+									raw_text = "[GetDataModelSize(FaithCreationWindow.GetGroupingHelper( 'core_tenets' ).GetGrouping)] [core_tenets|E]:"
+									layoutpolicy_horizontal = expanding
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									name = "tenets_grid"
+									datamodel = "[FaithCreationWindow.GetGroupingHelper( 'core_tenets' ).GetGrouping]"
+
+									item = {
+										button_group = {
+											layoutpolicy_horizontal = expanding
+											datacontext = "[GuiFaithCreationDoctrineItem.GetGuiFaithDoctrineItem]"
+											datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
+											datacontext = "[GuiFaithDoctrineItem.GetFaith]"
+
+											container_tenet_item = {
+												margin_left = 5
+												tooltip = "FAITH_WINDOW_DOCTRINE_CHANGE_TOOLTIP"
+											}
+
+											onclick = "[GuiFaithCreationDoctrineItem.GetFaithCreationWindow.GetDoctrineGroupWindow.ShowWindowSortList( GuiFaithCreationDoctrineItem.GetSlotIndex )]"
+											onclick = "[GetVariableSystem.Set( 'faith_creation_right_view', 'doctrine_selection' )]"
+											onclick = "[GetVariableSystem.Set( 'doctrine_group_name', FaithDoctrine.GetGroup.GetName( GuiFaithDoctrineItem.GetFaith ) )]"
+										}
+									}
+								}
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[doctrines|E]."
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									raw_text = "[GetDataModelSize(FaithCreationWindow.GetGroupingHelper( 'main_group' ).GetGrouping)] [Localize('FAITH_DOCTRINES_IMPORTANT')]."
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									name = "doctrines_grid_main_group"
+									datamodel = "[FaithCreationWindow.GetGroupingHelper( 'main_group' ).GetGrouping]"
+
+									item = {
+										widget_doctrine_selection_item = { }
+									}
+								}
+							}
+
+							vbox_agot_extra_doctrines_create = { }
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									raw_text = "[GetDataModelSize(FaithCreationWindow.GetGroupingHelper( 'marriage' ).GetGrouping)] [Localize('FAITH_DOCTRINES_MARRIAGE')]."
+								}
+
+								vbox = {
+									datamodel = "[FaithCreationWindow.GetGroupingHelper( 'marriage' ).GetGrouping]"
+									layoutpolicy_horizontal = expanding
+
+									item = {
+										widget_doctrine_selection_item = { }
+									}
+								}
+
+								###
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									raw_text = "[GetDataModelSize(FaithCreationWindow.GetGroupingHelper( 'crimes' ).GetGrouping)] [Localize('FAITH_DOCTRINES_CRIMES')]."
+								}
+								vbox = {
+									datamodel = "[FaithCreationWindow.GetGroupingHelper( 'crimes' ).GetGrouping]"
+									layoutpolicy_horizontal = expanding
+
+									item = {
+										widget_doctrine_selection_item = { }
+									}
+								}
+
+								###
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									raw_text = "[GetDataModelSize(FaithCreationWindow.GetGroupingHelper( 'clergy' ).GetGrouping)] [Localize('FAITH_DOCTRINES_CLERGY')]."
+								}
+
+								vbox = {
+									datamodel = "[FaithCreationWindow.GetGroupingHelper( 'clergy' ).GetGrouping]"
+									layoutpolicy_horizontal = expanding
+
+									item = {
+										widget_doctrine_selection_item = { }
+									}
+								}
+
+								vbox = {
+									name = "sins_and_virtues"
+									layoutpolicy_horizontal = expanding
+
+									hbox = {
+										name = "sins"
+										layoutpolicy_horizontal = expanding
+
+										flowcontainer = {
+										    ignoreinvisible = yes
+
+											text_single = {
+												raw_text = "[GetDataModelSize(FaithCreationWindow.GetSins)]"
+											}
+											space = { }
+										    text_single = {
+										    	raw_text = "FAITH_WINDOW_SINS"
+										    }
+											text_single = {
+												raw_text = ":"
+											}
+											space = { }
+										}
+
+										dynamicgridbox = {
+											name = "virtues_grid"
+											datamodel = "[FaithCreationWindow.GetSins]"
+											flipdirection = yes
+
+											item = {
+												text_single = {
+													margin_right = 3
+													datacontext = "[GuiVirtueOrSinItem.GetTrait]"
+													raw_text = "[Trait.GetNameNoTooltip( GetPlayer )],"
+													tooltipwidget = {
+														using = faith_window_trait_tooltip
+													}
+												}
+											}
+										}
+
+										expand = { }
+									}
+
+									hbox = {
+										name = "virtues"
+										layoutpolicy_horizontal = expanding
+
+										flowcontainer = {
+										    ignoreinvisible = yes
+
+											text_single = {
+												raw_text = "[GetDataModelSize(FaithCreationWindow.GetVirtues)]"
+											}
+											space = { }
+										    text_single = {
+										    	raw_text = "FAITH_WINDOW_VIRTUES"
+										    }
+											text_single = {
+												raw_text = ":"
+											}
+											space = { }
+										}
+
+										dynamicgridbox = {
+											name = "virtues_grid"
+											datamodel = "[FaithCreationWindow.GetVirtues]"
+											flipdirection = yes
+
+											item = {
+												text_single = {
+													margin_right = 3
+													datacontext = "[GuiVirtueOrSinItem.GetTrait]"
+													raw_text = "[Trait.GetNameNoTooltip( GetPlayer )],"
+													tooltipwidget = {
+														using = faith_window_trait_tooltip
+													}
+												}
+											}
+										}
+
+										expand = { }
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			# Vassal conversion list
+		}
+	}
+
+	### RIGHT PANEL
+	widget = {
+		using = Window_Background_No_Edge
+		name = "right_side"
+		alwaystransparent = no
+		size = { 100% 100% }
+
+		button = {
+			onclick = "[GetVariableSystem.Clear('faith_creation_right_view')]"
+			shortcut = close_window
+		}
+		visible = "[VariableSystem.Exists('faith_creation_right_view')]"
+
+		## Main right side view
+		vbox = {
+			name = "primary_view"
+			visible = "[VariableSystem.HasValue('faith_creation_right_view', 'yes')]"
+			margin_bottom = 20
+
+			state = {
+				name = _show
+				using = Animation_FadeIn_Quick
+			}
+
+			state = {
+				name = _hide
+				alpha = 0
+			}
+
+
+			vbox = {
+				name = "confirm_and_preview"
+				layoutpolicy_horizontal = expanding
+				margin = { 10 0 }
+
+				text_single = {
+					raw_text = "Effects:"
+					layoutpolicy_horizontal = expanding
+					visible = "[FaithCreationWindow.CanCreateFaith]"
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not( FaithCreationWindow.CanCreateFaith )]"
+					text_label_left = {
+						layoutpolicy_horizontal = expanding
+						text = "FAITH_CREATION_BLOCKERS_HEADER"
+						default_format = "#low"
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						text_multi = {
+							autoresize = yes
+							max_width = 440
+							text = "[FaithCreationWindow.GetCreationBlockers]"
+						}
+
+						expand = { }
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						text_single = {
+							tooltip = "FAITH_CREATION_COST_TOOLTIP"
+							text = "FAITH_CREATION_TOTAL_COST"
+						}
+
+						dot = { }
+
+						text_single = {
+							raw_text = " You have [GetPlayer.GetPiety]."
+							visible = "[GreaterThan_int32( FaithCreationWindow.CalcPietyMissing, '(int32)0' )]"
+						}
+						expand = { }
+					}
+
+					text_single = {
+						name = "cooldown"
+						layoutpolicy_horizontal = expanding
+						text = "FAITH_CREATION_COOLDOWN"
+					}
+
+					button_primary_text = {
+						layoutpolicy_horizontal = expanding
+						name = "create_faith"
+						visible = "[Not( GetPlayer.GetFaith.IsUnreformed )]"
+						blockoverride "text" {
+							text = "FAITH_CREATION_CREATE"
+						}
+						blockoverride "disabled" {
+							visible = "[Not(FaithCreationWindow.CanCreateFaith)]"
+						}
+						enabled = "[FaithCreationWindow.CanCreateFaith]"
+						onclick = "[FaithCreationWindow.CreateFaith]"
+					}
+
+					button_primary_text = {
+						layoutpolicy_horizontal = expanding
+						visible = "[GetPlayer.GetFaith.IsUnreformed]"
+						blockoverride "text" {
+							text = "FAITH_CREATION_REFORM"
+						}
+						blockoverride "disabled" {
+							visible = "[Not(FaithCreationWindow.CanCreateFaith)]"
+						}
+						enabled = "[FaithCreationWindow.CanCreateFaith]"
+						onclick = "[FaithCreationWindow.CreateFaith]"
+					}
+				}
+
+				vbox = {
+					name = "old_faith_tolerance"
+					layoutpolicy_horizontal = expanding
+
+					text_label_left = {
+						name = "header"
+						layoutpolicy_horizontal = expanding
+						text = "FAITH_CREATION_TOLERANCE"
+						default_format = "#low"
+					}
+
+					expand = {
+						size = { 0 10 }
+					}
+
+					text_single = {
+						name = "desc"
+						layoutpolicy_horizontal = expanding
+						text = "FAITH_CREATION_TOLERANCE_TEXT"
+					}
+				}
+
+
+				vbox = {
+					name = "realm_adoption"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					text_label_left = {
+						layoutpolicy_horizontal = expanding
+						name = "header"
+						text = "FAITH_CREATION_ADOPTION"
+						default_format = "#low"
+					}
+
+					expand = {
+						size = { 0 10 }
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						name = "desc"
+						text = "FAITH_CREATION_ADOPTION_TEXT"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[VariableSystem.Set( 'conversion_view_vassals', 'yes' )]"
+					    blockoverride "text" {
+							text = "FAITH_CREATION_OPEN_VASSAL_LIST"
+					    }
+						blockoverride "dot" {
+						}
+					}
+				}
+
+				vbox = {
+					name = "pagan_reformation"
+					visible = "[Or( GetPlayer.GetFaith.HasDoctrineByKey( 'unreformed_faith_doctrine' ) , GetPlayer.GetFaith.HasDoctrineByKey( 'west_african_unreformed_faith_doctrine' ) )]"
+					layoutpolicy_horizontal = expanding
+
+					text_single = {
+						name = "header"
+						layoutpolicy_horizontal = expanding
+						text = "FAITH_CREATION_PAGAN_REFORM"
+						default_format = "#low"
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						text_multi = {
+							name = "desc"
+							minimumsize = { 0 70 }
+							autoresize = yes
+							max_width = 1100
+							text = "FAITH_CREATION_PAGAN_REFORM_TEXT"
+						}
+
+						expand = { }
+					}
+				}
+
+				vbox = {
+					name = "theocracy_info"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					visible = "[Not( ObjectsEqual( GetPlayer.GetFaith.HasParameterByKey( 'lay_clergy' ), FaithCreationWindow.HasParameter( 'lay_clergy' ) ) )]"
+
+					text_label_left = {
+						layoutpolicy_horizontal = expanding
+						name = "header"
+						text = "FAITH_CREATION_THEOCRACY_INFO"
+						default_format = "#low"
+					}
+
+					expand = {
+						size = { 0 10 }
+					}
+
+					hbox = {
+						name = "church_property"
+						visible = "[Not( FaithCreationWindow.HasParameter( 'lay_clergy' ) )]"
+						layoutpolicy_horizontal = expanding
+						spacing = 10
+
+						text_multi = {
+							name = "desc"
+							max_width = 390
+							autoresize = yes
+
+							text = "FAITH_CREATION_ADDS_CHURCH_PROPERTY_TEXT"
+						}
+
+						expand = { }
+					}
+
+					hbox = {
+						name = "lay_clergy"
+						visible = "[FaithCreationWindow.HasParameter( 'lay_clergy' )]"
+						layoutpolicy_horizontal = expanding
+						spacing = 10
+
+						text_multi = {
+							name = "desc"
+							max_width = 390
+							autoresize = yes
+
+							text = "FAITH_CREATION_ADDS_LAY_CLERGY_TEXT"
+						}
+
+						expand = { }
+					}
+				}
+
+				vbox = {
+					name = "head_of_faith_info"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					visible = "[Not( FaithCreationWindow.HasParameter( 'no_head_of_faith' ) )]"
+
+					text_label_left = {
+						layoutpolicy_horizontal = expanding
+						name = "header"
+						text = "FAITH_CREATION_HEAD_OF_FAITH_INFO"
+						default_format = "#low"
+					}
+
+					expand = {
+						size = { 0 10 }
+					}
+
+					hbox = {
+						name = "spiritual"
+						visible = "[FaithCreationWindow.HasParameter( 'spiritual_head_of_faith' )]"
+						layoutpolicy_horizontal = expanding
+						spacing = 10
+
+						text_multi = {
+							name = "desc"
+							max_width = 390
+							autoresize = yes
+
+							text = "FAITH_CREATION_ADDS_SPIRITUAL_HEAD_TEXT"
+						}
+
+						expand = { }
+					}
+
+					hbox = {
+						name = "temporal"
+						visible = "[FaithCreationWindow.HasParameter( 'temporal_head_of_faith' )]"
+						layoutpolicy_horizontal = expanding
+						spacing = 10
+
+						text_multi = {
+							name = "desc"
+							max_width = 390
+							autoresize = yes
+
+							text = "FAITH_CREATION_ADDS_TEMPORAL_HEAD_TEXT"
+						}
+
+						expand = { }
+					}
+				}
+			}
+
+			expand = { }
+		}
+
+		## Name selection
+		vbox = {
+			name = "name_selection"
+			visible = "[VariableSystem.HasValue( 'faith_creation_right_view', 'name_selection' )]"
+			margin_left = 500
+
+			state = {
+				name = _show
+				using = Animation_FadeIn_Quick
+			}
+
+			state = {
+				name = _hide
+				alpha = 0
+			}
+
+			text_single = {
+				name = "header_label"
+				text = "FAITH_CREATION_NAMING_HEADER"
+				layoutpolicy_horizontal = expanding
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "After clicking on a text field, you can use Tab to switch to the next one."
+				visible = "[StringIsEmpty( FaithCreationWindow.GetNewFaithName )]"
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "Remember to exit OCR results before using space, so you don't misclick."
+				visible = "[StringIsEmpty( FaithCreationWindow.GetNewFaithName )]"
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				# The names of these four are referenced in code. If you change them, they'll no longer get blanked after creating a faith
+				name_entry_big = {
+					blockoverride "label"
+					{
+						text = ""
+					}
+
+					blockoverride "editbox_properties"
+					{
+						name = "faith_name_edit"
+						ontextedited = "[FaithCreationWindow.OnEditName]"
+						maxcharacters = 30
+						margin_left = 10
+						ontextchanged = "[PdxGuiWidget.FindChild('text').Hide]"
+
+						text_single = {
+							name = "text"
+							margin_left = 10
+							raw_text = "Enter name."
+							align = left
+						}
+					}
+				}
+
+				name_entry_big = {
+					blockoverride "label"
+					{
+						text = ""
+					}
+
+					blockoverride "editbox_properties"
+					{
+						name = "faith_adjective_edit"
+						ontextedited = "[FaithCreationWindow.OnEditAdjective]"
+						maxcharacters = 30
+						margin_left = 10
+
+						ontextchanged = "[PdxGuiWidget.FindChild('text').Hide]"
+
+						text_single = {
+							name = "text"
+							margin_left = 10
+							raw_text = "Enter adjectives."
+							align = left
+						}
+					}
+				}
+
+				name_entry_big = {
+					blockoverride "label"
+					{
+						text = ""
+					}
+
+					blockoverride "editbox_properties"
+					{
+						name = "faith_adherent_edit"
+						ontextedited = "[FaithCreationWindow.OnEditAdherent]"
+						maxcharacters = 30
+						margin_left = 10
+
+						ontextchanged = "[PdxGuiWidget.FindChild('text').Hide]"
+
+						text_single = {
+							name = "text"
+							margin_left = 10
+							raw_text = "Enter single follower."
+							align = left
+						}
+					}
+				}
+
+				name_entry_big = {
+					blockoverride "label"
+					{
+						text = ""
+					}
+
+					blockoverride "editbox_properties"
+					{
+						name = "faith_adherent_plural_edit"
+						ontextedited = "[FaithCreationWindow.OnEditAdherentPlural]"
+						maxcharacters = 30
+						margin_left = 10
+
+						ontextchanged = "[PdxGuiWidget.FindChild('text').Hide]"
+
+						text_single = {
+							name = "text"
+							margin_left = 10
+							raw_text = "Enter many followers."
+							align = left
+						}
+					}
+				}
+
+
+				editbox_standard_with_label = {
+					layoutpolicy_horizontal = expanding
+
+					minimumsize = {0 220}
+
+					blockoverride "editbox_label"
+					{
+						text = ""
+					}
+
+					blockoverride "editbox_properties"
+					{
+						name = "faith_desc_edit"
+						multiline = yes
+						ontextedited = "[FaithCreationWindow.OnEditDescription]"
+						maxcharacters = 240
+						margin_left = 10
+
+						ontextchanged = "[PdxGuiWidget.FindChild('text').Hide]"
+
+						text_single = {
+							name = "text"
+							margin_left = 10
+							raw_text = "Enter description."
+							align = left
+						}
+					}
+				}
+
+
+			}
+
+			expand = { }
+
+
+			button_standard = {
+				name = "done"
+				onclick = "[VariableSystem.Clear( 'faith_creation_right_view' )]"
+				text = "DONE"
+				default_format = "#high"
+			}
+		}
+
+		vbox = {
+			name = "color_selection"
+			visible = "[VariableSystem.HasValue( 'faith_creation_right_view', 'color_selection' )]"
+			margin = { 0 20 }
+			margin_top = 15
+			margin_left = 2
+			spacing = 10
+
+			text_label_center = {
+				layoutpolicy_horizontal = expanding
+				text = "MAP_COLOR_SELECTION_LABEL"
+				max_width = 280
+			}
+
+			colorpicker_simple = {
+				visible = yes
+				color = "[FaithCreationWindow.GetColor]"
+				oncoloredited = "[FaithCreationWindow.SetColor]"
+			}
+
+			expand = { }
+
+			button_standard = {
+				name = "done"
+				onclick = "[VariableSystem.Clear( 'faith_creation_right_view' )]"
+				text = "DONE"
+				default_format = "#high"
+			}
+		}
+		## Doctrine selection
+		vbox = {
+			name = "doctrine_selection"
+			visible = "[VariableSystem.HasValue( 'faith_creation_right_view', 'doctrine_selection' )]"
+
+			state = {
+				name = _show
+				using = Animation_FadeIn_Quick
+			}
+
+			state = {
+				name = _hide
+				alpha = 0
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "[VariableSystem.Get( 'doctrine_group_name' )]."
+			}
+
+			scrollbox = {
+				name = "contents"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						datacontext = "[FaithCreationWindow.GetDoctrineGroupWindow]"
+						datamodel = "[DoctrineGroupWindow.GetDoctrines]"
+						layoutpolicy_horizontal = expanding
+						margin_left = 500
+
+						item = {
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								button_text = {
+									name = "faith_list_item"
+								    blockoverride "text" {
+								        raw_text = "[FaithDoctrine.GetNameNoTooltip( GuiFaithDoctrineItem.GetFaith )]"
+										align = left
+								    }
+									blockoverride "extra" {
+										text_single = {
+											raw_text = ", disabled"
+											visible = "[Not(GuiFaithCreationDoctrineItem.CanPick)]"
+										}
+										text_single = {
+											raw_text = ", [piety_i][FaithDoctrine.CalcPietyCostWithFervorDiscount( GuiFaithDoctrineItem.GetFaith )]."
+										}
+										text_single = {
+											raw_text = " Selected."
+											visible = "[GuiFaithCreationDoctrineItem.IsSelected]"
+										}
+									}
+									layoutpolicy_horizontal = expanding
+									datacontext = "[GuiFaithCreationDoctrineItem.GetGuiFaithDoctrineItem]"
+									datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
+									datacontext = "[GuiFaithDoctrineItem.GetFaith]"
+									datacontext = "[GetVariableSystem]"
+
+									onclick = "[GuiFaithCreationDoctrineItem.GetFaithCreationWindow.SelectDoctrine( GuiFaithCreationDoctrineItem.Self )]"
+									onclick = "[VariableSystem.Clear( 'faith_creation_right_view' )]"
+									visible = "[GuiFaithCreationDoctrineItem.ShouldDisplay]"
+									enabled = "[GuiFaithCreationDoctrineItem.CanPick]"
+									down = "[GuiFaithCreationDoctrineItem.IsSelected]"
+									tooltip = "FAITH_WINDOW_DOCTRINE_SELECT_TOOLTIP"
+								}
+							}
+						}
+					}
+				}
+			}
+
+			button_standard = {
+				name = "cancel"
+				onclick = "[VariableSystem.Clear( 'faith_creation_right_view' )]"
+				text = "CANCEL"
+				default_format = "#high"
+			}
+		}
+
+		## Icon selection
+		vbox = {
+			name = "icon_selection"
+			visible = "[VariableSystem.HasValue( 'faith_creation_right_view', 'icon_selection' )]"
+			margin = { 0 15 }
+			spacing = 20
+
+			state = {
+				name = _show
+				using = Animation_FadeIn_Quick
+			}
+
+			state = {
+				name = _hide
+				alpha = 0
+			}
+
+			text_single = {
+				name = "header_label"
+				text = "SELECT_FAITH_ICON"
+				default_format = "#I"
+			}
+
+			scrollbox = {
+				name = "contents"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content"
+				{
+					fixedgridbox = {
+						name = "icons_grid"
+						datamodel = "[FaithCreationWindow.GetFaithIcons]"
+						size = { 500 240 }
+						addcolumn = 60
+						addrow = 70
+						datamodel_wrap = 8
+						flipdirection = yes
+
+						item = {
+							button_normal = {
+								size = { 60 60 }
+								texture = "[GuiFaithIcon.GetIconTexture]"
+								onclick = "[GuiFaithIcon.GetFaithCreationWindow.SelectFaithIcon( GuiFaithIcon.GetIconName )]"
+								onclick = "[GetVariableSystem.Set( 'faith_creation_icon_selection', 'true' )]"
+								tooltip = "SELECT_FAITH_ICON_TOOLTIP"
+
+								glow = {
+									using = Color_Orange
+									visible = "[GuiFaithIcon.IsSelected]"
+
+									glow_radius = 5
+									using = Glow_Standard
+								}
+							}
+						}
+					}
+				}
+			}
+
+			button_standard = {
+				name = "close"
+				onclick = "[VariableSystem.Clear( 'faith_creation_right_view' )]"
+				text = "DONE"
+				default_format = "#high"
+			}
+		}
+	}
+
+	vassal_conversion_preview = {
+		using = Window_Background_No_Edge
+		alwaystransparent = no
+		visible = "[VariableSystem.Exists( 'conversion_view_vassals')]"
+		size = { 100% 100% }
+	}
+
+	OCR_create_faith_vbox = {
+		visible = "[GetVariableSystem.Exists('ocr')]"
+	}
+}
+
+template faith_creation_doctrine_grid
+{
+	datamodel_wrap = 2
+	flipdirection = yes
+	addcolumn = 350
+	addrow = 65
+	item = {
+		button_group = {
+			name = "doctrine_list_item"
+			tooltip = "FAITH_WINDOW_DOCTRINE_CHANGE_TOOLTIP"
+			datacontext = "[GuiFaithCreationDoctrineItem.GetGuiFaithDoctrineItem]"
+			datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
+			onclick = "[GuiFaithCreationDoctrineItem.GetFaithCreationWindow.GetDoctrineGroupWindow.ShowWindow( GuiFaithCreationDoctrineItem.GetSlotIndex )]"
+			onclick = "[GetVariableSystem.Set( 'faith_creation_right_view', 'doctrine_selection' )]"
+			onclick = "[GetVariableSystem.Set( 'doctrine_group_name', FaithDoctrine.GetGroup.GetName( GuiFaithDoctrineItem.GetFaith ) )]"
+			down = "[GetVariableSystem.HasValue( 'faith_creation_right_view', 'doctrine_selection' )]"
+
+			button_standard_hover = {
+				position = { 0 0 }
+				size = { 350 80 }
+				name = "select_doctrine"
+				down = "[And(GetVariableSystem.HasValue( 'doctrine_group_name', FaithDoctrine.GetGroup.GetName( GuiFaithDoctrineItem.GetFaith ) ), GetVariableSystem.HasValue( 'faith_creation_right_view', 'doctrine_selection' ))]"
+			}
+
+			icon = {
+				name = "doctrine_group_icon"
+				size = { 60 60 }
+				position = { 5 5 }
+				texture = "[FaithDoctrine.GetGroup.GetIcon]"
+			}
+
+			text_single = {
+				name = "doctrine_group_name"
+				autoresize = yes
+				position = { 80 7 }
+				align = left
+				text = "[FaithDoctrine.GetGroup.GetName( GuiFaithDoctrineItem.GetFaith )]"
+			}
+
+			text_single = {
+				name = "doctrine_name"
+				position = { 80 33 }
+				align = left
+				text = "[FaithDoctrine.GetName( GuiFaithDoctrineItem.GetFaith )]"
+			}
+		}
+	}
+}
+
+template faith_window_trait_tooltip
+{
+	object_tooltip_pop_out = {
+		blockoverride "header_additions"
+		{
+			hbox = {
+				margin_right = 5
+				margin_top = 5
+
+				icon = {
+					size = { 52 52 }
+					texture = "[Trait.GetIcon( GetPlayer )]"
+					tintcolor = "[TooltipInfo.GetTintColor]"
+				}
+			}
+		}
+		blockoverride "title_text"
+		{
+			text = "[Trait.GetNameNoTooltip( GetPlayer )]"
+		}
+		blockoverride "concept_link" {
+			text = [trait|E]
+		}
+		blockoverride "description_text"
+		{
+			text = "[GuiVirtueOrSinItem.GetFullDescription]"
+		}
+	}
+}
+
+types "FaithCreation"
+{
+	type widget_doctrine_selection_item = hbox {
+		layoutpolicy_horizontal = expanding
+
+		button_standard_hover = {
+			size = { 200 22 }
+			# layoutpolicy_horizontal = expanding
+			tooltip = "FAITH_WINDOW_DOCTRINE_CHANGE_TOOLTIP"
+			datacontext = "[GuiFaithCreationDoctrineItem.GetGuiFaithDoctrineItem]"
+			datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
+			onclick = "[GuiFaithCreationDoctrineItem.GetFaithCreationWindow.GetDoctrineGroupWindow.ShowWindow( GuiFaithCreationDoctrineItem.GetSlotIndex )]"
+			onclick = "[GetVariableSystem.Set( 'faith_creation_right_view', 'doctrine_selection' )]"
+			onclick = "[GetVariableSystem.Set( 'doctrine_group_name', FaithDoctrine.GetGroup.GetName( GuiFaithDoctrineItem.GetFaith ) )]"
+			down = "[And(GetVariableSystem.HasValue( 'doctrine_group_name', FaithDoctrine.GetGroup.GetName( GuiFaithDoctrineItem.GetFaith ) ), GetVariableSystem.HasValue( 'faith_creation_right_view', 'doctrine_selection' ))]"
+
+			background = {
+				using = Background_Area
+				margin = { 5 5 }
+			}
+
+			widget_doctrine_item = {
+				margin_left = 5
+			}
+		}
+
+		expand = { }
+	}
+
+	type vassal_conversion_preview = widget {
+		name = "vassal_conversion_preview_list"
+
+		vbox = {
+			margin_left = 20
+			layoutpolicy_horizontal = expanding
+
+			text_single = {
+				name = "header"
+				text = "[vassals|E]"
+				layoutpolicy_horizontal = expanding
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[VassalConversionWindow.GetVassalList]"
+
+				widget = {
+					name = "sort_area"
+					size = { 0 30 }
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						text_single = {
+							text = "SORT_BY"
+							align = left
+						}
+
+						dropdown_sort_characterlist = { }
+
+						button_text = {
+						    blockoverride "text" {
+						        raw_text = "[Select_CString(CharacterSelectionList.GetSortOrder, 'In ascending', 'In descending')] order."
+						    }
+							onclick = "[CharacterSelectionList.RevertSortOrder]"
+						}
+
+						expand = { }
+					}
+				}
+			}
+
+			scrollbox = {
+				name = "list_area"
+				layoutpolicy_horizontal = growing
+				layoutpolicy_vertical = growing
+
+				blockoverride "scrollbox_content"
+				{
+					visible = "[GreaterThan_int32( VassalConversionWindow.GetNumberOfVassals, '(int32)0' )]"
+
+					vbox = {
+						name = "vassals_grid"
+						datacontext = "[VassalConversionWindow.GetVassalList]"
+						datamodel = "[CharacterSelectionList.GetList]"
+						layoutpolicy_horizontal = expanding
+
+						item = {
+							widget_character_list_item_finder = {
+								layoutpolicy_horizontal = expanding
+								size = { 0 45 }
+								blockoverride "click" {
+									onclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+									onclick = "[GetVariableSystem.Clear('char_tab')]"
+									onrightclick = "[DefaultOnCharacterRightClick(CharacterListItem.GetCharacter.GetID)]"
+								}
+								blockoverride "pre_name" {
+									text_single = {
+										align = left
+										raw_text = "[CharacterListItem.GetText( 'acceptance' )]."
+										tooltip = "[CharacterListItem.GetText( 'acceptance_desc' )]"
+										alwaystransparent = yes
+									}
+								}
+								blockoverride "additional_info_kill_list" {
+									visible = no
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					visible = "[EqualTo_int32( VassalConversionWindow.GetNumberOfVassals, '(int32)0' )]"
+					text_single = {
+						text = "NO_CONVERSION_VASSALS_TO_DISPLAY"
+					}
+				}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = close_window
+				visible = "[GetVariableSystem.Exists('conversion_view_vassals')]"
+				name = "close"
+				blockoverride "text" {
+					text = "CLOSE_LABEL"
+				}
+				onclick = "[GetVariableSystem.Clear( 'conversion_view_vassals' )]"
+				blockoverride "dot" {
+				}
+			}
+		}
+	}
+}

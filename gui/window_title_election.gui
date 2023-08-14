@@ -1,0 +1,1068 @@
+
+######################################################
+################# ELECTION WINDOW ####################
+######################################################
+window = {
+	name = "title_election"
+	movable = no
+	allow_outside = yes
+	layer = windows_layer
+
+	using = Window_Size_Sidebar
+	using = Window_Background_No_Edge
+
+	state = {
+		name = _show
+		position = { 0 0 }
+		on_start = "[GetVariableSystem.Clear( 'display_allegiance' )]"
+		on_start = "[GetVariableSystem.Set( 'hide_bottom_left_HUD', 'true' )]"
+
+		using = Animation_FadeIn_Standard
+		using = Sound_WindowShow_Standard
+	}
+
+	state = {
+		name = _hide
+		position_x = -60
+		on_start = "[GetVariableSystem.Clear( 'hide_bottom_left_HUD' )]"
+
+		using = Animation_FadeOut_Standard
+		using = Sound_WindowHide_Standard
+
+	}
+
+	state = {
+		name = hide
+		next = _hide
+		position_x = 0
+		trigger_when = "[GetVariableSystem.Exists( 'county_view_open' )]"
+	}
+
+	vbox = {
+		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
+		datacontext = "[SuccessionElectionWindow.GetTitle.GetPlayerNominee]"
+		datacontext = "[SuccessionElectionWindow.GetTitle]"
+
+		layoutpolicy_horizontal = expanding
+		using = ocr_margins
+
+		# spacing = 10
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+		}
+
+		### Header
+		widget = {
+			# minimumsize = { 0 140 }
+			buttons_window_control = {
+				parentanchor = top|right
+
+				blockoverride "button_close" {
+					onclick = "[SuccessionElectionWindow.Close]"
+				}
+
+				blockoverride "button_back"
+				{
+					size = { 0 0 }
+					visible = "[HasViewHistory]"
+					onclick = "[OpenFromViewHistory]"
+					tooltip = "[GetViewHistoryTooltip]"
+				}
+			}
+		}
+
+		hbox = {
+			name = "header_area"
+			layoutpolicy_horizontal = expanding
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				# spacing = 5
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 5
+
+					text_single = {
+						# layoutpolicy_horizontal = expanding
+						raw_text = "[SuccessionElectionWindow.GetTitle.GetNameNoTooltip|U],"
+						align = left
+						default_format = "#low"
+						tooltip = "[Title.GetCOADeJureTooltip]"
+					}
+
+					text_single = {
+						# layoutpolicy_horizontal = expanding
+						text = "SUCCESSION_ELECTION_WINDOW_TITLE"
+						align = left
+						default_format = "#high"
+						using = Font_Size_Big
+					}
+					expand = { }
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						text = "SUCCESSION_ELECTION_WINDOW_LAW"
+						align = left
+						default_format = "#low"
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						text = "SUCCESSION_ELECTION_WINDOW_RULES_ELECTORS"
+						tooltip = "[SuccessionElectionWindow.GetElectorsGroupingTooltip]"
+						align = left
+						default_format = "#low"
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						align = left
+						text = "SUCCESSION_ELECTION_WINDOW_RULES_CANDIDATES"
+						tooltip = "[SuccessionElectionWindow.GetCandidatesGroupingTooltip]"
+						default_format = "#low"
+					}
+				}
+			}
+		}
+
+		### No Candidate is chosen
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			# margin_top = 20
+			visible = "[And( Not( Character.IsValid ), Title.IsPlayerElector )]"
+
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				text = "ELECTION_NO_CANDIDATE"
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				text = "SUCCESSION_ELECTION_WINDOW_SELECT_CANDIDATE_INFO"
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				tooltip = "[SuccessionElectionWindow.GetElectorVoteStrengthBreakdown( GetPlayer )]"
+				spacing = 3
+
+				text_single = {
+					text = "SUCCESSION_ELECTION_WINDOW_MY_VOTING_STRENGTH"
+					max_width = 180
+				}
+
+				text_single = {
+					text = "[SuccessionElectionWindow.GetVoteStrength( GetPlayer )|V]"
+				}
+
+				expand = { }
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Not( Or( Character.IsValid, Title.IsPlayerElector ) )]"
+			# margin_top = 20
+
+			text_single = {
+				text = "SUCCESSION_ELECTION_WINDOW_NOT_ELECTOR"
+				default_format = "#warning"
+			}
+		}
+
+		### My Candidate
+		hbox = {
+			name = "my_candidate"
+			datacontext = "[SuccessionElectionWindow.GetCandidateFromCharacter( Character.Self )]"
+			visible = "[Character.IsValid]"
+			layoutpolicy_horizontal = expanding
+			# margin_top = 20
+
+			state = {
+				name = _show
+
+				duration = 0.2
+
+				animation = {
+					size = { 0 500 }
+					bezier = { 0 0.5 0.5 1 }
+				}
+
+				animation = {
+					alpha = 1
+					bezier = { 0.5 0 1 0.5 }
+				}
+			}
+
+			state = {
+				name = _hide
+				size = { 0 0 }
+				alpha = 0
+			}
+
+			state = {
+				name = "add_candidate"
+				alpha = 0
+				duration = 0.2
+				next = "b"
+				using = Animation_Curve_Default
+			}
+
+			state = {
+				name = "b"
+				alpha = 1
+				duration = 0.2
+				using = Animation_Curve_Default
+			}
+
+			flowcontainer = {
+				direction = vertical
+				ignoreinvisible = yes
+				layoutpolicy_horizontal = expanding
+				# spacing = 5
+
+				button_text = {
+				    blockoverride "text" {
+						text = "SUCCESSION_ELECTION_WINDOW_MY_CANDIDATE"
+				    }
+					blockoverride "extra" {
+						text_single = {
+							raw_text = " [Character.GetShortUINameNoTooltip]"
+							align = left
+						}
+					}
+					using = char_click
+					blockoverride "dot" { }
+				}
+
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					spacing = 5
+					# text_single = {
+					# 	text = "SUCCESSION_ELECTION_WINDOW_MY_CANDIDATE_STANCE"
+					# }
+
+					text_single = {
+						text = "SUCCESSION_ELECTION_WINDOW_MY_CANDIDATE_NOT_MY_DYNASTY"
+						visible = "[Not( ObjectsEqual( Character.GetDynasty, GetPlayer.GetDynasty ) )]"
+					}
+				}
+
+
+				flowcontainer = {
+
+					text_single = {
+						margin_left = 5
+						datacontext = "[SuccessionElectionWindow.GetCandidateFromCharacter( Character.Self )]"
+						text = "SUCCESSION_ELECTION_WINDOW_CANDIDATE_RANK"
+						tooltip = "SUCCESSION_ELECTION_WINDOW_CANDIDATE_SCORE"
+					}
+
+					dot = { }
+
+					text_single = {
+						tooltip = "SUCCESSION_ELECTION_WINDOW_CANDIDATE_SCORE"
+						raw_text = " Score: [SuccessionElectionWindowCandidate.GetScore|V]."
+						using = Font_Size_Medium
+					}
+					widget = {
+						size = { 5 0 }
+					}
+					flowcontainer = {
+						tooltip = "[SuccessionElectionWindow.GetElectorVoteStrengthBreakdown( GetPlayer )]"
+
+						text_single = {
+							text = "SUCCESSION_ELECTION_WINDOW_MY_VOTING_STRENGTH"
+							max_width = 180
+							default_format = "#low"
+						}
+
+						text_single = {
+							raw_text = " [SuccessionElectionWindow.GetVoteStrength( GetPlayer )|V]."
+							max_width = 30
+							default_format = "#low"
+							using = Font_Size_Medium
+						}
+					}
+				}
+
+			}
+		}
+
+		## Candidates list
+		vbox = {
+			layoutpolicy_horizontal = expanding
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[GetVariableSystem.Clear('election_view_candidates')]"
+				shortcut = character_finder
+			    blockoverride "text" {
+					text = "SUCCESSION_ELECTION_WINDOW_CANDIDATES"
+					align = left
+			    }
+				blockoverride "extra" {
+					text_single = {
+						raw_text = ", C"
+					}
+					text_single = {
+						raw_text = ", Selected"
+						visible = "[Not(GetVariableSystem.Exists('election_view_candidates'))]"
+					}
+					dot = { }
+				}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[GetVariableSystem.Set('election_view_candidates', 'yes')]"
+				shortcut = map_mode_1
+			    blockoverride "text" {
+					text = "SUCCESSION_ELECTION_WINDOW_ELECTORS"
+					align = left
+			    }
+				blockoverride "extra" {
+					text_single = {
+						raw_text = ", E"
+					}
+					text_single = {
+						raw_text = ", Selected"
+						visible = "[GetVariableSystem.Exists('election_view_candidates')]"
+					}
+					dot = { }
+				}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			margin_bottom = 5
+			spacing = 10
+			visible = "[Not(GetVariableSystem.Exists('election_view_candidates'))]"
+			datacontext = "[SuccessionElectionWindow.GetCandidates]"
+
+			hbox_list_sort_buttons = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			scrollbox = {
+				name = "candiates_list"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_margins" {
+					margin_top = 20
+				}
+
+				blockoverride "scrollbox_content" {
+					name = "candidates"
+
+					fixedgridbox = {
+						datamodel = "[CharacterSelectionList.GetList]"
+						datacontext = "[SuccessionElectionWindow.GetTitle]"
+						addcolumn = 580
+						addrow = 50
+						setitemsizefromcell = yes
+						datamodel_reuse_widgets = yes
+
+						item = {
+							widget = {
+								size = { 0 50 }
+								datacontext = "[CharacterListItem.GetCharacter]"
+								datacontext = "[SuccessionElectionWindow.GetCandidateFromCharacter( Character.Self )]"
+
+								vbox = {
+									name = "candidate"
+									# margin_top = 5
+
+									background = {
+										using = Background_Area
+										margin_left = 10
+									}
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+											layoutpolicy_vertical = expanding
+
+											vbox = {
+												layoutpolicy_horizontal = expanding
+												margin_left = 5
+												# spacing = 5
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													spacing = 3
+
+													background = {
+														using = Background_Area
+														margin = { 0 5 }
+														margin_left = 10
+													}
+
+													text_single = {
+														raw_text = "Rank [SuccessionElectionWindowCandidate.GetElectionRank|V],"
+														visible = "[NotEqualTo_uint32( SuccessionElectionWindowCandidate.GetScore, '(uint32)0' )]"
+														align = left
+													}
+
+													text_single = {
+														visible = "[DataModelHasItems( SuccessionElectionWindowCandidate.GetElectors )]"
+														tooltip = "SUCCESSION_ELECTION_WINDOW_CANDIDATE_SCORE"
+														raw_text = "Score [SuccessionElectionWindowCandidate.GetScore|V]."
+														align = left
+													}
+
+													char_name = {
+														blockoverride "text" {
+															raw_text = "[Character.GetUINameNoTooltip], [Character.GetAge]."
+															align = left
+															max_width = 320
+															fontsize_min = 14
+														}
+													}
+
+													#### SKILLS
+													hbox_skills_grid = {
+														margin_left = 2
+														# margin_right = 20
+													}
+													expand = { }
+												}
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													spacing = 5
+
+													button_text = {
+														blockoverride "text" {
+															raw_text = "Cast vote"
+															align = left
+														}
+														blockoverride "dot" { margin_top = 0 }
+														onclick = "[PdxGuiTriggerAllAnimations('add_candidate')]"
+														visible = "[And( Title.IsPlayerElector, NotEqualTo_uint32( Title.GetPlayerNominee.GetID, Character.GetID ) )]"
+														state = {
+															name = _mouse_click
+															delay = 0.15
+															on_finish = "[Title.OnPlayerNominatesSuccessor(Character.Self)]"
+														}
+													}
+
+													text_single = {
+														visible = "[EqualTo_uint32( Title.GetPlayerNominee.GetID, Character.GetID )]"
+														text = "SUCCESSION_ELECTION_WINDOW_MY_CANDIDATE"
+													}
+
+													text_single = {
+														raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
+														tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+														visible = "[Not(Character.IsLocalPlayer)]"
+													}
+
+													hbox = {
+														layoutpolicy_horizontal = expanding
+														layoutpolicy_vertical = expanding
+														spacing = 4
+														# minimumsize = { 110 0 }
+
+														text_single = {
+															raw_text = "[Character.GetFaith.GetAdjective],"
+															using = tooltip_se
+														}
+
+														flowcontainer = {
+															datacontext = "[Character.GetCulture]"
+															tooltipwidget = {
+																culture_tooltip = { }
+															}
+
+															text_single = {
+																using = tooltip_se
+																layoutpolicy_horizontal = expanding
+																text = "CULTURE_LISTS_WINDOW"
+															}
+															dot = { }
+														}
+														text_single = {
+															raw_text = "[Character.Custom('character_health')] health,"
+															visible = "[Not(Character.IsDeadAndValid)]"
+															tooltip = "[Character.GetHealthInfo]"
+														}
+														text_single = {
+															# layoutpolicy_horizontal = expanding
+															raw_text = " [GetDataModelSize(CharacterListItem.GetTraits)] traits."
+															using = tooltip_se
+
+															tooltipwidget = {
+																widget = {
+																	using = DefaultTooltipBackground
+
+																	alwaystransparent = no
+
+																	flowcontainer = {
+																		name = "traits_grid"
+																		datamodel = "[CharacterListItem.GetTraits]"
+																		direction = vertical
+
+																		ignoreinvisible = yes
+																		resizeparent = yes
+																		margin = { 20 15 }
+																		margin_top = 5
+
+																		item = {
+																			text_single = {
+																				margin_left = 3
+																				visible = "[Trait.IsValid]"
+																				datacontext = "[Character.GetFaith]"
+																				raw_text = "[Trait.GetNameNoTooltip(Character.Self)][AddTextIf(Faith.IsTraitVirtue( Trait.Self ), ' (virtue)')][AddTextIf(Faith.IsTraitSin( Trait.Self ), ' (sin)')][AddTextIf(Trait.IsInheritable, ' (inheritable)')]."
+																				tooltip = "trait_tooltip"
+																			}
+																		}
+																	}
+																}
+															}
+														}
+														expand = { }
+													}
+
+													# text_single = {
+													# 	visible = "[IsDataModelEmpty( SuccessionElectionWindowCandidate.GetElectors )]"
+													# 	tooltip = "SUCCESSION_ELECTION_WINDOW_NO_ELECTORS"
+													# 	raw_text = "No score."
+													# 	align = left
+													# }
+													#
+													# text_single = {
+													# 	name = "character_relation_to_you"
+													# 	text = "[Character.GetRelationToString( GetPlayer )|E]"
+													# 	tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+													# 	max_width = 380
+													# 	align = left
+													# 	visible = "[Character.HasRelationTo( GetPlayer )]"
+													# 	layoutpolicy_horizontal = expanding
+													# }
+
+													text_single = {
+														raw_text = "#D Relevance: [SuccessionElectionWindowCandidate.GetRelevance]#!"
+														visible = "[InDebugMode]"
+														align = left
+
+														tooltipwidget = {
+															widget_value_breakdown_tooltip = {
+																datacontext = "[SuccessionElectionWindow.GetRelevanceBreakdown( Character.Self )]"
+															}
+														}
+													}
+
+													expand = { }
+												}
+											}
+
+											expand = { }
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			margin_bottom = 5
+			# spacing = 10
+			visible = "[GetVariableSystem.Exists('election_view_candidates')]"
+
+			scrollbox = {
+				name = "electors_list"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content" {
+					name = "electors"
+
+					fixedgridbox = {
+						datacontext = "[SuccessionElectionWindow.GetElectors]"
+						datamodel = "[CharacterSelectionList.GetList]"
+						addcolumn = 580
+						addrow = 65
+						setitemsizefromcell = yes
+						datamodel_reuse_widgets = yes
+
+						item = {
+							widget = {
+								vbox = {
+									datacontext = "[CharacterListItem.GetCharacter]"
+									datacontext = "[SuccessionElectionWindow.GetElectorFromCharacter( Character.Self )]"
+									layoutpolicy_horizontal = expanding
+
+									char_name = {
+										layoutpolicy_horizontal = expanding
+										blockoverride "pre" {
+											text_single = {
+												raw_text = "Elector: "
+											}
+										}
+										blockoverride "width" {
+											max_width = 500
+										}
+										background = { using = Background_Area_Dark }
+									}
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										spacing = 5
+
+										button_text = {
+											datacontext = "[SuccessionElectionWindowElector.GetElector]"
+											blockoverride "text" {
+												raw_text = "SUCCESSION_ELECTION_WINDOW_FORCE_VOTE"
+												align = left
+											}
+											blockoverride "disabled" {
+												visible = "[Not(Character.IsPlayerInteractionValid('force_vote_in_succession_election_interaction'))]"
+												tooltip = "[Character.GetPlayerInteractionTooltip('force_vote_in_succession_election_interaction')]"
+												align = left
+											}
+											blockoverride "dot" { }
+											visible = "[And( Title.CanCharacterControlVote( Character.Self ), And( Title.IsPlayerElector, Character.IsPlayerInteractionShown( 'force_vote_in_succession_election_interaction' ) ) )]"
+											onclick = "[Character.OpenPlayerInteraction('force_vote_in_succession_election_interaction')]"
+											enabled = "[Character.IsPlayerInteractionValid('force_vote_in_succession_election_interaction')]"
+										}
+
+										hbox = {
+											# layoutpolicy_horizontal = expanding
+											spacing = 5
+
+											hbox = {
+												spacing = 5
+												tooltip = "[SuccessionElectionWindow.GetElectorVoteStrengthBreakdown(SuccessionElectionWindowElector.GetElector)]"
+
+												text_single = {
+													raw_text = "Voting strength:"
+												}
+
+												text_single = {
+													raw_text = "[SuccessionElectionWindowElector.GetVoteStrength|V]."
+												}
+											}
+
+											hbox = {
+												spacing = 5
+												tooltipwidget = vote_reason_tooltip
+
+												text_single = {
+													raw_text = "Score difference:"
+												}
+
+												text_single = {
+													raw_text = "[SuccessionElectionWindowElector.GetScoreDiff|+]."
+												}
+											}
+											expand = { }
+										}
+
+										expand = { }
+									}
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										spacing = 1
+
+										text_single = {
+											visible = "[Not(SuccessionElectionWindowElector.GetElectorCandidate.GetCandidate.IsValid)]"
+											raw_text = "No"
+											margin_right = 3
+										}
+
+										text_single = {
+											raw_text = "Candidate:"
+										}
+
+										hbox = {
+											visible = "[SuccessionElectionWindowElector.GetElectorCandidate.GetCandidate.IsValid]"
+
+											char_name = {
+												datacontext = "[SuccessionElectionWindowElector.GetElectorCandidate.GetCandidate]"
+												blockoverride "align" {
+													align = left
+												}
+											}
+											text_single = {
+												raw_text = " "
+											}
+											text_single = {
+												visible = "[SuccessionElectionWindowElector.GetElectorCandidate.GetCandidate.IsValid]"
+												text = "SUCCESSION_ELECTION_WINDOW_RANK"
+											}
+											text_single = {
+												raw_text = ", "
+											}
+
+											hbox = {
+												layoutpolicy_horizontal = expanding
+												visible = "[SuccessionElectionWindowElector.GetElectorCandidate.GetCandidate.IsValid]"
+												datacontext = "[SuccessionElectionWindow.GetCandidateFromCharacter( SuccessionElectionWindowElector.GetElectorCandidate.GetCandidate )]"
+												spacing = 5
+												margin_left = 2
+
+												tooltip = "SUCCESSION_ELECTION_WINDOW_CANDIDATE_SCORE"
+
+												text_single = {
+													raw_text = "Score:"
+												}
+
+												text_single = {
+													raw_text = "[SuccessionElectionWindowCandidate.GetScore|V]."
+												}
+
+												expand = { }
+											}
+										}
+
+										expand = { }
+									}
+
+
+									expand = { }
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	window_election = {
+		visible = "[GetVariableSystem.Exists('ocr')]"
+	}
+
+	window_character_filter = {
+		datacontext = "[SuccessionElectionWindow.GetCandidates]"
+		position = { 0 0 }
+		size = { 600 100% }
+
+		blockoverride "addition_filter" {
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('range_filter')]"
+			}
+
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+
+				datacontext = "[CharacterSelectionList.GetCategory('personal_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('ruler_filter')]"
+					}
+
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('adult_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('gender_filter')]"
+					}
+
+					divider = {
+						layoutpolicy_horizontal = expanding
+					}
+
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('married_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('imprisoned_filter')]"
+					}
+
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('hook_filter')]"
+					}
+				}
+			}
+
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetCategory('membership_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('religion_filter')]"
+					}
+
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('culture_filter')]"
+					}
+
+
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+					}
+				}
+			}
+		}
+	}
+}
+
+######################################################
+################ TYPES AND TEMPLATES #################
+######################################################
+
+types SuccessionWindowTypes
+{
+	type vote_strength_icon = icon_flat_standard
+	{
+		texture = "gfx/interface/icons/flat_icons/election_vote_strength.dds"
+		size = { 35 35 }
+	}
+
+	type vote_chance_icon = icon_flat_standard
+	{
+		texture = "gfx/interface/icons/flat_icons/election_preference_over_my_candidate.dds"
+		size = { 35 35 }
+	}
+
+	type vote_amount_icon = icon_flat_standard
+	{
+		texture = "gfx/interface/icons/flat_icons/election_window.dds"
+		size = { 40 40 }
+	}
+
+	type vbox_strength_info = vbox {
+		name = "holy_order_strenght_info"
+		layoutpolicy_horizontal = expanding
+		spacing = 5
+		margin = { 20 6 }
+
+		background = {
+			using = Background_Area
+		}
+
+		text_label_left = {
+			name = "strength"
+			layoutpolicy_horizontal = expanding
+			text = "HIRED_TROOPS_STRENGTH"
+			default_format = "#low"
+		}
+
+		hbox = {
+			spacing = 50
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				spacing = 3
+
+				text_single = {
+					name = "soldiers_count"
+					default_format = "#high"
+					using = Font_Size_Big
+
+					block "hired_troops_soldiers" {
+						text = "TITLE_VIEW_HO_NUMBER_OF_SOLDIERS"
+					}
+				}
+
+				progressbar_standard = {
+					name = "strength_bar"
+					size = { 145 25 }
+
+					block "strength_values" {
+						value = "[CurrentAndMaxToProgressbarValueInt32( HolyOrder.GetCurrentSoldiers, HolyOrder.GetMaxSoldiers)]"
+					}
+				}
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				name = "knights_count"
+				default_format = "#high"
+				using = Font_Size_Big
+
+				block "hired_troops_knights" {
+					text = "TITLE_VIEW_HO_NUMBER_OF_KNIGHTS"
+				}
+			}
+		}
+		expand = {
+			size = { 1 40 }
+		}
+	}
+}
+
+local_template vote_reason_tooltip
+{
+	container = {
+		using = TooltipFocus
+		alwaystransparent = no
+
+		widget = {
+			name = "background"
+			using = Background_Tooltip
+			size = { 100% 100% }
+			alwaystransparent = no
+		}
+
+		container = {
+			visible = "[And( Title.CanCharacterControlVote(Character.Self), SuccessionElectionWindow.GetTitle.GetPlayerNominee.IsValid )]"
+
+			flowcontainer = {
+				visible = "[Not(Character.IsPlayer)]"
+
+				direction = vertical
+				margin = { 10 10 }
+				ignoreinvisible = yes
+
+				flowcontainer = {
+					direction = horizontal
+					ignoreinvisible = yes
+
+					flowcontainer = {
+						margin = { 10 5 }
+						direction = vertical
+
+						background = {
+							using = Background_Area
+						}
+
+						text_multi = {
+							autoresize = yes
+							minimumsize = { 250 -1 }
+							maximumsize = { 250 -1 }
+							multiline = yes
+							text = "SUCCESSION_ELECTION_WINDOW_VOTE_BREAKDOWN_NOMINEE_TT"
+							fonttintcolor = "[TooltipInfo.GetTintColor]"
+						}
+
+						text_multi = {
+							autoresize = yes
+							minimumsize = { 250 -1 }
+							maximumsize = { 250 -1 }
+							multiline = yes
+							fonttintcolor = "[TooltipInfo.GetTintColor]"
+							raw_text = "[SuccessionElectionWindow.GetVoteReasonBreakdown( SuccessionElectionWindow.GetElectorFromCharacter( Character.Self ).GetElectorCandidate.GetCandidate, Character.Self )]."
+						}
+					}
+
+					widget = {
+						visible = "[Not( SuccessionElectionWindowElector.IsVoteForPlayer )]"
+						size = { 5 0 }
+					}
+
+					flowcontainer = {
+						visible = "[Not( SuccessionElectionWindowElector.IsVoteForPlayer )]"
+						margin = { 10 5 }
+						direction = vertical
+						ignoreinvisible = yes
+
+						background = {
+							using = Background_Area
+						}
+
+						text_multi = {
+							autoresize = yes
+							minimumsize = { 250 -1 }
+							maximumsize = { 250 -1 }
+							multiline = yes
+							text = "SUCCESSION_ELECTION_WINDOW_VOTE_BREAKDOWN_PLAYER_NOMINEE"
+							fonttintcolor = "[TooltipInfo.GetTintColor]"
+						}
+
+						text_multi = {
+							autoresize = yes
+							minimumsize = { 250 -1 }
+							maximumsize = { 250 -1 }
+							multiline = yes
+							fonttintcolor = "[TooltipInfo.GetTintColor]"
+							raw_text = "[SuccessionElectionWindow.GetPlayerCandidateVoteReasonBreakdown( Character.Self )]."
+						}
+					}
+				}
+
+				text_multi = {
+					margin = { 5 0 }
+					visible = "[SuccessionElectionWindow.CouldVoteForPlayerCandidateInstead( Character.Self )]"
+					text = "SUCCESSION_ELECTION_WINDOW_VOTE_BREAKDOWN_PLAYER_NOMINEE_INFO"
+					autoresize = no
+					max_width = 520
+					size = { 100% 50 }
+					fonttintcolor = "[TooltipInfo.GetTintColor]"
+				}
+			}
+
+			text_multi = {
+				visible = "[Character.IsOtherPlayer]"
+
+				margin = { 10 5 }
+				align = left
+				autoresize = yes
+				minimumsize = { 270 -1 }
+				maximumsize = { 270 -1 }
+
+				text = "SUCCESSION_ELECTION_WINDOW_VOTE_BREAKDOWN_IS_OTHER_PLAYER"
+				fonttintcolor = "[TooltipInfo.GetTintColor]"
+			}
+
+			text_multi = {
+				visible = "[Character.IsLocalPlayer]"
+
+				margin = { 10 5 }
+				align = left
+				autoresize = yes
+				minimumsize = { 270 -1 }
+				maximumsize = { 270 -1 }
+				text = "SUCCESSION_ELECTION_WINDOW_VOTE_BREAKDOWN_IS_LOCAL_PLAYER"
+				fonttintcolor = "[TooltipInfo.GetTintColor]"
+			}
+		}
+
+		text_multi = {
+			visible = "[Not( Title.CanCharacterControlVote( Character.Self ) )]"
+
+			margin = { 10 5 }
+			align = left
+			autoresize = yes
+			minimumsize = { 270 -1 }
+			maximumsize = { 270 -1 }
+			text = "SUCCESSION_ELECTION_WINDOW_VOTE_BREAKDOWN_FORCED_VOTE"
+			fonttintcolor = "[TooltipInfo.GetTintColor]"
+		}
+
+		text_single = {
+			visible = "[Not( SuccessionElectionWindow.GetTitle.GetPlayerNominee.IsValid )]"
+			margin = { 10 10 }
+			text = "SUCCESSION_ELECTION_WINDOW_NO_PLAYER_NOMINEE"
+		}
+	}
+}

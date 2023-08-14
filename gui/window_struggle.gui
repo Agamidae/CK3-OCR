@@ -1,0 +1,776 @@
+######################################################
+##################### STRUGGLE #######################
+######################################################
+window = {
+	name = "struggle_window"
+	datacontext = "[StruggleWindow.GetStruggle]"
+	datacontext = "[GetVariableSystem]"
+	layer = windows_layer
+	movable = no
+	allow_outside = yes
+	size = { 1500 100% }
+
+	state = {
+		name = _show
+		on_start = "[PdxGuiTriggerAllAnimations('struggle_appear')]"
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+		on_start = "[GetVariableSystem.Clear( 'showing_ending_decisions' )]"
+	}
+
+	state = {
+		name = _hide
+		on_finish = "[PdxGuiTriggerAllAnimations('struggle_hide')]"
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+	}
+
+	margin_widget = {
+		size = { 100% 100% }
+
+		widget = {
+			using = Window_Background_Sidebar
+
+			size = { 900 100% }
+
+			vbox = {
+				using = ocr_margins
+
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+
+				vbox = { # participants
+					name = "struggle_participants"
+					layoutpolicy_horizontal = expanding
+
+					header_pattern = {
+						background = { using = Background_Area_Border_Solid }
+						layoutpolicy_horizontal = expanding
+
+						blockoverride "header_text"
+						{
+							text = "[StruggleWindow.GetStruggle.GetNameNoTooltip]"
+						}
+
+						blockoverride "button_close"
+						{
+							onclick = "[StruggleWindow.Close]"
+							clicksound = "event:/DLC/FP2/SFX/UI/fp2_struggle_view_close"
+						}
+					}
+
+					text_single = {
+						raw_text = "[Struggle.GetPlayerInvolvementDesc]."
+						layoutpolicy_horizontal = expanding
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						name = "struggle_involvement_button_tutorial_uses_this"
+						onclick = "[ToggleGameViewData('struggle_involvement', Struggle.GetID)]"
+					    blockoverride "text" {
+					        raw_text = "STRUGGLE_INVOLVEMENT_BUTTON"
+					    }
+					}
+
+					#expand = { }
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					name = "ending_decision_button_tutorial_uses_this"
+					visible = "[Not(GetVariableSystem.Exists('showing_ending_decisions'))]"
+
+					ending_decision_button = {
+						layoutpolicy_horizontal = expanding
+						visible = "[GreaterThanOrEqualTo_int32(GetDataModelSize(StruggleWindow.GetEndingDecisions), '(int32)2')]"
+
+						blockoverride onclick {
+							shortcut = map_mode_1
+							onclick = "[VariableSystem.Toggle('showing_ending_decisions')]"
+						}
+					}
+
+					ending_decision_button = {
+						layoutpolicy_horizontal = expanding
+						visible = "[LessThanOrEqualTo_int32(GetDataModelSize(StruggleWindow.GetEndingDecisions), '(int32)1')]"
+
+						blockoverride onclick {
+							shortcut = map_mode_1
+							onclick = "[StruggleWindow.OnSingleDecisionClick]"
+						}
+					}
+				}
+
+				vbox = { # Ending Decisions
+					name = "ending_decision_area_tutorial_uses_this"
+					visible = "[VariableSystem.Exists('showing_ending_decisions')]"
+					layoutpolicy_horizontal = expanding
+					margin_top = 5
+
+					using = Animation_Tab_Switch
+
+					vbox = {
+						name = "next_phase_area"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						button_close = {
+							onclick = "[VariableSystem.Toggle('showing_ending_decisions')]"
+						}
+
+						text_single = {
+							datacontext = "[Struggle.GetCurrentPhase]"
+							layoutpolicy_horizontal = expanding
+							text = "ENDING_DECISION_AREA_HEADER"
+						}
+
+						text_single = {
+							text = "ENDING_DECISION_AREA_DESCRIPTION"
+							layoutpolicy_horizontal = expanding
+						}
+
+						vbox = {
+							name = "ending_decisions"
+							datamodel = "[StruggleWindow.GetEndingDecisions]"
+							layoutpolicy_horizontal = expanding
+
+							item = {
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									onclick = "[StruggleWindow.OnEndingDecisionClick(Decision.Self)]"
+									visible = "[Decision.IsShownForPlayer]"
+								    blockoverride "text" {
+								        text = "[Decision.GetTitleForPlayer]"
+								    }
+									blockoverride "extra" {
+										text_single = {
+											raw_text = ", Incomplete"
+											align = left
+											visible = "[Not(Decision.IsPossibleForPlayer)]"
+										}
+									}
+									blockoverride "dot" {
+									}
+								}
+							}
+						}
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "Close decisions."
+					}
+					visible = "[GetVariableSystem.Exists('showing_ending_decisions')]"
+					shortcut = close_window
+					onclick = "[VariableSystem.Clear('showing_ending_decisions')]"
+				}
+
+				button = { # Current Phase area
+					visible = "[Not( VariableSystem.Exists('showing_ending_decisions') )]"
+					name = "current_phase_area"
+					layoutpolicy_horizontal = expanding
+
+					button = {
+						name = "current_phase_widget"
+						datacontext = [StruggleWindow.GetStruggle.GetCurrentPhase]
+						datacontext = [GetPlayer]
+						resizeparent = yes
+						distribute_visual_state = no
+						allow_outside = yes
+
+						state = {
+							name = active_ending_decision
+							trigger_when = "[StruggleWindow.HasPossibleEndingDecision]"
+							using = Animation_FadeIn_Standard
+							bezier = { 0.5 0 0.5 1 }
+						}
+
+						state = {
+							name = inactive_ending_decision
+							using = Animation_FadeIn_Standard
+							bezier = { 0.5 0 0.5 1 }
+						}
+
+						vbox = {
+							resizeparent = yes
+							layoutpolicy_horizontal = expanding
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								hbox = {
+									name = "current_phase_header"
+									layoutpolicy_horizontal = expanding
+									layoutpolicy_vertical = expanding
+
+									datacontext = "[GetPlayer]"
+									tooltipwidget = struggle_tooltip_light
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										name = "text"
+
+										text_single = {
+											text = "CURRENT_PHASE"
+										}
+
+										text_single = {
+											margin_left = 3
+											raw_text = "is [StruggleWindow.GetStruggle.GetCurrentPhase.GetNameNoTooltip]. See tooltip for the description."
+										}
+
+										dot = { }
+
+										expand = { }
+									}
+								}
+
+								vbox = {
+									name = "current_phase_effects"
+									layoutpolicy_horizontal = expanding
+									layoutpolicy_vertical = expanding
+
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										onclick = "[GetVariableSystem.SetOrToggle('struggle_effects', 'current')]"
+										blockoverride "pre" {
+											text_single = {
+												raw_text = "View"
+											}
+											space = { }
+										}
+									    blockoverride "text" {
+											text = "PHASE_EFFECTS_HEADER"
+											align = left
+									    }
+										blockoverride "extra" {
+											text_single = {
+												raw_text = ", Hotkey F."
+											}
+										}
+										shortcut = army_split_half
+									}
+
+									# vbox = {
+									# 	name = "phase icons"
+									# 	layoutpolicy_vertical = expanding
+									# 	layoutpolicy_horizontal = expanding
+									#
+									# 	text_single = {
+									# 		tooltipwidget = phase_effect_tooltip_war
+									# 		raw_text = "War effects."
+									# 		layoutpolicy_horizontal = expanding
+									# 		margin_left = 3
+									# 	}
+									#
+									# 	text_single = {
+									# 		tooltipwidget = phase_effect_tooltip_culture
+									# 		raw_text = "Culture effects."
+									# 		layoutpolicy_horizontal = expanding
+									# 		margin_left = 3
+									# 	}
+									#
+									# 	text_single = {
+									# 		tooltipwidget = phase_effect_tooltip_faith
+									# 		raw_text = "Faith effects."
+									# 		layoutpolicy_horizontal = expanding
+									# 		margin_left = 3
+									# 	}
+									#
+									# 	text_single = {
+									# 		tooltipwidget = phase_effect_tooltip_other
+									# 		layoutpolicy_horizontal = expanding
+									# 		raw_text = "Other effects."
+									# 		margin_left = 3
+									# 	}
+									# }
+								}
+							}
+
+							widget = { # next phase info
+								name = "next_phase_info"
+								visible = "[Not( VariableSystem.Exists('showing_ending_decisions') )]"
+
+								size = { 600 25 }
+
+								vbox = { # Phase progressing
+									visible = "[Not( Struggle.IsInTransitionPhase )]"
+									layoutpolicy_horizontal = expanding
+
+									text_single = {
+										text = STRUGGLE_NEXT_PHASE_PROGRESS_DESC
+										max_width = 650
+										layoutpolicy_horizontal = expanding
+									}
+								}
+
+								vbox = { # In phase transition
+									visible = "[Struggle.IsInTransitionPhase]"
+									layoutpolicy_horizontal = expanding
+
+									text_single = {
+										text = STRUGGLE_NEXT_PHASE_TRANSITION_LABEL
+										layoutpolicy_horizontal = expanding
+									}
+									text_single = {
+										text = STRUGGLE_NEXT_PHASE_TRANSITION_DESC
+										layoutpolicy_horizontal = expanding
+									}
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					name = "next_phase_area_tutorial_uses_this"
+					layoutpolicy_horizontal = expanding
+
+					vbox = {
+						visible = "[Not( VariableSystem.Exists('showing_ending_decisions') )]"
+						layoutpolicy_horizontal = expanding
+						name = "next_phase_area"
+						margin_left = 5
+
+						flowcontainer = {
+							layoutpolicy_horizontal = expanding
+							name = "next_phase_widgets"
+							datamodel = "[StruggleWindow.GetNextPhases]"
+							direction = vertical
+
+							item = {
+								next_phase_banner = {
+								}
+							}
+						}
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					text = "STRUGGLE_TOOLTIP_CATALYST_HISTORY_HEADER"
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					block "catalyst_datamodel"
+					{
+						datamodel = "[Struggle.GetLatestCatalystHistory]"
+					}
+
+					item = {
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							text_single = {
+								raw_text = "[CatalystHistory.GetStrugglePhase.GetNameNoTooltip]"
+							}
+							space = { }
+							text_single = {
+								raw_text = "[CatalystHistory.GetProgress|+=],"
+							}
+							space = { }
+
+							text_single = {
+								text = STRUGGLE_TOOLTIP_CATALYST_HISTORY_ENTRY
+							}
+
+							dot = { }
+
+							expand = { }
+						}
+					}
+				}
+
+				expand = { }
+			}
+
+			vbox = {
+				name = "catalyst_information_area"
+				datacontext = "[StruggleWindow.GetSelectedPhase]"
+				visible = "[GetVariableSystem.Exists('catalysts')]"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				margin_bottom = 25
+				margin_left = 10
+
+				using = Window_Background_Sidebar
+
+				button = {
+					shortcut = close_window
+					onclick = "[GetVariableSystem.Clear('catalysts')]"
+				}
+
+				text_single = {
+					text = "PHASE_CATALYST_DESCRIPTION_HEADER"
+					layoutpolicy_horizontal = expanding
+				}
+
+				text_single = {
+					text = "PHASE_CATALYST_DESCRIPTION_HEADER_INFO"
+					layoutpolicy_horizontal = expanding
+				}
+
+				scrollbox = {
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+
+					blockoverride "scrollbox_background" { }
+					blockoverride "scrollbox_background_fade" { }
+					# blockoverride "scrollbox_margins" { }
+
+					blockoverride "scrollbox_content"
+					{
+						margin_left = 5
+						vbox = {
+							name = "catalyst_entries"
+							datamodel = "[StruggleWindow.GetCatalystsForSelectedPhase]"
+							layoutpolicy_horizontal = expanding
+							spacing = -1
+
+							item = {
+								hbox = {
+									layoutpolicy_horizontal = expanding
+
+									text_single = {
+										text = "PHASE_CATALYST_DESCRIPTION_ENTRY"
+										max_width = 800
+									}
+
+									dot = { }
+
+									space = { }
+
+									text_single = {
+										text = "PHASE_CATALYST_COMPLETIONS"
+									}
+
+									dot = { }
+
+									expand = { }
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		vbox = {
+			visible = "[GetVariableSystem.Exists('struggle_effects')]"
+			margin_bottom = 25
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			using = Window_Background_Sidebar
+
+			button = {
+				shortcut = close_window
+				onclick = "[GetVariableSystem.Clear('struggle_effects')]"
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "Show"
+						margin_right = 5
+						visible = "[Not(GetVariableSystem.HasValue('struggle_effects', 'current'))]"
+						align = left
+					}
+				}
+			    blockoverride "text" {
+			        raw_text = "[StruggleWindow.GetStruggle.GetCurrentPhase.GetNameNoTooltip]"
+			    }
+				blockoverride "extra" {
+					text_single = {
+						raw_text = ", Selected"
+						align = left
+						visible = "[GetVariableSystem.HasValue('struggle_effects', 'current')]"
+					}
+				}
+				blockoverride "dot" {
+
+				}
+				onclick = "[GetVariableSystem.Set('struggle_effects', 'current')]"
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datamodel = "[StruggleWindow.GetNextPhases]"
+
+				item = {
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "Show"
+								margin_right = 5
+								visible = "[Or(GetVariableSystem.HasValue('struggle_effects', 'current'), Not(ObjectsEqual(StruggleWindow.GetSelectedPhase, StrugglePhase.Self)))]"
+								align = left
+							}
+						}
+					    blockoverride "text" {
+					        raw_text = "[StrugglePhase.GetNameNoTooltip]"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								align = left
+								raw_text = ", Selected"
+								visible = "[And(ObjectsEqual(StruggleWindow.GetSelectedPhase, StrugglePhase.Self), Not(GetVariableSystem.HasValue('struggle_effects', 'current')))]"
+							}
+						}
+						blockoverride "dot" {
+
+						}
+						onclick = "[GetVariableSystem.Set('struggle_effects', 'next')]"
+						onclick = "[StruggleWindow.SetSelectedPhase(StrugglePhase.Self)]"
+						onclick = "[PdxGuiTriggerAllAnimations('catalyst_refresh')]"
+					}
+				}
+			}
+
+			phase_effects_vbox = {
+				visible = "[GetVariableSystem.HasValue('struggle_effects', 'next')]"
+				datacontext = "[StruggleWindow.GetSelectedPhase]"
+			}
+
+			phase_effects_vbox = {
+				visible = "[GetVariableSystem.HasValue('struggle_effects', 'current')]"
+				datacontext = "[StruggleWindow.GetStruggle.GetCurrentPhase]"
+			}
+		}
+	}
+
+	# struggle_mini_map_mode = { }
+}
+
+types Struggle
+{
+	type phase_effects_vbox = vbox {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		datacontext = "[GetPlayer]"
+
+		scrollbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			blockoverride "scrollbox_content" {
+
+				flowcontainer = {
+				    ignoreinvisible = yes
+					layoutpolicy_horizontal = expanding
+					spacing = 100
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						layoutpolicy_horizontal = expanding
+
+						direction = vertical
+
+						text_single = {
+							raw_text = "STRUGGLE_PHASE_EFFECTS_WAR_TT_HEADER"
+						}
+
+						text_multi = {
+							background = { using = Background_Area_Border_Solid }
+							autoresize = yes
+							min_width = 650
+							max_width = 650
+							text = "[Struggle.GetWarEffect(StrugglePhase.Self, Character.Self)]"
+						}
+
+
+						text_single = {
+							raw_text = "STRUGGLE_PHASE_EFFECTS_FAITH_TT_HEADER"
+							using = agot_hide
+						}
+
+						widget = {
+							background = { using = Background_Area_Border_Solid }
+							size = { 0 0 }
+							scissor = yes
+							using = agot_hide
+
+							text_multi = {
+								min_width = 650
+								max_width = 650
+								margin_top = -35
+								autoresize = yes
+								resizeparent = yes
+								text = "[Struggle.GetFaithEffect(StrugglePhase.Self, Character.Self)]"
+							}
+						}
+					}
+
+					flowcontainer = {
+					    ignoreinvisible = yes
+						direction = vertical
+
+						text_single = {
+							raw_text = "STRUGGLE_PHASE_EFFECTS_CULTURE_TT_HEADER"
+						}
+
+						widget = {
+							background = { using = Background_Area_Border_Solid }
+							size = { 0 0 }
+							scissor = yes
+
+							text_multi = {
+								max_width = 650
+								min_width = 650
+								margin_top = -35
+								autoresize = yes
+								resizeparent = yes
+								text = "[Struggle.GetCultureEffect(StrugglePhase.Self, Character.Self)]"
+							}
+						}
+
+						text_single = {
+							text = "STRUGGLE_PHASE_EFFECTS_OTHER_TT_HEADER"
+						}
+
+						widget = {
+							background = { using = Background_Area_Border_Solid }
+							size = { 0 0 }
+							scissor = yes
+
+							text_multi = {
+								min_width = 650
+								max_width = 650
+								margin_top = -35
+								autoresize = yes
+								resizeparent = yes
+								text = "[Struggle.GetOtherEffect(StrugglePhase.Self, Character.Self)]"
+							}
+						}
+
+					}
+
+				}
+			}
+		}
+	}
+
+	type next_phase_banner = container {
+		button = {
+			size = { 148 0 }
+
+			datacontext = "[GetPlayer]"
+
+			onclick = "[StruggleWindow.SetSelectedPhase(StrugglePhase.Self)]"
+			onclick = "[PdxGuiTriggerAllAnimations('catalyst_refresh')]"
+			onclick = "[GetVariableSystem.Set('catalysts', 'yes')]"
+
+			enabled = "[Or( Not( Struggle.IsInTransitionPhase ), ObjectsEqual( StrugglePhase.Self, Struggle.GetNextPhase ) )]"
+
+			flowcontainer = {
+			    ignoreinvisible = yes
+				resizeparent = yes
+
+			    direction = vertical
+
+				flowcontainer = {
+					layoutpolicy_horizontal = expanding
+					ignoreinvisible = yes
+
+					text_single = {
+						raw_text = "[StrugglePhase.GetNameNoTooltip] phase"
+						default_format = "#high"
+					}
+
+					text_single = {
+						raw_text = " is leading"
+						visible = "[ObjectsEqual(Struggle.GetCurrentLeadingPhase, StrugglePhase.Self)]"
+					}
+
+					text_single = {
+						raw_text = ","
+					}
+
+					space = { }
+
+					text_single = {
+						text = "PHASE_PROGRESS_VALUE"
+					}
+
+					text_single = {
+						raw_text = ". Click to view its catalysts"
+						# visible = "[Not(ObjectsEqual(StruggleWindow.GetSelectedPhase, StrugglePhase.Self))]"
+					}
+
+					dot = { }
+
+					# text_single = {
+					# 	raw_text = ". See tooltip for recent changes."
+					# 	tooltipwidget = {
+					# 		using = struggle_phase_tooltip
+					# 	}
+					# }
+				}
+
+				flowcontainer = {
+					margin_left = 5
+
+					text_single = {
+						raw_text = "See this tooltip for the description."
+					}
+					tooltipwidget = {
+						using = struggle_phase_tooltip
+					}
+				}
+
+			}
+
+		}
+	}
+
+	type ending_decision_button = button {
+		name = "end_struggle_button"
+		size = { 600 0 }
+		enabled = "[GreaterThan_int32(GetDataModelSize(StruggleWindow.GetEndingDecisions), '(int32)0')]"
+		# tooltip = "[StruggleWindow.GetEndingButtonTooltip]"
+
+		block onclick { }
+		clicksound = "event:/DLC/FP2/SFX/UI/fp2_struggle_ending_decision_view"
+
+		flowcontainer = {
+			resizeparent = yes
+			min_width = 600
+		    ignoreinvisible = yes
+
+			text_single = {
+				raw_text = "[SelectLocalization(GreaterThan_int32(GetDataModelSize(StruggleWindow.GetEndingDecisions), '(int32)1'), 'ENDING_DECISION_BUTTON_LABEL_MULTIPLE', 'ENDING_DECISION_BUTTON_LABEL_SINGLE')], hotkey E."
+			}
+
+			space = { }
+
+			text_single = {
+				visible = "[And( StruggleWindow.HasPossibleEndingDecision, Struggle.IsCharacterInvolvedOrInterloper( GetPlayer ) )]"
+				text = "ENDING_DECISION_AVAILABLE"
+				default_format = "#clickable"
+				alwaystransparent = yes
+			}
+
+			text_single = {
+				visible = "[Or( Not( StruggleWindow.HasPossibleEndingDecision ), Not( Struggle.IsCharacterInvolvedOrInterloper( GetPlayer ) ) )]"
+				text = "ENDING_DECISION_UNAVAILABLE"
+				default_format = "#clickable"
+				alwaystransparent = yes
+			}
+
+			dot = { }
+
+		}
+	}
+
+
+	type struggle_mini_map_mode = mini_map_mode {
+		parentanchor = bottom|left
+		widgetanchor = bottom|right
+		position = { -350 -25 }
+	}
+}
