@@ -16,8 +16,6 @@ types CharacterInteraction
 			layoutpolicy_horizontal = expanding
 			spacing = 15
 
-
-
 			### TEXT ###
 			vbox = {
 				layoutpolicy_horizontal = expanding
@@ -150,6 +148,15 @@ types CharacterInteraction
 					text = "MARRIAGE_CHILDREN_CHANCE_INFO"
 					tooltip = "[MatchOffer.GetChanceOfChildrenTooltip]"
 				}
+
+				text_multi = {
+					name = "inbreeding_risk"
+					visible = "[MatchOffer.HasInbreedingRisk]"
+					max_width = 600
+					min_width = 600
+					autoresize = yes
+					text = "MATCH_OFFER_INBREEDING_WARNING"
+				}
 			}
 		}
 
@@ -203,50 +210,6 @@ types CharacterInteraction
 
 		divider_light = {
 			layoutpolicy_horizontal = expanding
-		}
-
-		### Prestige
-		vbox = {
-			layoutpolicy_horizontal = expanding
-			margin = { 10 10}
-
-			hbox = {
-				layoutpolicy_horizontal = expanding
-
-				text_multi = {
-					block "get_actor"
-					{
-						datacontext = "[MatchmakerInteractionWindow.GetActorToMatch]"
-					}
-					name = "prestige_desc_our"
-					max_width = 510
-					autoresize = yes
-					text = "MARRIAGE_PRESTIGE_DESC_OUR"
-					tooltip = "MARRIAGE_PRESTIGE_TOOLTIP_OUR"
-				}
-
-
-				expand = { }
-			}
-
-			hbox = {
-				layoutpolicy_horizontal = expanding
-
-				text_multi = {
-					block "get_recipient"
-					{
-						datacontext = "[MatchmakerInteractionWindow.GetRecipientToMatch]"
-					}
-					name = prestige_desc_their
-					max_width = 510
-					autoresize = yes
-					text = "MARRIAGE_PRESTIGE_DESC_THEIR"
-					default_format = "#low"
-					tooltip = "MARRIAGE_PRESTIGE_TOOLTIP_THEIR"
-				}
-
-				expand = { }
-			}
 		}
 
 		vbox = {
@@ -305,6 +268,18 @@ types CharacterInteraction
 					}
 				}
 			}
+		}
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Not(MarriageInfo.HasAlliances)]"
+
+			text = "MATCH_OFFER_NO_ALLIANCES"
+		}
+
+		block "marriage_details_after"
+		{
+
 		}
 
 		expand = { }
@@ -396,14 +371,6 @@ types CharacterInteraction
 					}
 				}
 			}
-
-			text_single = {
-				name = "inbreeding_risk"
-				visible = "[MatchOffer.HasInbreedingRisk]"
-				max_width = 510
-				text = "MATCH_OFFER_INBREEDING_WARNING"
-				default_format = "#low"
-			}
 		}
 
 		divider_light = {
@@ -477,7 +444,7 @@ types CharacterInteraction
 
 						text_single = {
 							raw_text = "Unpressed claim."
-							visible = "[GetPlayer.HasUnpressedClaimOnTitle( Title.Self )]"
+							visible = "[And(GetPlayer.HasClaimOnTitle( Title.Self ), Not(GetPlayer.HasPressedClaimOnTitle( Title.Self )))]"
 							tooltip = "REVOKE_TITLE_UNPRESSED_CLAIM"
 						}
 
@@ -506,6 +473,7 @@ types CharacterInteraction
 			button_text = {
 				layoutpolicy_horizontal = expanding
 				onclick = "[CharacterInteractionConfirmationWindow.SetSelectedArtifact( Artifact.Self )]"
+				onclick = "[GetVariableSystem.Toggle( 'character_interaction_change_artifact' )]"
 				blockoverride "pre" {
 					text_single = {
 						visible = "[ObjectsEqual( CharacterInteractionConfirmationWindow.GetSelectedArtifact, Artifact.Self )]"
@@ -919,86 +887,114 @@ types CharacterInteraction
 				}
 
 				button_text = {
-				block "button_clear" {
-					visible = "[CharacterInteractionConfirmationWindow.CanChangeActorCharacter]"
-					enabled = "[CharacterInteractionConfirmationWindow.CanClear]"
-					onclick = "[CharacterInteractionConfirmationWindow.OnClear]"
-					shortcut = "go_back"
+					block "button_clear" {
+						visible = "[CharacterInteractionConfirmationWindow.CanChangeActorCharacter]"
+						enabled = "[CharacterInteractionConfirmationWindow.CanClear]"
+						onclick = "[CharacterInteractionConfirmationWindow.OnClear]"
+						shortcut = "go_back"
+					}
+					blockoverride "text" {
+						raw_text = "CLEAR_MARRIED_CHARACTER"
+					}
+					blockoverride "extra" {
+						dot = { align = left }
+					}
 				}
-				blockoverride "text" {
-					raw_text = "CLEAR_MARRIED_CHARACTER"
-				}
-				blockoverride "extra" {
-					dot = { align = left }
-				}
-			}
 			}
 
+			block "interaction_extra" {}
 		}
-
 	}
 
-	type vbox_character_interaction_effects_accept_contents = vbox {
+	type vbox_character_interaction_effects_contents = vbox {
 		name = "affected_characters_accept"
-		visible = "[InteractionEffectsDescription.IsShowingOnAcceptEffects]"
 		layoutpolicy_horizontal = expanding
-		spacing = 10
-		### Me
+		spacing = 5
+
+		# Duplicate recipient if it's player - player info should go first
 		vbox_character_interaction_effects_me = {
-			visible = "[InteractionEffectsDescription.HasActorAcceptEffect]"
+			datacontext = "[InteractionEffectsDescription.GetRecipient]"
+			visible = "[And( Character.IsLocalPlayer, DisplayedInteractionEffects.HasRecipientEffects )]"
 			layoutpolicy_horizontal = expanding
 
+			blockoverride "EffectFromIntermediaryText" {
+				text = "[DisplayedInteractionEffects.GetEffectFromIntermediary.GetRecipientEffect]"
+			}
+
 			blockoverride "EffectText" {
-				text = "[InteractionEffectsDescription.GetActorAcceptEffectDescription]"
+				text = "[DisplayedInteractionEffects.GetMainEffect.GetRecipientEffect]"
+			}
+		}
+
+		# Duplicate intermediary if it's player - player info should go first
+		vbox_character_interaction_effects_me = {
+			datacontext = "[InteractionEffectsDescription.GetIntermediary]"
+			visible = "[And( Character.IsLocalPlayer, DisplayedInteractionEffects.HasIntermediaryEffects )]"
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "EffectFromIntermediaryText" {
+				text = "[DisplayedInteractionEffects.GetEffectFromIntermediary.GetIntermediaryEffect]"
+			}
+
+			blockoverride "EffectText" {
+				text = "[DisplayedInteractionEffects.GetMainEffect.GetIntermediaryEffect]"
+			}
+		}
+
+		### Actor
+		vbox_character_interaction_effects_me = {
+			datacontext = "[InteractionEffectsDescription.GetActor]"
+			visible = "[DisplayedInteractionEffects.HasActorEffects]"
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "EffectFromIntermediaryText" {
+				text = "[DisplayedInteractionEffects.GetEffectFromIntermediary.GetActorEffect]"
+			}
+
+			blockoverride "EffectText" {
+				text = "[DisplayedInteractionEffects.GetMainEffect.GetActorEffect]"
+			}
+		}
+
+		### Intermediary
+		vbox_character_interaction_effects_other = {
+			datacontext = "[InteractionEffectsDescription.GetIntermediary]"
+			visible = "[And( Not( Character.IsLocalPlayer ), DisplayedInteractionEffects.HasIntermediaryEffects )]"
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "EffectFromIntermediaryText" {
+				text = "[DisplayedInteractionEffects.GetEffectFromIntermediary.GetIntermediaryEffect]"
+			}
+
+			blockoverride "EffectText" {
+				text = "[DisplayedInteractionEffects.GetMainEffect.GetIntermediaryEffect]"
 			}
 		}
 
 		### Recipient
-		vbox_character_interaction_effects_recipient = {
-			visible = "[InteractionEffectsDescription.HasRecipientAcceptEffect]"
+		vbox_character_interaction_effects_other = {
+			datacontext = "[InteractionEffectsDescription.GetRecipient]"
+			visible = "[And( Not( Character.IsLocalPlayer ), DisplayedInteractionEffects.HasRecipientEffects )]"
 			layoutpolicy_horizontal = expanding
 
+			blockoverride "EffectFromIntermediaryText" {
+				text = "[DisplayedInteractionEffects.GetEffectFromIntermediary.GetRecipientEffect]"
+			}
+
 			blockoverride "EffectText" {
-				text = "[InteractionEffectsDescription.GetRecipientAcceptEffectDescription]"
+				text = "[DisplayedInteractionEffects.GetMainEffect.GetRecipientEffect]"
 			}
 		}
 
 		### Others
 		vbox_character_interaction_other_effects = {
-			datamodel = "[InteractionEffectsDescription.GetOtherInteractionAcceptEffects]"
+			datamodel = "[DisplayedInteractionEffects.GetEffectFromIntermediary.GetOtherEffects]"
 			layoutpolicy_horizontal = expanding
-		}
-	}
-
-	type vbox_character_interaction_effects_decline_contents = vbox {
-		name = "affected_characters_decline"
-		visible = "[Not(InteractionEffectsDescription.IsShowingOnAcceptEffects)]"
-		layoutpolicy_horizontal = expanding
-		spacing = 10
-
-		### Me
-		vbox_character_interaction_effects_me = {
-			visible = "[InteractionEffectsDescription.HasActorDeclineEffect]"
-			layoutpolicy_horizontal = expanding
-
-			blockoverride "EffectText" {
-				text = "[InteractionEffectsDescription.GetActorDeclineEffectDescription]"
-			}
-		}
-
-		### Recipient
-		vbox_character_interaction_effects_recipient = {
-			visible = "[InteractionEffectsDescription.HasRecipientDeclineEffect]"
-			layoutpolicy_horizontal = expanding
-
-			blockoverride "EffectText" {
-				text = "[InteractionEffectsDescription.GetRecipientDeclineEffectDescription]"
-			}
 		}
 
 		### Others
 		vbox_character_interaction_other_effects = {
-			datamodel = "[InteractionEffectsDescription.GetOtherInteractionDeclineEffects]"
+			datamodel = "[DisplayedInteractionEffects.GetMainEffect.GetOtherEffects]"
 			layoutpolicy_horizontal = expanding
 		}
 	}
@@ -1043,10 +1039,9 @@ types CharacterInteraction
 			}
 
 			button_text = {
-				name = "show_decline_effects"
 				layoutpolicy_horizontal = expanding
 				blockoverride "text" {
-					text = "INTERACTION_SHOW_DECLINE_EFFECTS"
+					text = "INTERACTION_SHOW_INTERMEDIARY_DECLINE_EFFECTS"
 				}
 				blockoverride "extra" {
 					text_single = {
@@ -1056,21 +1051,46 @@ types CharacterInteraction
 					text_single = {
 						raw_text = ", Selected"
 						align = left
-						visible = "[Not(InteractionEffectsDescription.IsShowingOnAcceptEffects)]"
+						visible = "[Not(InteractionEffectsDescription.IsShowingIntermediaryDeclineEffect)]"
 					}
 					dot = { }
 				}
-				onclick = "[InteractionEffectsDescription.ShowOnDeclineEffect]"
-				down = "[Not(InteractionEffectsDescription.IsShowingOnAcceptEffects)]"
+				onclick = "[InteractionEffectsDescription.ShowIntermediaryDeclineEffect]"
+				down = "[Not(InteractionEffectsDescription.IsShowingIntermediaryDeclineEffect)]"
 				using = tooltip_ne
 				shortcut = speed_2
+			}
+
+			button_text = {
+				name = "show_decline_effects"
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					text = "INTERACTION_SHOW_DECLINE_EFFECTS"
+				}
+				blockoverride "extra" {
+					text_single = {
+						raw_text = ", tab 3"
+						align = left
+					}
+					text_single = {
+						raw_text = ", Selected"
+						align = left
+						visible = "[Not(InteractionEffectsDescription.IsShowingRecipientDeclineEffect)]"
+					}
+					dot = { }
+				}
+				onclick = "[InteractionEffectsDescription.ShowRecipientDeclineEffect]"
+				down = "[Not(InteractionEffectsDescription.IsShowingRecipientDeclineEffect)]"
+				using = tooltip_ne
+				shortcut = speed_3
 			}
 		}
 
 		scrollbox = {
 			name = "effects_scrollarea"
 			autoresizescrollarea = yes
-			visible = "[InteractionEffectsDescription.HasAnyAcceptEffect]"
+			datacontext = "[InteractionEffectsDescription.GetDisplayedEffects]"
+			visible = "[DisplayedInteractionEffects.HasAnyEffects]"
 			scissor = yes
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
@@ -1083,8 +1103,7 @@ types CharacterInteraction
 					minimumsize = { 640 0 }
 				}
 
-				vbox_character_interaction_effects_accept_contents = { }
-				vbox_character_interaction_effects_decline_contents = { }
+				vbox_character_interaction_effects_contents = {}
 			}
 		}
 	}
@@ -1126,11 +1145,33 @@ types CharacterInteraction
 				blockoverride "pre" {
 					text_single = {
 						raw_text = "Showing"
-						visible = "[Not(InteractionEffectsDescription.IsShowingOnAcceptEffects)]"
+						visible = "[InteractionEffectsDescription.IsShowingIntermediaryDeclineEffect]"
 					}
 					text_single = {
 						raw_text = "Show"
-						visible = "[InteractionEffectsDescription.IsShowingOnAcceptEffects]"
+						visible = "[Not(InteractionEffectsDescription.IsShowingIntermediaryDeclineEffect)]"
+					}
+					space = { }
+				}
+			    blockoverride "text" {
+					text = "INTERACTION_SHOW_INTERMEDIARY_DECLINE_EFFECTS"
+			    }
+				blockoverride "dot" {
+
+				}
+				onclick = "[InteractionEffectsDescription.ShowIntermediaryDeclineEffect]"
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "Showing"
+						visible = "[Not(InteractionEffectsDescription.IsShowingRecipientDeclineEffect)]"
+					}
+					text_single = {
+						raw_text = "Show"
+						visible = "[InteractionEffectsDescription.IsShowingRecipientDeclineEffect]"
 					}
 					space = { }
 				}
@@ -1141,7 +1182,7 @@ types CharacterInteraction
 				blockoverride "dot" {
 
 				}
-				onclick = "[InteractionEffectsDescription.ShowOnDeclineEffect]"
+				onclick = "[InteractionEffectsDescription.ShowRecipientDeclineEffect]"
 			}
 		}
 
@@ -1162,19 +1203,29 @@ types CharacterInteraction
 					layoutpolicy_vertical = expanding
 					autoresize = yes
 					block "width" {
-						max_width = 435
+						max_width = 450
 					}
 					text = "[InteractionEffectsDescription.GetAcceptEffectDescription]"
 				}
 
 				text_multi = {
-					visible = "[Not(InteractionEffectsDescription.IsShowingOnAcceptEffects)]"
-					name = "decline_effects_info"
+					visible = "[Not(InteractionEffectsDescription.IsShowingIntermediaryDeclineEffect)]"
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
 					autoresize = yes
 					block "width" {
-						max_width = 435
+						max_width = 450
+					}
+					text = "[InteractionEffectsDescription.GetIntermediaryRejectionEffectDescription]"
+				}
+
+				text_multi = {
+					visible = "[Not(InteractionEffectsDescription.IsShowingRecipientDeclineEffect)]"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					autoresize = yes
+					block "width" {
+						max_width = 450
 					}
 					text = "[InteractionEffectsDescription.GetRejectionEffectDescription]"
 				}
@@ -1186,7 +1237,6 @@ types CharacterInteraction
 	# Interaction effects on me
 	type vbox_character_interaction_effects_me = vbox {
 		name = "me"
-		datacontext = "[InteractionEffectsDescription.GetActor]"
 
 		background = {
 			using = Background_Area_With_Header
@@ -1204,47 +1254,23 @@ types CharacterInteraction
 			}
 		}
 
-
 		hbox = {
 			layoutpolicy_horizontal = expanding
 
 			text_multi = {
-				name = "effects_info"
+				name = "intermediary_effects_info"
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding
 				autoresize = yes
-				max_width = 375
-				block "EffectText" { }
+				max_width = 450
+				block "EffectFromIntermediaryText" {
+					text = ""
+				}
 			}
 
 			expand = { }
 		}
-	}
 
-	# Interaction effects on the other character
-	type vbox_character_interaction_effects_recipient = vbox {
-		name = "recipient"
-		datacontext = "[InteractionEffectsDescription.GetRecipient]"
-		# margin_bottom = 5
-
-		background = {
-			using = Background_Area_With_Header
-		}
-
-		flowcontainer = {
-			layoutpolicy_horizontal = expanding
-
-			text_single = {
-				raw_text = "Effects on"
-			}
-
-			char_name = {
-				blockoverride "align" {
-					align = left
-				}
-				datacontext = "[InteractionEffectsDescription.GetRecipient]"
-			}
-		}
 
 		hbox = {
 			layoutpolicy_horizontal = expanding
@@ -1254,8 +1280,7 @@ types CharacterInteraction
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding
 				autoresize = yes
-				max_width = 375
-				margin = { 5 10 }
+				max_width = 450
 				block "EffectText" { }
 			}
 
@@ -1268,31 +1293,23 @@ types CharacterInteraction
 		name = "other_effects"
 
 		item = {
-			hbox = {
+			vbox = {
 				layoutpolicy_horizontal = expanding
-				margin = { 0 5 }
-				spacing = 10
 
-				container = {
-					ignoreinvisible = yes
-					icon = {
-						position = { 16 0 }
-						size = { 50 50 }
-						texture = "gfx/interface/icons/icon_group_of_characters.dds"
-						visible = "[InteractionOtherEffect.IsList]"
-						tooltip = "[InteractionOtherEffect.GetListTooltip]"
-					}
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[InteractionOtherEffect.IsList]"
+					tooltip = "[InteractionOtherEffect.GetListTooltip]"
+					raw_text = "List tooltip."
 				}
 
 				text_multi = {
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
 					autoresize = yes
-					max_width = 375
+					max_width = 450
 					raw_text = "[InteractionOtherEffect.GetEffect]."
 				}
-
-				expand = { }
 			}
 		}
 	}
@@ -1379,11 +1396,46 @@ types CharacterInteraction
 		text = "[CharacterInteractionConfirmationWindow.GetOnDeclineSummary]"
 	}
 
+	type hbox_interaction_option_levels = hbox
+	{
+		datamodel = "[RepeatedItem( Add_int32( OptionItem.GetNumLevels, '(int32)1' ) )]"
+
+		# text_single = {
+		# 	layoutpolicy_horizontal = expanding
+		# 	raw_text = "Options:"
+		# }
+
+		item = {
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "Can't pick,"
+						visible = "[Not(And( OptionItem.IsValid, And( OptionItem.CanBeChanged, OptionItem.CanSetLevel( int32.GetInt ) ) ))]"
+					}
+					text_single = {
+						raw_text = "Selected,"
+						visible = "[EqualTo_int32( OptionItem.GetCurrentLevel, int32.GetInt)]" #TODO
+					}
+				}
+				blockoverride "text" {
+					raw_text = "[OptionItem.GetName]."
+				}
+				onclick = "[OptionItem.SetLevel( int32.GetInt )]"
+				enabled = "[And( OptionItem.IsValid, And( OptionItem.CanBeChanged, OptionItem.CanSetLevel( int32.GetInt ) ) )]"
+				tooltip = "[OptionItem.GetLevelTooltip( int32.GetInt )]"
+
+				block "level_button"
+				{
+				}
+			}
+		}
+	}
+
 	# Options to consider before accepting and interaction
 	type vbox_interaction_options = vbox {
 		name = "options_grid"
 		visible = "[CharacterInteractionConfirmationWindow.HasOptions]"
-		datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
 
 		block "margin"
 		{
@@ -1396,67 +1448,112 @@ types CharacterInteraction
 			raw_text = "[CharacterInteractionConfirmationWindow.GetOptionsHeading]."
 		}
 
-		item = {
-			widget = {
-				visible = "[OptionItem.IsShown]"
-				layoutpolicy_horizontal = expanding
-				size = { 590 25 }
+		vbox = {
+			name = "multiple_selection_options"
+			visible = "[Not( CharacterInteractionConfirmationWindow.HasExclusiveOptions )]"
+			layoutpolicy_horizontal = expanding
+			datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
 
-				background = {
-					using = Background_Area_Border
-				}
-
-				hbox = {
-					visible = "[Or( GreaterThan_int32( CharacterInteractionConfirmationWindow.GetVisibleOptionsCount, '(int32)1' ), Not( CharacterInteractionConfirmationWindow.HasExclusiveOptions ) )]"
-					tooltip = "[OptionItem.GetTooltip]"
+			item = {
+				tooltip = "[OptionItem.GetTooltip]"
+				using = tooltip_below
+				vbox = {
 					layoutpolicy_horizontal = expanding
-
-					button_checked = {
-						size = { 30 30 }
-						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
-						blockoverride "visible" {
-							visible = "[Not(OptionItem.HasOption)]"
-						}
-						blockoverride "enabled" {
-							visible = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
-						}
-						blockoverride "disabled" {
-							visible = "[Not(And(OptionItem.IsValid, OptionItem.CanBeChanged))]"
-						}
-						onclick = "[OptionItem.OnClick]"
-						visible = "[Not(OptionItem.IsExclusive)]"
-					}
+					visible = "[OptionItem.IsShown]"
 
 					button_text = {
-					    blockoverride "text" {
-					        raw_text = "Selected"
-							visible = "[OptionItem.HasOption]"
-					    }
-						visible = "[OptionItem.IsExclusive]"
-						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
+						layoutpolicy_horizontal = expanding
+						visible = "[EqualTo_int32( OptionItem.GetNumLevels, '(int32)0' )]"
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "Can't change,"
+								visible = "[Not( And(OptionItem.IsValid, OptionItem.CanBeChanged) )]"
+							}
+							text_single = {
+								raw_text = "[Select_CString(OptionItem.HasOption, 'Checked', 'Unchecked')],"
+								visible = "[OptionItem.HasOption]" #TODO
+							}
+							blockoverride "text" {
+								raw_text = "[OptionItem.GetName]."
+							}
+						}
 						onclick = "[OptionItem.OnClick]"
+						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
+						tooltip = "[OptionItem.GetTooltip]"
 					}
 
-					button_text = {
-						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
-						onclick = "[OptionItem.OnClick]"
-					    blockoverride "text" {
-							raw_text = "[OptionItem.GetName]."
-					    }
+					hbox_interaction_option_levels = {
+						layoutpolicy_horizontal = expanding
+						visible = "[GreaterThan_int32( OptionItem.GetNumLevels, '(int32)1' )]"
 					}
+				}
+			}
+		}
 
-					expand = { }
+		vbox = {
+			name = "exclusive_options"
+			visible = "[CharacterInteractionConfirmationWindow.HasExclusiveOptions]"
+			layoutpolicy_horizontal = expanding
+
+			hbox = {
+				name = "single_option"
+				layoutpolicy_horizontal = expanding
+				margin = { 10 0 }
+				visible = "[EqualTo_int32( CharacterInteractionConfirmationWindow.GetVisibleOptionsCount, '(int32)1' )]"
+
+				datacontext_from_model = {
+					datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
 				}
 
-				hbox = {
-					margin = { 10 0 }
-					spacing = 5
-					tooltip = "[OptionItem.GetTooltip]"
-					visible = "[And( CharacterInteractionConfirmationWindow.HasExclusiveOptions, EqualTo_int32( CharacterInteractionConfirmationWindow.GetVisibleOptionsCount, '(int32)1' ) )]"
+				tooltip = "[OptionItem.GetTooltip]"
+				using = tooltip_below
 
-					text_single = {
+				text_single = {
+					text = "[OptionItem.GetName]"
+				}
+			}
+
+			vbox = {
+				name = "multiple_options"
+				layoutpolicy_horizontal = expanding
+				datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "[GetDataModelSize(CharacterInteractionConfirmationWindow.GetOptionItems)] Options:"
+				}
+
+
+				item = {
+					button_text = {
 						layoutpolicy_horizontal = expanding
-						raw_text = "[OptionItem.GetName]."
+						visible = "[OptionItem.IsShown]"
+						shortcuts_list = {
+							blockoverride "click" {
+								onclick = "[OptionItem.OnClick]"
+								enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
+							}
+						}
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "Can't pick,"
+								visible = "[Not( And(OptionItem.IsValid, OptionItem.CanBeChanged) )]"
+							}
+							text_single = {
+								raw_text = "Selected,"
+								visible = "[OptionItem.HasOption]" #TODO
+							}
+
+							text_single = {
+								raw_text = "[IndexNumber],"
+							}
+						}
+						blockoverride "text" {
+							raw_text = "[OptionItem.GetName]."
+						}
+						onclick = "[OptionItem.OnClick]"
+						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
+						tooltip = "[OptionItem.GetTooltip]"
 					}
 				}
 			}

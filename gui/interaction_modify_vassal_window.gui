@@ -1,8 +1,6 @@
 window = {
 	name = "modify_vassal_contract_interaction_window"
-	datacontext = "[ModifyVassalContractInteractionWindow.GetCharacterInteractionConfirmationWindow]"
-	datacontext = "[ModifyVassalContractInteractionWindow.GetContractPreview]"
-	datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+
 	# parentanchor = right #TODO
 	using = Window_Size_MainTab
 	using = Window_Background_No_Edge
@@ -13,7 +11,6 @@ window = {
         # margin = { -23 0 }
     }
 	size = { 700 100% } # Doesn't do much cause of the set_parent_size_to_minimum below
-	layer = middle
 
 	state = {
 		name = _show
@@ -35,6 +32,9 @@ window = {
 	vbox = {
 		name = "window_content"
 		# set_parent_size_to_minimum = yes
+		datacontext = "[ModifyVassalContractInteractionWindow.GetCharacterInteractionConfirmationWindow]"
+		datacontext = "[ModifyVassalContractInteractionWindow.GetContractPreview]"
+		datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
 		minimumsize = { 0 700 }
 
 		margin = { 35 0 }
@@ -79,7 +79,7 @@ window = {
 						# change to
 						text_single = {
 							raw_text = "Contract will change to:"
-							visible = "[CharacterInteractionConfirmationWindow.GetEffectsDescription.HasAnyAcceptEffect]"
+							visible = "[DisplayedInteractionEffects.HasAnyEffects]"
 							layoutpolicy_horizontal = expanding
 						}
 						# tax and levy
@@ -90,7 +90,7 @@ window = {
 							text_single = {
 								layoutpolicy_horizontal = expanding
 								raw_text = "[CharacterInteractionConfirmationWindow.GetRecipient.GetFirstNameNoTooltip] provides:"
-								visible = "[Not(CharacterInteractionConfirmationWindow.GetEffectsDescription.HasAnyAcceptEffect)]"
+								visible = "[Not(DisplayedInteractionEffects.HasAnyEffects)]"
 							}
 
 							hbox = {
@@ -276,11 +276,12 @@ window = {
 									}
 								}
 							}
-
 						}
 
+						datacontext = "[CharacterInteractionConfirmationWindow.GetEffectsDescription.GetDisplayedEffects]"
+
 						vbox = {
-							visible = "[CharacterInteractionConfirmationWindow.GetEffectsDescription.HasAnyAcceptEffect]"
+							visible = "[DisplayedInteractionEffects.HasAnyEffects]"
 							layoutpolicy_horizontal = expanding
 
 							hbox = {
@@ -306,7 +307,7 @@ window = {
 						}
 
 						hbox = {
-							visible = "[CharacterInteractionConfirmationWindow.GetEffectsDescription.HasAnyAcceptEffect]"
+							visible = "[DisplayedInteractionEffects.HasAnyEffects]"
 							layoutpolicy_horizontal = expanding
 
 							text_label_left = {
@@ -316,34 +317,27 @@ window = {
 						}
 
 						# effects
+						vbox_character_interaction_effects_simple = {
+							visible = "[DisplayedInteractionEffects.HasAnyEffects]"
+							layoutpolicy_horizontal = expanding
+							datacontext = "[CharacterInteractionConfirmationWindow.GetEffectsDescription]"
+						}
+
 						vbox = {
+							name = "no_effect_notice"
+							visible = "[Not( DisplayedInteractionEffects.HasAnyEffects )]"
 							layoutpolicy_horizontal = expanding
 
-							background = { using = Background_Area_Border_Solid }
-
-							visible = "[CharacterInteractionConfirmationWindow.GetEffectsDescription.HasAnyAcceptEffect]"
-							datacontext = "[CharacterInteractionConfirmationWindow.GetEffectsDescription]"
-
-							text_multi = {
-								visible = "[InteractionEffectsDescription.IsShowingOnAcceptEffects]"
-								name = "accept_effects_info"
+							text_single = {
 								layoutpolicy_horizontal = expanding
-								layoutpolicy_vertical = expanding
-								autoresize = yes
-								max_width = 580
-								margin = { 5 0 }
-								raw_text = "[InteractionEffectsDescription.GetAcceptEffectDescription]."
+								visible = "[And( Not( DisplayedInteractionEffects.HasAnyEffects ), Character.GetGovernment.IsType( 'feudal_government' ) )]"
+								text = "VASSAL_CONTRACT_OBLIGATION_NO_EFFECT"
 							}
 
-							text_multi = {
-								visible = "[Not(InteractionEffectsDescription.IsShowingOnAcceptEffects)]"
-								name = "decline_effects_info"
+							text_single = {
 								layoutpolicy_horizontal = expanding
-								layoutpolicy_vertical = expanding
-								autoresize = yes
-								max_width = 580
-								margin = { 5 0 }
-								raw_text = "[InteractionEffectsDescription.GetRejectionEffectDescription]."
+								visible = "[And( Not( DisplayedInteractionEffects.HasAnyEffects ), Not( Character.GetGovernment.IsType( 'feudal_government' ) ) )]"
+								text = "NON_FEUDAL_VASSAL_CONTRACT_OBLIGATION_NO_EFFECT"
 							}
 						}
 
@@ -353,11 +347,11 @@ window = {
 							margin = { 0 0 }
 							margin_top = 5
 							name = "tutorial_highlight_modify_contract_hook_button"
-							visible = "[And(CharacterInteractionConfirmationWindow.HasOptions, CharacterInteractionConfirmationWindow.GetEffectsDescription.HasAnyAcceptEffect)]"
+							visible = "[And(CharacterInteractionConfirmationWindow.HasOptions, DisplayedInteractionEffects.HasAnyEffects)]"
 						}
 
 						hbox = {
-							visible = "[And(CharacterInteractionConfirmationWindow.GetEffectsDescription.HasAnyAcceptEffect, ObjectsEqual( GetPlayer, VassalContract.GetLiege ))]"
+							visible = "[And(DisplayedInteractionEffects.HasAnyEffects, ObjectsEqual( GetPlayer, VassalContract.GetLiege ))]"
 							layoutpolicy_horizontal = expanding
 							name = "change_only_once_text"
 
@@ -382,7 +376,7 @@ window = {
 
 						button_primary_text = {
 							layoutpolicy_horizontal = expanding
-							visible = "[CharacterInteractionConfirmationWindow.GetEffectsDescription.HasAnyAcceptEffect]"
+							visible = "[DisplayedInteractionEffects.HasAnyEffects]"
 							name = "send_offer_button"
 
 							blockoverride "text" {
