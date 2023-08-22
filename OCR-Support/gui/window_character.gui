@@ -380,6 +380,7 @@ window = {
 											}
 										}
 									}
+
 									hbox = {
 										visible = "[Character.IsValid]"
 										spacing = 3
@@ -496,12 +497,26 @@ window = {
 									hbox = {
 										layoutpolicy_horizontal = expanding
 										visible = "[And(Character.IsImprisoned, Not(GetVariableSystem.Exists('expand_view')))]"
-										text_single = {
-											datacontext = "[CharacterWindow.GetCharacter.GetImprisonedBy]"
-											raw_text = "Imprisoned by"
-										}
+
 										char_name = {
+											blockoverride "pre" {
+												raw_text = "Imprisoned by"
+											}
 											datacontext = "[CharacterWindow.GetCharacter.GetImprisonedBy]"
+										}
+										expand = { }
+									}
+
+									# hostage
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										datacontext = "[CharacterWindow.GetCharacter.GetHomeCourt]"
+										visible = "[And(Character.IsValid, Isnt('expand_view'))]"
+
+										char_name = {
+											blockoverride "pre" {
+												raw_text = "[home_court|E]" #TODO
+											}
 										}
 										expand = { }
 									}
@@ -600,6 +615,50 @@ window = {
 											raw_text = "Yours of [Character.GetHerHim] [GetPlayer.GetOpinionOf(Character.Self)]."
 											tooltip = "[GetPlayer.GetOpinionBreakdownText(Character.Self)]"
 										}
+										expand = { }
+									}
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										margin_left = 5
+										spacing = 3
+										visible = "[Character.IsAlive]"
+
+										text_single = {
+											raw_text = "Incapable,"
+											visible = "[Character.IsIncapable]"
+											tooltip = "trait_incapable"
+										}
+
+										text_single = {
+											raw_text = "Hostage,"
+											tooltip = "[Character.GetHostageTooltip]"
+											visible = "[Character.IsHostage]"
+										}
+
+										text_single = {
+											visible = "[Character.CanBePunished]"
+											raw_text = "Can be punished,"
+											tooltip = "[Character.PunishmentTooltip]"
+										}
+
+										text_single = {
+											raw_text = "You have a hook on [Character.GetHerHim]"
+											visible = "[Character.PlayerHasHooksOrHookableSecrets]"
+										}
+
+										text_single = {
+											raw_text = "Has an inspiration"
+											visible = "[Character.HasInspiration]"
+											tooltip = "CHARACTER_HAS_INSPIRATION_TOOLTIP"
+										}
+
+										text_single = {
+											raw_text = "Completed an inspiration"
+											visible = "[And( Character.HasCompletedAnInspiration, Not( Character.HasInspiration ) )]"
+											tooltip = "CHARACTER_HAS_COMPLETED_AN_INSPIRATION_TOOLTIP"
+										}
+
 										expand = { }
 									}
 
@@ -822,15 +881,31 @@ window = {
 											visible = "[CharacterWindow.HasLiegeEvenWhenDead]"
 
 											hbox = {
+												#TODO
+												# vanilla uses this for the portrait
+												# visible = "[And( Character.GetLiege.IsValid, And( Character.IsAlive, Not(Character.IsLocalPlayer ) ) )]"
 												layoutpolicy_horizontal = expanding
-												spacing = 3
 
 												char_name = {
 													shortcut = "zoom_out"
 													blockoverride "pre" {
 														text_single = {
-															raw_text = "Liege,"
-															margin_right = 3
+															raw_text = "Non de-jure"
+															datacontext = "[CharacterWindow.GetCharacter]"
+															name = "non_dejure_liege"
+															visible = "[And(Not( Character.GetVassalContract.IsRightfulLiege ), Not(Character.IsHostage))]"
+														}
+														text_single = {
+															raw_text = "[liege|E],"
+															datacontext = "[CharacterWindow.GetCharacter]"
+															visible = "[Not( Character.IsHostage )]"
+															alwaystransparent = yes
+														}
+														text_single = {
+															datacontext = "[CharacterWindow.GetCharacter]"
+															visible = "[Character.IsHostage]"
+															raw_text = "WARDEN_OF" #TODO
+															alwaystransparent = yes
 														}
 													}
 													blockoverride "extra" {
@@ -842,6 +917,7 @@ window = {
 														dot = { }
 													}
 												}
+
 												expand = { }
 											}
 
@@ -2514,9 +2590,19 @@ window = {
 				}
 			}
 
-			filter_item = {
+			vbox_filter_group = {
 				layoutpolicy_horizontal = expanding
-				datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+				datacontext = "[CharacterSelectionList.GetCategory('politics_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('hostage_filter')]"
+					}
+				}
 			}
 		}
 	}
@@ -2581,9 +2667,19 @@ window = {
 				}
 			}
 
-			filter_item = {
+			vbox_filter_group = {
 				layoutpolicy_horizontal = expanding
-				datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+				datacontext = "[CharacterSelectionList.GetCategory('politics_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('hostage_filter')]"
+					}
+				}
 			}
 		}
 	}
@@ -3788,7 +3884,6 @@ types CharacterWindow
 			text_multi_wide = {
 				layoutpolicy_horizontal = expanding
 				visible = "[Has('expand_view', 'personality')]"
-				layoutpolicy_horizontal = expanding
 				raw_text = "AI_PERSONALITY_TT"
 			}
 

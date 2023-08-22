@@ -56,7 +56,7 @@ types Lists
 	## Character List Items
 	type widget_character_list_item_finder = widget {
 		datacontext = "[CharacterListItem.GetCharacter]"
-		size = { 200 64 }
+		size = { 200 70 }
 
 		background = { using = Background_Area }
 
@@ -76,6 +76,7 @@ types Lists
 					onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
 					# onrightclick = "[DefaultOnCharacterRightClick(CharacterListItem.GetCharacter.GetID)]"
 				}
+				block "extra_click" { }
 				block "button" { }
 				button_ignore = none
 				# enabled = "[CharacterListItem.IsSelectable]"
@@ -143,6 +144,8 @@ types Lists
 										}
 									}
 								}
+
+								block "interaction_accept" { }
 
 
 								text_single = {
@@ -220,22 +223,18 @@ types Lists
 								block "action_buttons" {
 									block "character_relation"
 									{
+										#TODO courtowner relation
 										hbox = {
-											# layoutpolicy_horizontal = expanding
 											visible = "[And(Character.HasRelationTo( GetPlayer ), Not(Character.IsPlayer))]"
 
 											text_single = {
 												name = "character_relation"
 												raw_text = "[Character.GetRelationToString( GetPlayer )]."
 												tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-												# default_format = "#low"
-												align = left
 												fontsize_min = 14
-												# margin_left = 10
 												max_width = 260
 											}
 
-											# expand = { }
 										}
 									}
 								}
@@ -261,7 +260,7 @@ types Lists
 
 								text_single = {
 									visible = "[And(And(Not(Character.IsLocalPlayer), Character.IsAlive), GetPlayer.IsValid)]"
-									raw_text = "Opinion of you: [Character.GetOpinionOf(GetPlayer)]."
+									raw_text = "[Character.GetHerHis|U] opinion, [Character.GetOpinionOf(GetPlayer)]."
 									tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
 									align = left
 								}
@@ -323,11 +322,8 @@ types Lists
 									block "expand_traits" { }
 
 									block "small_traits" {
-
-										text_single = {
-											# layoutpolicy_horizontal = expanding
-											raw_text = " [GetDataModelSize(CharacterListItem.GetTraits)] traits."
-											using = tooltip_se
+										flowcontainer = {
+										    ignoreinvisible = yes
 
 											tooltipwidget = {
 												widget = {
@@ -340,12 +336,8 @@ types Lists
 													flowcontainer = {
 														name = "traits_grid"
 														datamodel = "[CharacterListItem.GetTraits]"
-														# datamodel_reuse_widgets = yes
 														direction = vertical
-														# layoutpolicy_horizontal = expanding
-														# layoutpolicy_vertical = expanding
-														# addcolumn = 30
-														# addrow = 28
+
 														ignoreinvisible = yes
 														resizeparent = yes
 														margin = { 20 15 }
@@ -363,6 +355,30 @@ types Lists
 													}
 												}
 											}
+											using = tooltip_se
+
+											flowcontainer = {
+												datamodel = "[DataModelFirst(CharacterListItem.GetTraits, '(int32)1')]"
+												visible = "[DataModelHasItems(CharacterListItem.GetTraits)]"
+												ignoreinvisible = yes
+
+												item = {
+													text_single = {
+														margin_left = 3
+														visible = "[Trait.IsValid]"
+														datacontext = "[Character.GetFaith]"
+														raw_text = "[Trait.GetNameNoTooltip(Character.Self)],[AddTextIf(GreaterThanOrEqualTo_int32( GetDataModelSize(CharacterListItem.GetTraits), '(int32)2'), ' +')]"
+														tooltip = "trait_tooltip"
+														tooltip_enabled = "[EqualTo_int32(GetDataModelSize(CharacterListItem.GetTraits), '(int32)1')]"
+													}
+												}
+											}
+
+											text_single = {
+												visible = "[GreaterThanOrEqualTo_int32( GetDataModelSize(CharacterListItem.GetTraits), '(int32)2')]"
+												# layoutpolicy_horizontal = expanding
+												raw_text = " [Subtract_int32(GetDataModelSize(CharacterListItem.GetTraits), '(int32)1')] traits,"
+											}
 										}
 									}
 
@@ -370,7 +386,7 @@ types Lists
 										hbox = {
 											layoutpolicy_horizontal = expanding
 											layoutpolicy_vertical = expanding
-											spacing = 4
+											spacing = 3
 
 											block "claims" { # for kill list
 												widget_list_claims = { }
@@ -380,7 +396,7 @@ types Lists
 											hbox = {
 												layoutpolicy_horizontal = expanding
 												layoutpolicy_vertical = expanding
-												spacing = 4
+												spacing = 3
 												# minimumsize = { 110 0 }
 
 												text_single = {
@@ -390,33 +406,22 @@ types Lists
 
 												flowcontainer = {
 													datacontext = "[Character.GetCulture]"
-													# tooltipwidget = {
-													# 	culture_tooltip = { }
-													# }
-													# text_single = {
-													# 	raw_text = "Culture:"
-													# }
-													# text_single = {
-													# 	raw_text = " "
-													# }
+
 													text_single = {
 														using = tooltip_se
 														layoutpolicy_horizontal = expanding
 														text = "CULTURE_LISTS_WINDOW"
-														# autoresize = no
-														# align = left
 													}
 													dot = { }
 												}
 												text_single = {
 													raw_text = "[Character.Custom('character_health')] health."
-													# align = left
 													visible = "[Not(Character.IsDeadAndValid)]"
 													tooltip = "[Character.GetHealthInfo]"
-													# tooltipwidget = {
-													# 	health_tooltip = { }
-													# }
+
 												}
+
+												block "bottom_right_box_extra" {}
 												expand = { }
 											}
 										}
@@ -976,7 +981,9 @@ types Lists
 					vbox = {
 						margin_top = 15
 						name = "characters_grid"
-						datamodel = "[CharacterSelectionList.GetList]"
+						block "list_datamodel" {
+							datamodel = "[CharacterSelectionList.GetList]"
+						}
 						visible = "[Not(CharacterSelectionList.IsBuildingList)]"
 						layoutpolicy_horizontal = expanding
 
@@ -1020,266 +1027,6 @@ types Lists
 		# 	alwaystransparent = yes
 		# 	parentanchor = center
 		# }
-	}
-
-	type widget_courtier_item = widget {
-		size = { 0 125 }
-
-		hbox = {
-			spacing = 5
-
-			background = {
-				using = Background_Area_With_Header
-				margin_right = 7
-				margin_left = 5
-			}
-
-			portrait_head = { }
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-				margin_top = 3
-
-				hbox = {
-					layoutpolicy_horizontal = expanding
-
-					text_single = {
-						name = "name"
-						layoutpolicy_horizontal = expanding
-						autoresize = no
-						text = "[Character.GetUINameNoTooltip]"
-						using = Font_Size_Medium
-						align = left
-						fontsize_min = 14
-						margin_right = 10
-					}
-
-					hbox_skills_grid = { }
-				}
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					margin = { 0 3 }
-					margin_bottom = 8
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						spacing = 3
-
-						warning_icon = {
-							visible = "[And( Character.CourtierWantsToLeaveCourt, Not( Character.IsImprisoned))]"
-							size = { 20 20 }
-							tooltip = "[Character.GetCourtierLeaveDescription]"
-						}
-
-						debug_placeholder = {
-							visible = "[InDebugMode]"
-							size = { 20 20 }
-							raw_tooltip = "#D [Character.GetDebugCourtierLeaveReasons]#!"
-						}
-
-						text_single = {
-							name = "relation_to_court_owner"
-							layoutpolicy_horizontal = expanding
-							default_format = "#low"
-							autoresize = no
-							align = left
-
-							block "description_relation_text" {
-								text = "[Character.GetRelationToString( CharacterWindow.GetCourtOwner )]"
-								tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-							}
-
-							background = {
-								visible = "[Character.IsImprisoned]"
-								using = Status_Bad
-								alpha = 0.5
-							}
-						}
-
-						expand = { }
-					}
-				}
-
-				hbox = {
-					layoutpolicy_horizontal = expanding
-					spacing = 5
-					margin_bottom = 5
-
-					block "action_buttons"
-					{
-						hbox = {
-							margin = { 0 3 }
-							spacing = 5
-
-							button_recruit_character = { }
-						}
-					}
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						layoutpolicy_vertical = expanding
-						minimumsize = { 0 60 }
-						margin_left = 5
-
-						background = {
-							using = Background_Area_Dark
-							margin = { 3 3 }
-							alpha = 0.5
-						}
-
-						# Dynasty
-						widget = {
-							layoutpolicy_vertical = expanding
-							size = { 45 40 }
-
-							coa_house_small = {
-								datacontext = "[Character.GetHouse]"
-								parentanchor = center
-								scale = 0.7
-							}
-						}
-
-						# Traits
-						vbox = {
-							layoutpolicy_vertical = expanding
-							margin = { 10 0 }
-
-							hbox = {
-								layoutpolicy_horizontal = expanding
-
-								fixedgridbox = {
-									name = "traits_grid_four"
-									datamodel = "[CharacterListItem.GetTraits]"
-									flipdirection = yes
-									addcolumn = 30
-									addrow = 28
-									visible = "[Not( IsDataModelEmpty( CharacterListItem.GetTitleItems ) )]"
-
-									block "gridbox_items"   ### for characterview
-									{
-										datamodel_wrap = 4
-										maxverticalslots = 2
-									}
-
-									item = {
-										icon_trait = {
-											visible = "[Trait.IsValid]"
-
-											blockoverride "icon_size"
-											{
-												size = { 30 30 }
-											}
-
-											blockoverride "tooltip_placement"
-											{
-												using = tooltip_se
-											}
-
-											blockoverride "glow_radius"
-											{
-												glow_radius = 3
-											}
-										}
-									}
-								}
-								fixedgridbox = {
-									name = "traits_grid_five"
-									datamodel = "[CharacterListItem.GetTraits]"
-									flipdirection = yes
-									addcolumn = 30
-									addrow = 28
-									visible = "[IsDataModelEmpty( CharacterListItem.GetTitleItems )]"
-
-									block "gridbox_items"   ### for characterview
-									{
-										datamodel_wrap = 5
-										maxverticalslots = 2
-									}
-
-									item = {
-										icon_trait = {
-											visible = "[Trait.IsValid]"
-
-											blockoverride "icon_size"
-											{
-												size = { 30 30 }
-											}
-
-											blockoverride "tooltip_placement"
-											{
-												using = tooltip_se
-											}
-
-											blockoverride "glow_radius"
-											{
-												glow_radius = 3
-											}
-										}
-									}
-								}
-
-								expand = { }
-							}
-						}
-
-						expand = { }
-
-						divider_light = {
-							layoutpolicy_vertical = expanding
-							alpha = 0.5
-						}
-
-						hbox = {
-							margin = { 3 0 }
-
-							widget_list_claims = {
-								visible = "[Not( IsDataModelEmpty( CharacterListItem.GetTitleItems ) )]"
-							}
-						}
-
-						divider_light = {
-							visible = "[Not( IsDataModelEmpty( CharacterListItem.GetTitleItems ) )]"
-							layoutpolicy_vertical = expanding
-							alpha = 0.5
-						}
-
-						hbox = {
-							margin_right = 5
-
-							button_religion_icon = {
-								datacontext = "[Character.GetFaith]"
-								size = { 40 40 }
-							}
-
-							vbox = {
-								datacontext = "[Character.GetCulture]"
-
-								tooltipwidget = {
-									culture_tooltip = { }
-								}
-								using = tooltip_se
-
-								icon = {
-									name = "culture"
-									texture = "gfx/interface/icons/icon_culture.dds"
-									size = { 24 24 }
-								}
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									min_width = 60
-									align = center
-									autoresize = no
-									text = "CULTURE_LISTS_WINDOW"
-								}
-							}
-						}
-					}
-				}
-			}
-		}
 	}
 
 	type widget_vassal_list_item = button {
@@ -1576,6 +1323,8 @@ types Lists
 								onclick = "[Character.OpenPlayerInteraction('liege_modify_vassal_contract_interaction')]"
 								tooltip = "[Character.GetPlayerInteractionTooltip('liege_modify_vassal_contract_interaction')]"
 
+								block "feudal_contract_button_round" {}
+
 								button_feudal_contract = {
 									alwaystransparent = yes
 									parentanchor = center
@@ -1595,6 +1344,8 @@ types Lists
 								enabled = "[Character.IsPlayerInteractionValid('liege_modify_vassal_contract_interaction')]"
 								onclick = "[Character.OpenPlayerInteraction('liege_modify_vassal_contract_interaction')]"
 								visible = "[VassalContract.IsContractDefault]"
+
+								block "feudal_contract_button_round" {} #TODO
 							}
 
 							button_text = { # Display the usual Levy and Tax for Feudal
