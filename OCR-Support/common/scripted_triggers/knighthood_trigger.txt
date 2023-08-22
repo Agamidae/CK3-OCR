@@ -1,5 +1,5 @@
-﻿can_be_knight_trigger = {
-
+can_be_knight_trigger = {
+	is_hostage = no
 	trigger_if = {
 		limit = {
 			$ARMY_OWNER$.culture = {
@@ -9,6 +9,24 @@
 		prowess >= 12
 	}
 	can_be_warrior_trigger = { ARMY_OWNER = $ARMY_OWNER$ }
+	trigger_if = {
+		limit = {
+			OR = {
+				has_trait = devoted
+				is_clergy = yes
+			}
+		}
+		OR = {
+			faith = { has_doctrine_parameter = clergy_can_fight }
+			culture = { has_cultural_parameter = culture_clergy_can_fight }
+			AND = {
+				$ARMY_OWNER$.culture = {
+					has_cultural_parameter = high_prowess_ignores_knight_restrictions
+				}
+				prowess >= 10
+			}
+		}
+	}
 	OR = {
 		AND = {
 			$ARMY_OWNER$.culture = {
@@ -16,71 +34,58 @@
 			}
 			prowess >= 10
 		}
-		NOR = {
-			AND = {
-				has_trait = devoted
-				OR = {
-					faith = {
-						NOT = {
-							has_doctrine_parameter = clergy_can_fight
-						}
-					}
-					culture = {
-						NOT = {
-							has_cultural_parameter = culture_clergy_can_fight
-						}
-					}
-				}
-			}
-			AND = {
-				is_clergy = yes
-				OR = {
-					faith = {
-						NOT = {
-							has_doctrine_parameter = clergy_can_fight
-						}
-					}
-					culture = {
-						NOT = {
-							has_cultural_parameter = culture_clergy_can_fight
-						}
-					}
-				}
-			}
+		has_trait = order_member # Order Members will fight for their faith even if their faith says no
+		NOT = {
 			has_trait = blind
 		}
 	}
 	is_ai = yes
-	#Begin Knight Conditions
-	OR = {
-		$ARMY_OWNER$ = {
+
+    ###############
+    # addition from knight manager: (serp changed global into normal variable, so it also works for multiplayer and added vassal)
+    # can_be_knight_trigger can be found in 00_war_and_peace_triggers.txt from vanilla game
+    # ?= is making sure it exists. so make sure ARMY_OWNER has a dynasty before checking if it is the same as character dynasty
+    OR = {
+        $ARMY_OWNER$ = {
 			is_ai = yes
 		}
-		has_variable = knight_manager_manually_allowed
+        is_acclaimed = yes
+        has_character_flag = knight_manager_manually_allowed
 		NOR = {
 			AND = {
-				dynasty = $ARMY_OWNER$.dynasty
-				has_global_variable = knight_manager_kin_cannot_be_knight
+                $ARMY_OWNER$.dynasty ?= dynasty
+				$ARMY_OWNER$ = { has_character_flag = knight_manager_kin_cannot_be_knight }
+			}
+            AND = {
+				is_vassal_of = $ARMY_OWNER$
+				$ARMY_OWNER$ = { has_character_flag = knight_manager_vassals_cannot_be_knight }
 			}
 			AND = {
 				OR = {
 					is_child_of = $ARMY_OWNER$
 					is_grandchild_of = $ARMY_OWNER$
 				}
-				has_global_variable = knight_manager_children_cannot_be_knight
+				$ARMY_OWNER$ = { has_character_flag = knight_manager_children_cannot_be_knight }
 			}
 			AND = {
 				OR = {
 					is_spouse_of = $ARMY_OWNER$
 					any_spouse = {
-						OR = {
-							is_child_of = $ARMY_OWNER$
-							is_grandchild_of = $ARMY_OWNER$
-						}
+                        trigger_if = {
+                            limit = {
+                                exists = this # need to check these both to prevent Null errors in log for some strange reasons
+                                exists = $ARMY_OWNER$
+                            }
+                            OR = {
+                                is_child_of = $ARMY_OWNER$
+                                is_grandchild_of = $ARMY_OWNER$
+                            }
+                        }
+
 
 					}
 				}
-				has_global_variable = knight_manager_family_spouses_cannot_be_knight
+				$ARMY_OWNER$ = { has_character_flag = knight_manager_family_spouses_cannot_be_knight }
 			}
 			AND = {
 				OR = {
@@ -89,35 +94,34 @@
 					has_secret_relation_lover = $ARMY_OWNER$
 					has_secret_relation_soulmate = $ARMY_OWNER$
 				}
-				has_global_variable = knight_manager_lover_cannot_be_knight
+				$ARMY_OWNER$ = { has_character_flag = knight_manager_lover_cannot_be_knight }
 			}
 			AND = {
 				prowess < 13
-				has_global_variable = knight_manager_bad_fighter_cannot_be_knight
+                prowess >= 6
+				$ARMY_OWNER$ = { has_character_flag = knight_manager_bad_fighter_cannot_be_knight }
 			}
 			AND = {
 				prowess < 6
-				has_global_variable = knight_manager_awful_fighter_cannot_be_knight
+				$ARMY_OWNER$ = { has_character_flag = knight_manager_awful_fighter_cannot_be_knight }
 			}
 			AND = {
 				OR = {
 					is_councillor_of = $ARMY_OWNER$
-				}
-				has_global_variable = knight_manager_councillors_cannot_be_knight
+                    has_any_court_position = yes # we might also use "is_court_position_employer", but I don't know how to look for "any" court_position instead of specific ones.
+                }
+                NOR = { # these two court positions need to be knights in your army to rescue you (see combat_events.txt)
+                    has_court_position = bodyguard_court_position
+                    has_court_position = garuda_court_position
+                }
+				$ARMY_OWNER$ = { has_character_flag = knight_manager_councillors_cannot_be_knight }
 			}
 			AND = {
 				is_player_heir_of = $ARMY_OWNER$
-				has_global_variable = knight_manager_player_heir_cannot_be_knight
-			}
-			AND = {
-				has_any_court_position = yes
-				NOR = {
-					has_court_position = bodyguard_court_position
-					has_court_position = champion_court_position
-				}
-				has_global_variable = knight_manager_court_position_cannot_be_knight
+				$ARMY_OWNER$ = { has_character_flag = knight_manager_player_heir_cannot_be_knight }
 			}
 		}
-	}
+    }
+    ###############
 
 }
