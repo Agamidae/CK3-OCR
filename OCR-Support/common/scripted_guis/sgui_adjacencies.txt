@@ -66,76 +66,6 @@
 				}
 			}
 
-			# maybe move this to another sgui
-			scope:target = {
-				clear_variable_list = adjacent_seas
-				clear_variable_list = adjacent_rivers
-				clear_variable_list = adjacent_provinces
-				ordered_neighboring_province = {
-					limit = {
-						is_sea_province = yes
-						scope:target = {
-							NOT = {
-								is_target_in_variable_list = {
-									name = adjacent_seas
-									target = prev
-								}
-							}
-						}
-					}
-					order_by = direction_svalue
-					min = 0
-					scope:target = {
-						add_to_variable_list = {
-							name = adjacent_seas
-							target = prev
-						}
-					}
-				}
-				ordered_neighboring_province = {
-					limit = {
-						is_river_province = yes
-						scope:target = {
-							NOT = {
-								is_target_in_variable_list = {
-									name = adjacent_rivers
-									target = prev
-								}
-							}
-						}
-					}
-					order_by = direction_svalue
-					min = 0
-					scope:target = {
-						add_to_variable_list = {
-							name = adjacent_rivers
-							target = prev
-						}
-					}
-				}
-				ordered_neighboring_province = {
-					limit = {
-						has_holding = yes
-						scope:target = {
-							NOT = {
-								is_target_in_variable_list = {
-									name = adjacent_provinces
-									target = prev
-								}
-							}
-						}
-					}
-					order_by = direction_svalue
-					min = 0
-					scope:target = {
-						add_to_variable_list = {
-							name = adjacent_provinces
-							target = prev
-						}
-					}
-				}
-			}
-
 			ordered_neighboring_county = {
 				order_by = title_province.direction_svalue
 				min = 0
@@ -267,6 +197,212 @@
 	}
 }
 
+province_adjacencies = {
+	effect = {
+		# maybe move this to another sgui
+		clear_variable_list = adjacent_seas
+		clear_variable_list = adjacent_rivers
+		clear_variable_list = adjacent_provinces
+		save_scope_as = origin
+		ordered_neighboring_province = {
+			limit = {
+				is_sea_province = yes
+				ROOT = {
+					NOT = {
+						is_target_in_variable_list = {
+							name = adjacent_seas
+							target = prev
+						}
+					}
+				}
+			}
+			order_by = direction_svalue
+			min = 0
+			ROOT = {
+				add_to_variable_list = {
+					name = adjacent_seas
+					target = prev
+				}
+			}
+		}
+		ordered_neighboring_province = {
+			limit = {
+				is_river_province = yes
+				ROOT = {
+					NOT = {
+						is_target_in_variable_list = {
+							name = adjacent_rivers
+							target = prev
+						}
+					}
+				}
+			}
+			order_by = direction_svalue
+			min = 0
+			ROOT = {
+				add_to_variable_list = {
+					name = adjacent_rivers
+					target = prev
+				}
+			}
+		}
+		ordered_neighboring_province = {
+			limit = {
+				has_holding = yes
+				ROOT = {
+					NOT = {
+						is_target_in_variable_list = {
+							name = adjacent_provinces
+							target = prev
+						}
+					}
+				}
+			}
+			order_by = direction_svalue
+			min = 0
+			ROOT = {
+				add_to_variable_list = {
+					name = adjacent_provinces
+					target = prev
+				}
+			}
+		}
+
+		# river
+		if = {
+			limit = {
+				is_river_province = yes
+				# NOT = {
+				# 	has_variable = river
+				# }
+			}
+
+			add_to_list = river_parts
+			add_to_list = new_river_parts
+			# clear_variable_list = river_parts
+			remove_variable = river
+
+			while = {
+				limit = {
+					NOT = {
+						has_variable = river
+					}
+				}
+
+				set_local_variable = {
+					name = new_river_parts
+					value = 0
+				}
+
+				every_in_list = {
+					list = new_river_parts
+
+					every_neighboring_province = {
+						limit = {
+							is_river_province = yes
+							NOR = {
+								is_in_list = river_parts
+								is_in_list = new_river_parts
+							}
+						}
+						add_to_list = river_parts
+						add_to_list = newest_river_parts
+						root = {
+							change_local_variable = {
+								name = new_river_parts
+								add = 1
+							}
+						}
+					}
+				}
+
+				if = {
+					limit = {
+						local_var:new_river_parts = 0
+					}
+					set_variable = {
+						name = river
+						value = root
+					}
+				}
+				every_in_list = {
+					list = new_river_parts
+					remove_from_list = new_river_parts
+				}
+				every_in_list = {
+					list = newest_river_parts
+					add_to_list = new_river_parts
+				}
+				every_in_list = {
+					list = newest_river_parts
+					remove_from_list = newest_river_parts
+				}
+				remove_local_variable = new_river_parts
+			}
+
+			every_in_list = {
+				list = river_parts
+				set_variable = {
+					name = river
+					value = root
+				}
+				root = {
+					add_to_variable_list = {
+						name = river_parts
+						target = prev
+					}
+				}
+				if = {
+					limit = {
+						adjacent_rivers > 2
+					}
+					root = {
+						add_to_variable_list = {
+							name = river_forks
+							target = prev
+						}
+					}
+				}
+				else_if = {
+					limit = {
+						adjacent_rivers = 1
+						adjacent_seas = 0
+					}
+					root = {
+						add_to_variable_list = {
+							name = river_sources
+							target = prev
+						}
+					}
+				}
+				if = {
+					limit = {
+						adjacent_seas > 0
+					}
+					save_scope_as = river_mouth
+					every_neighboring_province = {
+						limit = {
+							is_sea_province = yes
+						}
+						scope:river_mouth = {
+							add_to_variable_list = {
+								name = river_seas
+								target = prev
+							}
+						}
+					}
+					root = {
+						add_to_variable_list = {
+							name = river_mouths
+							target = prev
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 error_suppression_ocr = {
 	is_shown = {
 		exists = var:realm_holdings
@@ -390,5 +526,56 @@ adjacent_titles = {
 			}
 		}
 		else = { }
+	}
+}
+
+window_sea = {
+	effect = {
+		set_variable = {
+			name = window_sea
+			value = scope:target
+		}
+	}
+}
+
+close_window_sea = {
+	effect = {
+		remove_variable = window_sea
+	}
+}
+
+last_view = {
+	effect = {
+		if = {
+			limit = {
+				scope:target = {
+					OR = {
+						is_sea_province = yes
+						is_river_province = yes
+					}
+				}
+			}
+			set_variable = {
+				name = last_view
+				value = scope:target
+			}
+		}
+		else = {
+			remove_variable = last_view
+		}
+	}
+	is_shown = {
+		var:last_view ?= {
+			OR = {
+				is_sea_province = yes
+				is_river_province = yes
+			}
+		}
+	}
+}
+
+clear_last_view = {
+	effect = {
+		remove_variable = last_view
 	}
 }

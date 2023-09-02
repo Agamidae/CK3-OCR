@@ -334,7 +334,6 @@ window = {
 		# }
 	}
 
-
 	# button = {
 	# 	parentanchor = right
 	# 	visible = "[GetVariableSystem.Exists('tooltip_open')]"
@@ -360,6 +359,228 @@ window = {
 		onclick = "[GetVariableSystem.Toggle('ruler_browser')]"
 		visible = "[And(Not(Or(Or(IsGameViewOpen('army'), IsGameViewOpen('my_realm')), IsGameViewOpen('men_at_arms'))), GetPlayer.IsValid)]"
 		using = close_character
+	}
+}
+
+window = {
+	layer = windows_layer
+	name = "window_sea"
+	alwaystransparent = yes
+	size = { 100% 100% }
+	visible = "[Has('extra_window', 'window_sea')]"
+
+	window_ocr = {
+		button = {
+			onclick = "[Clear('extra_window')]"
+			shortcut = close_window
+		}
+		# TODO go back
+		blockoverride "ocr_header" {
+			visible = "[GetPlayer.MakeScope.Var('window_sea').IsSet]"
+			flowcontainer = {
+				layoutpolicy_horizontal = expanding
+			    ignoreinvisible = yes
+				direction = vertical
+
+				flowcontainer = {
+					datacontext = "[GetPlayer.MakeScope.Var('window_sea').GetProvince]"
+					ignoreinvisible = yes
+					spacing = 3
+
+					text_single = {
+						raw_text = "[Province.GetName]"
+					}
+
+					text_single = {
+						visible = "[ShowRoot('is_river', Province)]"
+						raw_text = "river,"
+					}
+
+					text_single = {
+						visible = "[GreaterThan_CFixedPoint( Sval('adjacent_rivers', Province), '(CFixedPoint)2')]"
+						raw_text = "Fork,"
+					}
+
+					text_single = {
+						raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]"
+					}
+					text_single = {
+						margin_left = -3
+						visible = "[ShowRoot('is_sea', Province)]"
+						raw_text = ", [Province.GetTerrain.GetName]"
+					}
+
+					dot_l = { }
+				}
+			}
+		}
+
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[Province.MakeScope.Var('river')]"
+				visible = "[ShowRoot('is_river', Province)]"
+
+				hbox = {
+					datacontext = "[SEA.MakeScope]"
+				    layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					text_single = {
+						visible = "[DataModelHasItems(Scope.GetProvince.MakeScope.GetList('river_forks'))]"
+						raw_text = "The full river system is"
+					}
+
+					text_single = {
+						visible = "[IsDataModelEmpty(Scope.GetProvince.MakeScope.GetList('river_forks'))]"
+						raw_text = "The whole river is"
+					}
+
+					text_single = {
+						raw_text = "[GetDataModelSize(Scope.GetProvince.MakeScope.GetList('river_parts'))] parts long,"
+					}
+
+				    expand = { }
+				}
+
+				vbox = {
+				    layoutpolicy_horizontal = expanding
+					visible = "[DataModelHasItems(SEA.MakeScope.GetList('river_mouths'))]"
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "it has [GetDataModelSize(SEA.MakeScope.GetList('river_mouths'))] mouths, flowing into:"
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datamodel = "[SEA.MakeScope.GetList('river_mouths')]"
+
+						item = {
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								datamodel = "[Scope.GetProvince.MakeScope.GetList('river_seas')]"
+								item = {
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										spacing = 3
+
+										text_single = {
+											visible = "[EqualTo_int32(GetDataModelSize(SEA.MakeScope.GetList('river_mouths')), '(int32)1')]"
+											raw_text = "It flows into"
+										}
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											raw_text = "[Scope.GetProvince.GetName],"
+										}
+										expand = { }
+									}
+								}
+							}
+						}
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "[GetDataModelSize(SEA.MakeScope.GetList('river_forks'))] forks,"
+				}
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					datamodel = "[SEA.MakeScope.GetList('river_forks')]"
+
+					item = {
+						button_sea = {
+							layoutpolicy_horizontal = expanding
+						}
+					}
+				}
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "[GetDataModelSize(Scope.GetProvince.MakeScope.GetList('river_sources'))] sources,"
+				}
+			}
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[SEA]"
+				# seas
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "Adjacencies of this part:"
+				}
+				vbox = {
+					visible = "[DataModelHasItems(Province.MakeScope.GetList('adjacent_seas'))]"
+					layoutpolicy_horizontal = expanding
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(Province.MakeScope.GetList('adjacent_seas'))] seas,"
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						datamodel = "[Province.MakeScope.GetList('adjacent_seas')]"
+						item = {
+							button_sea = {
+								layoutpolicy_horizontal = expanding
+							}
+						}
+					}
+				}
+				# rivers
+				vbox = {
+					visible = "[DataModelHasItems(Province.MakeScope.GetList('adjacent_rivers'))]"
+					layoutpolicy_horizontal = expanding
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(Province.MakeScope.GetList('adjacent_rivers'))] rivers,"
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						datamodel = "[Province.MakeScope.GetList('adjacent_rivers')]"
+						item = {
+							button_sea = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "sea_info_pre" {
+									text_single = {
+										visible = "[GreaterThan_CFixedPoint( Sval('adjacent_rivers', Scope.GetProvince), '(CFixedPoint)2')]"
+										raw_text = "Fork,"
+									}
+								}
+								blockoverride "sea_info" {
+									text_single = {
+										raw_text = "[Sval('adjacent_holdings', Scope.GetProvince)] shores."
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		blockoverride "ocr_footer" {
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[Province.PanCameraTo]"
+				onclick = "[GetScriptedGui('province_adjacencies').Execute( GuiScope.SetRoot( Province.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).End )]"
+				onclick = "[GetScriptedGui('find_closest').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Province.MakeScope).End )]"
+				blockoverride "text" {
+					raw_text = "Pan camera here and refresh, Shift Q."
+				}
+				shortcut = map_mode_9
+			}
+		}
+
 	}
 }
 
