@@ -11,6 +11,7 @@ window = {
 		using = Animation_FadeIn_Quick
 		on_start = "[GetVariableSystem.Clear('selected_rule')]"
 		on_start = "[PdxGuiWidget.FindChild('game_rules_window').TriggerAnimation('appear')]"
+		on_finish = "[Clear('game_rules_list')]"
 	}
 
 	state = {
@@ -64,76 +65,103 @@ window = {
 			# using = Window_Margins
 			# spacing = 5
 
-			header_pattern = {
-				size = { 0 35 }
-				layoutpolicy_horizontal = expanding
+			hbox = {
+			    layoutpolicy_horizontal = expanding
 
-				blockoverride "header_text"
-				{
-					raw_text = "[GetDataModelSize(JominiGameRules.GetSettings)] [Localize('GAME_RULES_HEADER')]."
+				button_text = {
+					onclick = "[Toggle('game_rules_list')]"
+				    blockoverride "extra" {
+						text_single = {
+							raw_text = "[GetDataModelSize(JominiGameRules.GetSettings)] [Localize('GAME_RULES_HEADER')]."
+						}
+						text_single = {
+							raw_text = "[Select_CString(Is('game_rules_list'), 'Show controls, Shift E', 'Expand the list with E')]."
+							onclick = "[Toggle('game_rules_list')]"
+						}
+						button = {
+							onclick = "[Set('game_rules_list', 'yes')]"
+							shortcut = map_mode_1
+						}
+						button = {
+							onclick = "[Clear('game_rules_list')]"
+							shortcut = map_mode_11
+						}
+					}
 				}
 
-				blockoverride "button_close"
-				{
+				button = {
+					visible = "[And( IsHost, Not( HasGameStartedForTheFirstTime ) )]"
+					onclick = "[JominiGameRules.ApplySettings]"
+					onclick = "[JominiGameRules.Hide]"
+					shortcut = "close_window"
+				}
+
+				button = {
 					onclick = "[JominiGameRules.Hide]"
 					shortcut = "close_window"
 					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_close"
 				}
+
+			    expand = { }
 			}
 
 			error_button = {
 				layoutpolicy_horizontal = expanding
 			}
 
-			hbox_ironman_achievements_info = {
-				layoutpolicy_horizontal = expanding
-				name = "ironman_and_achievements"
-				visible = "[Not( GameHasMultiplePlayers )]"
-			}
-
-			vbox_game_rule_preset_options = {
-				layoutpolicy_horizontal = expanding
-				visible = "[And( IsHost, Not( HasGameStartedForTheFirstTime ) )]"
-			}
-
 			vbox = {
+				visible = "[Isnt('game_rules_list')]"
 				layoutpolicy_horizontal = expanding
+				hbox_ironman_achievements_info = {
+					layoutpolicy_horizontal = expanding
+					name = "ironman_and_achievements"
+					visible = "[Not( GameHasMultiplePlayers )]"
+				}
 
-				hbox = {
-				    layoutpolicy_horizontal = expanding
+				vbox_game_rule_preset_options = {
+					layoutpolicy_horizontal = expanding
+					visible = "[And( IsHost, Not( HasGameStartedForTheFirstTime ) )]"
+				}
 
-					dropdown_menu_standard = {
-						visible = "[And( IsHost, Not( HasGameStartedForTheFirstTime ) )]"
+				vbox = {
+					layoutpolicy_horizontal = expanding
 
-						blockoverride "dropdown_properties"
-						{
-							datamodel = "[JominiGameRules.GetCategories]"
-							onselectionchanged = "[JominiGameRules.SelectCategory]"
-							selectedindex = "[JominiGameRules.GetSelectedCategoryIndex]"
+					hbox = {
+					    layoutpolicy_horizontal = expanding
+
+						dropdown_menu_standard = {
+							visible = "[And( IsHost, Not( HasGameStartedForTheFirstTime ) )]"
+
+							blockoverride "dropdown_properties"
+							{
+								datamodel = "[JominiGameRules.GetCategories]"
+								onselectionchanged = "[JominiGameRules.SelectCategory]"
+								selectedindex = "[JominiGameRules.GetSelectedCategoryIndex]"
+							}
+
+							blockoverride "dropdown_active_item_properties"
+							{
+								raw_text = "[Select_CString( JominiGameRules.HasSelectedCategoryIndex, GameRuleCategory.GetName, Localize( 'Filter by category.' ) )] [AddTextIf(JominiGameRules.HasSelectedCategoryIndex, 'category.')]"
+							}
+
+							blockoverride "dropdown_item_properties"
+							{
+								raw_text = "[GameRuleCategory.GetName] category"
+							}
+
+							blockoverride "dropdown_size"
+							{
+								size = { 400 32 }
+							}
+
+							blockoverride "dropdown_list_maxsize"
+							{
+								maximumsize = { 391 780 }
+							}
 						}
 
-						blockoverride "dropdown_active_item_properties"
-						{
-							raw_text = "[Select_CString( JominiGameRules.HasSelectedCategoryIndex, GameRuleCategory.GetName, Localize( 'Filter by category.' ) )] [AddTextIf(JominiGameRules.HasSelectedCategoryIndex, 'category.')]"
-						}
-
-						blockoverride "dropdown_item_properties"
-						{
-							raw_text = "[GameRuleCategory.GetName] category"
-						}
-
-						blockoverride "dropdown_size"
-						{
-							size = { 400 32 }
-						}
-
-						blockoverride "dropdown_list_maxsize"
-						{
-							maximumsize = { 391 780 }
-						}
+					    expand = { }
 					}
-
-				    expand = { }
 				}
 			}
 
@@ -147,7 +175,7 @@ window = {
 					dynamicgridbox = {
 						datamodel = "[JominiGameRules.GetVisibleSettings]"
 						layoutpolicy_horizontal = expanding
-						datamodel_wrap = 25
+						datamodel_wrap = 30
 
 						item = {
 							button_text = {
@@ -423,7 +451,7 @@ types GameRuleTypes
 		button_primary_text = {
 			layoutpolicy_horizontal = expanding
 			blockoverride "text" {
-				raw_text = "[Localize('APPLY')], Enter"
+				raw_text = "[Localize('APPLY')]"
 			}
 			visible = "[And( IsHost, Not( HasGameStartedForTheFirstTime ) )]"
 			onclick = "[JominiGameRules.ApplySettings]"

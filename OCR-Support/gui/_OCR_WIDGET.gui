@@ -369,6 +369,11 @@ window = {
 	size = { 100% 100% }
 	visible = "[Has('extra_window', 'window_sea')]"
 
+	# state = {
+	# 	name = _hide
+	# 	on_finish = "[Clear('hide_river_info')]"
+	# }
+
 	window_ocr = {
 		button = {
 			onclick = "[Clear('extra_window')]"
@@ -419,6 +424,7 @@ window = {
 			vbox = {
 				layoutpolicy_horizontal = expanding
 				datacontext = "[Province.MakeScope.Var('river')]"
+				datacontext = "[GetPlayer.MakeScope.Var('window_sea').GetProvince]"
 				visible = "[ShowRoot('is_river', Province)]"
 
 				hbox = {
@@ -443,64 +449,112 @@ window = {
 				    expand = { }
 				}
 
-				vbox = {
-				    layoutpolicy_horizontal = expanding
-					visible = "[DataModelHasItems(SEA.MakeScope.GetList('river_mouths'))]"
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[Toggle('hide_river_info')]"
+				    blockoverride "text" {
+				        raw_text = "[Select_CString(Is('hide_river_info'), 'Show info with Shift E', 'Hide info with E')]."
+				    }
+				}
 
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						raw_text = "it has [GetDataModelSize(SEA.MakeScope.GetList('river_mouths'))] mouths, flowing into:"
+				button = {
+					onclick = "[Set('hide_river_info', 'yes')]"
+					shortcut = map_mode_1
+				}
+				button = {
+					onclick = "[Clear('hide_river_info')]"
+					shortcut = map_mode_11
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Isnt('hide_river_info')]"
+					# mouths
+					vbox = {
+					    layoutpolicy_horizontal = expanding
+						visible = "[DataModelHasItems(SEA.MakeScope.GetList('river_mouths'))]"
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "it has [GetDataModelSize(SEA.MakeScope.GetList('river_mouths'))] mouths, flowing into:"
+							visible = "[GreaterThan_int32(GetDataModelSize(SEA.MakeScope.GetList('river_mouths')), '(int32)1')]"
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datamodel = "[SEA.MakeScope.GetList('river_mouths')]"
+
+							item = {
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									datamodel = "[Scope.GetProvince.MakeScope.GetList('river_seas')]"
+									item = {
+										button_sea_far = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "pre" {
+												text_single = {
+													visible = "[EqualTo_int32(GetDataModelSize(SEA.MakeScope.GetList('river_mouths')), '(int32)1')]"
+													raw_text = "Its flows into"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
 					}
 
 					vbox = {
 						layoutpolicy_horizontal = expanding
-						datamodel = "[SEA.MakeScope.GetList('river_mouths')]"
+						visible = "[DataModelHasItems(SEA.MakeScope.GetList('river_forks'))]"
 
-						item = {
-							hbox = {
-								layoutpolicy_horizontal = expanding
-								datamodel = "[Scope.GetProvince.MakeScope.GetList('river_seas')]"
-								item = {
-									hbox = {
-										layoutpolicy_horizontal = expanding
-										spacing = 3
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "[GetDataModelSize(SEA.MakeScope.GetList('river_forks'))] forks,"
+						}
 
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datamodel = "[SEA.MakeScope.GetList('river_forks')]"
+
+							item = {
+								button_sea_far = {
+									layoutpolicy_horizontal = expanding
+								}
+							}
+						}
+					}
+
+					vbox = {
+					    layoutpolicy_horizontal = expanding
+						visible = "[DataModelHasItems(SEA.MakeScope.GetList('river_sources'))]"
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "it has [GetDataModelSize(SEA.MakeScope.GetList('river_sources'))] sources,"
+							visible = "[GreaterThan_int32(GetDataModelSize(SEA.MakeScope.GetList('river_sources')), '(int32)1')]"
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datamodel = "[SEA.MakeScope.GetList('river_sources')]"
+
+							item = {
+								button_sea_far = {
+									layoutpolicy_horizontal = expanding
+									blockoverride "pre" {
 										text_single = {
-											visible = "[EqualTo_int32(GetDataModelSize(SEA.MakeScope.GetList('river_mouths')), '(int32)1')]"
-											raw_text = "It flows into"
+											visible = "[EqualTo_int32(GetDataModelSize(SEA.MakeScope.GetList('river_sources')), '(int32)1')]"
+											raw_text = "Its source is"
 										}
-
-										text_single = {
-											layoutpolicy_horizontal = expanding
-											raw_text = "[Scope.GetProvince.GetName],"
-										}
-										expand = { }
 									}
 								}
 							}
 						}
 					}
 				}
-
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					raw_text = "[GetDataModelSize(SEA.MakeScope.GetList('river_forks'))] forks,"
-				}
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					datamodel = "[SEA.MakeScope.GetList('river_forks')]"
-
-					item = {
-						button_sea = {
-							layoutpolicy_horizontal = expanding
-						}
-					}
-				}
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					raw_text = "[GetDataModelSize(Scope.GetProvince.MakeScope.GetList('river_sources'))] sources,"
-				}
 			}
+
 			vbox = {
 				layoutpolicy_horizontal = expanding
 				datacontext = "[SEA]"
@@ -508,8 +562,9 @@ window = {
 
 				text_single = {
 					layoutpolicy_horizontal = expanding
-					raw_text = "Adjacencies of this part:"
+					raw_text = "Adjacencies:"
 				}
+				# seas
 				vbox = {
 					visible = "[DataModelHasItems(Province.MakeScope.GetList('adjacent_seas'))]"
 					layoutpolicy_horizontal = expanding
@@ -565,12 +620,64 @@ window = {
 						}
 					}
 				}
+				# counties
+				vbox = {
+					visible = "[And(DataModelHasItems(Province.MakeScope.GetList('adjacent_counties')), Isnt('sea_county_list'))]"
+					layoutpolicy_horizontal = expanding
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(Province.MakeScope.GetList('adjacent_counties'))] counties, switch to holdings with Page Down."
+						}
+						shortcut = zoom_in
+						onclick = "[Toggle('sea_county_list')]"
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						datamodel = "[Province.MakeScope.GetList('adjacent_counties')]"
+						item = {
+							adjacent_county_button = {
+								onclick = "[Clear('extra_window')]"
+								layoutpolicy_horizontal = expanding
+							}
+						}
+					}
+				}
+				# holdings
+				vbox = {
+					visible = "[And(DataModelHasItems(Province.MakeScope.GetList('adjacent_holdings')), Is('sea_county_list'))]"
+					layoutpolicy_horizontal = expanding
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(Province.MakeScope.GetList('adjacent_holdings'))] holdings, switch to counties with Page Up."
+						}
+						shortcut = zoom_out
+						onclick = "[Toggle('sea_county_list')]"
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						datamodel = "[Province.MakeScope.GetList('adjacent_holdings')]"
+						item = {
+							button_holding = {
+								layoutpolicy_horizontal = expanding
+							}
+						}
+					}
+				}
 			}
 		}
 
 		blockoverride "ocr_footer" {
 			button_text = {
 				layoutpolicy_horizontal = expanding
+				datacontext = "[GetPlayer.MakeScope.Var('window_sea').GetProvince]"
 				onclick = "[Province.PanCameraTo]"
 				onclick = "[GetScriptedGui('province_adjacencies').Execute( GuiScope.SetRoot( Province.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).End )]"
 				onclick = "[GetScriptedGui('find_closest').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Province.MakeScope).End )]"

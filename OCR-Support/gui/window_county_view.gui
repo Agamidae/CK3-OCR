@@ -3839,8 +3839,10 @@ types CountyViewTypes
 		}
 		blockoverride "extra" {
 			block "sea_info_pre" {}
-			text_single = {
-				raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('second', Scope.GetProvince.MakeScope).Custom('province_direction')],"
+			block "direction" {
+				text_single = {
+					raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('second', Scope.GetProvince.MakeScope).Custom('province_direction')],"
+				}
 			}
 			block "sea_info" {}
 		}
@@ -3854,6 +3856,22 @@ types CountyViewTypes
 			onclick = "[GetScriptedGui('province_adjacencies').Execute( GuiScope.SetRoot( Scope.GetProvince.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).End )]"
 			onclick = "[GetScriptedGui('find_closest').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Scope.GetProvince.MakeScope).End )]"
 			onrightclick = "[Scope.GetProvince.PanCameraTo]"
+		}
+	}
+
+	type button_sea_far = button_sea {
+		blockoverride "direction" {
+			text_single = {
+				visible = "[Not(ObjectsEqual(Province.Self, Scope.GetProvince))]"
+				raw_text = "[DistanceTo(Province, Scope.GetProvince)|0] [DaysTo(Province, Scope.GetProvince)] [Direction(Province, Scope.GetProvince)] [AddTextIf(IsIndexFirst, 'from here')]"
+			}
+			text_single = {
+				visible = "[ObjectsEqual(Province.Self, Scope.GetProvince)]"
+				raw_text = "here"
+			}
+		}
+		blockoverride "dot" {
+
 		}
 	}
 
@@ -3882,7 +3900,10 @@ types CountyViewTypes
 			# 	raw_text = "[Scope.Title.Custom('county_direction')]."
 			# }
 			text_single = {
-				raw_text = "[GuiScope.SetRoot(HoldingView.GetProvince.MakeScope).AddScope('second', Title.GetProvince.MakeScope).Custom('province_direction')],"
+				block "prov_context" {
+					datacontext = "[HoldingView.GetProvince]"
+				}
+				raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('second', Title.GetProvince.MakeScope).Custom('province_direction')],"
 			}
 			text_single = {
 				visible = "[Not(Or(ObjectsEqual(Title.GetHolder.GetTopLiege, GetPlayer), ObjectsEqual(Title.GetHolder, GetPlayer)))]"
@@ -4137,88 +4158,33 @@ types CountyViewTypes
 
 		expand = { }
 	}
+
+	type button_holding = button_text {
+		# Province is the origin
+		# Scope.GetProvince is the button's province
+		datacontext = "[Scope.GetProvince.GetHolding]"
+		onclick = "[Scope.GetProvince.PanCameraTo]"
+		onclick = "[GetVariableSystem.Clear('county_tabs')]"
+		onclick = "[GetVariableSystem.Clear('extra_window')]"
+		onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
+		onrightclick = "[Scope.GetProvince.PanCameraTo]"
+		blockoverride "text" {
+			raw_text = "[Select_CString(Holding.IsEmpty, Scope.GetProvince.GetTerrain.GetNameNoTooltip, Holding.GetPrimaryBuildingType.GetTypeName)] of [Holding.GetNameNoTooltip],"
+		}
+		blockoverride "extra" {
+			text_single = {
+				raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('second', Scope.GetProvince.MakeScope).Custom('province_direction')],"
+			}
+			text_single = {
+				datacontext = "[Scope.GetProvince.GetCounty.GetTitle.GetHolder.GetTopLiege]"
+				visible = "[Not(ObjectsEqual(Character.Self, GetPlayer))]"
+				raw_text = "in [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+			}
+			text_single = {
+				datacontext = "[Scope.GetProvince.GetCounty.GetTitle.GetHolder.GetTopLiege]"
+				visible = "[ObjectsEqual(Character.Self, GetPlayer))]"
+				raw_text = "in your realm."
+			}
+		}
+	}
 }
-
-
-
-#backups
-
-# hbox = {
-# 	layoutpolicy_horizontal = expanding
-# 	visible = "[DataModelHasItems(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_seas'))]"
-# 	spacing = 3
-# 	text_single = {
-# 		raw_text = "On the shores of"
-# 	}
-#
-# 	hbox = {
-# 		margin_left = -3
-#
-# 		datamodel = "[DataModelFirst(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_seas'), '(int32)2')]"
-# 		item = {
-# 			button_text = {
-# 				blockoverride "text" {
-# 					raw_text = "[Scope.GetProvince.GetName]"
-# 				}
-# 				blockoverride "extra" {
-# 					text_single = {
-# 						visible = "[And(IsIndexFirst, GreaterThan_int32(GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_seas')), '(int32)1'))]"
-# 						raw_text = "and"
-# 					}
-# 				}
-# 			}
-# 		}
-# 	}
-#
-# 	text_single = {
-# 		margin_left = 3
-# 		visible = "[GreaterThan_int32(GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_seas')), '(int32)2')]"
-# 		raw_text = "and [Subtract_int32(GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_seas')), '(int32)2')] more"
-# 	}
-#
-# 	dot_l = { }
-#
-# 	expand = { }
-# }
-#
-# hbox = {
-# 	layoutpolicy_horizontal = expanding
-# 	visible = "[DataModelHasItems(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_rivers'))]"
-# 	spacing = 3
-# 	text_single = {
-# 		raw_text = "On the bank of"
-# 	}
-#
-# 	hbox = {
-# 		margin_left = -3
-#
-# 		datamodel = "[DataModelFirst(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_rivers'), '(int32)2')]"
-# 		item = {
-# 			button_text = {
-# 				blockoverride "text" {
-# 					raw_text = "[Scope.GetProvince.GetName]"
-# 				}
-# 				blockoverride "extra" {
-# 					text_single = {
-# 						margin_left = 3
-# 						raw_text = "river"
-# 					}
-# 					text_single = {
-# 						visible = "[And(IsIndexFirst, GreaterThan_int32(GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_rivers')), '(int32)1'))]"
-# 						raw_text = "and"
-# 					}
-# 				}
-# 			}
-# 		}
-# 	}
-#
-# 	text_single = {
-# 		margin_left = 3
-# 		visible = "[GreaterThan_int32(GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_rivers')), '(int32)2')]"
-# 		raw_text = "and [Subtract_int32(GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_rivers')), '(int32)2')] more"
-# 	}
-#
-# 	dot_l = { }
-#
-# 	expand = { }
-# }
