@@ -6,12 +6,28 @@ window = {
 
 	using = Background_Full_Dim
 
+	vbox = {
+		# visible = "[Is('rules_page')]"
+		datamodel = "[GetNullCharacterDataModel('(int32)5')]"
+
+		item = {
+			button = {
+				shortcuts_list = {
+					blockoverride "click" {
+						clicksound = ""
+					}
+				}
+			}
+		}
+	}
+
 	state = {
 		name = _show
 		using = Animation_FadeIn_Quick
 		on_start = "[GetVariableSystem.Clear('selected_rule')]"
 		on_start = "[PdxGuiWidget.FindChild('game_rules_window').TriggerAnimation('appear')]"
 		on_finish = "[Clear('game_rules_list')]"
+		on_finish = "[Clear('rules_page')]"
 	}
 
 	state = {
@@ -76,7 +92,6 @@ window = {
 						}
 						text_single = {
 							raw_text = "[Select_CString(Is('game_rules_list'), 'Show controls, Shift E', 'Expand the list with E')]."
-							onclick = "[Toggle('game_rules_list')]"
 						}
 						button = {
 							onclick = "[Set('game_rules_list', 'yes')]"
@@ -136,6 +151,7 @@ window = {
 							{
 								datamodel = "[JominiGameRules.GetCategories]"
 								onselectionchanged = "[JominiGameRules.SelectCategory]"
+								onselectionchanged = "[Clear('rules_page')]"
 								selectedindex = "[JominiGameRules.GetSelectedCategoryIndex]"
 							}
 
@@ -165,65 +181,164 @@ window = {
 				}
 			}
 
+
 			scrollbox = {
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding
 
 				blockoverride "scrollbox_content"
 				{
-
-					dynamicgridbox = {
-						datamodel = "[JominiGameRules.GetVisibleSettings]"
+					vbox = {
 						layoutpolicy_horizontal = expanding
-						datamodel_wrap = 30
 
-						item = {
-							button_text = {
+						vbox = {
+							visible = "[GreaterThan_int32(GetDataModelSize(JominiGameRules.GetVisibleSettings), '(int32)40')]"
+							layoutpolicy_horizontal = expanding
+							datamodel = "[GetNullCharacterDataModel( FixedPointToInt(Add_CFixedPoint(Divide_CFixedPoint(IntToFixedPoint(GetDataModelSize(JominiGameRules.GetVisibleSettings)), '(CFixedPoint)40'), '(CFixedPoint)0.99')) )]"
+
+							text_single = {
 								layoutpolicy_horizontal = expanding
-								datacontext = "[GuiGameRule.GetRule]"
-								datacontext = "[GuiGameRule.GetSetting]"
-								onclick = "[GetVariableSystem.Set('selected_rule', GameRule.GetName)]"
-
-								blockoverride "pre" {
-									spacing = 3
-									text_single = {
-										raw_text = "[GameRule.GetName],"
-										max_width = 900
-									}
-								}
-
-							    blockoverride "text" {
-									raw_text = "[GameRuleSetting.GetName]."
-									margin_right = 30
-							    }
+								raw_text = "Rule pages:"
+								visible = "[Isnt('rules_page')]"
 							}
 
-							# widget = {
-							# 	size = { 0 0 }
-							# 	layoutpolicy_horizontal = expanding
-							#
-							#
-							# 	# flowcontainer = {
-							# 	# 	margin_bottom = 2
-							# 	# 	direction = vertical
-							# 	# 	ignoreinvisible = yes
-							# 	# 	resizeparent = yes
-							# 	#
-							# 	# 	text_single = {
-							# 	# 		text = "[GameRule.GetName]"
-							# 	# 		max_width = 420
-							# 	# 	}
-							# 	#
-							# 	# 	widget_game_rule_option = { }
-							# 	#
-							# 	# 	text_multi = {
-							# 	# 		visible = "[Not(GetVariableSystem.Exists('rule_desc'))]"
-							# 	# 		raw_text = "[GameRuleSetting.GetDescription]."
-							# 	# 		autoresize = yes
-							# 	# 		max_width = 1350
-							# 	# 	}
-							# 	# }
-							# }
+							item = {
+								vbox = {
+									layoutpolicy_horizontal = expanding
+
+									hbox = {
+										visible = "[Isnt('rules_page')]"
+										layoutpolicy_horizontal = expanding
+
+										button_text = {
+											name = "show_rules"
+											layoutpolicy_horizontal = expanding
+											state = {
+												trigger_when = "[Isnt('rules_page')]"
+												name = "hide_rules"
+												on_finish = "[PdxGuiWidget.Show]"
+											}
+											# onclick = "[PdxGuiTriggerAllAnimations('hide_rules')]"
+											onclick = "[Set('rules_page', 'yes')]"
+											onclick = "[PdxGuiWidget.AccessParent.AccessParent.FindChild('rules').Show]"
+											onclick = "[PdxGuiWidget.AccessParent.AccessParent.FindChild('hide_rules').Show]"
+											onclick = "[PdxGuiWidget.Hide]"
+
+											blockoverride "text" {
+												raw_text = "[IndexNumber], Show [Add_int32(Multiply_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)40'), '(int32)1')] to [Min_int32(Multiply_int32(IndexNumber, '(int32)40'), GetDataModelSize(JominiGameRules.GetVisibleSettings))]."
+											}
+
+											shortcuts_list = {
+												blockoverride "click" {
+													onclick = "[Set('rules_page', 'yes')]"
+													onclick = "[PdxGuiWidget.AccessParent.AccessParent.AccessParent.AccessParent.FindChild('rules').Show]"
+													onclick = "[PdxGuiWidget.AccessParent.AccessParent.AccessParent.AccessParent.FindChild('hide_rules').Show]"
+													# onclick = "[PdxGuiWidget.Hide]"
+
+												}
+											}
+										}
+									}
+
+									button_text = {
+										visible = no
+										state = {
+											trigger_when = "[Isnt('rules_page')]"
+											name = "hide_rules"
+											on_finish = "[PdxGuiWidget.Hide]"
+										}
+										name = "hide_rules"
+										layoutpolicy_horizontal = expanding
+										onclick = "[Clear('rules_page')]"
+										onclick = "[PdxGuiWidget.AccessParent.FindChild('rules').Hide]"
+										onclick = "[PdxGuiWidget.AccessParent.FindChild('show_rules').Show]"
+										onclick = "[PdxGuiWidget.Hide]"
+										shortcut = close_window
+										blockoverride "text" {
+											raw_text = "Showing [Add_int32(Multiply_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)40'), '(int32)1')] to [Min_int32(Multiply_int32(IndexNumber, '(int32)40'), GetDataModelSize(JominiGameRules.GetVisibleSettings))], return with Escape."
+										}
+									}
+
+									vbox = {
+										visible = no
+										state = {
+											trigger_when = "[Isnt('rules_page')]"
+											name = "hide_rules"
+											on_finish = "[PdxGuiWidget.Hide]"
+										}
+										name = "rules"
+										layoutpolicy_horizontal = expanding
+
+										dynamicgridbox = {
+											# visible = no
+											datamodel = "[DataModelSubSpan(JominiGameRules.GetVisibleSettings, Multiply_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)40'), Min_int32(Subtract_int32(GetDataModelSize(JominiGameRules.GetVisibleSettings), Multiply_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)40')), '(int32)40') )]"
+
+											layoutpolicy_horizontal = expanding
+											# flipdirection = yes
+											datamodel_wrap = 20
+
+											item = {
+												button_text = {
+													layoutpolicy_horizontal = expanding
+													datacontext = "[GuiGameRule.GetRule]"
+													datacontext = "[GuiGameRule.GetSetting]"
+													onclick = "[GetVariableSystem.Set('selected_rule', GameRule.GetName)]"
+
+													blockoverride "pre" {
+														spacing = 3
+														text_single = {
+															raw_text = "[GameRule.GetName],"
+															max_width = 900
+														}
+													}
+
+													blockoverride "text" {
+														raw_text = "[GameRuleSetting.GetName]."
+														margin_right = 30
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Not(GreaterThan_int32(GetDataModelSize(JominiGameRules.GetVisibleSettings), '(int32)40'))]"
+
+
+							dynamicgridbox = {
+								datamodel = "[JominiGameRules.GetVisibleSettings]"
+
+								layoutpolicy_horizontal = expanding
+								# flipdirection = yes
+								datamodel_wrap = 20
+
+								item = {
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										datacontext = "[GuiGameRule.GetRule]"
+										datacontext = "[GuiGameRule.GetSetting]"
+										onclick = "[GetVariableSystem.Set('selected_rule', GameRule.GetName)]"
+
+										blockoverride "pre" {
+											spacing = 3
+											text_single = {
+												raw_text = "[GameRule.GetName],"
+												max_width = 900
+											}
+										}
+
+										blockoverride "text" {
+											raw_text = "[GameRuleSetting.GetName]."
+											margin_right = 30
+										}
+									}
+								}
+							}
+
 						}
 					}
 				}
@@ -253,17 +368,26 @@ window = {
 							raw_text = "[GameRule.GetName]."
 						}
 
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							raw_text = "[GameRuleSetting.GetName]."
+						hbox = {
+						    layoutpolicy_horizontal = expanding
+							spacing = 2
+
+							text_single = {
+								raw_text = "[GameRuleSetting.GetName]"
+							}
+							dot = { margin_left = -1 }
+
+
+						    expand = { }
 						}
+
 
 						hbox = {
 						    layoutpolicy_horizontal = expanding
 
 							text_multi = {
 								autoresize = yes
-								max_width = 1300
+								max_width = 1020
 								raw_text = "[GameRuleSetting.GetDescription]"
 							}
 
@@ -296,7 +420,6 @@ window = {
 					}
 				}
 			}
-
 
 			button_text = {
 				layoutpolicy_horizontal = expanding
@@ -581,6 +704,7 @@ types GameRuleTypes
 					datamodel = "[JominiGameRules.GetRulePresets]"
 					onselectionchanged = "[JominiGameRules.OnSelectPreset]"
 					onselectionchanged = "[SetIronmanEnabledStatus(JominiGameRules.GetSelectedPreset.IsIronmanEnabled)]"
+					onselectionchanged = "[Clear('rules_page')]"
 				}
 
 

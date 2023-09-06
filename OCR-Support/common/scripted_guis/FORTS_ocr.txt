@@ -608,6 +608,8 @@ raid_targets = {
 	saved_scopes = { army }
 	effect = {
 		clear_variable_list = raid_targets
+		clear_variable_list = raid_counties
+		clear_variable_list = raid_counties_closest
 		clear_variable_list = looted_raid_targets
 		clear_variable_list = strong_raid_targets
 		scope:army = {
@@ -623,91 +625,122 @@ raid_targets = {
 				}
 			}
 
-			every_sub_realm_county = {
-				every_title_to_title_neighboring_county = {
-					every_title_to_title_neighboring_county = {
+			# every_sub_realm_county = {
+			# 	every_title_to_title_neighboring_county = {
+			# 		every_title_to_title_neighboring_county = {
+			# 			limit = {
+			# 				can_be_raided = yes
+			# 			}
+			# 			every_county_province = {
+			# 				limit = { has_holding = yes }
+			# 				add_to_list = raid_targets
+			# 			}
+			# 		}
+			# 	}
+			# }
+			scope:army.location = {
+				if = {
+					limit = {
+						has_variable_list = adjacent_counties
+					}
+					if = {
 						limit = {
-							NOR = {
-								holder.top_liege = root.top_liege
-								holder = {
-									OR = {
-										root = {
-											has_truce = prev
-										}
-										OR = {
-											has_raid_immunity_against = root
-											is_allied_to = root
-										}
-									}
-								}
-								holder = {
-									any_liege_or_above = {
-										OR = {
-											OR = {
-												is_allied_to = root
-												has_raid_immunity_against = root
-											}
-											root = {
-												has_truce = prev
-											}
-										}
-									}
-								}
+							exists = county
+							county = {
+								can_be_raided_safely = yes
 							}
 						}
-						every_county_province = {
-							limit = { has_holding = yes }
-							add_to_list = raid_targets
+						county = {
+							every_county_province = {
+								limit = {
+									has_holding = yes
+								    available_loot > 0
+								}
+								add_to_list = raid_targets
+							}
 						}
 					}
-				}
-			}
+					every_in_list = {
+						variable = adjacent_counties
+						if = {
+							limit = {
+								can_be_raided_safely = yes
+							}
+							add_to_list = raid_counties
+							every_county_province = {
+								limit = {
+									has_holding = yes
+								    available_loot > 0
+								}
+								add_to_list = raid_targets
+							}
+						}
+						add_to_list = new_raid_counties
 
-			every_character_to_title_neighboring_and_across_water_county = {
-				limit = {
-					# OR = {
-					# 	is_coastal_county = yes
-					# 	is_riverside_county = yes
-					# }
-					NOT = {
-						title_province = {
-							is_in_list = raid_targets
-						}
-					}
-					# title_province = {
-					# 	distance_to_army < 1500
-					# }
-					NOR = {
-						holder.top_liege = root.top_liege
-						holder = {
-							OR = {
+						if = {
+							limit = {
 								root = {
-									has_truce = prev
+									can_raid_across_water_trigger = no
 								}
-								OR = {
-									has_raid_immunity_against = root
-									is_allied_to = root
+							}
+							while = {
+								count = raid_radius
+								every_in_list = {
+									list = new_raid_counties
+									every_title_to_title_neighboring_county = {
+										limit = {
+											NOT = {
+												is_in_list = raid_counties
+											}
+										}
+										if = {
+											limit = {
+												can_be_raided_safely = yes
+											}
+											add_to_list = raid_counties
+										}
+										add_to_list = newest_raid_counties
+									}
+									remove_from_list = new_raid_counties
+								}
+								every_in_list = {
+									list = newest_raid_counties
+									add_to_list = new_raid_counties
+									remove_from_list = newest_raid_counties
 								}
 							}
 						}
-						holder = {
-							any_liege_or_above = {
-								OR = {
-									OR = {
-										is_allied_to = root
-										has_raid_immunity_against = root
+						else = {
+							while = {
+								count = raid_radius
+								every_in_list = {
+									list = new_raid_counties
+									every_title_to_title_neighboring_and_across_water_county = {
+										limit = {
+											NOT = {
+												is_in_list = raid_counties
+											}
+										}
+										if = {
+											limit = {
+												can_be_raided_safely = yes
+											}
+											add_to_list = raid_counties
+										}
+										add_to_list = newest_raid_counties
 									}
-									root = {
-										has_truce = prev
-									}
+									remove_from_list = new_raid_counties
+								}
+								every_in_list = {
+									list = newest_raid_counties
+									add_to_list = new_raid_counties
+									remove_from_list = newest_raid_counties
 								}
 							}
 						}
+
+						remove_from_list = raid_counties
 					}
-				}
-				every_county_province = {
-					limit = { has_holding = yes }
-					add_to_list = raid_targets
 				}
 			}
 
@@ -769,6 +802,44 @@ raid_targets = {
 				root = {
 					add_to_variable_list = {
 						name = raid_targets
+						target = prev
+					}
+				}
+			}
+
+			scope:army.location = {
+				every_in_list = {
+					variable = adjacent_counties
+					remove_from_list = raid_counties
+				}
+			}
+
+			ordered_in_list = {
+				list = raid_counties
+				order_by = loot_in_county
+				min = 0
+				# max = 10
+
+				root = {
+					add_to_variable_list = {
+						name = raid_counties
+						target = prev
+					}
+				}
+			}
+
+			ordered_in_list = {
+				list = raid_counties
+				order_by = {
+					value = squared_province_distance
+					multiply = -1
+				}
+				min = 0
+				# max = 10
+
+				root = {
+					add_to_variable_list = {
+						name = raid_counties_closest
 						target = prev
 					}
 				}
