@@ -233,8 +233,9 @@ widget = {
 								widget = {
 									visible = "[Outliner.IsCategoryShown('pinned_character')]"
 									state = {
-										name = close_outliner_categories
-										on_start = "[Outliner.ToggleCategory('pinned_character')]"
+										trigger_when = "[Is('close_outliner_categories')]"
+										name = close_me
+										on_finish = "[Outliner.ToggleCategory('pinned_character')]"
 									}
 								}
 
@@ -259,8 +260,7 @@ widget = {
 								}
 								blockoverride "extra" {
 									text_single = {
-										raw_text = ", [Select_CString(Outliner.IsCategoryShown('pinned_character'), 'Click to hide', 'Click to show')]"
-										align = left
+										raw_text = ", [CollapseIf(Not(Outliner.IsCategoryShown('pinned_character')))]"
 									}
 								}
 							}
@@ -330,8 +330,9 @@ widget = {
 								widget = {
 									visible = "[Outliner.IsCategoryShown('players')]"
 									state = {
-										name = close_outliner_categories
-										on_start = "[Outliner.ToggleCategory('players')]"
+										trigger_when = "[Is('close_outliner_categories')]"
+										name = close_me
+										on_finish = "[Outliner.ToggleCategory('players')]"
 									}
 								}
 
@@ -357,310 +358,446 @@ widget = {
 							}
 
 							vbox = {
-								name = "players"
-								datamodel = "[Outliner.GetPlayers]"
-								visible = "[And( Outliner.IsCategoryShown('players'), GameHasMultiplePlayers )]"
+								visible = "[GetPlayer.IsValid]"
 								layoutpolicy_horizontal = expanding
-								margin = { 8 5 }
-								spacing = 5
 
-								item = {
-									button_list = {
-										name = "player_button"
-										datacontext = "[OutlinerPlayer.GetCharacter]"
-										layoutpolicy_horizontal = expanding
-										size = { 0 40 }
+								vbox = {
+									name = "players"
+									datamodel = "[Outliner.GetPlayers]"
+									visible = "[And( Outliner.IsCategoryShown('players'), GameHasMultiplePlayers )]"
+									layoutpolicy_horizontal = expanding
+									margin = { 8 5 }
+									spacing = 5
 
-										enabled = "[Character.IsValid]"
-										onclick = "[DefaultOnCharacterClick(Character.GetID)]"
-										down = "[Character.IsShownInCharacterWindow]"
-										onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
-										button_ignore = none
+									item = {
+										button_list = {
+											name = "player_button"
+											datacontext = "[OutlinerPlayer.GetCharacter]"
+											layoutpolicy_horizontal = expanding
+											size = { 0 40 }
 
-										hbox = {
-											spacing = 5
-											margin = { 5 0 }
+											enabled = "[Character.IsValid]"
+											onclick = "[DefaultOnCharacterClick(Character.GetID)]"
+											down = "[Character.IsShownInCharacterWindow]"
+											onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
+											button_ignore = none
 
-											coa_realm_tiny = {
-												visible = "[Character.HasLandedTitles]"
+											hbox = {
+												spacing = 5
+												margin = { 5 0 }
+
+												coa_realm_tiny = {
+													visible = "[Character.HasLandedTitles]"
+												}
+
+												using = character_tooltip
+
+												using = tooltip_ws
+
+												text_single = {
+													name = "player_name"
+													layoutpolicy_horizontal = expanding
+													text = "[OutlinerPlayer.GetName]"
+													default_format = "#high"
+													using = Font_Size_Medium
+													align = left
+												}
 											}
+										}
+									}
+								}
 
-											using = character_tooltip
+								battles_categories = {
+									blockoverride "click" {
+										datacontext = "[Province.GetCounty.GetTitle]"
+										using = title_pan
+									}
+									blockoverride "distance" {
+										raw_text = "OutlinerProvinceDistance"
+									}
+								}
 
-											using = tooltip_ws
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									#TODO
 
+									button_outliner_header = {
+										name = "units_header"
+										layoutpolicy_horizontal = expanding
+										visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(Outliner.GetUnitItems)))]"
+
+
+										blockoverride "oh_button"
+										{
+											onclick = "[Outliner.ToggleCategory('unit')]"
+											oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+											clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+										}
+
+										widget = {
+											visible = "[Outliner.IsCategoryShown('unit')]"
+											state = {
+												trigger_when = "[Is('close_outliner_categories')]"
+												name = close_me
+												on_finish = "[Outliner.ToggleCategory('unit')]"
+											}
+										}
+
+										blockoverride "oh_name"
+										{
+											raw_text = ""
+										}
+										blockoverride "extra" {
 											text_single = {
-												name = "player_name"
-												layoutpolicy_horizontal = expanding
-												text = "[OutlinerPlayer.GetName]"
-												default_format = "#high"
-												using = Font_Size_Medium
+												visible = "[GreaterThan_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
+												raw_text = "[Outliner.GetCategoryItemsCount('unit')]"
+											}
+											text_single = {
+												raw_text = "army"
+												visible = "[EqualTo_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
+											}
+											text_single = {
+												raw_text = " armies"
+												visible = "[GreaterThan_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
+											}
+											text_single = {
+												raw_text = ", [CollapseIf(Not(Outliner.IsCategoryShown('unit')))]"
+												# visible = "[GreaterThan_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
 												align = left
 											}
 										}
+
+										blockoverride "oh_count"
+										{
+											raw_text = "Your"
+										}
+										blockoverride "expanded"
+										{
+											frame = "[BoolTo1And2(Outliner.IsCategoryShown('unit'))]"
+										}
+									}
+
+									expand = { }
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[And(Outliner.IsCategoryShown('unit'), GetPlayer.IsValid)]"
+
+									vbox = {
+										name = "units"
+										datamodel = "[Outliner.GetUnitItems]"
+										layoutpolicy_horizontal = expanding
+										margin = { 8 0 }
+
+										item = {
+											army_button_o = {
+												blockoverride "war_filter" {
+												}
+												blockoverride "context" {
+													datacontext = "[UnitItem.GetArmy]"
+												}
+												blockoverride "your_allies" {
+													visible = no
+												}
+												blockoverride "grouping" {
+												}
+												blockoverride "click" {
+													onclick = "[UnitItem.SelectAndPanUnit]"
+													onclick = "[ToggleGameView('outliner')]"
+													# # onclick = "[UnitItem.PanToUnit]"
+													onrightclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
+													# onrightclick = "[UnitItem.PanToUnit]"
+													down = "[UnitItem.IsSelected]"
+													button_ignore = none
+												}
+												# blockoverride "position" {
+												# 	visible = "[UnitItem.IsSelected]"
+												# }
+												# blockoverride "same_position" {
+												# 	visible = "[Not(UnitItem.IsSelected)]"
+												# }
+											}
+										}
+
+									}
+
+									vbox = {
+										visible = "[DataModelHasItems(Outliner.GetUnitItems)]"
+										layoutpolicy_horizontal = expanding
+										margin_left = 15
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											raw_text = "Numbers from 1 to 5 select your armies."
+										}
 									}
 								}
-							}
 
-							battles_categories = {
-								blockoverride "click" {
-									datacontext = "[Province.GetCounty.GetTitle]"
-									using = title_pan
-								}
-								blockoverride "distance" {
-									raw_text = "OutlinerProvinceDistance"
-								}
-							}
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									margin_top = 5
+									margin_left = 15
+									visible = "[And(GetScriptedGui('should_show_any_armies').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ), Or(Or(Isnt('hostiles_inside'), Isnt('hostiles_inside_liege')), Isnt('in_the_fog')))]"
 
-							hbox = {
-								layoutpolicy_horizontal = expanding
-								#TODO
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "Foreign armies."
+									}
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "Sorted [Select_CString(GetScriptedGui('army_sorting').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ), 'by size', 'by distance')], grouped by [GetPlayer.Custom('army_grouping')]."
+									}
+
+								}
+
+								outliner_armies = { }
 
 								button_outliner_header = {
-									name = "units_header"
+									name = "holdings_header"
 									layoutpolicy_horizontal = expanding
-									visible = "[And(GetPlayer.IsValid, Not(IsDataModelEmpty(Outliner.GetUnitItems)))]"
+									visible = "[GetPlayer.IsValid]"
 
+									blockoverride "button_expand_frame"
+									{
+										frame = "[BoolTo1And2(Outliner.IsCategoryShown('holding'))]"
+									}
 
 									blockoverride "oh_button"
 									{
-										onclick = "[Outliner.ToggleCategory('unit')]"
-										oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
-										clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+										onclick = "[Outliner.ToggleCategory('holding')]"
+										# tooltip = "[SelectLocalization( Outliner.IsCategoryShown('holding'), 'OUTLINER_COLLAPSE', 'OUTLINER_EXPAND' )]"
 									}
 
 									widget = {
-										visible = "[Outliner.IsCategoryShown('unit')]"
+										visible = "[Outliner.IsCategoryShown('holding')]"
+
 										state = {
-											name = close_outliner_categories
-											on_finish = "[Outliner.ToggleCategory('unit')]"
+											name = close_me
+											trigger_when = "[Is('close_outliner_categories')]"
+											on_finish = "[Outliner.ToggleCategory('holding')]"
 										}
 									}
 
+
 									blockoverride "oh_name"
 									{
-										raw_text = ""
+										text = "OUTLINER_HOLDINGS"
 									}
 									blockoverride "extra" {
 										text_single = {
-											visible = "[GreaterThan_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
-											raw_text = "[Outliner.GetCategoryItemsCount('unit')]"
-										}
-										text_single = {
-											raw_text = "army"
-											visible = "[EqualTo_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
-										}
-										text_single = {
-											raw_text = " armies"
-											visible = "[GreaterThan_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
-										}
-										text_single = {
-											raw_text = ", click to [Select_CString(Outliner.IsCategoryShown('unit'), 'hide', 'show')]"
-											# visible = "[GreaterThan_int32(GetDataModelSize(Outliner.GetUnitItems), '(int32)1')]"
-											align = left
+											raw_text = ", [CollapseIf(Not(Outliner.IsCategoryShown('holding')))]"
 										}
 									}
 
 									blockoverride "oh_count"
 									{
-										raw_text = "Your"
+										text = "[Outliner.GetCategoryItemsCount('holding')|V]"
 									}
+
 									blockoverride "expanded"
 									{
-										frame = "[BoolTo1And2(Outliner.IsCategoryShown('unit'))]"
+										frame = "[BoolTo1And2(Outliner.IsCategoryShown('holding'))]"
 									}
 								}
 
-								expand = { }
-							}
-
-							vbox = {
-								layoutpolicy_horizontal = expanding
-								visible = "[And(Outliner.IsCategoryShown('unit'), GetPlayer.IsValid)]"
-
 								vbox = {
-									name = "units"
-									datamodel = "[Outliner.GetUnitItems]"
+									name = "holdings"
+									datamodel = "[Outliner.GetHoldingItems]"
+									visible = "[Outliner.IsCategoryShown('holding')]"
 									layoutpolicy_horizontal = expanding
-									margin = { 8 0 }
+									margin = { 8 5 }
+									margin_bottom = 10
 
 									item = {
-										army_button_o = {
-											blockoverride "war_filter" {
-											}
-											blockoverride "context" {
-												datacontext = "[UnitItem.GetArmy]"
-											}
-											blockoverride "your_allies" {
-												visible = no
-											}
-											blockoverride "grouping" {
-											}
-											blockoverride "click" {
-												onclick = "[UnitItem.SelectAndPanUnit]"
-												onclick = "[ToggleGameView('outliner')]"
-												# # onclick = "[UnitItem.PanToUnit]"
-												onrightclick = "[DefaultOnCoatOfArmsRightClick(Army.GetLocation.GetCoATitle.GetID)]"
-												# onrightclick = "[UnitItem.PanToUnit]"
-												down = "[UnitItem.IsSelected]"
-												button_ignore = none
-											}
-											# blockoverride "position" {
-											# 	visible = "[UnitItem.IsSelected]"
-											# }
-											# blockoverride "same_position" {
-											# 	visible = "[Not(UnitItem.IsSelected)]"
-											# }
-										}
+										button_outliner_province = {}
 									}
-
 								}
+								# pinned provinces
 
 								vbox = {
 									layoutpolicy_horizontal = expanding
-									margin_left = 15
-									text_single = {
+									visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('outliner_provinces'))]"
+
+									button_outliner_header = {
 										layoutpolicy_horizontal = expanding
-										raw_text = "Numbers from 1 to 5 select your armies."
-									}
-								}
-							}
 
-
-							vbox = {
-								layoutpolicy_horizontal = expanding
-								margin_top = 5
-								margin_left = 15
-								visible = "[GetScriptedGui('should_show_any_armies').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									raw_text = "Foreign armies."
-								}
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									raw_text = "Sorted [Select_CString(GetScriptedGui('army_sorting').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ), 'by size', 'by distance')], grouped by [GetPlayer.Custom('army_grouping')]."
-								}
-
-							}
-
-							outliner_armies = { }
-
-							button_outliner_header = {
-								name = "holdings_header"
-								layoutpolicy_horizontal = expanding
-								visible = "[GetPlayer.IsValid]"
-
-								blockoverride "button_expand_frame"
-								{
-									frame = "[BoolTo1And2(Outliner.IsCategoryShown('holding'))]"
-								}
-
-								blockoverride "oh_button"
-								{
-
-									onclick = "[Outliner.ToggleCategory('holding')]"
-									# tooltip = "[SelectLocalization( Outliner.IsCategoryShown('holding'), 'OUTLINER_COLLAPSE', 'OUTLINER_EXPAND' )]"
-								}
-
-								widget = {
-									visible = "[Outliner.IsCategoryShown('holding')]"
-									state = {
-										name = close_outliner_categories
-										on_finish = "[Outliner.ToggleCategory('holding')]"
-									}
-								}
-
-								blockoverride "oh_name"
-								{
-									text = "OUTLINER_HOLDINGS"
-								}
-								blockoverride "extra" {
-									text_single = {
-										raw_text = ", click to [Select_CString(Outliner.IsCategoryShown('holding'), 'hide', 'show')]"
-									}
-								}
-
-								blockoverride "oh_count"
-								{
-									text = "[Outliner.GetCategoryItemsCount('holding')|V]"
-								}
-
-								blockoverride "expanded"
-								{
-									frame = "[BoolTo1And2(Outliner.IsCategoryShown('holding'))]"
-								}
-							}
-
-							vbox = {
-								name = "holdings"
-								datamodel = "[Outliner.GetHoldingItems]"
-								visible = "[Outliner.IsCategoryShown('holding')]"
-								layoutpolicy_horizontal = expanding
-								margin = { 8 5 }
-								margin_bottom = 10
-
-								item = {
-									button_list = {
-										name = "holding_item"
-										datacontext = "[OutlinerHoldingItem.GetTitle]"
-										datacontext = "[OutlinerHoldingItem.GetTitle.GetProvince.GetHolding]"
-										layoutpolicy_horizontal = expanding
-										size = { 0 25 }
-
-										onclick = "[OutlinerHoldingItem.OnClick]"
-										onclick = "[ToggleGameView('outliner')]"
-										down = "[Or(Holding.IsHoldingOrNonCapitalHoldingHovered, Holding.IsSelected)]"
-										# tooltipwidget = { holding_tooltip_click = { } }
-										# using = tooltip_ws
-										# using = Holding_Mouse_Entry
-										hbox = {
-											margin = { 5 0 }
-											layoutpolicy_horizontal = expanding
-											spacing = 3
-
-											hbox = {
-												text_single = {
-													name = "holding_name"
-													raw_text = "[Holding.GetProvince.GetNameNoTooltip],"
-												}
-											}
-
-											hbox = {
-												visible = "[Not(Holding.IsConstructionInProgress)]"
-
-												text_single = {
-													visible = "[GreaterThan_CFixedPoint(Holding.GetProvince.MakeScope.ScriptValue('free_building_slots_sval'), '(CFixedPoint)0')]"
-													raw_text = "Empty slots, [Holding.GetProvince.MakeScope.ScriptValue('free_building_slots_sval')]."
-												}
-											}
-
-											hbox = {
-												visible = "[Holding.IsConstructionInProgress]"
-												text_single = {
-													max_width = 300
-													name = "construction_name"
-													raw_text = "[Holding.GetConstructionProgress|0]% building [Holding.GetConstructionBuilding.GetNameNoTooltip]."
-												}
-											}
-
-											hbox = {
-												spacing = 3
-												# visible = "[Not(Holding.IsConstructionInProgress)]"
-
-												text_single = {
-													raw_text = "Tax, [Localize('HOLDING_TAX_VALUE')]."
-												}
-
-												text_single = {
-													raw_text = "Levies, [Holding.GetMaxLevySize]."
-												}
-											}
-
-											expand = { }
+										blockoverride "button_expand_frame"
+										{
 										}
 
+										blockoverride "oh_button"
+										{
+											onclick = "[Click('outliner_provinces')]"
+											oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+											clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+										}
+
+										state = {
+											name = close_outliner_categories
+											on_finish = "[Click('close_outliner_provinces')]"
+										}
+
+										blockoverride "oh_toggle_frame"
+										{
+										}
+
+										blockoverride "oh_name"
+										{
+											raw_text = "pinned province[Select_CString(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('outliner_provinces')), '(int32)1'), 's', '')],"
+											margin_right = 3
+										}
+
+										blockoverride "extra" {
+											text_single = {
+												raw_text = "[CollapseIf(Show('outliner_provinces'))]"
+											}
+										}
+
+										blockoverride "oh_count"
+										{
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('outliner_provinces'))]"
+										}
+										blockoverride "expanded"
+										{
+										}
+										blockoverride "o_dot" {
+											visible = no
+
+										}
+									}
+
+									vbox = {
+										datamodel = "[GetPlayer.MakeScope.GetList('outliner_provinces')]"
+										visible = "[Not(Show('outliner_provinces'))]"
+										layoutpolicy_horizontal = expanding
+										margin = { 8 0 }
+										spacing = -2
+
+										item = {
+											button_outliner_province = {
+												blockoverride "datacontext" {
+													datacontext = "[Scope.GetProvince]"
+													datacontext = "[Province.GetHolding]"
+													datacontext = "[Province.GetCounty.GetTitle]"
+													using = prov_click
+													# using = prov_pan_right
+													# button_ignore = none
+													onrightclick = "[ClickAdd('add_province_to_outliner', GetPlayer, Province)]"
+												}
+												blockoverride "county" {
+												}
+												blockoverride "sea" {
+
+												}
+											}
+										}
+									}
+
+									text_single = {
+										visible = "[Not(Show('outliner_provinces'))]"
+										layoutpolicy_horizontal = expanding
+										raw_text = "Right click to unpin."
+										margin_left = 10
+									}
+								}
+
+								# pinned titles
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('outliner_titles'))]"
+
+									button_outliner_header = {
+										layoutpolicy_horizontal = expanding
+
+										blockoverride "button_expand_frame"
+										{
+										}
+
+										blockoverride "oh_button"
+										{
+											onclick = "[Click('outliner_titles')]"
+											oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+											clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+										}
+
+										state = {
+											name = close_outliner_categories
+											on_finish = "[Click('close_outliner_titles')]"
+										}
+
+										blockoverride "oh_toggle_frame"
+										{
+										}
+
+										blockoverride "oh_name"
+										{
+											raw_text = "pinned title[Select_CString(GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('outliner_titles')), '(int32)1'), 's', '')],"
+											margin_right = 3
+										}
+
+										blockoverride "extra" {
+											text_single = {
+												raw_text = "[CollapseIf(Show('outliner_titles'))]"
+											}
+										}
+
+										blockoverride "oh_count"
+										{
+											raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('outliner_titles'))]"
+										}
+										blockoverride "expanded"
+										{
+										}
+										blockoverride "o_dot" {
+											visible = no
+
+										}
+									}
+
+									vbox = {
+										datamodel = "[GetPlayer.MakeScope.GetList('outliner_titles')]"
+										visible = "[Not(Show('outliner_titles'))]"
+										layoutpolicy_horizontal = expanding
+										margin = { 8 0 }
+										spacing = -2
+
+										item = {
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												using = title_click
+												onclick = "[ToggleGameView('outliner')]"
+												onrightclick = "[ClickAdd('add_title_to_outliner', GetPlayer, Title)]"
+												datacontext = "[Scope.Title]"
+											    blockoverride "text" {
+											        raw_text = "[Title.GetNameNoTooltip],"
+											    }
+												blockoverride "extra" {
+													char_name = {
+														blockoverride "pre" {
+															text_single = {
+																raw_text = "held by"
+															}
+														}
+														visible = [Character.IsValid]
+														datacontext = "[Title.GetHolder]"
+													}
+													text_single = {
+														datacontext = "[Title.GetHolder]"
+														visible = "[Not(Character.IsValid)]"
+														raw_text = "not created."
+													}
+												}
+											}
+										}
+									}
+
+									text_single = {
+										visible = "[Not(Show('outliner_titles'))]"
+										layoutpolicy_horizontal = expanding
+										raw_text = "Right click to unpin."
+										margin_left = 10
 									}
 								}
 							}
@@ -687,6 +824,7 @@ widget = {
 						raw_text = "Close all categories, E."
 					}
 					onclick = "[PdxGuiTriggerAllAnimations('close_outliner_categories')]"
+					onclick = "[Set('close_outliner_categories', 'yes')]"
 					shortcut = map_mode_1
 				}
 
@@ -856,6 +994,7 @@ widget = {
 types OCR {
 	type button_outliner_header = button_tab {
 		size = { 0 31 }
+		onclick = "[Clear('close_outliner_categories')]"
 
 		block "oh_button" { }
 
@@ -905,8 +1044,10 @@ types OCR {
 			}
 
 			text_single = {
-				# margin_left = -5
 				align = left
+				block "o_dot" {
+					visible = no
+				}
 				raw_text = "."
 			}
 
@@ -1654,7 +1795,7 @@ types OCR {
 
 			state = {
 				name = close_outliner_categories
-				on_start = "[GetVariableSystem.Set('hostiles_inside', 'yes')]"
+				on_finish = "[GetVariableSystem.Set('hostiles_inside', 'yes')]"
 			}
 
 			blockoverride "oh_toggle_frame"
@@ -1673,7 +1814,7 @@ types OCR {
 					visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside')), '(int32)1')]"
 				}
 				text_single = {
-					raw_text = ", click to [Select_CString(GetVariableSystem.Exists('hostiles_inside'), 'show', 'hide')]"
+					raw_text = ", [Collapse('hostiles_inside')]"
 					# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside')), '(int32)1')]"
 				}
 			}
@@ -1720,7 +1861,7 @@ types OCR {
 
 			state = {
 				name = close_outliner_categories
-				on_start = "[GetVariableSystem.Set('hostiles_inside_liege', 'yes')]"
+				on_finish = "[GetVariableSystem.Set('hostiles_inside_liege', 'yes')]"
 			}
 
 			blockoverride "oh_toggle_frame"
@@ -1739,7 +1880,7 @@ types OCR {
 					visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside_liege')), '(int32)1')]"
 				}
 				text_single = {
-					raw_text = ", click to [Select_CString(GetVariableSystem.Exists('hostiles_inside_liege'), 'show', 'hide')]"
+					raw_text = ", [Collapse('hostiles_inside_liege')]"
 					# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_inside')), '(int32)1')]"
 				}
 			}
@@ -1786,7 +1927,7 @@ types OCR {
 
 			state = {
 				name = close_outliner_categories
-				on_start = "[GetVariableSystem.Set('hostiles_outside', 'yes')]"
+				on_finish = "[GetVariableSystem.Set('hostiles_outside', 'yes')]"
 			}
 
 			blockoverride "oh_toggle_frame"
@@ -1805,7 +1946,7 @@ types OCR {
 					visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_outside')), '(int32)1')]"
 				}
 				text_single = {
-					raw_text = ", click to [Select_CString(GetVariableSystem.Exists('hostiles_outside'), 'show', 'hide')]"
+					raw_text = ", [Collapse('hostiles_outside')]"
 					align = left
 					# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('hostiles_outside')), '(int32)1')]"
 				}
@@ -1853,7 +1994,7 @@ types OCR {
 
 			state = {
 				name = close_outliner_categories
-				on_start = "[GetVariableSystem.Set('in_the_fog', 'yes')]"
+				on_finish = "[GetVariableSystem.Set('in_the_fog', 'yes')]"
 			}
 
 			blockoverride "oh_toggle_frame"
@@ -1872,7 +2013,7 @@ types OCR {
 					# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('in_the_fog')), '(int32)1')]"
 				}
 				text_single = {
-					raw_text = ", click to [Select_CString(GetVariableSystem.Exists('in_the_fog'), 'show', 'hide')]"
+					raw_text = ", [Collapse('in_the_fog')]"
 					# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('in_the_fog')), '(int32)1')]"
 				}
 			}
@@ -1929,7 +2070,7 @@ types OCR {
 
 			state = {
 				name = close_outliner_categories
-				on_start = "[GetVariableSystem.Set('allies', 'yes')]"
+				on_finish = "[GetVariableSystem.Set('allies', 'yes')]"
 			}
 
 			blockoverride "oh_toggle_frame"
@@ -1949,7 +2090,7 @@ types OCR {
 					visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('allied_units')), '(int32)1')]"
 				}
 				text_single = {
-					raw_text = ", click to [Select_CString(GetVariableSystem.Exists('allies'), 'show', 'hide')]"
+					raw_text = ", [Collapse('allies')]"
 					align = left
 					# visible = "[GreaterThan_int32(GetDataModelSize(GetPlayer.MakeScope.GetList('allied_units')), '(int32)1')]"
 				}
@@ -2002,6 +2143,99 @@ local_template character_tooltip
 
 
 types Outliner {
+
+	type button_outliner_province = button_text {
+		block "datacontext" {
+			datacontext = "[OutlinerHoldingItem.GetTitle]"
+			datacontext = "[OutlinerHoldingItem.GetTitle.GetProvince]"
+			datacontext = "[OutlinerHoldingItem.GetTitle.GetProvince.GetHolding]"
+			onclick = "[OutlinerHoldingItem.OnClick]"
+		}
+		onclick = "[ToggleGameView('outliner')]"
+
+		layoutpolicy_horizontal = expanding
+
+
+		blockoverride "extra" {
+			text_single = {
+				visible = "[Holding.IsEmpty]"
+				raw_text = "[Province.GetNameNoTooltip], [Province.GetTerrain.GetNameNoTooltip],"
+			}
+
+			text_single = {
+				visible = "[Not(Holding.IsEmpty)]"
+				raw_text = "[Holding.GetNameNoTooltip],"
+			}
+
+			flowcontainer = {
+				ignoreinvisible = yes
+				block "county" {
+					visible = no
+				}
+				text_single = {
+					visible = "[Title.IsValid]"
+					raw_text = "in [Title.GetNameNoTierNoTooltip]."
+				}
+			}
+
+			flowcontainer = {
+				ignoreinvisible = yes
+				spacing = 3
+				visible = "[ShowRoot('is_land', Province)]"
+
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					visible = "[Holding.IsConstructionInProgress]"
+					text_single = {
+						max_width = 300
+						name = "construction_name"
+						raw_text = "[Holding.GetConstructionProgress|0]% building [Holding.GetConstructionBuilding.GetNameNoTooltip]."
+					}
+				}
+
+				flowcontainer = {
+					visible = "[Not(Holding.IsEmpty)]"
+					ignoreinvisible = yes
+					spacing = 3
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						visible = "[Not(Holding.IsConstructionInProgress)]"
+
+						text_single = {
+							visible = "[GreaterThan_CFixedPoint(Holding.GetProvince.MakeScope.ScriptValue('free_building_slots_sval'), '(CFixedPoint)0')]"
+							raw_text = "[Holding.GetProvince.MakeScope.ScriptValue('free_building_slots_sval')] empty slots."
+						}
+					}
+					# visible = "[Not(Holding.IsConstructionInProgress)]"
+
+					text_single = {
+						raw_text = "Tax, [Holding.GetIncome|1]."
+					}
+
+					text_single = {
+						raw_text = "Levies, [Holding.GetMaxLevySize]."
+					}
+				}
+			}
+
+		}
+
+		button = {
+			visible = "[Not(ShowRoot('is_land', Province))]"
+			size = { 100% 100% }
+			onclick = "[Set('extra_window', 'window_sea')]"
+			onclick = "[ClickAdd('window_sea', GetPlayer, Scope.GetProvince)]"
+			onclick = "[GetScriptedGui('province_adjacencies').Execute( GuiScope.SetRoot( Scope.GetProvince.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).End )]"
+			onclick = "[GetScriptedGui('find_closest').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Scope.GetProvince.MakeScope).End )]"
+			onclick = "[ToggleGameView('outliner')]"
+			onclick = "[Scope.GetProvince.PanCameraTo]"
+			button_ignore = none
+			onrightclick = "[ClickAdd('add_province_to_outliner', GetPlayer, Province)]"
+			# onrightclick = "[Scope.GetProvince.PanCameraTo]"
+		}
+	}
 	type outliner_pinned_characters_header = button_outliner_header {
 		name = "pinned_characters_header"
 		layoutpolicy_horizontal = expanding

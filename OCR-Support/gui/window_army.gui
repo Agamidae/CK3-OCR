@@ -1482,10 +1482,9 @@ window = {
 										}
 										text_single = {
 											margin_left = -3
-											raw_text = ", Control A or 4."
+											raw_text = ", Control A."
 										}
 									}
-									shortcut = speed_4
 									shortcut = map_mode_6
 									onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( Army.GetLocation.GetCounty.GetTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', Army.GetLocation.MakeScope).End )]"
 									onclick = "[GetVariableSystem.Set('army_tabs', 'adjacencies')]"
@@ -1499,13 +1498,23 @@ window = {
 									}
 									blockoverride "extra" {
 										text_single = {
-											raw_text = ", hotkey 5."
+											raw_text = ", hotkey 4."
 										}
 									}
-									shortcut = speed_5
+									shortcut = speed_4
 									onclick = "[GetScriptedGui('army_holdings').Execute( GuiScope.SetRoot( Army.MakeScope ).AddScope( 'province', Army.GetLocation.MakeScope ).End )]"
 									onclick = "[GetVariableSystem.Set('army_tabs', 'holdings')]"
 									onclick = "[GetVariableSystem.Set('army_county', Army.GetLocation.GetTitle.GetNameNoTierNoTooltip )]"
+								}
+
+								button_text = {
+									visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('outliner_provinces'))]"
+									layoutpolicy_horizontal = expanding
+									shortcut = speed_5
+									onclick = "[GetVariableSystem.Set('army_tabs', 'pinned provinces')]"
+								    blockoverride "text" {
+								        raw_text = "View pinned provinces, hotkey 5."
+								    }
 								}
 							}
 
@@ -2988,7 +2997,7 @@ window = {
 													visible = "[Show('raid_radius_minus')]"
 													shortcut = zoom_in
 												    blockoverride "text" {
-												        raw_text = "Increase radius, Page Down."
+												        raw_text = "Decrease radius, Page Down."
 												    }
 												}
 
@@ -3087,7 +3096,7 @@ window = {
 												item = {
 													button_text = {
 														layoutpolicy_horizontal = expanding
-														using = send_army_click
+														using = send_army_click_province
 														datacontext = "[Scope.GetProvince]"
 														blockoverride "pre" {
 
@@ -3125,7 +3134,7 @@ window = {
 												item = {
 													button_text = {
 														layoutpolicy_horizontal = expanding
-														using = send_army_click
+														using = send_army_click_province
 														datacontext = "[Scope.GetProvince]"
 														blockoverride "pre" {
 
@@ -3191,6 +3200,7 @@ window = {
 												layoutpolicy_horizontal = expanding
 												datamodel = "[Army.GetLocation.MakeScope.GetList('adjacent_holdings')]"
 												button_checked_text = {
+													visible = "[Army.IsRaidArmy]"
 													onclick = "[Click('lootable_sort')]"
 													onclick = "[GetScriptedGui('province_adjacencies').Execute( GuiScope.SetRoot( Army.GetLocation.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).End )]"
 													layoutpolicy_horizontal = expanding
@@ -3396,6 +3406,20 @@ window = {
 											item = {
 												resupply_item = { }
 											}
+										}
+									}
+
+									vbox = {
+										alwaystransparent = no
+										background = { using = Background_Area_Border_Solid margin = { 20 20 } }
+										layoutpolicy_horizontal = expanding
+										visible = "[Has('army_tabs', 'pinned provinces')]"
+
+										datamodel = "[GetPlayer.MakeScope.GetList('outliner_provinces')]"
+
+
+										item = {
+											button_province_army = {}
 										}
 									}
 
@@ -4802,6 +4826,69 @@ types ArmyWindow
 		}
 	}
 
+	type button_province_army = button_text {
+		layoutpolicy_horizontal = expanding
+		datacontext = "[Scope.GetProvince]"
+		datacontext = "[Province.GetHolding]"
+		using = send_army_click
+		blockoverride "extra" {
+			text_single = {
+				visible = "[And(And(Army.IsRaidArmy, Not(Holding.IsEmpty)), Not(ObjectsEqual(Character.Self, GetPlayer.GetTopLiege)))]" #TODO add immunity
+				datacontext = "[Province.GetCounty.GetTitle.GetHolder.GetTopLiege]"
+				raw_text = "[Province.GetRaidLoot|0] loot,"
+			}
+
+			flowcontainer = {
+			    ignoreinvisible = yes
+				direction = vertical
+				visible = "[ShowRoot('is_land', Province)]"
+
+				text_single = {
+					visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('province', Province.MakeScope).ScriptValue('potential_enemies_in_the_province'), '(CFixedPoint)0')]"
+					raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('province', Province.MakeScope).ScriptValue('potential_enemies_in_the_province')] owner's men."
+				}
+
+				text_single = {
+					visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('province', Province.MakeScope).ScriptValue('enemies_in_the_province'), '(CFixedPoint)0')]"
+					raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope('province', Province.MakeScope).ScriptValue('enemies_in_the_province')] enemies."
+				}
+			}
+
+			text_single = {
+				raw_text = "[Select_CString(Holding.IsEmpty, Province.GetTerrain.GetNameNoTooltip, Holding.GetPrimaryBuildingType.GetTypeName)] of [Holding.GetNameNoTooltip],"
+			}
+			text_single = {
+				visible = "[Not(ObjectsEqual(Army.GetLocation.GetID, Province.GetID))]"
+				raw_text = "[DistanceTo(Army.GetLocation, Province)|0] [DaysTo(Army.GetLocation, Province)] [Direction(Army.GetLocation, Province)],"
+			}
+			flowcontainer = {
+			    ignoreinvisible = yes
+			    direction = vertical
+				visible = "[ShowRoot('is_land', Province)]"
+
+				text_single = {
+					datacontext = "[Province.GetCounty.GetTitle.GetHolder.GetTopLiege]"
+					visible = "[Not(ObjectsEqual(Character.Self, GetPlayer.GetTopLiege))]"
+					raw_text = "in [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+				}
+				text_single = {
+					datacontext = "[Province.GetCounty.GetTitle.GetHolder.GetTopLiege]"
+					visible = "[ObjectsEqual(Character.Self, GetPlayer.GetTopLiege))]"
+					raw_text = "in your realm."
+				}
+			}
+			container = {
+				ignoreinvisible = yes
+				visible = "[And(Army.IsRaidArmy, Not(Holding.IsEmpty))]"
+				text_single = {
+					datacontext = "[Province.GetCounty.GetTitle.GetHolder.GetTopLiege]"
+					visible = "[Not(ObjectsEqual(Character.Self, GetPlayer.GetTopLiege))]"
+					raw_text = "Owner has [Round( Character.MakeScope.ScriptValue('current_military_strength_sval'))] men."
+				}
+			}
+		}
+	}
+
 	type multi_unit_button = button {
 		gfxtype = updownframedbuttongfx
 		framesize = { 50 50 }
@@ -5548,7 +5635,12 @@ types ArmyWindow
 		}
 	}
 }
-
+template send_army_click_province {
+	onclick = "[Province.PanCameraTo]"
+	onrightclick = "[Province.PanCameraTo]"
+	onclick = "[GetVariableSystem.Set('sending_army', Province.GetNameNoTooltip)]"
+	onclick = "[PdxGuiTriggerAllAnimations('hide_army_window')]"
+}
 
 template send_army_click {
 	onclick = "[Province.PanCameraTo]"
