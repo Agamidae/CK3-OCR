@@ -22,6 +22,7 @@
 	state = {
 		name = _hide
 		on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
+		on_finish = "[GetScriptedGui('clear_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 	}
 
 	state = {
@@ -50,7 +51,9 @@
 	state = {
 		name = order_origins
 		delay = 0.3
-		on_finish = "[GetScriptedGui('order_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		block "order_finish" {
+			on_finish = "[GetScriptedGui('order_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		}
 		on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetID)]"
 		using = Sound_WindowShow_Standard
 	}
@@ -113,18 +116,10 @@ types OCR {
 	type vbox_select_from_map = vbox {
 		layoutpolicy_horizontal = expanding
 		layoutpolicy_vertical = expanding
-		using = ocr_margins
-
-		button_text = {
-			layoutpolicy_horizontal = expanding
-			blockoverride "text" {
-				raw_text = "Refresh, Shift E."
-			}
-			shortcut = map_mode_11
-			block "refresh" {
-				onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
-			}
+		block "gap" {
+			using = ocr_margins
 		}
+
 		vbox = {
 			layoutpolicy_horizontal = expanding
 			block "debug" {
@@ -172,7 +167,7 @@ types OCR {
 		}
 
 		hbox = {
-		    layoutpolicy_horizontal = expanding
+			layoutpolicy_horizontal = expanding
 			spacing = 3
 
 			text_single = {
@@ -183,144 +178,231 @@ types OCR {
 
 			block "sorting" {}
 
+			expand = { }
+		}
+
+		hbox = {
+		    layoutpolicy_horizontal = expanding
+
+			button_text = {
+				block "filters" {
+					visible = no
+				}
+				shortcut = army_split_half
+				blockoverride "text" {
+					raw_text = "Filter"
+				}
+				blockoverride "extra" {
+					block "filtered" {}
+					text_single = {
+						margin_left = -3
+						raw_text = ", F."
+					}
+				}
+			}
+
+			block "reset_filters" {}
+
+
 		    expand = { }
 		}
 
-		vbox = {
+
+		block "select_all" {}
+
+		scrollbox = {
+			layoutpolicy_vertical = expanding
 			layoutpolicy_horizontal = expanding
-			datamodel = "[GetPlayer.MakeScope.GetList('maa_origins')]"
 
-			item = {
+			blockoverride "scrollbox_content" {
 				vbox = {
-					block "maa" {
-						visible = "[Not(Province.GetMaaOriginHere.IsValid)]"
-					}
 					layoutpolicy_horizontal = expanding
-					datacontext = "[Scope.GetProvince]"
-
-					#TODO hide screen
-
-					button_text = {
-						block "target click" { }
-						onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
-						onclick = "[GetVariableSystem.Set('station_regiment', Province.GetNameNoTooltip)]"
-						onclick = "[PdxGuiTriggerAllAnimations('hide_maa_window')]"
+					vbox = {
 						layoutpolicy_horizontal = expanding
+						datamodel = "[GetPlayer.MakeScope.GetList('maa_origins')]"
 
-						shortcuts_list = {
-							blockoverride "click" {
-								block "target click" { }
-								onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
-								onclick = "[GetVariableSystem.Set('station_regiment', Province.GetNameNoTooltip)]"
-								onclick = "[PdxGuiTriggerAllAnimations('hide_maa_window')]"
-							}
-						}
-
-
-						blockoverride "pre" {
-
-							text_single = {
-								block "number" {
+						item = {
+							vbox = {
+								block "maa" {
+									visible = "[Not(Province.GetMaaOriginHere.IsValid)]"
 								}
-								raw_text = "[IndexNumber],"
-							}
+								layoutpolicy_horizontal = expanding
+								datacontext = "[Scope.GetProvince]"
 
-							block "pre_pre" {} # I know, shush
+								#TODO hide screen
 
-							block "maa" {
-								text_single = {
-									visible = "[ObjectsEqual(Regiment.GetOriginProvince, Scope.GetProvince)]"
-									raw_text = "Current station:"
+								button_text = {
+									block "target click" { }
+									block "select_from_menu" {
+										onclick = "[GetVariableSystem.Set('selected_map_target', Province.GetNameNoTooltip)]"
+									}
+									onmousehierarchyenter = "[GetVariableSystem.Set('preview_map_target', Province.GetNameNoTooltip)]"
+									onmousehierarchyleave = "[Clear('preview_map_target')]"
+									block "select" {
+										onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+										onclick = "[GetVariableSystem.Set('station_regiment', Province.GetNameNoTooltip)]"
+										onclick = "[PdxGuiTriggerAllAnimations('hide_maa_window')]"
+									}
+									onrightclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+									layoutpolicy_horizontal = expanding
+
+									raw_tooltip = "[Get('target_tooltip')]"
+
+									shortcuts_list = {
+										blockoverride "click" {
+											block "target click" { }
+											block "select_from_menu" {
+												onclick = "[GetVariableSystem.Set('selected_map_target', Province.GetNameNoTooltip)]"
+											}
+											block "select" {
+												onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+												onclick = "[GetVariableSystem.Set('station_regiment', Province.GetNameNoTooltip)]"
+												onclick = "[PdxGuiTriggerAllAnimations('hide_maa_window')]"
+											}
+										}
+									}
+
+									button = {
+										visible = "[ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation)]"
+										shortcut = go_to_capital
+										block "target click" { }
+										block "select_from_menu" {
+											onclick = "[GetVariableSystem.Set('selected_map_target', Province.GetNameNoTooltip)]"
+										}
+										block "select" {
+											onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+											onclick = "[GetVariableSystem.Set('station_regiment', Province.GetNameNoTooltip)]"
+											onclick = "[PdxGuiTriggerAllAnimations('hide_maa_window')]"
+										}
+									}
+
+									blockoverride "pre" {
+										text_single = {
+											block "number" {
+											}
+											raw_text = "[IndexNumber],"
+										}
+
+										block "pre_pre" {} # I know, shush
+
+										block "holder" {}
+										block "maa" {
+											text_single = {
+												visible = "[ObjectsEqual(Regiment.GetOriginProvince, Scope.GetProvince)]"
+												raw_text = "Current station:"
+											}
+										}
+									}
+
+
+									blockoverride "text" {
+										block "province" {}
+										raw_text = "[Province.GetNameNoTooltip]."
+									}
+
+									blockoverride "extra" {
+										block "distance" {
+											text_single = {
+												visible = "[Not(ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation))]"
+												raw_text = "OutlinerProvinceDistance"
+											}
+											text_single = {
+												visible = "[ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation)]"
+												raw_text = "Your capital, hotkey Home."
+											}
+										}
+										block "extra_extra" {}
+									}
+								}
+
+								block "travel" { }
+
+								block "maa" {
+									vbox_maa_province_stats_numbers = {
+										layoutpolicy_horizontal = expanding
+									}
 								}
 							}
 						}
-
-
-						blockoverride "text" {
-							raw_text = "[Province.GetNameNoTooltip]."
-						}
-
-						blockoverride "extra" {
-							text_single = {
-								visible = "[Not(ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation))]"
-								raw_text = "OutlinerProvinceDistance"
-							}
-							text_single = {
-								visible = "[ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation)]"
-								raw_text = "Your capital."
-							}
-						}
-
-						block "extra_extra" {}
 					}
-
-					block "travel" { }
 
 					block "maa" {
-						vbox_maa_province_stats_numbers = {
+						vbox = {
 							layoutpolicy_horizontal = expanding
+							datamodel = "[GetPlayer.MakeScope.GetList('maa_origins')]"
+
+							item = {
+								vbox = {
+									visible = "[Province.GetMaaOriginHere.IsValid]"
+									layoutpolicy_horizontal = expanding
+									datacontext = "[Scope.GetProvince]"
+
+									button_text = {
+										onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
+										onclick = "[GetVariableSystem.Set('station_regiment', Province.GetNameNoTooltip)]"
+										onclick = "[PdxGuiTriggerAllAnimations('hide_maa_window')]"
+										layoutpolicy_horizontal = expanding
+
+										blockoverride "text" {
+											raw_text = "[Province.GetNameNoTooltip]."
+										}
+										blockoverride "pre" {
+											text_single = {
+												visible = "[ObjectsEqual(Regiment.GetOriginProvince, Scope.GetProvince)]"
+												raw_text = "Current station:"
+											}
+										}
+
+										blockoverride "extra" {
+											flowcontainer = {
+												ignoreinvisible = yes
+												visible = "[Not(ObjectsEqual(Regiment.GetOriginProvince, Scope.GetProvince))]"
+
+												text_single = {
+													visible = "[Province.GetMaaOriginHere.IsValid]"
+													raw_text = "Already used by [Province.GetMaaOriginHere.GetName]."
+												}
+												text_single = {
+													visible = "[Not(ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation))]"
+													raw_text = "OutlinerProvinceDistance"
+												}
+												text_single = {
+													visible = "[ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation)]"
+													raw_text = "Your capital."
+												}
+											}
+										}
+
+									}
+
+									vbox_maa_province_stats_numbers = {
+										layoutpolicy_horizontal = expanding
+									}
+								}
+							}
 						}
 					}
 				}
 			}
 		}
 
-		block "maa" {
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				datamodel = "[GetPlayer.MakeScope.GetList('maa_origins')]"
-
-				item = {
-					vbox = {
-						visible = "[Province.GetMaaOriginHere.IsValid]"
-						layoutpolicy_horizontal = expanding
-						datacontext = "[Scope.GetProvince]"
-
-						button_text = {
-							onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetCoATitle.GetID)]"
-							onclick = "[GetVariableSystem.Set('station_regiment', Province.GetNameNoTooltip)]"
-							onclick = "[PdxGuiTriggerAllAnimations('hide_maa_window')]"
-							layoutpolicy_horizontal = expanding
-
-							blockoverride "text" {
-								raw_text = "[Province.GetNameNoTooltip]."
-							}
-							blockoverride "pre" {
-								text_single = {
-									visible = "[ObjectsEqual(Regiment.GetOriginProvince, Scope.GetProvince)]"
-									raw_text = "Current station:"
-								}
-							}
-
-							blockoverride "extra" {
-								flowcontainer = {
-									ignoreinvisible = yes
-									visible = "[Not(ObjectsEqual(Regiment.GetOriginProvince, Scope.GetProvince))]"
-
-									text_single = {
-										visible = "[Province.GetMaaOriginHere.IsValid]"
-										raw_text = "Already used by [Province.GetMaaOriginHere.GetName]."
-									}
-									text_single = {
-										visible = "[Not(ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation))]"
-										raw_text = "OutlinerProvinceDistance"
-									}
-									text_single = {
-										visible = "[ObjectsEqual(Scope.GetProvince, GetPlayer.GetCapitalLocation)]"
-										raw_text = "Your capital."
-									}
-								}
-							}
-
-						}
-
-						vbox_maa_province_stats_numbers = {
-							layoutpolicy_horizontal = expanding
-						}
-					}
-				}
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			blockoverride "text" {
+				raw_text = "Refresh, Shift E."
+			}
+			shortcut = map_mode_11
+			block "refresh" {
+				onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
 			}
 		}
+
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			raw_text = "View tooltips for more information."
+		}
+		block "tip" {}
 
 		expand = { }
 	}

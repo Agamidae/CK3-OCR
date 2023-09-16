@@ -1,0 +1,912 @@
+﻿window = {
+	name = "travel_route_edit_window"
+	movable = no
+	using = base_ocr_window
+	layer = middle
+
+	state = {
+		name = hide_maa_window
+		position = { -1500 0 }
+	}
+	state = {
+		name = show_maa_window
+		position = { 0 0 }
+	}
+
+	datacontext = "[TravelRouteEditWindow.GetTravelPlanData]"
+
+	window_ocr = {
+		blockoverride "ocr_header" {
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[TravelRouteEditWindow.IsSelectingProvince]"
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "Select a detour"
+				}
+
+				# button_text = {
+				# 	layoutpolicy_horizontal = expanding
+				# 	onclick = "[ClickAdd('grab_points_of_interest', GetPlayer, TravelPlanDestination.GetProvince)]"
+				# 	shortcut = map_mode_11
+				#     blockoverride "text" {
+				#         raw_text = "Reload, Shift E."
+				#     }
+				# }
+				button_text = {
+					shortcut = close_window
+					layoutpolicy_horizontal = expanding
+					onclick = "[TravelRouteEditWindow.StopProvinceSelection]"
+				    blockoverride "text" {
+				        raw_text = "CANCEL"
+				    }
+					blockoverride "extra" {
+						text_single = {
+							raw_text = ", Escape."
+						}
+					}
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Not(TravelRouteEditWindow.IsSelectingProvince)]"
+				header_pattern = {
+					layoutpolicy_horizontal = expanding
+
+					blockoverride "header_text"
+					{
+						text = "TRAVEL_EDIT_ROUTE_HEADER"
+					}
+
+					blockoverride "button_close"
+					{
+						onclick = "[TravelRouteEditWindow.Close]"
+						shortcut = "close_window"
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					text_multi_wide = {
+						name = "error_text"
+						visible = "[Not( TravelRouteEditWindow.IsRouteValid )]"
+
+						text = "[TravelRouteEditWindow.GetRouteValidDesc]"
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						button_primary_text = {
+							layoutpolicy_horizontal = expanding
+							visible = "[TravelRouteEditWindow.HasTravelStarted]"
+							blockoverride "text" {
+								text = CANCEL
+							}
+							onclick = "[TravelRouteEditWindow.Close]"
+						}
+
+						button_primary_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "disabled" {
+								visible = "[Not(TravelRouteEditWindow.IsRouteValid)]"
+							}
+							blockoverride "text" {
+								text = APPLY
+							}
+							enabled = "[TravelRouteEditWindow.IsRouteValid]"
+							onclick = "[TravelRouteEditWindow.ApplyChanges]"
+							onclick = "[TravelRouteEditWindow.Close]"
+
+						}
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						text = "[SelectLocalization(TravelPlanData.HasNextDestination, 'ACTIVITY_DESTINATION_TOTAL_TRAVEL_TIME', 'ACTIVITY_DESTINATION_NO_TRAVEL_TIME')]"
+					}
+				}
+			}
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				# visible = "[Not(TravelRouteEditWindow.IsSelectingProvince)]"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				scrollbox = {
+					name = "route_scroll"
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+
+					blockoverride "scrollbox_content"
+					{
+
+						button_fixed_departure_ocr = {
+							layoutpolicy_horizontal = expanding
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							datamodel = "[TravelPlanData.GetDestinations]"
+
+
+							text_single = {
+								visible = "[Isnt('adding_poi_here')]"
+								layoutpolicy_horizontal = expanding
+								raw_text = "[GetDataModelSize(TravelPlanData.GetDestinations)] destinations:"
+							}
+
+							item = {
+								vbox = {
+									layoutpolicy_horizontal = expanding
+
+									vbox = {
+										name = "detours_between_destinations"
+										visible = "[Not( IsDataModelEmpty( TravelPlanDestination.GetWaypoints ) )]"
+
+										layoutpolicy_horizontal = expanding
+										datamodel = "[TravelPlanDestination.GetWaypoints]"
+
+										text_single = {
+											visible = "[Not(TravelRouteEditWindow.IsSelectingProvince)]"
+											layoutpolicy_horizontal = expanding
+											raw_text = "[GetDataModelSize(TravelPlanDestination.GetWaypoints)] Detours:"
+										}
+
+										item = {
+											vbox = {
+												layoutpolicy_horizontal = expanding
+												# visible = Not(TravelRouteEditWindow.IsSelectingProvince)
+
+												hbox_added_detour_ocr = {
+													layoutpolicy_horizontal = expanding
+												}
+											}
+										}
+									}
+
+									button_fixed_destination_ocr = {
+										layoutpolicy_horizontal = expanding
+									}
+								}
+							}
+						}
+
+						button_text = {
+							visible = "[Not(TravelRouteEditWindow.IsSelectingProvince)]"
+							layoutpolicy_horizontal = expanding
+						    blockoverride "text" {
+						        raw_text = "Remove all detours, X."
+						    }
+							onclick = "[Set('remove_all_detours', 'yes')]"
+							shortcut = increase_speed_2
+
+							state = {
+								name = remove_detours
+								delay = 0.3
+								on_finish = "[Clear('remove_all_detours')]"
+								trigger_when = "[Is('remove_all_detours')]"
+							}
+						}
+					}
+				}
+
+				# text_multi_wide = {
+				# 	name = "instruction_text"
+				#
+				# 	text = "TRAVEL_EDIT_ROUTE_INSTRUCTION"
+				# }
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				visible = no
+
+				# visible = "[TravelRouteEditWindow.IsSelectingProvince]"
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('points_of_interest'))] points of interest along your route."
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					datamodel = "[GetPlayer.MakeScope.GetList('points_of_interest')]"
+
+					item = {
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[Scope.GetProvince]"
+							using = prov_pan_right
+						    blockoverride "text" {
+						        raw_text = "[Province.GetNameNoTooltip],"
+						    }
+							blockoverride "extra" {
+								text_single = {
+									visible = "[Not(ObjectsEqual(Province.Self, GetPlayer.GetCurrentLocation))]"
+									raw_text = "[DistanceTo(GetPlayer.GetCurrentLocation, Province)|0] [DaysTo(GetPlayer.GetCurrentLocation, Province)] [Direction(GetPlayer.GetCurrentLocation, Province)] from you,"
+								}
+							}
+						}
+					}
+				}
+
+				expand = { }
+
+			}
+		}
+	}
+
+	widget = {
+		parentanchor = vcenter|right
+		size = { 500 900 }
+		visible_at_creation = no
+		using = vanilla
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+			position_x = 0
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Standard
+			position_x = 200
+		}
+
+		using = Window_Background
+		using = Window_Decoration
+
+		vbox = {
+			using = Window_Margins
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "TRAVEL_EDIT_ROUTE_HEADER"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[TravelRouteEditWindow.Close]"
+					shortcut = "close_window"
+				}
+			}
+
+			vbox = {
+				name = "contents"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				text_multi = {
+					name = "instruction_text"
+
+					text = "TRAVEL_EDIT_ROUTE_INSTRUCTION"
+					default_format = "#I"
+
+					autoresize = yes
+					max_width = 400
+
+					margin = {8 8}
+
+					background = {
+						using = Background_Area_Dark
+					}
+				}
+
+				scrollbox = {
+					name = "route_scroll"
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+
+					blockoverride "scrollbox_content"
+					{
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 8
+
+							datamodel = "[TravelPlanData.GetDestinations]"
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 8
+
+								button_fixed_departure = {
+									layoutpolicy_horizontal = expanding
+								}
+							}
+
+							item = {
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									spacing = 8
+
+									vbox = {
+										name = "detours_between_destinations"
+										visible = "[Not( IsDataModelEmpty( TravelPlanDestination.GetWaypoints ) )]"
+
+										layoutpolicy_horizontal = expanding
+										datamodel = "[TravelPlanDestination.GetWaypoints]"
+
+										item = {
+											vbox = {
+												layoutpolicy_horizontal = expanding
+
+												hbox_add_detour_here = {
+													visible = "[TravelRouteEditWindow.IsSelectingProvinceAt( TravelPlanDestination.GetIndex, TravelPlanWaypoint.GetIndex )]"
+
+													layoutpolicy_horizontal = expanding
+												}
+
+												hbox_added_detour = {
+													layoutpolicy_horizontal = expanding
+												}
+											}
+										}
+									}
+
+									hbox_add_detour_here = {
+										visible = "[Or( TravelRouteEditWindow.IsSelectingProvinceAtEnd( TravelPlanDestination.GetIndex ), And(  TravelRouteEditWindow.IsSelectingProvinceAtBegin( TravelPlanDestination.GetIndex ), IsDataModelEmpty( TravelPlanDestination.GetWaypoints ) ) )]"
+										layoutpolicy_horizontal = expanding
+									}
+
+									button_fixed_destination = {
+										layoutpolicy_horizontal = expanding
+									}
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					margin = {16 16}
+
+					spacing = 10
+
+					text_multi = {
+						name = "error_text"
+						visible = "[Not( TravelRouteEditWindow.IsRouteValid )]"
+
+						text = "[TravelRouteEditWindow.GetRouteValidDesc]"
+
+						autoresize = yes
+						max_width = 400
+
+						margin = {8 8}
+
+						background = {
+							using = Background_Area_Dark
+						}
+					}
+
+					hbox = {
+					 	spacing = 10
+
+						button_primary = {
+							visible = "[TravelRouteEditWindow.HasTravelStarted]"
+							onclick = "[TravelRouteEditWindow.Close]"
+							text = CANCEL
+						}
+
+						button_primary = {
+							enabled = "[TravelRouteEditWindow.IsRouteValid]"
+							onclick = "[TravelRouteEditWindow.ApplyChanges]"
+							onclick = "[TravelRouteEditWindow.Close]"
+
+							text = APPLY
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+types OCR
+{
+	type hbox_add_detour_here_ocr = hbox {
+		margin_left = 32
+
+		hbox = {
+			margin = {4 4}
+			spacing = 4
+
+			layoutpolicy_horizontal = expanding
+
+			background = {
+				using = Background_Frame
+			}
+
+			text_single = {
+				margin = { 10 10 }
+				layoutpolicy_horizontal = expanding
+				text = "TRAVEL_EDIT_ROUTE_SELECT_PROVINCE"
+				default_format = "#I"
+				align = nobaseline
+			}
+
+			button_cancel = {
+				size = { 30 30 }
+				onclick = "[TravelRouteEditWindow.StopProvinceSelection]"
+			}
+		}
+	}
+
+	type button_fixed_departure_ocr = vbox {
+		datacontext = "[TravelPlanData.GetDepartureLocation]"
+		datacontext = "[Province.GetTitle]"
+		layoutpolicy_horizontal = expanding
+		visible = "[Or(Isnt('adding_poi_here'), EqualTo_string(Get('adding_poi_here'), Province.GetNameNoTooltip))]"
+
+		using = State_Title_MouseEntry
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Isnt('adding_poi_here')]"
+			hbox = {
+			    layoutpolicy_horizontal = expanding
+				spacing = 3
+
+				text_single = {
+					raw_text = "[Localize('TRAVEL_EDIT_ROUTE_FIXED_SUB_LABEL_DEPARTURE')],"
+				}
+
+				text_single = {
+					raw_text = "[Province.GetNameNoTooltip]."
+				}
+
+			    expand = { }
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				visible = "[TravelRouteEditWindow.CanAddWaypointAfterDeparture]"
+				onclick = "[TravelRouteEditWindow.AddWaypointAfterDeparture]"
+				onclick = "[Set('adding_poi_here', Province.GetNameNoTooltip)]"
+				onclick = "[Set('travel_origin', 'yes')]"
+				# onclick = "[ClickAdd('grab_points_of_interest', GetPlayer, TravelPlanDestination.GetProvince)]"
+				shortcut = zoom_out
+			    blockoverride "text" {
+			        raw_text = "TRAVEL_EDIT_ROUTE_ADD_DETOUR_TT"
+			    }
+				blockoverride "extra" {
+					text_single = {
+						margin_left = -3
+						raw_text = ", Page Up."
+					}
+				}
+			}
+		}
+
+		vbox_detour_selection = {}
+	}
+
+	type button_fixed_destination_ocr = vbox {
+		datacontext = "[TravelPlanDestination.GetProvince]"
+		datacontext = "[Province.GetTitle]"
+		layoutpolicy_horizontal = expanding
+		visible = "[And(Or(Isnt('adding_poi_here'), EqualTo_string(Get('adding_poi_here'), Province.GetNameNoTooltip)), Isnt('travel_origin'))]"
+
+		using = State_Title_MouseEntry
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Not(TravelRouteEditWindow.IsSelectingProvince)]"
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 3
+				text_single = {
+					raw_text = "[IndexNumber],"
+				}
+
+				text_single = {
+					raw_text = "[Province.GetNameNoTooltip],"
+				}
+
+				text_single = {
+					visible = "[ObjectsEqual(TravelPlanDestination.GetProvince, MyLocation)]"
+					raw_text = "Your location,"
+				}
+
+				text_single = {
+					visible = "[Not(ObjectsEqual(TravelPlanDestination.GetProvince, MyLocation))]"
+					raw_text = "[DistanceTo(MyLocation, Province)|0] [DaysTo(MyLocation, Province)] [Direction(MyLocation, Province)],"
+				}
+
+				expand = {}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				visible = "[TravelRouteEditWindow.CanAddWaypointAfterDestination( TravelPlanDestination.GetIndex )]"
+				onclick = "[TravelRouteEditWindow.AddWaypointAfterDestination( TravelPlanDestination.GetIndex )]"
+				shortcut = zoom_in
+				onclick = "[Set('adding_poi_here', Province.GetNameNoTooltip)]"
+
+			    blockoverride "text" {
+			        raw_text = "TRAVEL_EDIT_ROUTE_ADD_DETOUR_TT"
+			    }
+				blockoverride "extra" {
+					text_single = {
+						margin_left = -3
+						raw_text = ","
+					}
+					text_single = {
+						visible = [IsIndexFirst]
+						raw_text = "Page Down,"
+					}
+				}
+			}
+		}
+
+		vbox_detour_selection = {}
+	}
+
+	type hbox_added_detour_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+		datacontext = "[TravelPlanWaypoint.GetProvince]"
+		datacontext = "[Province.GetTitle]"
+		visible = "[Or(Isnt('adding_poi_here'), EqualTo_string(Get('adding_poi_here'), Province.GetNameNoTooltip))]"
+
+		using = State_Title_MouseEntry
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Not(TravelRouteEditWindow.IsSelectingProvince)]"
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				state = {
+					name = remove_detour
+					on_finish = "[TravelRouteEditWindow.RemoveWaypoint( TravelPlanDestination.GetIndex, TravelPlanWaypoint.GetIndex )]"
+					trigger_when = "[Is('remove_all_detours')]"
+				}
+				onclick = "[TravelRouteEditWindow.RemoveWaypoint( TravelPlanDestination.GetIndex, TravelPlanWaypoint.GetIndex )]"
+				enabled = "[TravelRouteEditWindow.CanRemoveWaypoint( TravelPlanDestination.GetIndex, TravelPlanWaypoint.GetIndex )]"
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "[Province.GetNameNoTooltip],"
+					}
+
+					text_single = {
+						visible = "[Not(ObjectsEqual(TravelPlanDestination.GetProvince, MyLocation))]"
+						raw_text = "[DistanceTo(MyLocation, Province)|0] [DaysTo(MyLocation, Province)] [Direction(MyLocation, Province)],"
+					}
+					text_single = {
+						visible = "[TravelRouteEditWindow.CanRemoveWaypoint( TravelPlanDestination.GetIndex, TravelPlanWaypoint.GetIndex )]"
+						raw_text = "Click to remove."
+					}
+				}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				visible = "[TravelRouteEditWindow.CanAddWaypointAfterWaypoint( TravelPlanDestination.GetIndex, TravelPlanWaypoint.GetIndex )]"
+				onclick = "[TravelRouteEditWindow.AddWaypointAfterWaypoint( TravelPlanDestination.GetIndex, TravelPlanWaypoint.GetIndex )]"
+				onclick = "[Set('adding_poi_here', Province.GetNameNoTooltip)]"
+			    blockoverride "text" {
+			        raw_text = "TRAVEL_EDIT_ROUTE_ADD_DETOUR_TT"
+			    }
+				blockoverride "dot" {
+
+				}
+			}
+		}
+
+		vbox_detour_selection = {
+			blockoverride "distance" {
+				text_single = {
+					visible = "[Not(ObjectsEqual(Scope.GetProvince, TravelPlanWaypoint.GetProvince))]"
+					raw_text = "[DistanceTo(TravelPlanWaypoint.GetProvince, Scope.GetProvince)|0] [DaysTo(TravelPlanWaypoint.GetProvince, Scope.GetProvince)] [Direction(TravelPlanWaypoint.GetProvince, Scope.GetProvince)]"
+				}
+				text_single = {
+					visible = "[ObjectsEqual(Scope.GetProvince, TravelPlanWaypoint.GetProvince)]"
+					raw_text = "Same place."
+				}
+			}
+		}
+	}
+}
+
+
+types TravelRouteEditTypes
+{
+	type hbox_add_detour_here = hbox {
+		margin_left = 32
+
+		hbox = {
+			margin = {4 4}
+			spacing = 4
+
+			layoutpolicy_horizontal = expanding
+
+			background = {
+				using = Background_Frame
+			}
+
+			text_single = {
+				margin = { 10 10 }
+				layoutpolicy_horizontal = expanding
+				text = "TRAVEL_EDIT_ROUTE_SELECT_PROVINCE"
+				default_format = "#I"
+				align = nobaseline
+			}
+
+			button_cancel = {
+				size = { 30 30 }
+				onclick = "[TravelRouteEditWindow.StopProvinceSelection]"
+			}
+		}
+	}
+
+	type button_fixed_departure = button {
+		datacontext = "[TravelPlanData.GetDepartureLocation]"
+		datacontext = "[Province.GetTitle]"
+		size = {0 60}
+
+		using = State_Title_MouseEntry
+
+		hbox = {
+			using = travel_stop_bg
+
+			margin = {8 8}
+			margin_right = 4
+			spacing = 4
+
+			coa_title_tiny = {
+				datacontext = "[Province.GetCoATitle]"
+				using = tooltip_ws
+			}
+
+			vbox = {
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					text = "[Province.GetNameNoTooltip]"
+					align = nobaseline
+					default_format = "#V"
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+
+					text = "TRAVEL_EDIT_ROUTE_FIXED_SUB_LABEL_DEPARTURE"
+
+					align = nobaseline
+					default_format = "#weak"
+				}
+			}
+
+			expand = {}
+
+			vbox = {
+				layoutpolicy_vertical = expanding
+
+				button_plus = {
+					visible = "[TravelRouteEditWindow.CanAddWaypointAfterDeparture]"
+					onclick = "[TravelRouteEditWindow.AddWaypointAfterDeparture]"
+					tooltip = TRAVEL_EDIT_ROUTE_ADD_DETOUR_TT
+					inherit_visual_state = no
+				}
+			}
+		}
+	}
+
+
+	type button_fixed_destination = button {
+		datacontext = "[TravelPlanDestination.GetProvince]"
+		datacontext = "[Province.GetTitle]"
+		size = {0 60}
+
+		using = State_Title_MouseEntry
+
+		hbox = {
+			using = travel_stop_bg
+
+			margin = {8 8}
+			margin_right = 4
+			spacing = 4
+
+			coa_title_tiny = {
+				datacontext = "[Province.GetCoATitle]"
+				using = tooltip_ws
+			}
+
+			vbox = {
+				text_single = {
+					layoutpolicy_horizontal = expanding
+
+					text = "[Province.GetNameNoTooltip]"
+					align = nobaseline
+					default_format = "#V"
+				}
+
+				text_single = {
+					datacontext = "[TravelPlanDestination.GetProvince]"
+					layoutpolicy_horizontal = expanding
+
+					text = "TRAVEL_EDIT_ROUTE_FIXED_SUB_LABEL"
+
+					align = nobaseline
+					default_format = "#weak"
+				}
+			}
+
+			expand = {}
+
+			vbox = {
+				layoutpolicy_vertical = expanding
+
+				button_plus = {
+					visible = "[TravelRouteEditWindow.CanAddWaypointAfterDestination( TravelPlanDestination.GetIndex )]"
+					onclick = "[TravelRouteEditWindow.AddWaypointAfterDestination( TravelPlanDestination.GetIndex )]"
+					tooltip = TRAVEL_EDIT_ROUTE_ADD_DETOUR_TT
+					inherit_visual_state = no
+				}
+			}
+		}
+	}
+
+	type hbox_added_detour = hbox {
+		margin_left = 32
+
+		button = {
+			datacontext = "[TravelPlanWaypoint.GetProvince]"
+			datacontext = "[Province.GetTitle]"
+			layoutpolicy_horizontal = expanding
+			size = {0 55}
+
+			using = State_Title_MouseEntry
+
+			hbox = {
+				using = travel_stop_bg
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					margin = {4 4}
+					spacing = 4
+
+					coa_title_tiny = {
+						visible = "[Province.GetCoATitle.IsValid]"
+						datacontext = "[Province.GetCoATitle]"
+						using = tooltip_ws
+					}
+
+					widget = {
+						visible = "[Not( Province.GetCoATitle.IsValid )]"
+						size = { 42 42 }
+						icon = {
+							parentanchor = center
+							texture = "[Province.GetTerrain.GetIcon]"
+							position = { 1 0 }
+							size = { 35 35 }
+						}
+					}
+
+					text_single = {
+						text = "TRAVEL_EDIT_ROUTE_DETOUR_LABEL"
+						align = nobaseline
+					}
+
+					button_cancel = {
+						visible = "[TravelRouteEditWindow.CanRemoveWaypoint( TravelPlanDestination.GetIndex, TravelPlanWaypoint.GetIndex )]"
+						onclick = "[TravelRouteEditWindow.RemoveWaypoint( TravelPlanDestination.GetIndex, TravelPlanWaypoint.GetIndex )]"
+
+						tooltip = TRAVEL_EDIT_ROUTE_REMOVE_DETOUR_TT
+
+						inherit_visual_state = no
+					}
+
+					expand = {}
+
+					vbox = {
+						layoutpolicy_vertical = expanding
+
+						button_plus = {
+							visible = "[TravelRouteEditWindow.CanAddWaypointAfterWaypoint( TravelPlanDestination.GetIndex, TravelPlanWaypoint.GetIndex )]"
+							onclick = "[TravelRouteEditWindow.AddWaypointAfterWaypoint( TravelPlanDestination.GetIndex, TravelPlanWaypoint.GetIndex )]"
+							tooltip = TRAVEL_EDIT_ROUTE_ADD_DETOUR_TT
+							inherit_visual_state = no
+						}
+					}
+				}
+			}
+		}
+	}
+
+	type vbox_detour_selection = vbox {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+
+		visible = "[TravelRouteEditWindow.IsSelectingProvince]"
+
+		using = zoom_out_title
+
+		state = {
+			name = _hide
+			on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
+			on_finish = "[GetVariableSystem.Clear('travel_type')]"
+			on_finish = "[Clear('adding_poi_here')]"
+			on_finish = "[Clear('travel_origin')]"
+		}
+
+		state = {
+			name = _show
+			next = "clear_maa_list"
+			on_finish = "[GetVariableSystem.Set('travel_type', 'points_of_interest')]"
+			# on_finish = "[PdxGuiTriggerAllAnimations('show_army_window')]"
+			# on_finish = "[PdxGuiTriggerAllAnimations('show_maa_window')]"
+		}
+
+		state = {
+			name = "clear_maa_list"
+			delay = 0.3
+			alpha = 1
+			next = grab_origins
+			on_finish = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+			on_start = "[GetScriptedGui('clear_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		}
+
+		state = {
+			name = grab_origins
+			delay = 0.3
+			on_finish = "[PdxGuiTriggerAllAnimations('grab_points_of_interest')]"
+			next = order_origins
+		}
+
+		state = {
+			name = order_origins
+			delay = 0.3
+			on_finish = "[GetScriptedGui('order_poi_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('origin', Province.MakeScope ).End )]" #TODO destination
+			# on_finish = "[DefaultOnCoatOfArmsRightClick(MyCapital.GetTitle.GetID)]"
+
+			using = Sound_WindowShow_Standard
+		}
+
+		vbox_select_from_map = {
+			blockoverride "maa" {
+			}
+			blockoverride "action" {
+			}
+			blockoverride "select_from_menu" {
+			}
+			blockoverride "sorting" {
+				text_single = {
+					raw_text = "within 2 months of [Province.GetNameNoTooltip]," #TODO destination
+				}
+			}
+		}
+	}
+}
+
+template travel_stop_bg
+{
+	# for some reason these appear outside bounding box
+	background = {
+		using = Background_Area_Dark
+	}
+
+	background = {
+		texture = "[Province.GetIllustration]"
+		alpha = 0.6
+		fittype = centercrop
+
+		using = Mask_Rough_Edges
+
+		modify_texture = {
+			texture = "gfx/interface/component_masks/mask_fade_horizontal_right.dds"
+			blend_mode = alphamultiply
+			mirror = horizontal
+		}
+	}
+}

@@ -18,22 +18,340 @@ order_maa_origin_list = {
     effect = {
         capital_province = {
             save_scope_as = origin
+            save_scope_as = last_stop
         }
+        save_scope_as = player
+
+        if = {
+            limit = {
+                OR = {
+                    NOT = {
+                        exists = scope:activity_type
+                    }
+                    AND = {
+                        exists = scope:activity_type
+                        NOT = {
+                            scope:activity_type = flag:activity_tour
+                        }
+                    }
+                }
+            }
+            ordered_in_list = {
+                variable = maa_origins_temp
+                order_by = {
+                    if = {
+                        limit = {
+                            scope:activity_type ?= flag:activity_hunt
+                        }
+                        value = hunt_province_reference_value_extra
+                    }
+                    else_if = {
+                        limit = {
+                            scope:activity_type ?= flag:activity_feast
+                        }
+                        value = feast_province_score
+                    }
+                    else = {
+                        value = origin_distance
+                        multiply = -1
+                    }
+                }
+                min = 0
+                limit = {
+                    trigger_if = {
+                        limit = {
+                            scope:activity_type ?= flag:activity_tour
+                            has_variable_list = filters_tour
+                        }
+                        county = {
+                            holder = {
+                                OR = {
+                                    trigger_if = {
+                                        limit = {
+                                            has_filter_tour = { VAR = counts }
+                                            highest_held_title_tier = tier_county
+                                        }
+                                    }
+                                    trigger_if = {
+                                        limit = {
+                                            has_filter_tour = { VAR = dukes }
+                                            highest_held_title_tier = tier_duchy
+                                        }
+                                    }
+                                    trigger_if = {
+                                        limit = {
+                                            has_filter_tour = { VAR = kings }
+                                            highest_held_title_tier = tier_kingdom
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    trigger_else = {}
+                }
+                save_scope_as = last_stop
+                root = {
+                    add_to_variable_list = {
+                        name = maa_origins
+                        target = prev
+                    }
+                }
+            }
+        }
+
+        if = {
+            limit = {
+                scope:activity_type ?= flag:activity_tour
+            }
+            # filter out any vassals
+            if = {
+                limit = {
+                    has_variable_list = filters_tour
+                }
+                if = {
+                    limit = {
+                        has_filter_tour = { VAR = richest }
+                    }
+                    ordered_in_list = {
+                        variable = maa_origins_temp
+                        max = 10
+                        order_by = county.holder.monthly_character_income
+                        add_to_list = richest
+                    }
+                    every_in_list = {
+                        variable = maa_origins_temp
+                        limit = {
+                            NOT = { is_in_list = richest }
+                        }
+                        root = {
+                            remove_list_variable = {
+                                name = maa_origins_temp
+                                target = prev
+                            }
+                        }
+                    }
+                }
+                every_in_list = {
+                    variable = maa_origins_temp
+
+                    limit = {
+                        county = {
+                            holder = {
+                                trigger_if = {
+                                    limit = {
+                                        OR = {
+                                            has_filter_tour = { VAR = counts }
+                                            has_filter_tour = { VAR = dukes }
+                                            has_filter_tour = { VAR = kings }
+                                        }
+                                    }
+                                    OR = {
+                                        trigger_if = {
+                                            limit = {
+                                                has_filter_tour = { VAR = counts }
+                                            }
+                                            highest_held_title_tier = tier_county
+                                        }
+                                        trigger_if = {
+                                            limit = {
+                                                has_filter_tour = { VAR = dukes }
+                                            }
+                                            highest_held_title_tier = tier_duchy
+                                        }
+                                        trigger_if = {
+                                            limit = {
+                                                has_filter_tour = { VAR = kings }
+                                            }
+                                            highest_held_title_tier = tier_kingdom
+                                        }
+                                    }
+                                }
+
+                                trigger_if = {
+                                    limit = {
+                                        has_filter_tour = { VAR = powerful }
+                                    }
+                                    is_powerful_vassal = yes
+                                }
+                                trigger_if = {
+                                    limit = {
+                                        has_filter_tour = { VAR = generous }
+                                    }
+                                    has_trait = generous
+                                }
+                                trigger_if = {
+                                    limit = {
+                                        OR = {
+                                            has_filter_tour = { VAR = in_faction }
+                                            has_filter_tour = { VAR = can_join_faction }
+                                        }
+                                    }
+                                    OR = {
+                                        trigger_if = {
+                                            limit = {
+                                                has_filter_tour = { VAR = in_faction }
+                                            }
+                                            is_a_faction_member = yes
+                                        }
+                                        trigger_if = {
+                                            limit = {
+                                                has_filter_tour = { VAR = can_join_faction }
+                                            }
+                                            highest_held_title_tier > tier_barony
+                                			is_a_faction_member = no
+                                			common_can_character_join_trigger = {
+                                				$FACTION_TARGET$ = root
+                                			}
+                                        }
+                                    }
+                                }
+                                trigger_if = {
+                                    limit = {
+                                        OR = {
+                                            has_filter_tour = { VAR = hate_you }
+                                            has_filter_tour = { VAR = dislike_you }
+                                            has_filter_tour = { VAR = like_you }
+                                        }
+                                    }
+                                    OR = {
+                                        trigger_if = {
+                                            limit = {
+                                                has_filter_tour = { VAR = hate_you }
+                                            }
+                                            opinion = {
+                                				target = root
+                                				value <= -50
+                                			}
+                                        }
+                                        trigger_if = {
+                                            limit = {
+                                                has_filter_tour = { VAR = dislike_you }
+                                            }
+                                            opinion = {
+                                				target = root
+                                				value < 0
+                                			}
+                                			opinion = {
+                                				target = root
+                                				value > -50
+                                			}
+                                        }
+                                        trigger_if = {
+                                            limit = {
+                                                has_filter_tour = { VAR = like_you }
+                                            }
+                                            opinion = {
+                                				target = root
+                                				value >= 0
+                                			}
+                                        }
+
+                                    }
+                                }
+                                trigger_if = {
+                                    limit = {
+                                        OR = {
+                                            has_filter_tour = { VAR = intimidated }
+                                            has_filter_tour = { VAR = not_intimidated }
+                                        }
+                                    }
+                                    OR = {
+                                        trigger_if = {
+                                            limit = {
+                                                has_filter_tour = { VAR = intimidated }
+                                            }
+                                            has_dread_level_towards = {
+                                				target = liege
+                                				level > 0
+                                			}
+                                        }
+                                        trigger_if = {
+                                            limit = {
+                                                has_filter_tour = { VAR = not_intimidated }
+                                            }
+                                            has_dread_level_towards = {
+                                				target = liege
+                                				level = 0
+                                			}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    add_to_list = keep_maa_origins
+                }
+
+                every_in_list = {
+                    variable = maa_origins_temp
+                    limit = {
+                        NOT = {
+                            is_in_list = keep_maa_origins
+                        }
+                    }
+                    root = {
+                        remove_list_variable = {
+                            name = maa_origins_temp
+                            target = prev
+                        }
+                    }
+                }
+            }
+
+            if = {
+                limit = {
+                    has_variable_list = maa_origins_temp
+                }
+                while = {
+                    limit = {
+                        variable_list_size = {
+                            name = maa_origins_temp
+                            value > 0
+                        }
+                    }
+                    ordered_in_list = {
+                        variable = maa_origins_temp
+                        max = 1
+                        order_by = {
+                            value = "squared_distance(scope:last_stop)"
+                            multiply = -1
+                        }
+                        save_scope_as = last_stop
+                        root = {
+                            add_to_variable_list = {
+                                name = maa_origins
+                                target = prev
+                            }
+                            remove_list_variable = {
+                                name = maa_origins_temp
+                                target = prev
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        # clear_variable_list = maa_origins_temp
+    }
+}
+
+order_poi_list = {
+    effect = {
         save_scope_as = player
 
         ordered_in_list = {
             variable = maa_origins_temp
+            limit = {
+                origin_distance < 36000
+                NOT = {
+                    this = scope:origin
+                }
+            }
             order_by = {
-                if = {
-                    limit = {
-                        scope:activity_type ?= flag:activity_hunt
-                    }
-                    value = hunt_province_reference_value_extra
-                }
-                else = {
-                    value = origin_distance
-                    multiply = -1
-                }
+                value = origin_distance
+                multiply = -1
             }
             min = 0
             root = {
@@ -148,3 +466,157 @@ order_dangers = {
         # clear_variable_list = maa_origins_temp
     }
 }
+
+save_filters_tour = {
+    confirm_title = "save_filters"
+	# confirm_text = ""
+    effect = {
+        every_in_list = {
+            variable = filters_tour
+            root = {
+                add_to_variable_list = {
+                    name = saved_filters_tour
+                    target = prev
+                }
+            }
+        }
+    }
+}
+
+load_filters_tour = {
+    confirm_title = "load_filters"
+    is_shown = {
+        has_variable_list = filters_tour
+    }
+    effect = {
+        clear_variable_list = filters_tour
+        every_in_list = {
+            variable = saved_filters_tour
+            root = {
+                add_to_variable_list = {
+                    name = filters_tour
+                    target = prev
+                }
+            }
+        }
+    }
+}
+
+filter_tour_all_filters = {
+    effect = {
+        clear_variable_list = filters_tour
+    }
+    is_shown = {
+        has_variable_list = filters_tour
+    }
+}
+
+filter_tour_all_tiers = {
+    effect = {
+        remove_list_variable = {
+            name = filters_tour
+            target = flag:kings
+        }
+        remove_list_variable = {
+            name = filters_tour
+            target = flag:dukes
+        }
+        remove_list_variable = {
+            name = filters_tour
+            target = flag:counts
+        }
+    }
+    is_shown = {
+        OR = {
+            is_target_in_variable_list = {
+                name = filters_tour
+                target = flag:kings
+            }
+            is_target_in_variable_list = {
+                name = filters_tour
+                target = flag:dukes
+            }
+            is_target_in_variable_list = {
+                name = filters_tour
+                target = flag:counts
+            }
+        }
+    }
+}
+
+filter_tour_any = {
+    effect = {
+        toggle_filters_tour_scope = yes
+    }
+    is_shown = {
+        has_filter_tour_scope = yes
+    }
+}
+
+filter_tour_kings = {
+    effect = {
+        toggle_filters_tour = { VAR = kings }
+    }
+    is_shown = {
+        has_filter_tour = { VAR = kings }
+    }
+}
+
+filter_tour_dukes = {
+    effect = {
+        toggle_filters_tour = { VAR = dukes }
+    }
+    is_shown = {
+        has_filter_tour = { VAR = dukes }
+    }
+}
+
+filter_tour_counts = {
+    effect = {
+        toggle_filters_tour = { VAR = counts }
+    }
+    is_shown = {
+        has_filter_tour = { VAR = counts }
+    }
+}
+
+filter_tour_kings_show = {
+    is_shown = {
+        any_vassal = {
+            highest_held_title_tier = tier_kingdom
+        }
+    }
+}
+
+filter_tour_dukes_show = {
+    is_shown = {
+        any_vassal = {
+            highest_held_title_tier = tier_duchy
+        }
+    }
+}
+
+filter_tour_counts_show = {
+    is_shown = {
+        any_vassal = {
+            highest_held_title_tier = tier_county
+        }
+    }
+}
+
+# clear_var_list = {
+#     effect = {
+#         every_in_list = {
+#             variable = maa_origins
+#             root = {
+#                 remove_list_variable = {
+#                     name = maa_origins
+#                     target = prev
+#                 }
+#             }
+#         }
+#     }
+#     is_shown = {
+#         has_variable_list = maa_origins
+#     }
+# }

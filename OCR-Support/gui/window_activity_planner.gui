@@ -20,12 +20,16 @@
 		on_finish = "[GetVariableSystem.Clear('activity_details')]"
 		on_finish = "[GetVariableSystem.Clear('travel_planner')]"
 		on_finish = "[GetVariableSystem.Clear('show_dangers')]"
+		on_finish = "[Clear('tour_filters')]"
+		on_finish = "[Clear('order_tour')]"
+		on_finish = "[Clear('selected_stop')]"
 	}
 
 	state = {
 		name = _hide
 		using = Animation_FadeOut_Quick
 		on_start = "[GetVariableSystem.Clear( 'activity_planner_hide_default_magnificence' )]"
+		on_finish = "[DefaultOnCoatOfArmsRightClick(MyCapital.GetTitle.GetID)]"
 	}
 
 	window = {
@@ -229,117 +233,311 @@
 							}
 							visible = "[And(Not(DataModelHasItems(ActivityPlanner.AccessSpecialGuests)), DataModelHasItems(ActivityType.GetGuestInviteRules))]"
 							onclick = "[OpenGameViewData( 'activity_guest_list', ActivityPlanner.AccessSelf )]"
-
 						}
 					}
 
 					activity_special_option_selection_widget_ocr = { }
 
-					travel_planning_window_ocr = { }
+					travel_planning_window_ocr = {
+						margin_top = 0
+						blockoverride "hide_destination" {
+							visible = no
+
+						}
+					}
+
+					multi_location_picker_widget_ocr = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+					}
 
 					vbox = {
+						visible = "[And(ActivityPlanner.IsPlanningStage( 'location' ), Not(ActivityType.IsSingleLocation))]"
 						layoutpolicy_horizontal = expanding
-						visible = "[ActivityPlanner.IsPlanningStage( 'location' )]"
 
-						using = zoom_out_title
-
-
-						state = {
-							name = _hide
-							on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
-							on_finish = "[GetVariableSystem.Clear('travel_type')]"
-						}
-
-						state = {
-							name = _show
-							next = "clear_maa_list"
-							on_finish = "[GetVariableSystem.Set('travel_type', 'pilgrimage')]"
-							on_finish = "[PdxGuiTriggerAllAnimations('show_army_window')]"
-							on_finish = "[PdxGuiTriggerAllAnimations('show_maa_window')]"
-						}
-
-						state = {
-							name = "clear_maa_list"
-							delay = 0.3
-							alpha = 1
-							next = grab_origins
-							on_finish = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
-							on_start = "[GetScriptedGui('clear_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-						}
-
-						state = {
-							name = grab_origins
-							delay = 0.3
-							on_finish = "[PdxGuiTriggerAllAnimations('grab_maa_origin')]"
-							next = order_origins
-						}
-
-						state = {
-							name = order_origins
-							delay = 0.3
-							on_finish = "[GetScriptedGui('order_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('activity_type', MakeScopeFlag(ActivityPlanner.GetActivityType.GetKey) ).End )]"
-							on_finish = "[DefaultOnCoatOfArmsRightClick(MyCapital.GetTitle.GetID)]"
-
-							using = Sound_WindowShow_Standard
-						}
-
-						# text_single = {
-						# 	raw_text = "[ActivityPlanner.GetActivityType.GetKey]"
-						# }
-
-						vbox_select_from_map = {
-							blockoverride "sorting" {
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								text = "[SelectLocalization(GreaterThanOrEqualTo_int32(ActivityPlanner.GetNumPickedPhases, ActivityPlanner.GetNumPickablePhases), 'MULTI_DESTINATION_PICKER_SELECTION_COUNT_MAX', 'MULTI_DESTINATION_PICKER_SELECTION_COUNT')]"
+							}
+							blockoverride "extra" {
 								text_single = {
-									visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_hunt')]"
-									raw_text = "sorted by score,"
+									visible = "[ActivityPlanner.HasPickedPhase]"
+									margin_left = -1
+									raw_text = ", [Select_CString(Is('order_tour'), 'Select more', 'view all')], E."
 								}
 							}
-							blockoverride "number" {
-								visible = "[Not(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_hunt'))]"
+							shortcut = map_mode_1
+							onclick = "[Toggle('order_tour')]"
+						}
 
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = " "
+							visible = "[Not(ActivityPlanner.HasPickedPhase)]"
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							visible = "[ActivityPlanner.HasPickedPhase]"
+
+							text = TRAVEL_MULTI_DESTINATION_SUMMARY
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							text_single = {
+								raw_text = " "
+								visible = "[Not(ActivityPlanner.HasPickedPhase)]"
 							}
-							blockoverride "pre_pre" {
 
-								flowcontainer = {
-								    ignoreinvisible = yes
-									spacing = 3
-									visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_hunt')]"
+							cost_breakdown_vbox = {
+								visible = "[ActivityPlanner.HasPickedPhase]"
+								datacontext = "[ActivityPlanner.AccessTotalPhaseCostBreakdown]"
+							}
 
-									text_single = {
-										raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('player', GetPlayer.MakeScope ).ScriptValue('hunt_province_reference_value_extra')|0],"
-										alwaystransparent = yes
+							expand = { }
+						}
 
-										tooltipwidget = {
-											widget_value_breakdown_tooltip = {
 
-												datacontext = "[GuiScope.SetRoot(Province.MakeScope).AddScope('player', GetPlayer.MakeScope ).GetScriptValueBreakdown('hunt_province_reference_value_extra')]"
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+
+							button_primary_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "Confirm plan"
+								}
+								blockoverride "disabled" {
+									visible = "[Not(TravelPlanData.HasNextDestination)]"
+								}
+								blockoverride "hotkey" {
+									visible = "[TravelPlanData.HasNextDestination]"
+								}
+								enabled = "[TravelPlanData.HasNextDestination]"
+								onclick = "[ActivityPlanner.FinalizeMultiDestinationSelection]"
+							}
+
+							expand = { }
+						}
+					}
+
+					# text_single = {
+					# 	layoutpolicy_horizontal = expanding
+					# 	raw_text = "[ActivityPlanner.GetActivityType.GetKey]"
+					# }
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						visible = "[Isnt('order_tour')]"
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+							visible = "[ActivityPlanner.IsPlanningStage( 'location' )]"
+							using = zoom_out_title
+
+							state = {
+								name = _hide
+								on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
+								on_finish = "[GetVariableSystem.Clear('travel_type')]"
+							}
+
+							state = {
+								name = _show
+								next = "clear_maa_list"
+								on_finish = "[GetVariableSystem.Set('travel_type', 'pilgrimage')]"
+								# on_finish = "[PdxGuiTriggerAllAnimations('show_army_window')]"
+								# on_finish = "[PdxGuiTriggerAllAnimations('show_maa_window')]"
+							}
+
+							state = {
+								name = "clear_maa_list"
+								delay = 0.3
+								alpha = 1
+								next = grab_origins
+								on_finish = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+								on_start = "[GetScriptedGui('clear_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							}
+
+							state = {
+								name = grab_origins
+								delay = 0.3
+								on_finish = "[PdxGuiTriggerAllAnimations('grab_maa_origin')]"
+								next = order_origins
+							}
+
+							state = {
+								name = order_origins
+								delay = 0.3
+								on_finish = "[GetScriptedGui('order_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('activity_type', MakeScopeFlag(ActivityPlanner.GetActivityType.GetKey) ).End )]"
+								# on_finish = "[DefaultOnCoatOfArmsRightClick(MyCapital.GetTitle.GetID)]"
+
+								using = Sound_WindowShow_Standard
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+								visible = "[Isnt('order_tour')]"
+
+								text_single = {
+									visible = "[Not(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tour'))]"
+									layoutpolicy_horizontal = expanding
+									raw_text = "Select location:"
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									raw_text = "Select vassals to visit on tour:"
+									visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tour')]"
+								}
+
+
+								# text_single = {
+								# 	raw_text = "[ActivityPlanner.GetActivityType.GetKey]"
+								# }
+
+								vbox_select_from_map = {
+									blockoverride "gap" {}
+									blockoverride "order_finish" {
+										on_finish = "[GetScriptedGui('order_maa_origin_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('activity_type', MakeScopeFlag(ActivityPlanner.GetActivityType.GetKey) ).End )]"
+									}
+									blockoverride "filters" {
+										visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tour')]"
+										onclick = "[Toggle('tour_filters')]"
+									}
+									blockoverride "filtered" {
+										text_single = {
+											margin_left = -3
+											raw_text = "[Select_CString(Show('filter_tour_all_filters'), 'ed', 's')]"
+										}
+									}
+									blockoverride "reset_filters" {
+										button_text = {
+											shortcut = map_mode_15
+											onclick = "[Click('filter_tour_all_filters')]"
+											onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+											visible = "[Show('filter_tour_all_filters')]"
+											layoutpolicy_horizontal = expanding
+										    blockoverride "text" {
+										        raw_text = "Reset filters, Ctrl F."
+										    }
+										}
+									}
+									# blockoverride "select_all" {
+									# 	button_text = {
+									# 		visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tour')]"
+									# 		layoutpolicy_horizontal = expanding
+									# 	    blockoverride "text" {
+									# 	        raw_text = "Select [Select_CString(GreaterThan_int32(GetDataModelSize( GetPlayer.MakeScope.GetList('maa_origins')), '(int32)10'), 'top 10', Localize('all_tour_targets'))] vassals."
+									# 	    }
+									# 		onclick = "[Set('select_all_tour', 'yes')]"
+									# 		onclick = "[PdxGuiWidget.TriggerAnimation('stop')]"
+									# 		state = {
+									# 			name = "stop"
+									# 			delay = 0.3
+									# 			on_finish = "[Clear('select_all_tour')]"
+									# 		}
+									# 	}
+									# }
+									blockoverride "select" { }
+									blockoverride "sorting" {
+										text_single = {
+											visible = "[Or(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_hunt'), EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_feast'))]"
+											raw_text = "sorted by score,"
+										}
+									}
+									blockoverride "province" {
+										visible = "[Not(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tour'))]"
+									}
+									blockoverride "number" {
+										visible = "[And(Not(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_hunt')), Not(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_feast')) )]"
+
+									}
+									blockoverride "pre_pre" {
+										text_single = {
+											visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_feast')]"
+											raw_text = "[GuiScope.SetRoot(Province.MakeScope).ScriptValue('feast_province_score')|0],"
+											alwaystransparent = yes
+										}
+
+										flowcontainer = {
+										    ignoreinvisible = yes
+											spacing = 3
+											visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_hunt')]"
+
+											text_single = {
+												raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('player', GetPlayer.MakeScope ).ScriptValue('hunt_province_reference_value_extra')|0],"
+												alwaystransparent = yes
+
+												tooltipwidget = {
+													widget_value_breakdown_tooltip = {
+
+														datacontext = "[GuiScope.SetRoot(Province.MakeScope).AddScope('player', GetPlayer.MakeScope ).GetScriptValueBreakdown('hunt_province_reference_value_extra')]"
+													}
+												}
+											}
+
+											text_single = {
+												visible = "[Province.GetCounty.GetTitle.MakeScope.Var('animal_type').IsSet]"
+												raw_text = "[Province.GetCounty.GetTitle.MakeScope.Var('animal_type').GetFlagName],"
+											}
+										}
+
+										flowcontainer = {
+											ignoreinvisible = yes
+											visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tour')]"
+
+											realm_name = {
+												blockoverride "extra" {
+													flowcontainer = {
+													    ignoreinvisible = yes
+														spacing = 3
+														visible = "[EqualTo_int32(ActivityPlanner.GetSelectedSpecialOption.GetIndexInCategory, '(int32)2')]"
+
+														text_single = {
+															raw_text = "[Character.GetBalance|1=] income,"
+														}
+													}
+
+												}
+												blockoverride "opinion" {}
+												datacontext = "[Province.GetCounty.GetTitle.GetHolder]"
 											}
 										}
 									}
-
-									text_single = {
-										visible = "[Province.GetCounty.GetTitle.MakeScope.Var('animal_type').IsSet]"
-										raw_text = "[Province.GetCounty.GetTitle.MakeScope.Var('animal_type').GetFlagName],"
+									blockoverride "extra_extra" {
+										text_single = {
+											visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_feast')]"
+											raw_text = "[GuiScope.SetRoot(Province.GetCounty.GetTitle.MakeScope).ScriptValue('county_opinion_val')|0] opinion,"
+											raw_tooltip = "Popular opinion of you in [Province.GetCounty.GetTitle.GetNameNoTooltip]. [AddLine('The feast would add a modifier increasing it.')]"
+										}
 									}
-
+									blockoverride "maa" {
+									}
+									blockoverride "action" {
+									}
+									blockoverride "debug" {
+										visible = no
+									}
+									blockoverride "tip" {
+										text_single = {
+											visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tour')]"
+											layoutpolicy_horizontal = expanding
+											raw_text = "Tip: select vassals with hotkeys from 1 to 5, then refresh to remove them from the list."
+										}
+									}
 								}
 
-
+								text_multi = {
+									layoutpolicy_horizontal = expanding
+									text = "ACTIVITY_DESTINATION_SELECTION"
+									autoresize = yes
+									max_width = 700
+								}
 							}
-							blockoverride "maa" {
-							}
-							blockoverride "action" {
-							}
-							blockoverride "debug" {
-								visible = no
-							}
-						}
-
-						text_multi = {
-							layoutpolicy_horizontal = expanding
-							text = "ACTIVITY_DESTINATION_SELECTION"
-							autoresize = yes
-							max_width = 700
 						}
 					}
 
@@ -359,7 +557,316 @@
 
 				}
 			}
+		}
 
+		# filters
+		window_ocr = {
+			blockoverride "show_window" {
+				visible = "[And(Isnt('ocr'), Is('tour_filters'))]"
+			}
+			button = {
+				shortcut = close_window
+				onclick = "[Clear('tour_filters')]"
+			}
+			blockoverride "ocr_header" {
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "Filter[AddTextIf(Show('filter_tour_all_filters'), 'ed')] [GetDataModelSize( GetPlayer.MakeScope.GetList('maa_origins'))] vassals for the tour."
+				}
+			}
+			blockoverride "ocr_content" {
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					# button_text = {
+					# 	layoutpolicy_horizontal = expanding
+					# 	onclick = "[Click('clear_var_list')]"
+					#     blockoverride "text" {
+					#         raw_text = "List"
+					#     }
+					# 	blockoverride "extra" {
+					# 		text_single = {
+					# 			visible = "[Show('clear_var_list')]"
+					# 			raw_text = "exists"
+					# 		}
+					# 	}
+					# }
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[AddFlag('filter_tour_any', 'powerful')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(ShowAddFlag('filter_tour_any', 'powerful'))]"
+						}
+						blockoverride "text" {
+							raw_text = "powerful,"
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_of_powerful_vassals')]."
+							}
+						}
+						visible = "[Or(ShowAddFlag('filter_tour_any', 'powerful'), HasVal('num_of_powerful_vassals'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[Click('filter_tour_all_tiers')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+
+						blockoverride "visible" {
+							visible = "[Show('filter_tour_all_tiers')]"
+						}
+					    blockoverride "text" {
+					        raw_text = "any tier."
+					    }
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[Click('filter_tour_kings')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(Show('filter_tour_kings'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "Kings,"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_of_king_vassals')]."
+							}
+						}
+						visible = "[Or(Show('filter_tour_kings'), HasVal('num_of_king_vassals'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[Click('filter_tour_dukes')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(Show('filter_tour_dukes'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "Dukes,"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_of_duke_vassals')]."
+							}
+						}
+						visible = "[Or(Show('filter_tour_dukes'), HasVal('num_of_duke_vassals'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[Click('filter_tour_counts')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(Show('filter_tour_counts'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "Counts,"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_of_count_vassals')]."
+							}
+						}
+						visible = "[Or(Show('filter_tour_counts'), HasVal('num_of_count_vassals'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[AddFlag('filter_tour_any', 'in_faction')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(ShowAddFlag('filter_tour_any', 'in_faction'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "in a faction,"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_in_factions')]."
+							}
+						}
+						visible = "[Or(ShowAddFlag('filter_tour_any', 'in_faction'), HasVal('num_in_factions'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[AddFlag('filter_tour_any', 'can_join_faction')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(ShowAddFlag('filter_tour_any', 'can_join_faction'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "can join a faction,"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_can_join_faction')]."
+							}
+						}
+						visible = "[Or(ShowAddFlag('filter_tour_any', 'can_join_faction'), HasVal('num_can_join_faction'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[AddFlag('filter_tour_any', 'hate_you')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(ShowAddFlag('filter_tour_any', 'hate_you'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "hate you,"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_vassals_hate_you')]."
+							}
+						}
+						visible = "[Or(ShowAddFlag('filter_tour_any', 'hate_you'), HasVal('num_vassals_hate_you'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[AddFlag('filter_tour_any', 'dislike_you')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(ShowAddFlag('filter_tour_any', 'dislike_you'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "dislike you,"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_vassals_dislike_you')]."
+							}
+						}
+						visible = "[Or(ShowAddFlag('filter_tour_any', 'dislike_you'), HasVal('num_vassals_dislike_you'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[AddFlag('filter_tour_any', 'like_you')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(ShowAddFlag('filter_tour_any', 'like_you'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "like you,"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_vassals_like_you')]."
+							}
+						}
+						visible = "[Or(ShowAddFlag('filter_tour_any', 'like_you'), HasVal('num_vassals_like_you'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[AddFlag('filter_tour_any', 'not_intimidated')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(ShowAddFlag('filter_tour_any', 'not_intimidated'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "not intimidated,"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_vassals_not_intimidated')]."
+							}
+						}
+						visible = "[Or(ShowAddFlag('filter_tour_any', 'not_intimidated'), HasVal('num_vassals_not_intimidated'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[AddFlag('filter_tour_any', 'intimidated')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(ShowAddFlag('filter_tour_any', 'intimidated'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "intimidated,"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_vassals_intimidated')]."
+							}
+						}
+						visible = "[Or(ShowAddFlag('filter_tour_any', 'intimidated'), HasVal('num_vassals_intimidated'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[AddFlag('filter_tour_any', 'richest')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(ShowAddFlag('filter_tour_any', 'richest'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "10 richest, they'll pay more."
+					    }
+						blockoverride "extra" {
+						}
+						visible = "[Or(ShowAddFlag('filter_tour_any', 'richest'), GreaterThan_int32(GetDataModelSize( GetPlayer.MakeScope.GetList('maa_origins')), '(int32)9'))]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[AddFlag('filter_tour_any', 'generous')]"
+						onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+						blockoverride "visible" {
+							visible = "[Not(ShowAddFlag('filter_tour_any', 'generous'))]"
+						}
+					    blockoverride "text" {
+					        raw_text = "generous,"
+					    }
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Val('num_generous_vassals')]."
+							}
+							text_single = {
+								raw_text = "They won't dislike paying you."
+							}
+						}
+						visible = "[Or(ShowAddFlag('filter_tour_any', 'generous'), HasVal('num_generous_vassals'))]"
+					}
+				}
+			}
+			blockoverride "ocr_footer" {
+				button_text = {
+					shortcut = map_mode_15
+					onclick = "[Click('filter_tour_all_filters')]"
+					onclick = "[PdxGuiTriggerAllAnimations('clear_maa_list')]"
+					# visible = "[Show('filter_tour_all_filters')]"
+					layoutpolicy_horizontal = expanding
+				    blockoverride "text" {
+				        raw_text = "Reset all filters, Ctrl F."
+				    }
+				}
+				button_text = {
+					onclick = "[Click('save_filters_tour')]"
+					layoutpolicy_horizontal = expanding
+				    blockoverride "text" {
+				        raw_text = "Save current filters, Control S."
+				    }
+				}
+				button_text = {
+					onclick = "[Click('load_filters_tour')]"
+					visible = "[Show('load_filters_tour')]"
+					layoutpolicy_horizontal = expanding
+				    blockoverride "text" {
+				        raw_text = "Load saved filters, Shift S."
+				    }
+				}
+			}
 		}
 	}
 
@@ -372,6 +879,253 @@
 }
 
 types OCR {
+	type activity_multi_location_plan_item_widget_ocr = vbox
+	{
+		datacontext = "[PlannedActivityPhase.GetLocation.GetTitle.GetHolder]"
+		layoutpolicy_horizontal = expanding
+		visible = "[Or(Isnt('selected_stop'), Has('selected_stop', Character.GetNameNoTooltip))]"
+
+		realm_name = {
+			shortcuts_list = {
+				blockoverride "click" {
+					onclick = "[Set('selected_stop', Character.GetNameNoTooltip)]"
+				}
+			}
+			blockoverride "onclick" {
+				onclick = "[Set('selected_stop', Character.GetNameNoTooltip)]"
+				onrightclick = "[ActivityPlanner.RemovePhase( PlannedActivityPhase.AccessSelf )]"
+				button_ignore = none
+			}
+			blockoverride "pre" {
+				text_single = {
+					raw_text = "[IndexNumber],"
+				}
+			}
+			blockoverride "extra4" {
+				flowcontainer = {
+				    ignoreinvisible = yes
+					spacing = 3
+					visible = "[EqualTo_int32(ActivityPlanner.GetSelectedSpecialOption.GetIndexInCategory, '(int32)2')]"
+
+					text_single = {
+						raw_text = "[Character.GetBalance|=1] income,"
+						tooltip = "[Character.GetBalanceBreakdown]"
+					}
+				}
+				flowcontainer = {
+				    ignoreinvisible = yes
+					spacing = 3
+					visible = "[Not(EqualTo_int32(ActivityPlanner.GetSelectedSpecialOption.GetIndexInCategory, '(int32)2'))]"
+
+					text_single = {
+						raw_text = "[Character.GetMilitaryStrengthText] soldiers,"
+					}
+					text_single = {
+						visible = "[Character.ShouldShowDreadEffectIconFor( GetPlayer )]"
+						raw_text = "intimidated,"
+						tooltip = "[Character.GetDreadEffectTooltipFor( GetPlayer )]"
+					}
+
+				}
+
+			}
+			layoutpolicy_horizontal = expanding
+			blockoverride "opinion" {}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 3
+
+			text_single = {
+				raw_text = "[ActivityPlanner.GetTravelDaysForPhase(PlannedActivityPhase.Self)] days of travel,"
+				datacontext = "[ActivityPlanner]"
+			}
+
+			text_single = {
+				raw_text = "cost [ActivityPlanner.GetCostForPhase(PlannedActivityPhase.Self)]."
+			}
+
+			expand = { }
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Is('selected_stop')]"
+
+			hbox = {
+			    layoutpolicy_horizontal = expanding
+				spacing = 3
+
+				text_single = {
+					raw_text = "Control in capital, [Character.GetCapitalLocation.GetCounty.GetControl|0]."
+				}
+
+				text_single = {
+					raw_text = "Popular opinion, [Character.GetCapitalLocation.GetCounty.GetTitle.MakeScope.ScriptValue('county_opinion_val')]."
+				}
+
+			    expand = { }
+			}
+
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				text_single = {
+					raw_text = "[Character.GetSheHe|U] is [Character.GetCulture.GetName],"
+				}
+
+				text_single = {
+					visible = "[ObjectsEqual( GetPlayer.GetCulture, Character.GetCulture)]"
+					raw_text = "like you."
+				}
+
+				text_single = {
+					visible = "[Not(ObjectsEqual( GetPlayer.GetCulture, Character.GetCulture))]"
+					raw_text = "[GetPlayer.GetCulture.GetAcceptance( Character.GetCulture )|=0] cultural acceptance."
+				}
+
+				expand = { }
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = character_finder
+				blockoverride "text" {
+					raw_text = "View character, C."
+				}
+				onclick = "[DefaultOnCharacterClick( Character.GetID )]"
+			}
+		}
+
+
+		vbox = {
+			name = "pickable_phases_tutorial_uses_this"
+			layoutpolicy_horizontal = expanding
+			visible = "[Isnt('selected_stop')]"
+
+			hbox = {
+			    layoutpolicy_horizontal = expanding
+
+				hbox = {
+					visible = "[Not(VariableSystem.Exists( 'reorganizing_multi_location' ))]"
+					datamodel = "[ActivityType.GetPickablePhases]"
+
+					item = {
+						button_text = {
+							visible = "[ObjectsEqual(PlannedActivityPhase.GetPhase, ActivityPhase.Self)]"
+							blockoverride "pre" {
+								text_single = {
+									raw_text = "Activity:"
+								}
+							}
+							blockoverride "text" {
+								raw_text = "[ActivityPhase.GetName]."
+							}
+							blockoverride "disabled" {
+								visible = "[Not(PlannerCanPickActivityPhase( ActivityPhase, PlannedActivityPhase.GetLocation ))]"
+							}
+							blockoverride "disabled text" {
+								raw_text = "Can't pick"
+							}
+							onclick = "[ActivityPlanner.SelectPhaseTypeFor(PlannedActivityPhase.AccessSelf, ActivityPhase.Self)]"
+							enabled = "[PlannerCanPickActivityPhase( ActivityPhase, PlannedActivityPhase.GetLocation )]"
+							down = "[ObjectsEqual(PlannedActivityPhase.GetPhase, ActivityPhase.Self)]"
+							tooltip = "ACTIVITY_PLANNER_PHASE_REPLACE_TOOLTIP"
+						}
+					}
+				}
+
+			    expand = { }
+			}
+
+		}
+
+		vbox = {
+			# name = "pickable_phases_tutorial_uses_this"
+			layoutpolicy_horizontal = expanding
+			visible = "[Is('selected_stop')]"
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "Activity:"
+			}
+
+			vbox = {
+				visible = "[Not(VariableSystem.Exists( 'reorganizing_multi_location' ))]"
+				datamodel = "[ActivityType.GetPickablePhases]"
+				layoutpolicy_horizontal = expanding
+
+				item = {
+					button_text = {
+						shortcuts_list = {
+							blockoverride "click" {
+								onclick = "[ActivityPlanner.SelectPhaseTypeFor(PlannedActivityPhase.AccessSelf, ActivityPhase.Self)]"
+							}
+						}
+						layoutpolicy_horizontal = expanding
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "[IndexNumber],"
+							}
+							text_single = {
+								raw_text = "Selected,"
+								visible = "[ObjectsEqual(PlannedActivityPhase.GetPhase, ActivityPhase.Self)]"
+							}
+						}
+					    blockoverride "text" {
+					        raw_text = "[ActivityPhase.GetName]."
+					    }
+						blockoverride "disabled" {
+							visible = "[Not(PlannerCanPickActivityPhase( ActivityPhase, PlannedActivityPhase.GetLocation ))]"
+						}
+						blockoverride "disabled text" {
+							raw_text = "Can't pick"
+						}
+						onclick = "[ActivityPlanner.SelectPhaseTypeFor(PlannedActivityPhase.AccessSelf, ActivityPhase.Self)]"
+						enabled = "[PlannerCanPickActivityPhase( ActivityPhase, PlannedActivityPhase.GetLocation )]"
+						down = "[ObjectsEqual(PlannedActivityPhase.GetPhase, ActivityPhase.Self)]"
+						tooltip = "ACTIVITY_PLANNER_PHASE_REPLACE_TOOLTIP"
+					}
+				}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Is('selected_stop')]"
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = zoom_out
+				blockoverride "text" {
+					raw_text = "Move up in the list, Page up."
+				}
+				visible = "[Not(ActivityPlanner.IsFirstPickedPhase(PlannedActivityPhase.Self))]"
+				onclick = "[ActivityPlanner.MovePhaseEarlier(PlannedActivityPhase.AccessSelf)]"
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = zoom_in
+				blockoverride "text" {
+					raw_text = "Move down in the list, Page down."
+				}
+				visible = "[Not(ActivityPlanner.IsLastPickedPhase(PlannedActivityPhase.Self))]"
+				onclick = "[ActivityPlanner.MovePhaseLater(PlannedActivityPhase.AccessSelf)]"
+			}
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = increase_speed_2
+				onclick = "[Clear('selected_stop')]"
+				onclick = "[ActivityPlanner.RemovePhase( PlannedActivityPhase.AccessSelf )]"
+			    blockoverride "text" {
+			        raw_text = "Remove, X."
+			    }
+			}
+		}
+	}
 	type selectable_target_portrait_widget_ocr = vbox
 	{
 		#expects a Character datacontext
@@ -445,6 +1199,7 @@ types OCR {
 
 			hbox = {
 				layoutpolicy_horizontal = expanding
+				# visible = "[ActivityPlanner.IsPlanningStage( 'options' )]"
 				spacing = 3
 				text_single = {
 					name = "activity"
@@ -454,13 +1209,36 @@ types OCR {
 					datacontext = "[ActivityPlanner.GetSelectedSpecialOption]"
 					raw_text = "[ActivityOption.GetName]"
 				}
-				text_single = {
-					raw_text = "in [ActivityPlanner.GetAsTravelPlanner.GetTravelPlanData.GetNextDestination.GetProvince.GetName]"
-					visible = "[ActivityPlanner.GetAsTravelPlanner.GetTravelPlanData.GetNextDestination.GetProvince.IsValid]"
-				}
+				# text_single = {
+				# 	raw_text = "in [ActivityPlanner.GetAsTravelPlanner.GetTravelPlanData.GetNextDestination.GetProvince.GetName]"
+				# 	visible = "[ActivityPlanner.GetAsTravelPlanner.GetTravelPlanData.GetNextDestination.GetProvince.IsValid]"
+				# }
+				# hbox = {
+				# 	visible = "[Not(ActivityPlanner.GetAsTravelPlanner.GetTravelPlanData.GetNextDestination.GetProvince.IsValid)]"
+				# 	text_single = {
+				# 		visible = "[ObjectsEqual(MyCapital, MyLocation)]"
+				# 		raw_text = "in your capital"
+				# 	}
+				# 	text_single = {
+				# 		visible = "[Not(ObjectsEqual(MyCapital, MyLocation))]"
+				# 		raw_text = "in your location."
+				# 	}
+				# }
 
 				dot_l = { }
 				expand = { }
+			}
+
+			travel_planning_window_ocr = {
+				blockoverride "visible"
+				{
+					visible = "[Not(ActivityPlanner.IsPlanningStage( 'location' ))]"
+				}
+				blockoverride "hidden" {
+					visible = no
+				}
+				blockoverride "location" {
+				}
 			}
 
 			# vbox if you have selected a Type
@@ -484,9 +1262,10 @@ types OCR {
 
 					button_text = {
 						layoutpolicy_horizontal = expanding
+						visible = "[Not(ActivityPlanner.IsPlanningStage( 'location' ))]"
 						onclick = "[ActivityPlanner.OpenSpecialOptionSelection]"
 						blockoverride "text" {
-							raw_text = "[Localize('ACTIVITY_PLANNER_CHANGE_TYPE_TT')]"
+							raw_text = "ACTIVITY_PLANNER_CHANGE_TYPE_TT"
 						}
 						blockoverride "dot" {
 
@@ -873,6 +1652,66 @@ types OCR {
 
 			onclick = "[ActivitySpecialGuest.ClearCharacter]"
 			tooltip = "ACTIVITY_PLANNER_CHANGE_SPECIAL_GUEST_TT"
+		}
+	}
+
+	type multi_location_picker_widget_ocr = vbox
+	{
+		name = "multi_destination_selection"
+		datacontext = "[ActivityPlanner.GetActivityType]"
+		visible = "[And(And(ActivityPlanner.IsPlanningStage( 'location' ), Not(ActivityType.IsSingleLocation)), Is('order_tour'))]"
+
+		alwaystransparent = no
+
+		widget = {
+			name = "tour_has_vassals_tutorial_uses_this"
+			size = { 0 0 }
+			visible = "[TravelPlanData.HasNextDestination]"
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content" {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					text_single = {
+						visible = "[Isnt('selected_stop')]"
+						layoutpolicy_horizontal = expanding
+						raw_text = "[Subtract_int32(GetDataModelSize(ActivityPlanner.AccessPlayerPickedPhases), '(int32)1')] stops. Select one to customize, right-click to remove."
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "Focused, close with escape."
+						}
+						shortcut = close_window
+						visible = "[Is('selected_stop')]"
+						onclick = "[Clear('selected_stop')]"
+					}
+
+					# text_single = {
+					# 	raw_text = "[ActivityPlanner.GetSelectedSpecialOption.GetIndexInCategory]"
+					# }
+
+					vbox = {
+						name = "planned_phases"
+						datamodel = "[DataModelSkipLast(ActivityPlanner.AccessPlayerPickedPhases, '(int32)1')]"
+						layoutpolicy_horizontal = expanding
+
+						item = {
+							activity_multi_location_plan_item_widget_ocr = { }
+						}
+					}
+				}
+			}
 		}
 	}
 }

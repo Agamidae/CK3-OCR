@@ -738,7 +738,7 @@ widget = {
 		}
 
 		widget_travel_points_of_interest = {
-			visible = "[And(ActivityPlannerMapIcon.HasTravelPointsOfInterest, GetVariableSystem.Exists('ocr'))]"
+			visible = "[ActivityPlannerMapIcon.HasTravelPointsOfInterest]"
 		}
 
 		# Activity related icons
@@ -835,7 +835,7 @@ widget = {
 			# Name of province
 			text_label_center = {
 				allow_outside = yes
-				visible = "[ActivityType.IsPlannerType('province')]"
+				visible = "[And(ActivityType.IsPlannerType('province'), Is('ocr'))]"
 
 				parentanchor = hcenter
 				text = "[Province.GetNameNoTooltip]"
@@ -843,7 +843,6 @@ widget = {
 
 			# Activity Type Pin
 		}
-
 	}
 
 	container = {
@@ -851,20 +850,34 @@ widget = {
 		visible = "[Or(ActivityPlannerMapIcon.CanSelectDestination, ActivityPlannerMapIcon.IsSelectedDestination )]"
 
 		button = {
-			size = { 300 300 }
+			size = { 86 92 }
 			datacontext = "[ActivityPlannerMapIcon.GetProvince]"
 
 			state = {
-				size = { 86 92 }
-				trigger_when = "[Is('ocr')]"
-				name = "small"
+				name = pick_me
+				trigger_when = "[EqualTo_string(Get('selected_map_target'), Province.GetNameNoTooltip)]"
+				on_finish = "[ActivityPlannerMapIcon.OnClick]"
+				on_finish = "[Clear('selected_map_target')]"
 			}
 
 			state = {
-				name = "big"
-				size = { 300 300 }
-				trigger_when = "[Isnt('ocr')]"
+				name = tooltip_me
+				trigger_when = "[EqualTo_string(Get('preview_map_target'), Province.GetNameNoTooltip)]"
+				on_finish = "[Set('target_tooltip', ActivityPlannerMapIcon.GetProvinceTooltip)]"
+				on_finish = "[Clear('preview_map_target')]"
 			}
+
+			# state = {
+			# 	size = { 86 92 }
+			# 	trigger_when = "[Is('ocr')]"
+			# 	name = "small"
+			# }
+			#
+			# state = {
+			# 	name = "big"
+			# 	size = { 300 300 }
+			# 	trigger_when = "[Isnt('ocr')]"
+			# }
 
 			state = {
 				name = grab_maa_origin
@@ -873,19 +886,19 @@ widget = {
 
 			visible = "[Or( ActivityType.IsPlannerType('province'), Or( Not( ActivityPlannerMapIcon.IsSelectingDestinations ), Not(  ActivityPlannerMapIcon.IsSelectedDestination ) ) )]"
 
-			# state = {
-			# 	name = "map_zoom_close"
-			# 	size = { 86 92 }
-			# 	duration = 0.25
-			# 	trigger_when = "[LessThan_int32( GetZoomLevel, '(int32)14' )]"
-			# }
-			#
-			# state = {
-			# 	name = "map_zoom_far"
-			# 	size = { 57 62 }
-			# 	duration = 0.25
-			# 	trigger_when = "[GreaterThan_int32( GetZoomLevel, '(int32)13' )]"
-			# }
+			state = {
+				name = "map_zoom_close"
+				size = { 86 92 }
+				duration = 0.25
+				trigger_when = "[LessThan_int32( GetZoomLevel, '(int32)14' )]"
+			}
+
+			state = {
+				name = "map_zoom_far"
+				size = { 57 62 }
+				duration = 0.25
+				trigger_when = "[GreaterThan_int32( GetZoomLevel, '(int32)13' )]"
+			}
 
 			icon = {
 				visible = "[ActivityType.IsGrandActivity]"
@@ -986,7 +999,8 @@ widget = {
         }
 
 		widget_travel_points_of_interest = {
-			visible = "[And(TravelProvinceMapIcon.HasPointsOfInterest, GetVariableSystem.Exists('ocr'))]"
+			# visible = "[And(TravelProvinceMapIcon.HasPointsOfInterest, GetVariableSystem.Exists('ocr'))]"
+			visible = "[TravelProvinceMapIcon.HasPointsOfInterest]"
 		}
 	}
 }
@@ -2466,6 +2480,22 @@ types MapIcons
 		alwaystransparent = yes
 
 		size = { 30 32 }
+
+		widget = {
+			visible = "[Not(TravelPointsOfInterestIconData.IsOnTravelRoute)]"
+			state = {
+				name = grab_points_of_interest
+				on_finish = "[GetScriptedGui('add_maa_origin_from_map').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'province', Province.MakeScope).End )]"
+			}
+		}
+
+
+		state = {
+			name = tooltip_me
+			trigger_when = "[EqualTo_string(Get('preview_map_target'), Province.GetNameNoTooltip)]"
+			on_finish = "[Set('target_tooltip', TravelPointsOfInterestIconData.GetDescription)]"
+			on_finish = "[Clear('preview_map_target')]"
+		}
 
 		state = {
 			name = "map_zoom_close"

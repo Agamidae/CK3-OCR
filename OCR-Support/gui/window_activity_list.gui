@@ -17,6 +17,7 @@ window = {
 
 		on_start = "[GetVariableSystem.Set( 'activity_list_tab', 'host' )]"
 		on_start = "[GetVariableSystem.Set( 'activity_list_view', 'activities' )]"
+		on_finish = "[Clear('grand_activity')]"
 	}
 
 	state = {
@@ -54,6 +55,7 @@ window = {
 				name = "activity_status"
 				layoutpolicy_horizontal = expanding
 				datacontext = "[Character.GetInvolvedActivity]"
+				visible = "[Isnt('grand_activity')]"
 
 				text_single = {
 					layoutpolicy_horizontal = expanding
@@ -110,11 +112,11 @@ window = {
 						}
 
 						expand = { }
-						}
 					}
-
-					expand = { }
 				}
+
+				expand = { }
+			}
 
 			vbox = {
 				layoutpolicy_horizontal = expanding
@@ -140,159 +142,205 @@ window = {
 							name = "activities_container"
 
 							vbox = {
-								name = "joinable_activities"
 								layoutpolicy_horizontal = expanding
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									raw_text = "[Localize('ACTIVITY_LIST_JOIN')]."
-									max_width = @txt_width
-								}
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									visible = "[IsDataModelEmpty( ActivityListWindow.GetInvitedActivities )]"
-									text = "ACTIVITY_LIST_NO_ACTIVITY_INVITATIONS"
-									max_width = @txt_width
-								}
+								visible = "[Isnt('grand_activity')]"
 
 								vbox = {
-									name = "activity_invites"
+									name = "joinable_activities"
 									layoutpolicy_horizontal = expanding
 
-									datamodel = "[ActivityListWindow.GetInvitedActivities]"
-
-									item = {
-										vbox = {
-											layoutpolicy_horizontal = expanding
-											activity_join_item_button_ocr = {
-												layoutpolicy_horizontal = expanding
-											}
-											button_text = {
-												layoutpolicy_horizontal = expanding
-												blockoverride "text" {
-													raw_text = "Decline invite."
-												}
-												onclick = "[Activity.DeclineInvite]"
-												# tooltip = "ACTIVITY_LIST_DECLINE_INVITE"
-											}
-										}
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "[Localize('ACTIVITY_LIST_JOIN')]."
+										max_width = @txt_width
 									}
-								}
 
-								vbox = {
-									#TODO
-									name = "open_activities"
-									visible = "[HasDlcFeature( 'advanced_activities' )]"
-									layoutpolicy_horizontal = expanding
-
-									text_multi = {
-										visible = "[IsDataModelEmpty( ActivityListWindow.GetJoinableActivities )]"
-										text = "ACTIVITY_LIST_NO_JOINABLE_ACTIVITIES"
-										using = wide
-										autoresize = yes
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										visible = "[IsDataModelEmpty( ActivityListWindow.GetInvitedActivities )]"
+										text = "ACTIVITY_LIST_NO_ACTIVITY_INVITATIONS"
+										max_width = @txt_width
 									}
 
 									vbox = {
+										name = "activity_invites"
 										layoutpolicy_horizontal = expanding
-										spacing = 4
 
-										datamodel = "[ActivityListWindow.GetJoinableActivities]"
+										datamodel = "[ActivityListWindow.GetInvitedActivities]"
 
 										item = {
-											activity_join_item_button = {
+											vbox = {
 												layoutpolicy_horizontal = expanding
-
-												blockoverride "size_illustration"
-												{
-													parentanchor = right|vcenter
-													position = { -2 0 }
-													size = { 250 48 }
+												activity_join_item_button_ocr = {
+													layoutpolicy_horizontal = expanding
+												}
+												button_text = {
+													layoutpolicy_horizontal = expanding
+													blockoverride "text" {
+														raw_text = "Decline invite."
+													}
+													onclick = "[Activity.DeclineInvite]"
+													# tooltip = "ACTIVITY_LIST_DECLINE_INVITE"
 												}
 											}
 										}
 									}
 
-									button_text = {
+									vbox = {
+										#TODO
+										name = "open_activities"
+										visible = "[HasDlcFeature( 'advanced_activities' )]"
 										layoutpolicy_horizontal = expanding
-										blockoverride "pre" {
-											text_single = {
-												raw_text = "[Select_CString(ActivityType.ShouldNotifyCanJoinOpenActivity, 'Checked', 'Unchecked')],"
+
+										text_multi = {
+											visible = "[IsDataModelEmpty( ActivityListWindow.GetJoinableActivities )]"
+											text = "ACTIVITY_LIST_NO_JOINABLE_ACTIVITIES"
+											using = wide
+											autoresize = yes
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+											spacing = 4
+
+											datamodel = "[ActivityListWindow.GetJoinableActivities]"
+
+											item = {
+												activity_join_item_button = {
+													layoutpolicy_horizontal = expanding
+
+													blockoverride "size_illustration"
+													{
+														parentanchor = right|vcenter
+														position = { -2 0 }
+														size = { 250 48 }
+													}
+												}
 											}
 										}
-										blockoverride "text" {
-											text = "ACTIVITY_LIST_NOTIFY_ME_ABOUT_TOURNAMENTS"
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "pre" {
+												text_single = {
+													raw_text = "[Select_CString(ActivityType.ShouldNotifyCanJoinOpenActivity, 'Checked', 'Unchecked')],"
+												}
+											}
+											blockoverride "text" {
+												text = "ACTIVITY_LIST_NOTIFY_ME_ABOUT_TOURNAMENTS"
+											}
+											datacontext = "[GetActivityType( 'activity_tournament' )]"
+											onclick = "[ActivityType.ToggleShouldNotifyCanJoinOpenActivity]"
 										}
-										datacontext = "[GetActivityType( 'activity_tournament' )]"
-										onclick = "[ActivityType.ToggleShouldNotifyCanJoinOpenActivity]"
+									}
+								}
+
+								vbox = {
+									name = "host_activities"
+									layoutpolicy_horizontal = expanding
+
+									button_text = {
+										layoutpolicy_horizontal = expanding
+									    blockoverride "text" {
+											raw_text = "[Localize('ACTIVITY_LIST_HOST_GRAND')],"
+									    }
+										blockoverride "extra" {
+											text_single = {
+												raw_text = "hotkey G."
+											}
+										}
+										onclick = "[Toggle('grand_activity')]"
+										shortcut = army_merge
+										visible = "[HasDlcFeature( 'advanced_activities' )]"
+									}
+
+									vbox = {
+										name = "grand_activities"
+										layoutpolicy_horizontal = expanding
+										visible = "[HasDlcFeature( 'advanced_activities' )]"
+
+										text_single = {
+											visible = "[IsDataModelEmpty( ActivityListWindow.GetHostableGrandActivities )]"
+											text = "ACTIVITY_LIST_HOST_NO_GRAND_ACTIVITIES"
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+
+											datamodel = "[ActivityListWindow.GetHostableGrandActivities]"
+
+											item = {
+												activity_host_item_button_ocr = {
+													blockoverride "number" {
+														visible = no
+													}
+													layoutpolicy_horizontal = expanding
+												}
+											}
+										}
+									}
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "[Localize('ACTIVITY_LIST_HOST')]."
+									}
+
+									vbox = {
+										name = "regular_activities"
+										layoutpolicy_horizontal = expanding
+
+										text_single = {
+											visible = "[IsDataModelEmpty( ActivityListWindow.GetHostableActivities )]"
+											text = "ACTIVITY_LIST_HOST_NO_REGULAR_ACTIVITIES"
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+
+											datamodel = "[ActivityListWindow.GetHostableActivities]"
+
+											item = {
+												activity_host_item_button_ocr = {
+													shortcuts_list = {
+														blockoverride "click" {
+															onclick = "[ToggleGameViewData( 'activity_list_detail_host_window', ActivityType.Self )]"
+														}
+													}
+													layoutpolicy_horizontal = expanding
+												}
+											}
+										}
 									}
 								}
 							}
 
-
 							vbox = {
-								name = "host_activities"
+								name = "grand_activities_hotkeys"
 								layoutpolicy_horizontal = expanding
+								visible = "[And(HasDlcFeature( 'advanced_activities' ), Is('grand_activity'))]"
 
 								text_single = {
-									layoutpolicy_horizontal = expanding
-									text = "ACTIVITY_LIST_HOST_GRAND"
-									visible = "[HasDlcFeature( 'advanced_activities' )]"
+									visible = "[IsDataModelEmpty( ActivityListWindow.GetHostableGrandActivities )]"
+									text = "ACTIVITY_LIST_HOST_NO_GRAND_ACTIVITIES"
 								}
 
 								vbox = {
-									name = "grand_activities"
 									layoutpolicy_horizontal = expanding
-									visible = "[HasDlcFeature( 'advanced_activities' )]"
 
-									text_single = {
-										visible = "[IsDataModelEmpty( ActivityListWindow.GetHostableGrandActivities )]"
-										text = "ACTIVITY_LIST_HOST_NO_GRAND_ACTIVITIES"
+									button = {
+										shortcut = close_window
+										onclick = "[Clear('grand_activity')]"
 									}
 
-									vbox = {
-										layoutpolicy_horizontal = expanding
+									datamodel = "[ActivityListWindow.GetHostableGrandActivities]"
 
-										datamodel = "[ActivityListWindow.GetHostableGrandActivities]"
-
-										item = {
-											activity_host_item_button_ocr = {
-												blockoverride "number" {
-													visible = no
+									item = {
+										activity_host_item_button_ocr = {
+											layoutpolicy_horizontal = expanding
+											shortcuts_list = {
+												blockoverride "click" {
+													onclick = "[ToggleGameViewData( 'activity_list_detail_host_window', ActivityType.Self )]"
 												}
-												layoutpolicy_horizontal = expanding
-											}
-										}
-									}
-								}
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									raw_text = "[Localize('ACTIVITY_LIST_HOST')]."
-								}
-
-								vbox = {
-									name = "regular_activities"
-									layoutpolicy_horizontal = expanding
-
-									text_single = {
-										visible = "[IsDataModelEmpty( ActivityListWindow.GetHostableActivities )]"
-										text = "ACTIVITY_LIST_HOST_NO_REGULAR_ACTIVITIES"
-									}
-
-									vbox = {
-										layoutpolicy_horizontal = expanding
-
-										datamodel = "[ActivityListWindow.GetHostableActivities]"
-
-										item = {
-											activity_host_item_button_ocr = {
-												shortcuts_list = {
-													blockoverride "click" {
-														onclick = "[ToggleGameViewData( 'activity_list_detail_host_window', ActivityType.Self )]"
-													}
-												}
-												layoutpolicy_horizontal = expanding
 											}
 										}
 									}
@@ -301,6 +349,16 @@ window = {
 						}
 					}
 				}
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "You may still preview activites if you can't host them right now."
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "Warning, tournaments are not accessible yet."
 			}
 		}
 	}
@@ -369,13 +427,16 @@ window = {
 							raw_text = "ACTIVITY_LIST_DETAIL_HOST_CONFIRM"
 						}
 
-						# blockoverride "disabled" {
-						# 	visible = "[Not(ActivityListDetailHostView.CanConfirm)]"
-						# }
-						#
-						# blockoverride "hotkey" {
-						# 	visible = "[ActivityListDetailHostView.CanConfirm]"
-						# }
+						blockoverride "disabled" {
+							visible = "[Not(ActivityListDetailHostView.CanConfirm)]"
+						}
+
+						blockoverride "hotkey" {
+							visible = "[ActivityListDetailHostView.CanConfirm]"
+						}
+
+						tooltip_enabled = "[Not(ActivityListDetailHostView.CanConfirm)]"
+						tooltip = "[ActivityListDetailHostView.GetConfirmTooltip]"
 
 						onclick = "[ActivityListDetailHostView.Confirm]"
 
