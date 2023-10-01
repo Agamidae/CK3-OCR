@@ -55,6 +55,10 @@ window = {
 			using = ocr_margins
 			layoutpolicy_vertical = expanding
 
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
+
 			header_pattern = {
 				layoutpolicy_horizontal = expanding
 				size = { 0 0 }
@@ -74,6 +78,7 @@ window = {
 			vbox = {
 				layoutpolicy_horizontal = expanding
 				margin_left = 10
+				visible = "[Not(KnightsView.IsShowingInactiveAccolades)]"
 
 				hbox = {
 					layoutpolicy_horizontal = expanding
@@ -104,259 +109,500 @@ window = {
 					expand = { }
 				}
 
-				button_decision_entry_text = {
-					layoutpolicy_horizontal = expanding
-					name = "invite_knights_decision"
-					datacontext = "[GetDecisionWithKey('invite_knights_decision')]"
-					visible = "[Decision.IsShownForPlayer]"
-					onclick = "[OpenGameViewData( 'decision_detail', Decision.Self )]"
-				}
+			}
+
+			# ACCOLADES ----------------------------------------------------------------------------
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[MilitaryView.GetCharacter]"
+				visible = "[Not(KnightsView.IsShowingInactiveAccolades)]"
 
 				button_text = {
 					layoutpolicy_horizontal = expanding
-					blockoverride "pre" {
+					onclick = "[Toggle('accolades')]"
+					shortcut = map_mode_1
+				    blockoverride "extra" {
 						text_single = {
-							raw_text = "Show"
-							visible = "[Not(GetVariableSystem.Exists('hide_km'))]"
+							visible = "[GreaterThan_int32( Character.GetNumAccoladeSlots, '(int32)0' )]"
+
+							name = "accolades_limit"
+							raw_text = "[GetDataModelSize(Character.GetActiveAccolades)] accolades out of [Character.GetNumAccoladeSlots]."
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "Max is [GetDefine('NGui', 'KNIGHTS_VIEW_NUM_ACCOLADES')]."
+						}
+
+						text_single = {
+							raw_text = "[Collapse('accolades')] E."
+						}
+				    }
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Isnt('accolades')]"
+					vbox = {
+						datacontext = "[MilitaryView.GetCharacter]"
+						visible = "[GreaterThan_int32( Character.GetNumAccoladeSlots, '(int32)0' )]"
+						name = "active_accolades"
+						layoutpolicy_horizontal = expanding
+						datamodel = "[Character.GetActiveAccolades]"
+
+						item = {
+							char_name = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "pre" {
+									text_single = {
+										alwaystransparent = yes
+										raw_text = "Rank [Accolade.GetCurrentRankNumber], [Accolade.GetName],"
+									}
+								}
+								datacontext = "[Accolade.GetAcclaimedKnight]"
+								# tooltip = "MANAGE_ACCOLADE_NAME"
+								blockoverride "onclick" {
+									onclick = "[OpenGameViewData( 'accolade_view', Accolade.GetID )]"
+									onclick = "[KnightsView.Close]"
+								}
+							}
 						}
 					}
 
-					blockoverride "text" {
-						raw_text = "Knight manager."
-						align = left
-					}
-					blockoverride "extra" {
-						text_single = {
-							raw_text = "Hide."
-							visible = "[GetVariableSystem.Exists('hide_km')]"
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						visible = "[And( MilitaryView.GetCharacter.HasFreeAccoladeSlots, KnightsView.HasCachedPotentialAcclaimedKnights )]"
+
+						onclick = "[OpenGameViewData( 'create_accolade_view', MilitaryView.GetCharacter.GetID )]"
+						onclick = "[KnightsView.Close]"
+						blockoverride "text" {
+							raw_text = "[KnightsView.GetAccoladeSlotTooltip( MilitaryView.GetCharacter.Self )],"
 						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "hotkey C."
+							}
+						}
+						shortcut = character_finder
+						enabled = "[And( MilitaryView.GetCharacter.HasFreeAccoladeSlots, KnightsView.HasCachedPotentialAcclaimedKnights )]"
+						blockoverride "disabled" {
+							visible = "[Not(And( MilitaryView.GetCharacter.HasFreeAccoladeSlots, KnightsView.HasCachedPotentialAcclaimedKnights ))]"
+						}
+
+						# visible = "[GreaterThan_int32( GetDefine('NGui', 'KNIGHTS_VIEW_NUM_ACCOLADES'), MilitaryView.GetCharacter.GetNumActiveAccolades
 					}
-					onclick = "[GetVariableSystem.Toggle('hide_km')]"
+
+					text_multi_wide = {
+						visible = "[Not(And( MilitaryView.GetCharacter.HasFreeAccoladeSlots, KnightsView.HasCachedPotentialAcclaimedKnights ))]"
+						raw_text = "[KnightsView.GetAccoladeSlotTooltip( MilitaryView.GetCharacter.Self )]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Character.GetNumInactiveAccolades]"
+							}
+							text_single = {
+								text = "INACTIVE_ACCOLADES"
+							}
+							comma = {}
+							text_single = {
+								raw_text = "hotkey i."
+							}
+						}
+						shortcut = mapmode_kingdoms_secondary
+						visible = "[And( GreaterThan_int32( Character.GetNumInactiveAccolades, '(int32)0' ), Not(KnightsView.IsShowingInactiveAccolades ) )]"
+						onclick = "[KnightsView.ToggleInactiveAccolades]"
+					}
+
+					button = {
+						shortcut = close_window
+						shortcut = mapmode_kingdoms_secondary
+						visible = "[KnightsView.IsShowingInactiveAccolades]"
+						onclick = "[KnightsView.ToggleInactiveAccolades]"
+					}
 				}
 			}
 
 			vbox = {
-				margin_left = 10
-				name = knight_manager_settings
-				layoutpolicy_horizontal = expanding
-
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					raw_text = "Disallow a group to remove them from the list of knights."
-				}
-				visible = "[GetVariableSystem.Exists('hide_km')]"
-
-				knight_setting = {
-					datacontext = "[GetScriptedGui('knight_manager_toggle_kin_cannot_be_knight')]"
-					blockoverride "text" {
-						text = "km_toggle_kin_cannot_be_knight"
-						align = left
-					}
-					blockoverride "tooltip" {
-						tooltip = "km_toggle_kin_cannot_be_knight_tt"
-					}
-				}
-
-				knight_setting = {
-					datacontext = "[GetScriptedGui('knight_manager_toggle_children_cannot_be_knight')]"
-					blockoverride "text" {
-						text = "km_toggle_children_cannot_be_knight"
-						align = left
-					}
-					blockoverride "tooltip" {
-						tooltip = "km_toggle_children_cannot_be_knight_tt"
-					}
-				}
-				knight_setting = {
-					datacontext = "[GetScriptedGui('knight_manager_toggle_family_spouses_cannot_be_knight')]"
-					blockoverride "text" {
-						text = "km_toggle_family_spouses_cannot_be_knight"
-						align = left
-					}
-					blockoverride "tooltip" {
-						tooltip = "km_toggle_family_spouses_cannot_be_knight_tt"
-					}
-				}
-
-				knight_setting = {
-					datacontext = "[GetScriptedGui('knight_manager_toggle_councillors_cannot_be_knight')]"
-					blockoverride "text" {
-						text = "km_toggle_councillors_cannot_be_knight"
-						align = left
-					}
-					blockoverride "tooltip" {
-						tooltip = "km_toggle_councillors_cannot_be_knight_tt"
-					}
-				}
-
-				knight_setting = {
-					datacontext = "[GetScriptedGui('knight_manager_toggle_vassals_cannot_be_knight')]"
-					blockoverride "text" {
-						text = "knight_manager_mod_vassals_label"
-						align = left
-					}
-					blockoverride "tooltip" {
-						tooltip = "knight_manager_mod_vassals_tooltip"
-					}
-				}
-
-				knight_setting = {
-					datacontext = "[GetScriptedGui('knight_manager_toggle_lover_cannot_be_knight')]"
-					blockoverride "text" {
-						text = "km_toggle_my_lovers_cannot_be_knight"
-						align = left
-					}
-					blockoverride "tooltip" {
-						tooltip = "km_toggle_my_lovers_cannot_be_knight_tt"
-					}
-				}
-
-				knight_setting = {
-					datacontext = "[GetScriptedGui('knight_manager_toggle_player_heir_cannot_be_knight')]"
-					blockoverride "text" {
-						text = "km_toggle_my_heir_cannot_be_knight"
-						align = left
-					}
-					blockoverride "tooltip" {
-						tooltip = "km_toggle_my_heir_cannot_be_knight_tt"
-					}
-				}
-
-				knight_setting = {
-					datacontext = "[GetScriptedGui('knight_manager_toggle_awful_fighters_cannot_be_knight')]"
-					blockoverride "text" {
-						text = "km_toggle_bad_fighters_cannot_be_knight"
-						align = left
-					}
-					blockoverride "tooltip" {
-						tooltip = "km_toggle_bad_fighters_cannot_be_knight_tt"
-					}
-				}
-
-				knight_setting = {
-					datacontext = "[GetScriptedGui('knight_manager_toggle_bad_fighters_cannot_be_knight')]"
-					blockoverride "text" {
-						text = "km_toggle_average_fighters_cannot_be_knight"
-						align = left
-					}
-					blockoverride "tooltip" {
-						tooltip = "km_toggle_average_fighters_cannot_be_knight_tt"
-					}
-				}
-			}
-
-			scrollbox = {
-				name = "knights"
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding
+				visible = "[KnightsView.IsShowingInactiveAccolades]"
 
-				blockoverride "scrollbox_content" {
-					name = "knights"
-					datamodel = "[MilitaryView.GetKnights]"
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "[GetPlayer.GetNumInactiveAccolades]"
+						}
+						text_single = {
+							text = "INACTIVE_ACCOLADES"
+						}
+						dot_l = { }
+					}
+					onclick = "[KnightsView.ToggleInactiveAccolades]"
+					shortcut = mapmode_kingdoms_secondary
+					shortcut = close_window
+				}
 
-					item = {
+				scrollbox = {
+					name = "inactive_accolades"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					datacontext = "[MilitaryView.GetCharacter]"
+
+					blockoverride "scrollbox_content" {
 						vbox = {
+							name = "knights"
+							datamodel = "[Character.GetInactiveAccolades]"
 							layoutpolicy_horizontal = expanding
 
-							hbox = {
-								layoutpolicy_horizontal = expanding
-								spacing = 3
-
-								hbox = {
-									visible = "[Character.IsGuest]"
-
-									button_text = {
-										blockoverride "disabled" {
-											visible = "[Not(Character.IsPlayerInteractionValid('recruit_guest_interaction'))]"
-										}
-										blockoverride "text" {
-											raw_text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')],"
-											align = left
-										}
-										blockoverride "extra" {
-										}
-										visible = "[Character.IsPlayerInteractionShown('recruit_guest_interaction')]"
-										enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
-										onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
-									}
-								}
-
-								hbox = {
-									visible = "[Not(Character.IsGuest)]"
-
-									text_single = {
-										raw_text = "[Select_CString(Character.IsKnightForced, 'Forced', '')]"
-									}
-
-									text_single = {
-										raw_text = "[Select_CString(Character.IsKnightDisallowed, 'Forbidden,', '')]"
-									}
-								}
-
-								text_single = {
-									raw_text = "Knight,"
-									visible = "[Character.IsKnight]"
-								}
-
-								text_single = {
-									raw_text = "[Character.GetSkill( 'prowess' )] prowess,"
-								}
-								text_single = {
-									raw_text = "[Character.GetNameNoTooltip],"
-								}
-								text_single = {
-									raw_text = "[Character.GetRelationToString( GetPlayer )]."
-									tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-								}
-
-								expand = { }
-							}
-
-							hbox = {
-								visible = "[Not(Character.IsGuest)]"
-								layoutpolicy_horizontal = expanding
-
-								button_text = {
-									visible = "[Not(Character.IsKnightForced)]"
-									onclick = "[MilitaryView.SetKnightForced( Character.Self )]"
-									blockoverride "text" {
-										raw_text = "[Select_CString(Character.IsKnightForced, 'Is forced', 'Force')],"
-									}
-									# tooltip = "KNIGHTS_VIEW_TITLE_FORCE_TT"
-								}
-
-								button_text = {
-									visible = "[Not(Character.IsKnightDefault)]"
-									onclick = "[MilitaryView.SetKnightDefault( Character.Self )]"
-									blockoverride "text" {
-										raw_text = "[Select_CString(Character.IsKnightForced, 'Unforce', 'Allow')],"
-									}
-									# tooltip = "KNIGHTS_VIEW_TITLE_BY_PROWESS_TT"
-								}
-
-								button_text = {
-									onclick = "[MilitaryView.SetKnightDisallowed( Character.Self )]"
-									visible = "[Not(Character.IsKnightDisallowed)]"
-									blockoverride "text" {
-										raw_text = "[Select_CString(Character.IsKnightDisallowed, '', 'Forbid')]."
-									}
-									# tooltip = "KNIGHTS_VIEW_TITLE_FORBID_TT"
-								}
-
-								button_text = {
+							item = {
+								vbox = {
 									layoutpolicy_horizontal = expanding
-									datacontext = "[GetScriptedGui('knight_manager_toggle_manually_allowed')]"
-									onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( Character.MakeScope ).End)]"
-									onclick = "[MilitaryView.SetKnightDefault( GetPlayer.Self )]"
-									# tooltip = "toggle_exclude_label_tt"
 
-									blockoverride "text"
-									{
-										raw_text = "[Select_CString( ScriptedGui.IsShown( GuiScope.SetRoot( Character.MakeScope ).End), 'Exclude', 'Is excluded')] from manager."
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										datacontext = "[Accolade.GetAcclaimedKnight]"
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											tooltipwidget = accolade_tooltip
+											raw_text = "[Accolade.GetNameNoTooltip], [Accolade.GetCurrentRankNumber]."
+										}
+
+										char_name = {
+											visible = "[Character.IsValid]"
+											layoutpolicy_horizontal = expanding
+											blockoverride "extra3" {
+												text_single = {
+													raw_text = "[Character.GetSkill( 'prowess' )] prowess,"
+												}
+											}
+										}
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											visible = "[Not(Character.IsValid)]"
+											raw_text = "No acclaimed knight."
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+										    blockoverride "text" {
+												text = "ACTIVATE_ACCOLADE"
+										    }
+											blockoverride "dot" {
+
+											}
+											visible = "[Accolade.CanBeActivated]"
+											onclick = "[Accolade.Activate]"
+											clicksound = "event:/DLC/EP2/SFX/UI/Knighthood/ep2_ui_knighthood_lineage_creation"
+										}
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+										    blockoverride "text" {
+												text = "ACCOLADE_APPOINT"
+										    }
+											blockoverride "dot" {
+
+											}
+											visible = "[Accolade.HasPotentialSuccessor]"
+											onclick = "[OpenSetAcclaimedView( Accolade.Self )]"
+										}
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+										    blockoverride "text" {
+												text = "DESTROY_ACCOLADE"
+										    }
+											blockoverride "dot" {
+
+											}
+											onclick = "[KnightsView.DestroyAccolade( Accolade.Self )]"
+										}
 									}
 								}
+							}
+						}
+					}
+				}
 
-								expand = { }
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				visible = "[Not(KnightsView.IsShowingInactiveAccolades)]"
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					##################
+
+					button_decision_entry_text = {
+						layoutpolicy_horizontal = expanding
+						name = "invite_knights_decision"
+						datacontext = "[GetDecisionWithKey('invite_knights_decision')]"
+						visible = "[Decision.IsShownForPlayer]"
+						onclick = "[OpenGameViewData( 'decision_detail', Decision.Self )]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "Show"
+								visible = "[Not(GetVariableSystem.Exists('hide_km'))]"
+							}
+						}
+
+						blockoverride "text" {
+							raw_text = "Knight manager."
+							align = left
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "Hide."
+								visible = "[GetVariableSystem.Exists('hide_km')]"
+							}
+						}
+						onclick = "[GetVariableSystem.Toggle('hide_km')]"
+					}
+				}
+
+				vbox = {
+					margin_left = 10
+					name = knight_manager_settings
+					layoutpolicy_horizontal = expanding
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Disallow a group to remove them from the list of knights."
+					}
+					visible = "[GetVariableSystem.Exists('hide_km')]"
+
+					knight_setting = {
+						datacontext = "[GetScriptedGui('knight_manager_toggle_kin_cannot_be_knight')]"
+						blockoverride "text" {
+							text = "km_toggle_kin_cannot_be_knight"
+							align = left
+						}
+						blockoverride "tooltip" {
+							tooltip = "km_toggle_kin_cannot_be_knight_tt"
+						}
+					}
+
+					knight_setting = {
+						datacontext = "[GetScriptedGui('knight_manager_toggle_children_cannot_be_knight')]"
+						blockoverride "text" {
+							text = "km_toggle_children_cannot_be_knight"
+							align = left
+						}
+						blockoverride "tooltip" {
+							tooltip = "km_toggle_children_cannot_be_knight_tt"
+						}
+					}
+					knight_setting = {
+						datacontext = "[GetScriptedGui('knight_manager_toggle_family_spouses_cannot_be_knight')]"
+						blockoverride "text" {
+							text = "km_toggle_family_spouses_cannot_be_knight"
+							align = left
+						}
+						blockoverride "tooltip" {
+							tooltip = "km_toggle_family_spouses_cannot_be_knight_tt"
+						}
+					}
+
+					knight_setting = {
+						datacontext = "[GetScriptedGui('knight_manager_toggle_councillors_cannot_be_knight')]"
+						blockoverride "text" {
+							text = "km_toggle_councillors_cannot_be_knight"
+							align = left
+						}
+						blockoverride "tooltip" {
+							tooltip = "km_toggle_councillors_cannot_be_knight_tt"
+						}
+					}
+
+					knight_setting = {
+						datacontext = "[GetScriptedGui('knight_manager_toggle_vassals_cannot_be_knight')]"
+						blockoverride "text" {
+							text = "knight_manager_mod_vassals_label"
+							align = left
+						}
+						blockoverride "tooltip" {
+							tooltip = "knight_manager_mod_vassals_tooltip"
+						}
+					}
+
+					knight_setting = {
+						datacontext = "[GetScriptedGui('knight_manager_toggle_lover_cannot_be_knight')]"
+						blockoverride "text" {
+							text = "km_toggle_my_lovers_cannot_be_knight"
+							align = left
+						}
+						blockoverride "tooltip" {
+							tooltip = "km_toggle_my_lovers_cannot_be_knight_tt"
+						}
+					}
+
+					knight_setting = {
+						datacontext = "[GetScriptedGui('knight_manager_toggle_player_heir_cannot_be_knight')]"
+						blockoverride "text" {
+							text = "km_toggle_my_heir_cannot_be_knight"
+							align = left
+						}
+						blockoverride "tooltip" {
+							tooltip = "km_toggle_my_heir_cannot_be_knight_tt"
+						}
+					}
+
+					knight_setting = {
+						datacontext = "[GetScriptedGui('knight_manager_toggle_awful_fighters_cannot_be_knight')]"
+						blockoverride "text" {
+							text = "km_toggle_bad_fighters_cannot_be_knight"
+							align = left
+						}
+						blockoverride "tooltip" {
+							tooltip = "km_toggle_bad_fighters_cannot_be_knight_tt"
+						}
+					}
+
+					knight_setting = {
+						datacontext = "[GetScriptedGui('knight_manager_toggle_bad_fighters_cannot_be_knight')]"
+						blockoverride "text" {
+							text = "km_toggle_average_fighters_cannot_be_knight"
+							align = left
+						}
+						blockoverride "tooltip" {
+							tooltip = "km_toggle_average_fighters_cannot_be_knight_tt"
+						}
+					}
+				}
+
+				scrollbox = {
+					name = "knights"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					blockoverride "scrollbox_content" {
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							name = "knights"
+							datamodel = "[MilitaryView.GetKnights]"
+
+							item = {
+								vbox = {
+									layoutpolicy_horizontal = expanding
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										spacing = 3
+
+										hbox = {
+											visible = "[Character.IsGuest]"
+
+											button_text = {
+												blockoverride "disabled" {
+													visible = "[Not(Character.IsPlayerInteractionValid('recruit_guest_interaction'))]"
+												}
+												blockoverride "text" {
+													raw_text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')],"
+													align = left
+												}
+												blockoverride "extra" {
+												}
+												visible = "[Character.IsPlayerInteractionShown('recruit_guest_interaction')]"
+												enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
+												onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
+											}
+										}
+
+										hbox = {
+											visible = "[Not(Character.IsGuest)]"
+
+											text_single = {
+												raw_text = "[Select_CString(Character.IsKnightForced, 'Forced', '')]"
+											}
+
+											text_single = {
+												raw_text = "[Select_CString(Character.IsKnightDisallowed, 'Forbidden,', '')]"
+											}
+										}
+
+										text_single = {
+											raw_text = "Knight,"
+											visible = "[Character.IsKnight]"
+										}
+
+										text_single = {
+											raw_text = "[Character.GetSkill( 'prowess' )] prowess,"
+										}
+										text_single = {
+											raw_text = "[Character.GetNameNoTooltip],"
+										}
+										text_single = {
+											raw_text = "[Character.GetRelationToString( GetPlayer )]."
+											tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+										}
+
+										expand = { }
+									}
+
+									hbox = {
+										visible = "[Not(Character.IsGuest)]"
+										layoutpolicy_horizontal = expanding
+
+										button_text = {
+											visible = "[Not(Character.IsKnightForced)]"
+											onclick = "[MilitaryView.SetKnightForced( Character.Self )]"
+											blockoverride "text" {
+												raw_text = "[Select_CString(Character.IsKnightForced, 'Is forced', 'Force')],"
+											}
+											# tooltip = "KNIGHTS_VIEW_TITLE_FORCE_TT"
+										}
+
+										button_text = {
+											visible = "[Not(Character.IsKnightDefault)]"
+											onclick = "[MilitaryView.SetKnightDefault( Character.Self )]"
+											blockoverride "text" {
+												raw_text = "[Select_CString(Character.IsKnightForced, 'Unforce', 'Allow')],"
+											}
+											# tooltip = "KNIGHTS_VIEW_TITLE_BY_PROWESS_TT"
+										}
+
+										button_text = {
+											onclick = "[MilitaryView.SetKnightDisallowed( Character.Self )]"
+											visible = "[Not(Character.IsKnightDisallowed)]"
+											blockoverride "text" {
+												raw_text = "[Select_CString(Character.IsKnightDisallowed, '', 'Forbid')]."
+											}
+											# tooltip = "KNIGHTS_VIEW_TITLE_FORBID_TT"
+										}
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											datacontext = "[GetScriptedGui('knight_manager_toggle_manually_allowed')]"
+											onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( Character.MakeScope ).End)]"
+											onclick = "[MilitaryView.SetKnightDefault( GetPlayer.Self )]"
+											# tooltip = "toggle_exclude_label_tt"
+
+											blockoverride "text"
+											{
+												raw_text = "[Select_CString( ScriptedGui.IsShown( GuiScope.SetRoot( Character.MakeScope ).End), 'Exclude', 'Is excluded')] from manager."
+											}
+										}
+
+										expand = { }
+									}
+								}
 							}
 						}
 					}

@@ -1,0 +1,2300 @@
+window = {
+	name = "tournament_contest_information"
+	visible = "[And(CanDisplayLocaleView('phase_information'), ActivityLocaleWindow.HasSelectedPhase)]"
+	using = base_ocr_window
+	#alwaystransparent = no
+
+	state = {
+		name = _hide
+		on_start = "[ClearContestInfoTab]"
+		on_start = "[VariableSystem.Clear( 'activity_contest_info_debugview' )]"
+	}
+
+	window_ocr = {
+		size = { 930 100% }
+
+		blockoverride "ocr_content" {
+			vbox = {
+				using = Window_Margins
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+				datacontext = "[ActivityLocaleWindow.GetSelectedPhase]"
+				datacontext = "[ActivityLocaleWindow.GetSelectedPhase.GetPhase]"
+
+
+				## Headers
+				header_pattern = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not( Activity.IsComplete )]"
+
+					blockoverride "header_text"
+					{
+						raw_text = "[ActivityPhase.GetName] information."
+					}
+
+					blockoverride "button_close"
+					{
+						onclick = "[VariableSystem.Clear( 'activity_locale_view' )]"
+						onclick = "[ActivityLocaleWindow.ClearSelectedPhase]"
+					}
+				}
+
+				header_pattern = {
+					visible = "[Activity.IsComplete]"
+					layoutpolicy_horizontal = expanding
+
+					blockoverride "header_text"
+					{
+						text = ACTIVITY_CONCLUSION_HEADER
+					}
+
+					blockoverride "button_close"
+					{
+						onclick = "[VariableSystem.Clear( 'activity_locale_view' )]"
+						onclick = "[ActivityLocaleWindow.ClearSelectedPhase]"
+					}
+				}
+
+				vbox = {
+					datacontext = "[ActivityLocaleWindow.GetSelectedPhase]"
+					visible = "[And( Not( Activity.IsComplete ), ActivityLocaleWindow.HasSelectedPhase)]"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					## Contents
+					vbox = {
+						name = "contest_info_contents"
+						datacontext = "[ActivityLocaleWindow.GetSelectedPhase.GetPhase]"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Or(Isnt('activity_contest_info_tab'), IsContestInfoTabViewing('overview'))]"
+
+							vbox = {
+								visible = "[And( Or( Activity.IsPhaseInTheFuture(PlannedActivityPhase.Self), Activity.IsPhaseOngoing(PlannedActivityPhase.Self) ), Not( Activity.IsComplete ) )]"
+								layoutpolicy_horizontal = expanding
+								datacontext = "[ActivityLocaleWindow.GetSelectedPhase.GetPhase]"
+
+								# text_single = {
+								# 	layoutpolicy_horizontal = expanding
+								# 	raw_text = "[ActivityPhase.GetName]."
+								# }
+
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									raw_text = "You are participating."
+									visible = "[PlannedActivityPhase.IsCharacterInGuestSubset(GetPlayer, 'contestant')]"
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									raw_text = "You are spectating."
+									visible = "[PlannedActivityPhase.IsCharacterInGuestSubset(GetPlayer, 'spectator')]"
+								}
+
+								text_single = {
+									visible = "[Not(Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( GetPlayer ), IsPlayerAvailableToCompeteMartial ) ) ))]"
+									tooltip = contest_planner_contest_cannot_participate
+									raw_text = "Cannot participate."
+									layoutpolicy_horizontal = expanding
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( GetPlayer ), IsPlayerAvailableToCompeteMartial ) ) )]"
+
+									button_text = {
+										# participate
+										layoutpolicy_horizontal = expanding
+
+										visible = "[PlannedActivityPhase.IsCharacterInGuestSubset(GetPlayer, 'spectator')]"
+										onclick = "[Activity.AddCharacterToPhaseSubset(PlannedActivityPhase.Self, GetPlayer, 'contestant')]"
+										onclick = "[Activity.RemoveCharacterFromPhaseSubset(PlannedActivityPhase.Self, GetPlayer, 'spectator')]"
+
+										shortcut = map_mode_1
+
+										blockoverride "text" {
+											raw_text = "participate_in_tournament"
+										}
+										# tooltip = tournament_participation_spectate_tt
+
+									}
+
+									button_text = {
+										# spectate
+										layoutpolicy_horizontal = expanding
+
+										visible = "[Not(PlannedActivityPhase.IsCharacterInGuestSubset(GetPlayer, 'spectator'))]"
+										onclick = "[Activity.RemoveCharacterFromPhaseSubset(PlannedActivityPhase.Self, GetPlayer, 'contestant')]"
+										onclick = "[Activity.AddCharacterToPhaseSubset(PlannedActivityPhase.Self, GetPlayer, 'spectator')]"
+
+										#####
+
+										shortcut = map_mode_11
+
+										blockoverride "text" {
+											raw_text = "spectate_tournament"
+										}
+										# tooltip = tournament_participation_participate_tt
+									}
+								}
+							}
+
+							vbox_contest_info_overview_before_ocr = {
+								name = "contest_info_overview_before"
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+
+								visible = "[And( Or( Activity.IsPhaseInTheFuture(PlannedActivityPhase.Self), Activity.IsPhaseOngoing(PlannedActivityPhase.Self) ), Not( Activity.IsComplete ) )]"
+							}
+
+							vbox_contest_info_overview_after_ocr = {
+								name = "contest_info_overview_after"
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+
+								visible = "[Or( Activity.IsPhaseInThePast(PlannedActivityPhase.Self), Activity.IsComplete )]"
+							}
+						}
+
+						button_text = {
+							visible = "[Not(IsContestInfoTabViewing('participants'))]"
+							layoutpolicy_horizontal = expanding
+							shortcut = character_finder
+							onclick = "[Set('activity_contest_info_tab', 'participants')]"
+							# [GetDataModelSize( ActivityLocaleWindow.GetGuestSublist(PlannedActivityPhase.Self, 'contestant') )]
+						    blockoverride "text" {
+						        raw_text = "View contestants, C."
+						    }
+						}
+
+						button_text = {
+							# visible = "[Not(IsContestInfoTabViewing('participants'))]"
+							visible = "[And( Or( Activity.IsPhaseInThePast(PlannedActivityPhase.Self), Activity.IsComplete ), Not(IsContestInfoTabViewing('log')))]"
+							layoutpolicy_horizontal = expanding
+							shortcut = character_finder
+							onclick = "[Set('activity_contest_info_tab', 'log')]"
+						    blockoverride "text" {
+						        raw_text = "View log, V."
+						    }
+							shortcut = find_title_shortcut
+						}
+
+						widget_contest_info_participants_ocr = {
+							name = "contest_info_participants"
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+							visible = "[IsContestInfoTabViewing('participants')]"
+						}
+
+						widget_contest_info_log_ocr = {
+							name = "contest_info_log"
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+							visible = "[IsContestInfoTabViewing('log')]"
+						}
+
+						vbox_contest_info_debug = {
+							name = "contest_info_debug"
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+							visible = "[IsContestInfoTabViewing('debug')]"
+
+							state = {
+								name = _show
+								on_start = "[ActivityLocaleWindow.UpdateGuestSubsetFor(PlannedActivityPhase.Self)]"
+							}
+						}
+
+						expand = { }
+					}
+
+					hbox = {
+						name = "contest_info_contents_tabs"
+						visible = no
+						# visible = "[Not( IsContestType( 'tournament_phase_ceremony' ) )]"
+						layoutpolicy_horizontal = expanding
+
+						button_tab = {
+							name = "contest_info_contents_tabs_overview"
+							layoutpolicy_horizontal = expanding
+
+							text = locale_window_tab_button_overview
+
+							onclick = "[SetContestInfoTab('overview')]"
+							down = "[IsContestInfoTabViewing('overview')]"
+						}
+
+						button_tab = {
+							name = "contest_info_contents_tabs_participants"
+							layoutpolicy_horizontal = expanding
+							visible = "[And( Or( Activity.IsPhaseInTheFuture(PlannedActivityPhase.Self), Activity.IsPhaseOngoing(PlannedActivityPhase.Self) ), Not( Activity.IsComplete ) ) )]"
+
+							raw_text = "[SelectLocalization( Activity.IsCurrentPhaseActive, 'locale_window_tab_button_qualified', 'locale_window_tab_button_participants' )]"
+
+							onclick = "[SetContestInfoTab('participants')]"
+							down = "[IsContestInfoTabViewing('participants')]"
+						}
+
+						button_tab = {
+							name = "contest_info_contents_tabs_log"
+							layoutpolicy_horizontal = expanding
+							visible = "[Or( Activity.IsPhaseInThePast(PlannedActivityPhase.Self), Activity.IsComplete ) )]"
+
+
+							text = locale_window_tab_button_log
+
+							onclick = "[SetContestInfoTab('log')]"
+							down = "[IsContestInfoTabViewing('log')]"
+						}
+
+						button_tab = {
+							name = "contest_info_contents_tabs_debugging"
+							layoutpolicy_horizontal = expanding
+							visible = "[InDebugMode]"
+
+							raw_text = "DEBUGGING"
+
+							onclick = "[SetContestInfoTab('debug')]"
+							down = "[IsContestInfoTabViewing('debug')]"
+
+							using = Placeholder_Pink_Text
+						}
+					}
+
+					expand = { }
+				}
+			}
+		}
+	}
+
+	window = {
+		using = vanilla
+		size = { 1100 636 }
+		parentanchor = center
+
+		using = Window_Movable
+		using = Window_Background
+		using = Window_Decoration
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+			position_y = -60
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+			on_start = "[ClearContestInfoTab]"
+			on_start = "[VariableSystem.Clear( 'activity_contest_info_debugview' )]"
+			position_y = 40
+		}
+
+		vbox = {
+			using = Window_Margins
+
+			## Headers
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Not( Activity.IsComplete )]"
+
+				blockoverride "header_text"
+				{
+					text = locale_window_contest_information_header
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[VariableSystem.Clear( 'activity_locale_view' )]"
+					onclick = "[ActivityLocaleWindow.ClearSelectedPhase]"
+				}
+			}
+
+			header_pattern = {
+				visible = "[Activity.IsComplete]"
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = ACTIVITY_CONCLUSION_HEADER
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[VariableSystem.Clear( 'activity_locale_view' )]"
+					onclick = "[ActivityLocaleWindow.ClearSelectedPhase]"
+				}
+			}
+
+			hbox = {
+				datacontext = "[ActivityLocaleWindow.GetSelectedPhase]"
+				visible = "[And( Not( Activity.IsComplete ), ActivityLocaleWindow.HasSelectedPhase)]"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				## Left bar
+				widget_contest_info_left_bar = {
+					name = "contest_info_left_bar"
+					datacontext = "[ActivityLocaleWindow.GetSelectedPhase.GetPhase]"
+					#visible = "[Not( IsContestType( 'tournament_phase_ceremony' ) )]"
+					size = { 300 540 }
+				}
+
+				## Contents
+				vbox = {
+					name = "contest_info_contents"
+					datacontext = "[ActivityLocaleWindow.GetSelectedPhase.GetPhase]"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					hbox = {
+						name = "contest_info_contents_tabs"
+						visible = "[Not( IsContestType( 'tournament_phase_ceremony' ) )]"
+						layoutpolicy_horizontal = expanding
+
+						button_tab = {
+							name = "contest_info_contents_tabs_overview"
+							layoutpolicy_horizontal = expanding
+
+							text = locale_window_tab_button_overview
+
+							onclick = "[SetContestInfoTab('overview')]"
+							down = "[IsContestInfoTabViewing('overview')]"
+						}
+
+						button_tab = {
+							name = "contest_info_contents_tabs_participants"
+							layoutpolicy_horizontal = expanding
+							visible = "[And( Or( Activity.IsPhaseInTheFuture(PlannedActivityPhase.Self), Activity.IsPhaseOngoing(PlannedActivityPhase.Self) ), Not( Activity.IsComplete ) ) )]"
+
+							raw_text = "[SelectLocalization( Activity.IsCurrentPhaseActive, 'locale_window_tab_button_qualified', 'locale_window_tab_button_participants' )]"
+
+							onclick = "[SetContestInfoTab('participants')]"
+							down = "[IsContestInfoTabViewing('participants')]"
+						}
+
+						button_tab = {
+							name = "contest_info_contents_tabs_log"
+							layoutpolicy_horizontal = expanding
+							visible = "[Or( Activity.IsPhaseInThePast(PlannedActivityPhase.Self), Activity.IsComplete ) )]"
+
+
+							text = locale_window_tab_button_log
+
+							onclick = "[SetContestInfoTab('log')]"
+							down = "[IsContestInfoTabViewing('log')]"
+						}
+
+						button_tab = {
+							name = "contest_info_contents_tabs_debugging"
+							layoutpolicy_horizontal = expanding
+							visible = "[InDebugMode]"
+
+							raw_text = "DEBUGGING"
+
+							onclick = "[SetContestInfoTab('debug')]"
+							down = "[IsContestInfoTabViewing('debug')]"
+
+							using = Placeholder_Pink_Text
+						}
+					}
+
+					vbox_contest_info_overview_before = {
+						name = "contest_info_overview_before"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						visible = "[And( IsContestInfoTabViewing('overview'), And( Or( Activity.IsPhaseInTheFuture(PlannedActivityPhase.Self), Activity.IsPhaseOngoing(PlannedActivityPhase.Self) ), Not( Activity.IsComplete ) ) ) )]"
+					}
+
+					vbox_contest_info_overview_after = {
+						name = "contest_info_overview_after"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						visible = "[And( IsContestInfoTabViewing( 'overview' ), Or( Activity.IsPhaseInThePast(PlannedActivityPhase.Self), Activity.IsComplete ) ) )]"
+					}
+
+					widget_contest_info_participants = {
+						name = "contest_info_participants"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						visible = "[IsContestInfoTabViewing('participants')]"
+					}
+
+					widget_contest_info_log = {
+						name = "contest_info_log"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						visible = "[IsContestInfoTabViewing('log')]"
+					}
+
+					vbox_contest_info_debug = {
+						name = "contest_info_debug"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						visible = "[IsContestInfoTabViewing('debug')]"
+
+						state = {
+							name = _show
+							on_start = "[ActivityLocaleWindow.UpdateGuestSubsetFor(PlannedActivityPhase.Self)]"
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+types TournamentContestInformationTypes
+{
+	type widget_contest_info_left_bar = widget {
+
+		background = {
+			texture = "[PlannedActivityPhase.GetPhase.GetIllustration]"
+			fittype = centercrop
+			using = Mask_Rough_Edges
+
+			modify_texture = {
+				texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
+				blend_mode = alphamultiply
+			}
+		}
+
+		vbox = {
+			layoutpolicy_vertical = expanding
+
+			expand = {}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+
+				background = {
+					using = Background_Area_Dark
+				}
+
+				text_single = {
+					name = "tournament_contest_information_name"
+					layoutpolicy_horizontal = expanding
+
+					text = "[ActivityPhase.GetName]"
+					align = center|nobaseline
+					max_width = 300
+
+					using = Font_Type_Flavor
+					using = Font_Size_Big
+
+					margin = { 0 4 }
+
+					background = {
+						using = Background_Area_Dark
+					}
+				}
+
+				text_multi = {
+					name = "contest_desc"
+					text = "[ActivityPhase.GetDescription]"
+					align = left|nobaseline
+					autoresize = yes
+					max_width = 280
+
+					margin = { 0 4 }
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					margin = { 0 8 }
+					spacing = 8
+
+					text_single = {
+						text = locale_window_your_participation
+						default_format = "#high"
+					}
+
+					background = {
+						using = Background_Area_Dark
+					}
+
+					widget = {
+						name = "tournament_contest_information_participation_buttons"
+						size = { 220 30 }
+
+						hbox = {
+							parentanchor = bottom|hcenter
+							visible = "[And( And( Or( Activity.IsPhaseInTheFuture(PlannedActivityPhase.Self), Activity.IsPhaseOngoing(PlannedActivityPhase.Self) ), Not( Activity.IsCurrentPhaseActive) ), Not( Activity.IsComplete ) )]"
+
+							enabled = "[Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( Activity.GetHost ), IsPlayerAvailableToCompeteMartial ) ) )]"
+
+							tooltip = tournament_participation_cannot_participate_tt
+
+							expand = { }
+
+							button_contest_spectate = {
+								size = { 100 30 }
+
+								alwaystransparent = "[PlannedActivityPhase.IsCharacterInGuestSubset(GetPlayer, 'spectator')]"
+								down = "[PlannedActivityPhase.IsCharacterInGuestSubset(GetPlayer, 'spectator')]"
+								onclick = "[Activity.AddCharacterToPhaseSubset(PlannedActivityPhase.Self, GetPlayer, 'spectator')]"
+								onclick = "[Activity.RemoveCharacterFromPhaseSubset(PlannedActivityPhase.Self, GetPlayer, 'contestant')]"
+
+								tooltip_enabled = "[Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( Activity.GetHost ), IsPlayerAvailableToCompeteMartial ) ) )]"
+							}
+
+							button_contest_participate = {
+								size = { 100 30 }
+
+								alwaystransparent = "[Not(PlannedActivityPhase.IsCharacterInGuestSubset(GetPlayer, 'spectator'))]"
+								down = "[Not(PlannedActivityPhase.IsCharacterInGuestSubset(GetPlayer, 'spectator'))]"
+								onclick = "[Activity.RemoveCharacterFromPhaseSubset(PlannedActivityPhase.Self, GetPlayer, 'spectator')]"
+								onclick = "[Activity.AddCharacterToPhaseSubset(PlannedActivityPhase.Self, GetPlayer, 'contestant')]"
+
+								tooltip_enabled = "[Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( Activity.GetHost ), IsPlayerAvailableToCompeteMartial ) ) )]"
+							}
+
+							expand = { }
+						}
+					}
+
+					text_single = {
+						visible = "[And( Or( Activity.IsPhaseInTheFuture(PlannedActivityPhase.Self), Activity.IsPhaseOngoing(PlannedActivityPhase.Self) ), Not( Activity.IsComplete ) ) )]"
+
+						text = locale_window_your_participation_status_selection
+						default_format = "#weak"
+					}
+
+					text_single = {
+						visible = "[Or( Activity.IsPhaseInThePast(PlannedActivityPhase.Self), Activity.IsComplete ) )]"
+
+						text = locale_window_your_participation_status_selection_past
+						default_format = "#weak"
+					}
+
+					expand = { }
+				}
+			}
+		}
+	}
+
+	type vbox_contest_info_overview_before = vbox {
+
+		vbox = {
+			name = "contest_info_overview_before_rewards"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			margin_top = 16
+
+			background = {
+				using = Background_Area_Dark
+				alpha = 0.8
+			}
+
+			icon_progess_to_victory = {
+				size = { 36 36 }
+			}
+
+			text_label_center = {
+				text = locale_window_before_rewards_header
+				using = Font_Type_Flavor
+				using = Font_Size_Big
+			}
+
+			text_single = {
+				text = locale_window_before_rewards_desc
+				default_format = "#P"
+			}
+
+			expand = {}
+
+			hbox_contest_reward_preview = {
+				name = "reward_preview_container"
+				layoutpolicy_horizontal = expanding
+
+				# background = {
+				# 	using = Background_Area_Dark
+
+				# 	margin = { -120 -72 }
+
+				# 	modify_texture = {
+				# 		texture = "gfx/interface/component_masks/mask_fade_horizontal_middle_thick.dds"
+				# 		blend_mode = alphamultiply
+				# 	}
+				# }
+
+				background = {
+					using = Background_Area_Dark
+					alpha = 0.8
+				}
+
+				background = {
+					texture = "gfx/interface/component_masks/patterns/mask_pattern_01.dds"
+					spriteType = corneredtiled
+					color = { 0.1 0.1 0.12 1 }
+					margin_top = -10
+					texture_density = 0.8
+					spriteborder_top = 60
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/mask_clouds.dds"
+						blend_mode = alphamultiply
+						spriteType = corneredTiled
+						alpha = 0.6
+					}
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/mask_scratches.dds"
+						blend_mode = alphamultiply
+						spriteType = corneredTiled
+					}
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/mask_fade_horizontal_middle_thick.dds"
+						blend_mode = alphamultiply
+					}
+				}
+			}
+
+			#expand = {}
+		}
+
+		vbox = {
+			name = "contest_info_overview_before_structure"
+			layoutpolicy_horizontal = expanding
+
+			margin_bottom = 16
+			spacing = 16
+
+			background = {
+				using = Background_Area
+			}
+
+			text_label_center = {
+				name = "contest_info_overview_before_structure_header"
+				layoutpolicy_horizontal = expanding
+
+				text = locale_window_contest_structure_header
+				using = Font_Type_Flavor
+				using = Font_Size_Medium
+			}
+
+			hbox = {
+				name = "contest_info_overview_before_structure_versus"
+				visible = "[IsContestFormatVersus]"
+
+				spacing = 16
+
+				expand = {}
+
+				widget_contest_structure = {
+
+					blockoverride "contest_stucture_text" {
+						text_single = {
+							parentanchor = center
+							text = locale_window_contest_structure_qualifier
+							max_width = 150
+						}
+					}
+				}
+
+				widget_contest_structure = {
+
+					blockoverride "contest_stucture_text" {
+						text_single = {
+							parentanchor = center
+							text = locale_window_contest_structure_round_1
+							max_width = 150
+						}
+					}
+				}
+
+				widget_contest_structure = {
+
+					blockoverride "contest_stucture_text" {
+						text_single = {
+							parentanchor = center
+							text = locale_window_contest_structure_round_2
+							max_width = 150
+						}
+					}
+				}
+
+				widget_contest_structure = {
+
+					blockoverride "arrow" {}
+
+					blockoverride "contest_stucture_text" {
+						text_single = {
+							parentanchor = center
+							text = locale_window_contest_structure_last_round
+							max_width = 150
+						}
+					}
+				}
+
+				expand = {}
+			}
+
+			hbox = {
+				name = "contest_info_overview_before_structure_ffa"
+				visible = "[IsContestFormatFFA]"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				spacing = 16
+
+				expand = {}
+
+				widget_contest_structure = {
+
+					blockoverride "contest_stucture_text" {
+						text_single = {
+							parentanchor = center
+							text = locale_window_contest_structure_qualifier
+							max_width = 150
+						}
+					}
+				}
+
+				widget_contest_structure = {
+
+					blockoverride "arrow" {}
+
+					blockoverride "contest_stucture_text" {
+						text_single = {
+							parentanchor = center
+							text = locale_window_contest_structure_ffa
+							max_width = 150
+						}
+					}
+				}
+
+				expand = { }
+			}
+
+			hbox = {
+				name = "contest_info_overview_before_structure_team"
+				visible = "[IsContestFormatTeam]"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				spacing = 16
+
+				expand = { }
+
+				widget_contest_structure = {
+
+					blockoverride "contest_stucture_text" {
+						text_single = {
+							parentanchor = center
+							text = locale_window_contest_structure_qualifier
+							max_width = 150
+						}
+					}
+				}
+
+				widget_contest_structure = {
+
+					blockoverride "arrow" {}
+
+					blockoverride "contest_stucture_text" {
+						text_single = {
+							parentanchor = center
+							text = locale_window_contest_structure_team_battle
+							max_width = 150
+						}
+					}
+				}
+
+				expand = { }
+			}
+		}
+	}
+
+	type widget_contest_structure = widget {
+		size = { 160 70 }
+
+		background = {
+			using = Background_Area_Dark
+		}
+
+		block "arrow" {
+			icon = {
+				parentanchor = right|vcenter
+				position = { 14 0 }
+				size = { 30 35 }
+
+				texture = "gfx/interface/icons/flat_icons/window_back.dds"
+				alpha = 0.6
+				mirror = horizontal
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_horizontal_thick.dds"
+					blend_mode = alphamultiply
+					mirror = horizontal
+				}
+			}
+		}
+
+		block "contest_stucture_text" {}
+	}
+
+	type vbox_contest_info_overview_after = vbox {
+		name = "overview_summary_after"
+		visible = "[Not(IsDataModelEmpty(ActivityLocaleWindow.GetGuestSublist(PlannedActivityPhase.Self, 'winner'))))]"
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			background = {
+				using = Background_Area_Dark
+			}
+
+			background = {
+				using = Background_Area_Dark
+				margin_bottom = -188
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_horizontal_thick.dds"
+					blend_mode = alphamultiply
+					mirror = horizontal
+				}
+			}
+
+			datacontext_from_model = {
+				datamodel = "[ActivityLocaleWindow.GetGuestSublist(PlannedActivityPhase.Self, 'winner'))]"
+				index = 0
+			}
+
+			portrait_body = {
+				size = { 240 240 }
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				margin = { 0 8 }
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					margin_bottom = 8
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+
+						text = locale_window_contest_results
+						align = nobaseline
+						fontsize = 28
+						fontsize_min = 16
+
+						using = Font_Type_Flavor
+					}
+				}
+
+				expand = {}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					margin_bottom = 8
+					spacing = 8
+
+					icon_flat_standard = {
+						size = { 70 70 }
+						texture = "gfx/interface/icons/flat_icons/war_outcome_victory.dds"
+					}
+
+					vbox = {
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							text = locale_window_contest_results_winner
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							text = locale_window_contest_results_winner_name
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							text = "[Character.GetRelationToString( GetPlayer )]"
+						}
+					}
+
+					expand = {}
+				}
+
+				expand = {}
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+
+					text_multi = {
+						minimumsize = { 480 -1 }
+						maximumsize = { 480 48 }
+						autoresize = yes
+						fontsize = 16
+						fontsize_min = 12
+
+						text = locale_window_contest_results_winner_desc
+					}
+
+					expand = { }
+
+					text_single = {
+						name = "your_contest_result_summary"
+						minimumsize = { 480 -1 }
+						maximumsize = { 480 48 }
+						fontsize = 16
+						fontsize_min = 12
+						visible = "[PlannedActivityPhase.IsCharacterInGuestSubset(GetPlayer, 'contestant')]"
+
+						text = locale_window_contest_your_result
+					}
+
+					expand = { }
+				}
+			}
+		}
+	}
+
+	type widget_contest_info_participants = widget {
+
+		vbox = {
+			maximumsize = { 790 502 }
+			parentanchor = bottom|hcenter
+
+			text_single = {
+				visible = "[Not( Activity.IsCurrentPhaseActive )]"
+			}
+
+			text_single = {
+				visible = "[Activity.IsCurrentPhaseActive]"
+			}
+
+			scrollbox = {
+				name = "contestant_list"
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "scrollbox_content" {
+					fixedgridbox = {
+						addcolumn = 700
+						addrow = 96
+						visible = "[Not( Activity.IsCurrentPhaseActive )]"
+
+						datamodel = "[ActivityLocaleWindow.GetGuestSublist(PlannedActivityPhase.Self, 'contestant')]"
+						datamodel_reuse_widgets = yes
+
+						item = {
+							widget_contestant_item = {
+								size = { 690 94 }
+							}
+						}
+					}
+
+					fixedgridbox = {
+						addcolumn = 700
+						addrow = 96
+						visible = "[Activity.IsCurrentPhaseActive]"
+
+						datamodel = "[ActivityLocaleWindow.GetGuestSublist(PlannedActivityPhase.Self, 'qualified')]"
+						datamodel_reuse_widgets = yes
+
+						item = {
+							widget_contestant_item = {
+								size = { 690 94 }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	type widget_contestant_item = widget {
+		hbox = {
+			margin_right = 8
+
+			background = {
+				using = Background_Area_With_Header
+			}
+
+			portrait_head_small = {}
+
+			hbox = {
+				name = "contestant_information_button"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					## Top row
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						margin_top = 4
+						margin_left = 4
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							text_single = {
+								using = Font_Size_Medium
+								layoutpolicy_horizontal = expanding
+
+								text = "[Character.GetUINameNoTooltip]"
+								align = nobaseline
+								max_width = 440
+							}
+
+							hbox_skills_grid_character_model = {}
+						}
+
+						hbox = {
+							visible = "[And(Character.HasRelationTo( GetPlayer ), Not(Character.IsPlayer))]"
+							layoutpolicy_horizontal = expanding
+
+							margin_top = 4
+
+							using = character_age_or_death_text
+
+							blockoverride "list_layout" {}
+
+							divider_light = {
+								size = { 3 18 }
+								block "filters_visible" {}
+							}
+
+							text_single = {
+								name = "character_relation"
+								text = "[Character.GetRelationToString( GetPlayer )]"
+								tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+								default_format = "#low"
+								align = nobaseline
+								fontsize_min = 14
+								max_width = 440
+								margin_left = 4
+							}
+
+							expand = {}
+						}
+
+						expand = {}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						divider_light = {
+							layoutpolicy_horizontal = expanding
+							alpha = 0.6
+
+							modify_texture = {
+								texture = "gfx/interface/component_masks/mask_fade_horizontal_right.dds"
+								blend_mode = alphamultiply
+							}
+						}
+					}
+
+					## Bottom row
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 8
+
+						blockoverride "contest_aptitude_level_size"
+						{
+							size = { 12 12 }
+						}
+
+						hbox_character_archery_contest_aptitude = {
+							margin = { 2 2 }
+						}
+
+						hbox_character_foot_contest_aptitude = {
+							margin = { 2 2 }
+						}
+
+						hbox_character_horse_contest_aptitude = {
+							margin = { 2 2 }
+						}
+
+						hbox_character_wit_contest_aptitude = {
+							margin = { 2 2 }
+						}
+
+						expand = {}
+					}
+				}
+			}
+		}
+	}
+
+	type widget_contest_info_log = widget {
+		vbox = {
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+
+			scrollbox = {
+				name = "locale_log_entries"
+
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "scrollbox_empty"
+				{
+					visible = "[IsDataModelEmpty( Activity.GetLogEntries )]"
+					text = locale_window_activity_log_no_entries
+				}
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						name = "contest_log_entries_list"
+						datamodel = "[Activity.GetLogEntries]"
+						layoutpolicy_horizontal = expanding
+						spacing = 8
+
+						item = {
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								name = "log_entry"
+								visible = "[And( EqualTo_int32( ActivityLogEntry.GetPhaseIndex, Activity.GetPhaseIndexOf( PlannedActivityPhase.Self ) ), CanPlayerSeeActivityLogEntry)]"
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									margin = { 8 4 }
+
+									# An ActivityLogEntry can have multiple tags,
+									# be aware of this when implementing tag
+									# related art. Speak with design and code if
+									# you need more tags.
+									#
+									# At time of writing this, the current tags
+									# are provided by design:
+									#	good, bad, contest_info, highlight,
+									#	intent, secret, death
+
+									####################
+									### NO TAG EVENT ###
+									####################
+									background = {
+										visible = "[ActivityLogEntry.HasNoTags]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.7
+										margin = { -2 -2 }
+
+										using = Color_Black
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasNoTags]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									#################
+									### BAD EVENT ###
+									#################
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'bad' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.15
+
+										using = Color_Red
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'bad' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									##################
+									### GOOD EVENT ###
+									##################
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'good' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.15
+
+										using = Color_Green
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'good' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									####################
+									### GENERAL INFO ###
+									####################
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'contest_info' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.7
+										margin = { -2 -2 }
+
+										using = Color_Black
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'contest_info' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									#######################
+									### IMPORTANT EVENT ###
+									#######################
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'highlight' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.15
+
+										using = Color_Blue
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'highlight' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									####################
+									### INTENT EVENT ###
+									####################
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'intent' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.15
+
+										using = Color_Purple
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'intent' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									####################
+									### SECRET EVENT ###
+									####################
+									# Secret, will only be shown if local player is the Character
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'secret' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.1
+
+										using = Color_Grey
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'secret' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									###################
+									### DEATH EVENT ###
+									###################
+									# A character has died during the contest
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'death' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.15
+
+										using = Color_Red
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'death' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									text_single = {
+										name = "log_title"
+										text = "[ActivityLogEntry.GetTitle]"
+										align = nobaseline
+										max_width = 270
+									}
+
+									expand = { }
+
+									text_single = {
+										name = "log_time"
+										text = "[ActivityLogEntry.GetDate.GetStringShort]"
+										align = nobaseline
+										max_width = 270
+									}
+								}
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+
+									background = {
+										using = Background_Area_Dark
+									}
+
+									text_multi = {
+										name = "log_desc"
+										text = "[ActivityLogEntry.GetDescription]"
+
+										maximumsize = { 480 -1 }
+
+										autoresize = yes
+										multiline = yes
+									}
+
+									expand = { }
+
+									portrait_head_small = {
+										datacontext = "[ActivityLogEntry.GetCharacter]"
+										visible = "[ActivityLogEntry.GetCharacter.IsValid]"
+									}
+
+									portrait_head_small = {
+										datacontext = "[ActivityLogEntry.GetTarget]"
+										visible = "[ActivityLogEntry.GetTarget.IsValid]"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	type vbox_contest_info_debug = vbox {
+		state = {
+			name = _show
+			on_start = "[ActivityLocaleWindow.UpdateGuestSubsetFor(PlannedActivityPhase.Self)]"
+		}
+
+		fixedgridbox = {
+			name = "contest_info_debug_tabs"
+			addcolumn = 100
+			addrow = 30
+			datamodel_wrap = 8
+			flipdirection = yes
+
+			datamodel = "[ActivityLocaleWindow.GetGuestSubsetKeys]"
+
+			item = {
+				button_tab = {
+					raw_text = "[CString.GetString]"
+
+					onclick = "[ActivityLocaleWindow.UpdateGuestSubsetFor(PlannedActivityPhase.Self)]"
+					onclick = "[VariableSystem.Set( 'activity_contest_info_debugview', CString.GetString ))]"
+					down = "[VariableSystem.HasValue( 'activity_contest_info_debugview', CString.GetString ))]"
+				}
+			}
+		}
+
+		scrollbox = {
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+
+			visible = "[VariableSystem.Exists( 'activity_contest_info_debugview' ))]"
+
+			blockoverride "scrollbox_content" {
+				fixedgridbox = {
+					addcolumn = 100
+					addrow = 120
+					datamodel_wrap = 8
+					flipdirection = yes
+
+					datamodel = "[ActivityLocaleWindow.GetGuestSublist(PlannedActivityPhase.Self, VariableSystem.Get( 'activity_contest_info_debugview') )]"
+
+					item = {
+						portrait_head = {
+							text_single = {
+								parentanchor = hcenter
+								raw_text = "[Character.GetShortUINameNoTooltip]"
+							}
+						}
+					}
+				}
+			}
+		}
+		expand = {}
+	}
+}
+
+types OCR {
+	type vbox_contest_info_overview_before_ocr = vbox {
+
+		vbox = {
+			name = "contest_info_overview_before_rewards"
+			layoutpolicy_horizontal = expanding
+
+			hbox = {
+			    layoutpolicy_horizontal = expanding
+
+				text_multi_wide = {
+					margin_top = 5
+					raw_text = "locale_window_before_rewards_tooltip"
+				}
+
+			    expand = { }
+			}
+
+			text_single = {
+				text = locale_window_before_rewards_desc
+				layoutpolicy_horizontal = expanding
+			}
+
+			#expand = {}
+		}
+
+		vbox = {
+			name = "contest_info_overview_before_structure"
+			layoutpolicy_horizontal = expanding
+
+			text_single = {
+				name = "contest_info_overview_before_structure_header"
+				layoutpolicy_horizontal = expanding
+
+				raw_text = "[Localize('locale_window_contest_structure_header')]:"
+			}
+
+			hbox = {
+				name = "contest_info_overview_before_structure_versus"
+				visible = "[IsContestFormatVersus]"
+				layoutpolicy_horizontal = expanding
+
+				spacing = 3
+
+				text_single = {
+					raw_text = "1,"
+				}
+
+				text_single = {
+					raw_text = "locale_window_contest_structure_qualifier"
+				}
+
+				comma = {}
+
+				text_single = {
+					raw_text = "2,"
+				}
+
+				text_single = {
+					raw_text = "locale_window_contest_structure_round_1"
+				}
+
+				comma = {}
+
+				text_single = {
+					raw_text = "3,"
+				}
+
+				text_single = {
+					raw_text = "locale_window_contest_structure_round_2"
+				}
+
+				comma = {}
+
+				text_single = {
+					raw_text = "4,"
+				}
+
+				text_single = {
+					raw_text = "locale_window_contest_structure_round_1"
+				}
+
+				comma = {}
+
+				text_single = {
+					raw_text = "5,"
+				}
+
+				text_single = {
+					raw_text = "locale_window_contest_structure_last_round"
+				}
+
+				dot_l = { }
+
+
+				expand = {}
+			}
+
+			hbox = {
+				name = "contest_info_overview_before_structure_ffa"
+				visible = "[IsContestFormatFFA]"
+				layoutpolicy_horizontal = expanding
+
+				spacing = 3
+
+				text_single = {
+					raw_text = "1,"
+				}
+
+				text_single = {
+					raw_text = "locale_window_contest_structure_qualifier"
+				}
+
+				comma = {}
+
+				text_single = {
+					raw_text = "2,"
+				}
+
+				text_single = {
+					raw_text = "locale_window_contest_structure_ffa"
+				}
+
+				dot_l = { }
+
+				expand = { }
+			}
+
+			hbox = {
+				name = "contest_info_overview_before_structure_team"
+				visible = "[IsContestFormatTeam]"
+				layoutpolicy_horizontal = expanding
+
+				spacing = 3
+
+				text_single = {
+					raw_text = "1,"
+				}
+
+				text_single = {
+					raw_text = "locale_window_contest_structure_qualifier"
+				}
+
+				comma = {}
+
+				text_single = {
+					raw_text = "2,"
+				}
+
+				text_single = {
+					raw_text = "locale_window_contest_structure_team_battle"
+				}
+
+				dot_l = { }
+
+				expand = { }
+			}
+		}
+	}
+
+	type widget_contest_structure_ocr = widget {
+		size = { 160 70 }
+
+		background = {
+			using = Background_Area_Dark
+		}
+
+		block "arrow" {
+			icon = {
+				parentanchor = right|vcenter
+				position = { 14 0 }
+				size = { 30 35 }
+
+				texture = "gfx/interface/icons/flat_icons/window_back.dds"
+				alpha = 0.6
+				mirror = horizontal
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_horizontal_thick.dds"
+					blend_mode = alphamultiply
+					mirror = horizontal
+				}
+			}
+		}
+
+		block "contest_stucture_text" {}
+	}
+
+	type vbox_contest_info_overview_after_ocr = vbox {
+		name = "overview_summary_after"
+
+		vbox = {
+			visible = "[Not(IsDataModelEmpty(ActivityLocaleWindow.GetGuestSublist(PlannedActivityPhase.Self, 'winner'))))]"
+			layoutpolicy_horizontal = expanding
+
+
+			datacontext_from_model = {
+				datamodel = "[ActivityLocaleWindow.GetGuestSublist(PlannedActivityPhase.Self, 'winner'))]"
+				index = 0
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				char_name = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[ActivityLocaleWindow.Close]"
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "locale_window_contest_results_winner"
+						}
+						text_single = {
+							raw_text = "is"
+						}
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "[Character.GetRelationToString( GetPlayer )],"
+				}
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+
+
+					text_multi_wide = {
+						text = locale_window_contest_results_winner_desc
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						name = "your_contest_result_summary"
+						visible = "[PlannedActivityPhase.IsCharacterInGuestSubset(GetPlayer, 'contestant')]"
+
+						text = locale_window_contest_your_result
+					}
+
+					expand = { }
+				}
+			}
+		}
+	}
+
+	type widget_contest_info_participants_ocr = vbox {
+
+		button = {
+			shortcut = close_window
+			onclick = "[Clear('activity_contest_info_tab')]"
+			shortcut = character_finder
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			scrollbox = {
+				name = "contestant_list"
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "scrollbox_content" {
+					fixedgridbox = {
+						addcolumn = 700
+						addrow = 68
+						visible = "[Not( Activity.IsCurrentPhaseActive )]"
+
+						datamodel = "[ActivityLocaleWindow.GetGuestSublist(PlannedActivityPhase.Self, 'contestant')]"
+						datamodel_reuse_widgets = yes
+
+						item = {
+							widget_contestant_item_ocr = {
+								size = { 690 68 }
+							}
+						}
+					}
+
+					fixedgridbox = {
+						addcolumn = 700
+						addrow = 68
+						visible = "[Activity.IsCurrentPhaseActive]"
+
+						datamodel = "[ActivityLocaleWindow.GetGuestSublist(PlannedActivityPhase.Self, 'qualified')]"
+						datamodel_reuse_widgets = yes
+
+						item = {
+							widget_contestant_item_ocr = {
+								blockoverride "qualified" {
+									visible = no
+								}
+								size = { 690 68 }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	type widget_contestant_item_ocr = widget {
+		layoutpolicy_horizontal = expanding
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			char_name = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "relation" {
+
+				}
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "[IndexNumber],"
+					}
+				}
+				blockoverride "extra3" {
+					text_single = {
+						block "qialified" {}
+						raw_text = "[Character.MakeScope.Var('progress_to_victory').GetValue|0] points."
+					}
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 3
+				blockoverride "compact" {
+					righttoleft = yes
+				}
+
+				hbox_character_archery_contest_aptitude_ocr = {
+				}
+
+				hbox_character_foot_contest_aptitude_ocr = {
+				}
+
+				hbox_character_horse_contest_aptitude_ocr = {
+				}
+
+				hbox_character_wit_contest_aptitude_ocr = {
+				}
+
+				dot_l = { }
+
+				expand = {}
+			}
+
+			hbox = {
+			    layoutpolicy_horizontal = expanding
+
+				hbox_skills_grid_character_named = {}
+
+			    expand = { }
+			}
+
+			expand = { }
+		}
+	}
+
+	type widget_contest_info_log_ocr = widget {
+		vbox = {
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+
+			button = {
+				onclick = "[Clear('activity_contest_info_tab')]"
+				shortcut = close_window
+				shortcut = find_title_shortcut
+			}
+
+			scrollbox = {
+				name = "locale_log_entries"
+
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "scrollbox_empty"
+				{
+					visible = "[IsDataModelEmpty( Activity.GetLogEntries )]"
+					text = locale_window_activity_log_no_entries
+				}
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						name = "contest_log_entries_list"
+						datamodel = "[Activity.GetLogEntries]"
+						layoutpolicy_horizontal = expanding
+						spacing = 8
+
+						item = {
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								name = "log_entry"
+								visible = "[And( EqualTo_int32( ActivityLogEntry.GetPhaseIndex, Activity.GetPhaseIndexOf( PlannedActivityPhase.Self ) ), CanPlayerSeeActivityLogEntry)]"
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									margin = { 8 4 }
+
+									# An ActivityLogEntry can have multiple tags,
+									# be aware of this when implementing tag
+									# related art. Speak with design and code if
+									# you need more tags.
+									#
+									# At time of writing this, the current tags
+									# are provided by design:
+									#	good, bad, contest_info, highlight,
+									#	intent, secret, death
+
+									####################
+									### NO TAG EVENT ###
+									####################
+									background = {
+										visible = "[ActivityLogEntry.HasNoTags]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.7
+										margin = { -2 -2 }
+
+										using = Color_Black
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasNoTags]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									#################
+									### BAD EVENT ###
+									#################
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'bad' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.15
+
+										using = Color_Red
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'bad' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									##################
+									### GOOD EVENT ###
+									##################
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'good' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.15
+
+										using = Color_Green
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'good' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									####################
+									### GENERAL INFO ###
+									####################
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'contest_info' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.7
+										margin = { -2 -2 }
+
+										using = Color_Black
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'contest_info' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									#######################
+									### IMPORTANT EVENT ###
+									#######################
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'highlight' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.15
+
+										using = Color_Blue
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'highlight' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									####################
+									### INTENT EVENT ###
+									####################
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'intent' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.15
+
+										using = Color_Purple
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'intent' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									####################
+									### SECRET EVENT ###
+									####################
+									# Secret, will only be shown if local player is the Character
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'secret' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.1
+
+										using = Color_Grey
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'secret' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									###################
+									### DEATH EVENT ###
+									###################
+									# A character has died during the contest
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'death' )]"
+
+										texture = "gfx/interface/colors/white.dds"
+										alpha = 0.15
+
+										using = Color_Red
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									background = {
+										visible = "[ActivityLogEntry.HasTag( 'death' )]"
+
+										using = Background_Frame
+
+										margin = { 2 2 }
+
+										modify_texture = {
+											texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+											blend_mode = alphamultiply
+										}
+									}
+
+									text_single = {
+										name = "log_title"
+										text = "[ActivityLogEntry.GetTitle]"
+										align = nobaseline
+										max_width = 270
+									}
+
+									expand = { }
+
+									text_single = {
+										name = "log_time"
+										text = "[ActivityLogEntry.GetDate.GetStringShort]"
+										align = nobaseline
+										max_width = 270
+									}
+								}
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+
+									background = {
+										using = Background_Area_Dark
+									}
+
+									text_multi = {
+										name = "log_desc"
+										text = "[ActivityLogEntry.GetDescription]"
+
+										maximumsize = { 480 -1 }
+
+										autoresize = yes
+										multiline = yes
+									}
+
+									expand = { }
+
+									portrait_head_small = {
+										datacontext = "[ActivityLogEntry.GetCharacter]"
+										visible = "[ActivityLogEntry.GetCharacter.IsValid]"
+									}
+
+									portrait_head_small = {
+										datacontext = "[ActivityLogEntry.GetTarget]"
+										visible = "[ActivityLogEntry.GetTarget.IsValid]"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	type vbox_contest_info_debug_ocr = vbox {
+		state = {
+			name = _show
+			on_start = "[ActivityLocaleWindow.UpdateGuestSubsetFor(PlannedActivityPhase.Self)]"
+		}
+
+		fixedgridbox = {
+			name = "contest_info_debug_tabs"
+			addcolumn = 100
+			addrow = 30
+			datamodel_wrap = 8
+			flipdirection = yes
+
+			datamodel = "[ActivityLocaleWindow.GetGuestSubsetKeys]"
+
+			item = {
+				button_tab = {
+					raw_text = "[CString.GetString]"
+
+					onclick = "[ActivityLocaleWindow.UpdateGuestSubsetFor(PlannedActivityPhase.Self)]"
+					onclick = "[VariableSystem.Set( 'activity_contest_info_debugview', CString.GetString ))]"
+					down = "[VariableSystem.HasValue( 'activity_contest_info_debugview', CString.GetString ))]"
+				}
+			}
+		}
+
+		scrollbox = {
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+
+			visible = "[VariableSystem.Exists( 'activity_contest_info_debugview' ))]"
+
+			blockoverride "scrollbox_content" {
+				fixedgridbox = {
+					addcolumn = 100
+					addrow = 120
+					datamodel_wrap = 8
+					flipdirection = yes
+
+					datamodel = "[ActivityLocaleWindow.GetGuestSublist(PlannedActivityPhase.Self, VariableSystem.Get( 'activity_contest_info_debugview') )]"
+
+					item = {
+						portrait_head = {
+							text_single = {
+								parentanchor = hcenter
+								raw_text = "[Character.GetShortUINameNoTooltip]"
+							}
+						}
+					}
+				}
+			}
+		}
+		expand = {}
+	}
+}

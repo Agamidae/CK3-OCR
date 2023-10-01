@@ -32,9 +32,8 @@
 		on_finish = "[DefaultOnCoatOfArmsRightClick(MyCapital.GetTitle.GetID)]"
 	}
 
-	window = {
+	widget = {
 		size = { 100% 100% }
-		movable = no
 		alwaystransparent = yes
 		using = ocr_off
 
@@ -132,26 +131,10 @@
 				}
 			}
 		}
-
-		### CREATES THE CONTEST PICKING WINDOW DO NOT REMOVE!
-		vbox = {
-			name = "activity_plugin_center"
-			layoutpolicy_horizontal = expanding
-
-			state = {
-				trigger_on_create = yes
-				name = appear_test
-				delay = 0.8
-				using = Animation_Curve_Default
-				alpha = 1
-				duration = 0.6
-			}
-		}
 	}
 
-	window = {
+	widget = {
 		using = ocr_window_bg
-		movable = no
 		visible = "[And(And(And(Not(GetVariableSystem.Exists('ocr')), Not(TravelPlanner.IsEntourageListWindowOpen)), Not(GetVariableSystem.Exists('show_dangers'))), Not(IsGameViewOpen('character')))]"
 
 		state = {
@@ -331,8 +314,16 @@
 					vbox = {
 						layoutpolicy_horizontal = expanding
 						layoutpolicy_vertical = expanding
-						visible = "[Isnt('order_tour')]"
+						visible = "[And(Isnt('order_tour'), ActivityPlanner.IsPlanningStage( 'location' ))]"
+
+						state = {
+							name = "find_locations"
+							trigger_on_create = yes
+							on_finish = "[PdxGuiWidget.FindChild('locations').TriggerAnimation('clear_maa_list')]"
+						}
+
 						vbox = {
+							name = "locations"
 							layoutpolicy_horizontal = expanding
 							layoutpolicy_vertical = expanding
 							visible = "[ActivityPlanner.IsPlanningStage( 'location' )]"
@@ -507,7 +498,7 @@
 											}
 										}
 										text_single = {
-											visible = "[Or(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_hunt'), EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_feast'))]"
+											visible = "[Or(Or(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_hunt'), EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_feast')), EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tournament'))]"
 											raw_text = "sorted by score,"
 										}
 									}
@@ -515,13 +506,19 @@
 										visible = "[Not(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tour'))]"
 									}
 									blockoverride "number" {
-										visible = "[And(Not(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_hunt')), Not(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_feast')) )]"
+										visible = "[And(And(Not(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_hunt')), Not(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_feast')) ), Not(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tournament')))]"
 
 									}
 									blockoverride "pre_pre" {
 										text_single = {
 											visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_feast')]"
 											raw_text = "[GuiScope.SetRoot(Province.MakeScope).ScriptValue('feast_province_score')|0],"
+											alwaystransparent = yes
+										}
+
+										text_single = {
+											visible = "[EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tournament')]"
+											raw_text = "[GuiScope.SetRoot(Province.MakeScope).ScriptValue('tournament_province_score')|0],"
 											alwaystransparent = yes
 										}
 
@@ -938,6 +935,21 @@
 	}
 
 	window_dangers = { }
+
+	### CREATES THE CONTEST PICKING WINDOW DO NOT REMOVE!
+	vbox = {
+		name = "activity_plugin_center"
+		layoutpolicy_horizontal = expanding
+
+		state = {
+			trigger_on_create = yes
+			name = appear_test
+			delay = 0.8
+			using = Animation_Curve_Default
+			alpha = 1
+			duration = 0.6
+		}
+	}
 }
 
 types OCR {
@@ -1267,9 +1279,16 @@ types OCR {
 					name = "activity"
 					raw_text = "Planning a"
 				}
+				block "tournament_name" {}
+
+				text_single = {
+					raw_text = "[ActivityPlanner.GetActivityType.GetName]"
+					visible = "[Not(ActivityPlanner.HasSelectedSpecialOption)]"
+				}
 				text_single = {
 					datacontext = "[ActivityPlanner.GetSelectedSpecialOption]"
 					raw_text = "[ActivityOption.GetName]"
+					visible = "[ActivityPlanner.HasSelectedSpecialOption]"
 				}
 				# text_single = {
 				# 	raw_text = "in [ActivityPlanner.GetAsTravelPlanner.GetTravelPlanData.GetNextDestination.GetProvince.GetName]"
@@ -1690,13 +1709,14 @@ types OCR {
 		button_text = {
 			layoutpolicy_horizontal = expanding
 			blockoverride "text" {
-				raw_text = "Change [ActivitySpecialGuest.GetType.GetNameForHost]."
+				raw_text = "Change [ActivitySpecialGuest.GetType.GetNameForHost], H."
 			}
 			block "button_change_visible"
 			{
 				visible = "[And( Character.IsValid, Not( ActivitySpecialGuest.GetType.HasAutoSelectCharacter ))]"
 			}
 
+			shortcut = army_create_new
 			onclick = "[OpenGameViewData( 'activity_guest_list', ActivitySpecialGuest.AccessSelf )]"
 
 			tooltip = "ACTIVITY_PLANNER_CHANGE_SPECIAL_GUEST_TT"
@@ -1705,13 +1725,14 @@ types OCR {
 		button_text = {
 			layoutpolicy_horizontal = expanding
 			blockoverride "text" {
-				raw_text = "Remove [ActivitySpecialGuest.GetType.GetNameForHost]."
+				raw_text = "Remove [ActivitySpecialGuest.GetType.GetNameForHost], X."
 			}
 			block "button_change_visible"
 			{
 				visible = "[And( Character.IsValid, Not( ActivitySpecialGuest.GetType.HasAutoSelectCharacter ))]"
 			}
 
+			shortcut = increase_speed_2
 			onclick = "[ActivitySpecialGuest.ClearCharacter]"
 			tooltip = "ACTIVITY_PLANNER_CHANGE_SPECIAL_GUEST_TT"
 		}

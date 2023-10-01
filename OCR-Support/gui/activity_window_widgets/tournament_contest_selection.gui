@@ -1,0 +1,1480 @@
+window = {
+	name = "tournament_contest_selection"
+	visible = "[ActivityPlanner.IsPlanningStage( 'phases' )]"
+	size = { 100% 100% }
+	alwaystransparent = yes
+
+	window_ocr = {
+		using = Activity_Planner_Widget
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+
+			on_start = "[ActivityPlanner.AccessPhasePageData.SetShownItems( '(int32)4')]"
+			on_start = "[ActivityPlanner.AccessPhasePageData.ResetShown( GetDataModelSize( ActivityType.GetPickablePhases ) )]"
+			on_finish = "[Clear('selected_phase')]"
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+		}
+
+		blockoverride "ocr_content" {
+
+			button = {
+				onclick = "[ActivityPlanner.Close]"
+				shortcut = "close_window"
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				activity_planner_main_heading_widget_ocr = {
+					# visible = no
+					# visible = "[And(Not(ActivityPlanner.IsEditingAnyPhase), Isnt('selected_phase'))]"
+					# blockoverride "tournament_name" {
+					# 	text_single = {
+					# 		raw_text = "Tournament"
+					# 	}
+					# }
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "Select up to [ActivityPlanner.GetActivityType.CalcNumPickablePhasesAllowed( GetPlayer )] contests for your tournament:"
+					visible = "[ActivityPlanner.IsEditingAnyPhase]"
+				}
+
+
+				hbox = {
+					name = "contest_selection_middle"
+					allow_outside = yes
+					layoutpolicy_horizontal = expanding
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						hbox = {
+						    layoutpolicy_horizontal = expanding
+							spacing = 3
+							visible = "[And(Not(ActivityPlanner.IsEditingAnyPhase), Isnt('selected_phase'))]"
+
+							text_single = {
+								raw_text = "[GetDataModelSize(ActivityPlanner.AccessPlayerPickedPhases)] picked contests."
+							}
+
+							text_single = {
+								raw_text = "[ActivityPlanner.GetActivityType.CalcNumPickablePhasesAllowed( GetPlayer )] slots unlocked out of 6."
+							}
+
+						    expand = { }
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Not(ActivityPlanner.IsEditingAnyPhase)]"
+
+							text_single = {
+								visible = "[And(Isnt('selected_phase'), DataModelHasItems(ActivityPlanner.AccessPlayerPickedPhases))]"
+								layoutpolicy_horizontal = expanding
+								raw_text = "Select to view details."
+							}
+
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								name = "contest_active_slots"
+								datamodel = "[ActivityPlanner.AccessPlayerPickedPhases]"
+
+								item = {
+									tournament_contest_slot_widget_ocr = { }
+								}
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Isnt('selected_phase')]"
+
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									onclick = "[ActivityPlanner.AddPhase( 'phase' )]"
+									visible = "[GreaterThan_int32( ActivityPlanner.GetActivityType.CalcNumPickablePhasesAllowed( GetPlayer ), GetDataModelSize(ActivityPlanner.AccessPlayerPickedPhases))]"
+									shortcut = character_finder
+
+									blockoverride "text" {
+										raw_text = "contest_planner_empty_slot"
+									}
+									blockoverride "extra" {
+										text_single = {
+											margin_left = -3
+											raw_text = ", hotkey C."
+										}
+									}
+								}
+
+								hbox = {
+								    layoutpolicy_horizontal = expanding
+
+									tournament_unavailable_contest_slot_ocr = {
+										visible = "[LessThan_int32( ActivityPlanner.GetActivityType.CalcNumPickablePhasesAllowed( GetPlayer ), '(int32)5' )]"
+									}
+
+								    expand = { }
+								}
+							}
+
+						}
+
+						vbox_available_contests_ocr = {
+							visible = "[ActivityPlanner.IsEditingAnyPhase]"
+						}
+					}
+
+					expand = {}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					vbox = {
+						name = "contest_selection_bottom"
+						visible = "[Isnt('selected_phase')]"
+
+						hbox = {
+						    layoutpolicy_horizontal = expanding
+							visible = "[And( ActivityPlanner.HasPickedPhase, Not(ActivityPlanner.IsEditingAnyPhase))]"
+
+							cost_breakdown_vbox = {
+								datacontext = "[ActivityPlanner.AccessTotalPhaseCostBreakdown]"
+								name = "activity_cost"
+
+								blockoverride "heading_text"
+								{
+									text = "contest_planner_contest_costs"
+								}
+							}
+
+						    expand = { }
+						}
+
+						# button_standard_back = {
+						# 	name = "contest_selection_bottom_cancel_planning"
+						# 	text = CANCEL_BUTTON
+						#
+						# 	visible = "[Or( Not( ActivityPlanner.HasPickedPhase ), ActivityPlanner.IsFirstPickedPhase( ActivityPlanner.GetEditingPhase ) )]"
+						#
+						# 	onclick = "[ActivityPlanner.Close]"
+						# 	shortcut = "close_window"
+						# }
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							name = "contest_selection_bottom_cancel_selection"
+							shortcut = close_window
+							blockoverride "text" {
+								text = CANCEL_BUTTON
+							}
+							blockoverride "extra" {
+								text_single = {
+									margin_left = -3
+									raw_text = ", escape."
+								}
+							}
+							visible = "[And( ActivityPlanner.IsEditingAnyPhase, Not( ActivityPlanner.IsFirstPickedPhase( ActivityPlanner.GetEditingPhase ) ) )]"
+							onclick = "[ActivityPlanner.RemovePhase( ActivityPlanner.AccessEditingPhase )]"
+							onclick = "[ActivityPlanner.CancelEditingPhase]"
+						}
+
+						button_primary_text = {
+							visible = "[And( ActivityPlanner.HasPickedPhase, Not(ActivityPlanner.IsEditingAnyPhase))]"
+							blockoverride "text" {
+								text = "[SelectLocalization( ActivityPlanner.IsPlanningStage( 'options' ), 'START', 'CONTINUE' )]"
+							}
+							blockoverride "disabled" {
+								visible = "[Not(ActivityPlanner.CanProgressPlanningStage)]"
+							}
+							tooltip_enabled = "[Not(ActivityPlanner.CanProgressPlanningStage)]"
+							onclick = "[ActivityPlanner.ProgressPlanningStage]"
+							enabled = "[ActivityPlanner.CanProgressPlanningStage]"
+							tooltip = "[ActivityPlanner.GetCanProgressPlanningStageTooltip]"
+						}
+					}
+
+					expand = { }
+				}
+
+
+				text_multi_wide = {
+					layoutpolicy_horizontal = expanding
+					visible = "[ActivityPlanner.IsEditingAnyPhase]"
+
+					text = contest_planner_selection_description
+				}
+
+				expand = {}
+			}
+
+			widget = {
+				visible = no
+				name = "contest_selection_top"
+				datacontext = "[ActivityPlanner.AccessSingleLocationPhase]"
+
+				size = { 600 140 }
+
+				background = {
+					texture = "gfx/interface/component_tiles/tile_window_background_subwindow.dds"
+					spriteType = Corneredtiled
+					spriteborder = { 18 18 }
+					texture_density = 2
+
+					margin = { 16 16 }
+
+					modify_texture = {
+						name = "overlay"
+						texture = "gfx/interface/component_overlay/overlay_effect.dds"
+						spriteType = Corneredstretched
+						spriteborder = { 0 0 }
+						blend_mode = overlay
+					}
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+						blend_mode = alphamultiply
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					margin = { 16 8 }
+
+					ignoreinvisible = yes
+
+					spacing = 8
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						background = {
+							using = Background_Area_Dark
+
+							margin = { 20 16 }
+
+							modify_texture = {
+								texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+								blend_mode = alphamultiply
+							}
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+
+							text = "[ActivityType.GetName]"
+							align = left
+						}
+					}
+
+					expand = {}
+
+					vbox = {
+						name = "contest_selection_header_change_destination"
+						datacontext = "[ActivityPlanner.AccessSingleLocationPhase]"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						margin = { 0 4 }
+
+						# Background if you have no Type, just using regular Activity image
+						background = {
+							visible = "[Or( ActivityPlanner.IsPlanningStage( 'special_option_category' ), Not(ActivityPlanner.HasSelectedSpecialOption))]"
+
+							texture = "[ActivityType.GetHeaderBackground]"
+							alpha = 0.3
+							fittype = centercrop
+
+							margin = { 16 0 }
+							margin_top = 4
+							margin_bottom = 8
+
+							using = Mask_Rough_Edges
+
+							modify_texture = {
+								texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+								blend_mode = alphamultiply
+							}
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							spacing = 8
+
+							text_single = {
+								text = "TRAVEL_PLAN_DESTINATION"
+								using = Font_Size_Big
+								align = left|nobaseline
+								default_format = "#high"
+							}
+
+							button_round = {
+								onclick = "[ActivityPlanner.StartEditingPhase( PlannedActivityPhase.AccessSelf, 'destination' )]"
+								tooltip = ACTIVITY_PLANNER_CHANGE_LOCATION_TT
+
+								button_replace = {
+									alwaystransparent = yes
+									parentanchor = center
+
+								}
+							}
+
+							expand = {}
+						}
+
+						expand = {}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							button_tertiary = {
+								name = "contest_selection_header_cancel"
+								text = CANCEL_BUTTON
+								min_width = 300
+
+								onclick = "[ActivityPlanner.Close]"
+								shortcut = "close_window"
+
+							}
+
+							expand = {}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	window_contest_selection_vanilla = {}
+}
+
+types OCR
+{
+	type tournamnet_contest_slot_ocr = widget {
+		size = { 550 60 }
+	}
+
+	type tournament_contest_slot_widget_ocr = vbox
+	{
+		layoutpolicy_horizontal = expanding
+		datacontext = "[PlannedActivityPhase.GetPhase]"
+		visible = "[Or( Isnt('selected_phase'), Has('selected_phase', PlannedActivityPhase.GetPhase.GetName))]"
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[PlannedActivityPhase.HasPhase]"
+
+			button_text = {
+				shortcuts_list = {
+					blockoverride "click" {
+						onclick = "[Set('selected_phase', PlannedActivityPhase.GetPhase.GetName)]"
+					}
+				}
+				onclick = "[Set('selected_phase', PlannedActivityPhase.GetPhase.GetName)]"
+				layoutpolicy_horizontal = expanding
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "[IndexNumber], "
+					}
+				}
+				blockoverride "text" {
+					raw_text = "[PlannedActivityPhase.GetPhase.GetName],"
+				}
+				blockoverride "extra" {
+					tooltip = contest_planner_contest_selected_tooltip
+
+					text_single = {
+						raw_text = "participating."
+						visible = "[Not(ActivityPlanner.IsCharacterInPlanningSubset( PlannedActivityPhase.Self, GetPlayer, 'spectator'))]"
+					}
+					text_single = {
+						raw_text = "spectating."
+						visible = "[ActivityPlanner.IsCharacterInPlanningSubset( PlannedActivityPhase.Self, GetPlayer, 'spectator')]"
+					}
+
+					# flowcontainer = {
+					# 	ignoreinvisible = yes
+					# 	visible = "[Is('selected_phase')]"
+					#
+					# 	text_single = {
+					# 		visible = "[IsContestFormatRace]"
+					# 		text = tournament_contest_format_race
+					# 	}
+					#
+					# 	text_single = {
+					# 		visible = "[IsContestFormatVersus]"
+					# 		text = tournament_contest_format_versus
+					# 	}
+					#
+					# 	text_single = {
+					# 		visible = "[IsContestFormatTurn]"
+					# 		text = tournament_contest_formaty_turn
+					# 	}
+					#
+					# 	text_single = {
+					# 		visible = "[IsContestFormatTeam]"
+					# 		text = tournament_contest_format_team
+					# 	}
+					#
+					# 	dot = { }
+					# }
+				}
+			}
+
+			widget = {
+				datacontext = "[PlannedActivityPhase.GetPhase]"
+
+				widget = {
+					name = "auto_participate_if_eligible"
+					visible = "[Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( GetPlayer ), IsPlayerAvailableToCompeteMartial ) ) )]"
+
+					visible_at_creation = no # required to make sure we trigger the '_show' state
+
+					state = {
+						name = _show
+						on_start = "[ActivityPlanner.RemoveGuestFromPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'spectator')]"
+						on_start = "[ActivityPlanner.AddGuestToPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'contestant')]"
+					}
+				}
+
+				widget = {
+					name = "auto_spectate_if_not_eligible"
+					visible = "[Not( Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( GetPlayer ), IsPlayerAvailableToCompeteMartial ) ) ) )]"
+
+					visible_at_creation = no # required to make sure we trigger the '_show' state
+
+					state = {
+						name = _show
+						on_start = "[ActivityPlanner.RemoveGuestFromPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'contestant')]"
+						on_start = "[ActivityPlanner.AddGuestToPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'spectator')]"
+					}
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[PlannedActivityPhase.GetPhase]"
+				visible = "[Has('selected_phase', PlannedActivityPhase.GetPhase.GetName)]"
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					name = "participation"
+
+					text_single = {
+						visible = "[Not(Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( GetPlayer ), IsPlayerAvailableToCompeteMartial ) ) ))]"
+						tooltip = contest_planner_contest_cannot_participate
+						raw_text = "Cannot participate."
+						layoutpolicy_horizontal = expanding
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( GetPlayer ), IsPlayerAvailableToCompeteMartial ) ) )]"
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							visible = "[ActivityPlanner.IsCharacterInPlanningSubset( PlannedActivityPhase.Self, GetPlayer, 'spectator')]"
+							shortcut = map_mode_1
+
+							blockoverride "text" {
+								raw_text = "participate_in_tournament"
+							}
+							# tooltip = tournament_participation_spectate_tt
+							onclick = "[ActivityPlanner.RemoveGuestFromPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'spectator')]"
+							onclick = "[ActivityPlanner.AddGuestToPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'contestant')]"
+
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Not(ActivityPlanner.IsCharacterInPlanningSubset( PlannedActivityPhase.Self, GetPlayer, 'spectator'))]"
+							shortcut = map_mode_11
+
+							blockoverride "text" {
+								raw_text = "spectate_tournament"
+							}
+							onclick = "[ActivityPlanner.AddGuestToPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'spectator')]"
+							onclick = "[ActivityPlanner.RemoveGuestFromPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'contestant')]"
+							# tooltip = tournament_participation_participate_tt
+						}
+					}
+
+					button = {
+						shortcut = close_window
+						onclick = "[Clear('selected_phase')]"
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					datacontext = "[PlannedActivityPhase.GetPhase]"
+					visible = "[Not( ActivityPlanner.IsEditingAnyPhase )]"
+					onclick = "[ActivityPlanner.RemovePhase( PlannedActivityPhase.AccessSelf )]"
+					onclick = "[Clear('selected_phase')]"
+					shortcut = increase_speed_2
+
+					# tooltip = contest_planner_remove_contest_tooltip
+					blockoverride "text" {
+						raw_text = "Remove [PlannedActivityPhase.GetPhase.GetName], X."
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					# text_single = {
+					# 	layoutpolicy_horizontal = expanding
+					# 	raw_text = "[Localize('contest_planner_selected_slot_xp_gain')]."
+					# }
+
+					vbox_contest_type_affinities_container_ocr = {
+						datacontext = "[PlannedActivityPhase.GetPhase]"
+						layoutpolicy_horizontal = expanding
+					}
+				}
+
+				text_multi_wide = {
+					raw_text = "[PlannedActivityPhase.GetPhase.GetDescription]"
+				}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Not( PlannedActivityPhase.HasPhase )]"
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[ActivityPlanner.AddPhase( 'phase' )]"
+				onclick = "[ActivityPlanner.StartEditingPhase( PlannedActivityPhase.AccessSelf, 'phase' )]"
+				# visible = "[GreaterThan_int32( ActivityPlanner.GetActivityType.CalcNumPickablePhasesAllowed( GetPlayer ), GetDataModelSize(ActivityPlanner.AccessPlayerPickedPhases))]"
+				shortcut = character_finder
+
+				blockoverride "text" {
+					raw_text = "contest_planner_empty_slot"
+				}
+				blockoverride "extra" {
+					text_single = {
+						margin_left = -3
+						raw_text = ", hotkey C."
+					}
+				}
+			}
+		}
+	}
+
+	type tournament_empty_contest_slot_widget_ocr = tournamnet_contest_slot_ocr
+	{
+		icon = {
+			parentanchor = center
+			size = { 226 546 }
+
+			texture = "gfx/interface/window_activities/tournament/contest_selection_active_bg.dds"
+		}
+
+		icon = {
+			parentanchor = center
+			size = { 226 546}
+
+			texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
+			spriteType = Corneredtiled
+			spriteborder = { 5 5 }
+		}
+
+		button_standard_clean = {
+			size = { 100% 100% }
+			onclick = "[ActivityPlanner.AddPhase( 'phase' )]"
+
+			tooltip = contest_planner_add_contest_tooltip
+
+			# Contest Icon
+			widget = {
+				parentanchor = top|hcenter
+				position = { 0 -28}
+				size = { 60 60 }
+
+				# Background
+				highlight_icon = {
+					parentanchor = top|hcenter
+					size = { 60 60 }
+
+					texture = "gfx/interface/window_activities/tournament/contest_selection_inactive_icon_bg.dds"
+
+					modify_texture = {
+						blend_mode = multiply
+						alpha = 0.7
+					}
+				}
+			}
+
+			widget = {
+				name = "empty_contest"
+				parentanchor = center
+				position = { 0 30 }
+				size = { 230 250 }
+
+				alwaystransparent = yes
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					spacing = 4
+
+					button_round = {
+						size = { 50 50 }
+						alwaystransparent = yes
+
+						button_plus = {
+							name = "select_contest"
+							size = { 40 40 }
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+
+					text_single = {
+						text = contest_planner_empty_slot
+						using = Font_Size_Big
+						max_width = 190
+						alwaystransparent = yes
+					}
+
+					text_multi = {
+						text = contest_planner_empty_slot_desc
+						autoresize = yes
+						max_width = 190
+						align = center
+						alwaystransparent = yes
+					}
+
+					expand = {}
+				}
+			}
+		}
+	}
+
+	type tournament_unavailable_contest_slot_ocr = text_multi_wide
+	{
+		margin_top = 5
+		raw_text = "[Localize('contest_planner_unavailable_slot_desc')]."
+	}
+
+	type button_select_contest_ocr = button_text {
+
+		visible = "[ActivityPhase.IsShown( GetPlayer, ActivityPlanner.GetSelectedSpecialOption )]"
+		enabled = "[PlannerCanPickActivityPhase( ActivityPhase, ActivityPlanner.GetSingleLocationPhase.GetLocation )]"
+		blockoverride "disabled" {
+			visible = "[Not(PlannerCanPickActivityPhase( ActivityPhase, ActivityPlanner.GetSingleLocationPhase.GetLocation ))]"
+		}
+		blockoverride "disabled text" {
+			raw_text = "Can't pick"
+		}
+		tooltip_enabled = "[Not(PlannerCanPickActivityPhase( ActivityPhase, ActivityPlanner.GetSingleLocationPhase.GetLocation ))]"
+
+		onclick = "[ActivityPlanner.SelectPhaseType( ActivityPhase.Self )]"
+
+		tooltip = contest_planner_contest_tooltip
+
+		shortcuts_list = {
+			blockoverride "click" {
+				onclick = "[ActivityPlanner.SelectPhaseType( ActivityPhase.Self )]"
+			}
+		}
+
+		blockoverride "pre" {
+			text_single = {
+				visible = "[PlannerCanPickActivityPhase( ActivityPhase, ActivityPlanner.GetSingleLocationPhase.GetLocation )]"
+				raw_text = "[IndexNumber],"
+			}
+		}
+
+		blockoverride "text" {
+			raw_text = "[ActivityPhase.GetName]."
+		}
+
+		blockoverride "extra" {
+
+			flowcontainer = {
+			    ignoreinvisible = yes
+				spacing = 3
+				visible = "[PlannerCanPickActivityPhase( ActivityPhase, ActivityPlanner.GetSingleLocationPhase.GetLocation )]"
+
+				text_single = {
+					raw_text = "Your"
+				}
+				hbox_character_archery_contest_aptitude_ocr = {
+					visible = "[IsBowContest]"
+				}
+
+				hbox_character_foot_contest_aptitude_ocr = {
+					visible = "[IsFootContest]"
+				}
+
+				hbox_character_horse_contest_aptitude_ocr = {
+					visible = "[IsHorseContest]"
+				}
+
+				hbox_character_wit_contest_aptitude_ocr = {
+					visible = "[IsWitContest]"
+				}
+			}
+		}
+
+		# widget = {
+		# 	parentanchor = right|top
+		# 	position = { -4 4 }
+		# 	size = { 40 -1 }
+		# 	allow_outside = yes
+		#
+		# 	vbox_contest_type_affinities_container = {}
+		# }
+
+
+	}
+
+	type vbox_available_contests_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+
+		vbox = {
+			name = "activity_type_phases"
+			layoutpolicy_horizontal = expanding
+			datamodel = "[ActivityType.GetPickablePhases]"
+
+			visible = "[ActivityPlanner.IsEditingAnyPhase]"
+
+			item = {
+				widget_available_contests_item_ocr = { }
+			}
+		}
+	}
+
+	type widget_available_contests_item_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+
+		button_select_contest_ocr = {
+			layoutpolicy_horizontal = expanding
+			name = "activity_phase"
+		}
+	}
+}
+
+types ActivityPlannerTypes
+{
+	type tournamnet_contest_slot = widget {
+		size = { 230 550 }
+	}
+
+	type tournament_contest_slot_widget = tournamnet_contest_slot
+	{
+		allow_outside = yes
+
+		icon = {
+			parentanchor = center
+			size = { 226 546 }
+
+			texture = "gfx/interface/window_activities/tournament/contest_selection_active_bg.dds"
+		}
+
+		widget = {
+			visible = "[PlannedActivityPhase.HasPhase]"
+			parentanchor = hcenter
+			size = { 226 350 }
+			scissor = yes
+
+			icon = {
+				size = { 226 546 }
+				texture = "[PlannedActivityPhase.GetPhase.GetIllustration]"
+				parentanchor = top|hcenter
+				position = { 0 2 }
+			}
+		}
+
+		icon = {
+			visible = "[PlannedActivityPhase.HasPhase]"
+			parentanchor = center
+			size = { 226 178 }
+			texture = "gfx/interface/window_activities/tournament/contest_selection_active_blue_bg.dds"
+			position = { 0 136}
+		}
+
+		icon = {
+			parentanchor = center
+			size = { 226 546}
+
+			texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
+			spriteType = Corneredtiled
+			spriteborder = { 5 5 }
+		}
+
+		button_standard_clean = {
+			size = { 100% 100% }
+
+			allow_outside = yes
+
+			alwaystransparent = "[PlannedActivityPhase.HasPhase]"
+
+			# Contest Icon
+			widget = {
+				parentanchor = top|hcenter
+				position = { 0 -28}
+				size = { 60 60 }
+
+				# Background
+				highlight_icon = {
+					parentanchor = top|hcenter
+					size = { 60 60 }
+
+					texture = "gfx/interface/window_activities/tournament/contest_selection_inactive_icon_bg.dds"
+
+					modify_texture = {
+						color = { 0.3 0.3 0.4 1 }
+						blend_mode = multiply
+						alpha = 0.5
+					}
+				}
+
+				icon_flat_standard = {
+					visible = "[PlannedActivityPhase.HasPhase]"
+					parentanchor = center
+					size = { 60 60 }
+
+					texture = "[PlannedActivityPhase.GetPhase.GetIcon]"
+
+					blockoverride "master_color_frame" {
+						frame = 1
+					}
+				}
+			}
+
+			widget = {
+				name = "active_contest"
+				visible = "[PlannedActivityPhase.HasPhase]"
+				datacontext = "[PlannedActivityPhase.GetPhase]"
+				size = { 100% 100% }
+				allow_outside = yes
+
+				tooltip = contest_planner_contest_selected_tooltip
+
+				widget = {
+					name = "contest_info"
+					layoutpolicy_horizontal = expanding
+					parentanchor = bottom|hcenter
+					size = { 230 260 }
+
+					text_single = {
+						name = "contest_type"
+						text = "[PlannedActivityPhase.GetPhase.GetName]"
+						parentanchor = top|hcenter
+						position = { 0 48 }
+						using = Font_Size_Big
+						default_format = "#high"
+					}
+
+					text_single = {
+						visible = "[IsContestFormatRace]"
+						parentanchor = hcenter
+						position = { 0 92 }
+						text = tournament_contest_format_race
+						max_width = 220
+					}
+
+					text_single = {
+						visible = "[IsContestFormatVersus]"
+						parentanchor = hcenter
+						position = { 0 92 }
+						text = tournament_contest_format_versus
+						max_width = 220
+					}
+
+					text_single = {
+						visible = "[IsContestFormatTurn]"
+						parentanchor = hcenter
+						position = { 0 92 }
+						text = tournament_contest_formaty_turn
+						max_width = 220
+					}
+
+					text_single = {
+						visible = "[IsContestFormatTeam]"
+						parentanchor = hcenter
+						position = { 0 92 }
+						text = tournament_contest_format_team
+						max_width = 220
+					}
+
+					widget = {
+						position = { 0 122 }
+						size = { 230 90 }
+						allow_outside = yes
+
+						alpha = "[Select_float( Not(ActivityPlanner.IsCharacterInPlanningSubset( PlannedActivityPhase.Self, GetPlayer, 'spectator')), '(float)1.0', '(float)0.4' )]"
+
+						text_label_center = {
+							parentanchor = top|hcenter
+							text = contest_planner_selected_slot_xp_gain
+							allow_outside = yes
+						}
+
+						hbox_contest_type_affinities_container = {
+							datacontext = "[PlannedActivityPhase.GetPhase]"
+							layoutpolicy_horizontal = expanding
+							parentanchor = bottom|hcenter
+							allow_outside = yes
+
+							blockoverride "icon_sizes"
+							{
+								size = { 30 30 }
+							}
+						}
+					}
+
+					widget = {
+						name = "participation"
+						parentanchor = bottom|hcenter
+						position = { 0 -12}
+						size = { 200 30 }
+						allow_outside = yes
+						datacontext = "[PlannedActivityPhase.GetPhase]"
+
+						widget = {
+							name = "auto_participate_if_eligible"
+							visible = "[Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( GetPlayer ), IsPlayerAvailableToCompeteMartial ) ) )]"
+
+							visible_at_creation = no # required to make sure we trigger the '_show' state
+
+							state = {
+								name = _show
+								on_start = "[ActivityPlanner.RemoveGuestFromPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'spectator')]"
+								on_start = "[ActivityPlanner.AddGuestToPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'contestant')]"
+							}
+						}
+
+						widget = {
+							name = "auto_spectate_if_not_eligible"
+							visible = "[Not( Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( GetPlayer ), IsPlayerAvailableToCompeteMartial ) ) ) )]"
+
+							visible_at_creation = no # required to make sure we trigger the '_show' state
+
+							state = {
+								name = _show
+								on_start = "[ActivityPlanner.RemoveGuestFromPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'contestant')]"
+								on_start = "[ActivityPlanner.AddGuestToPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'spectator')]"
+							}
+						}
+
+						hbox = {
+							allow_outside = yes
+
+							enabled = "[Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( GetPlayer ), IsPlayerAvailableToCompeteMartial ) ) )]"
+
+							tooltip = contest_planner_contest_cannot_participate
+
+							button_contest_spectate = {
+								size = { 100 30 }
+
+								alwaystransparent = "[ActivityPlanner.IsCharacterInPlanningSubset( PlannedActivityPhase.Self, GetPlayer, 'spectator')]"
+								down = "[ActivityPlanner.IsCharacterInPlanningSubset( PlannedActivityPhase.Self, GetPlayer, 'spectator')]"
+								onclick = "[ActivityPlanner.AddGuestToPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'spectator')]"
+								onclick = "[ActivityPlanner.RemoveGuestFromPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'contestant')]"
+
+								tooltip_enabled = "[Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( GetPlayer ), IsPlayerAvailableToCompeteMartial ) ) )]"
+							}
+
+							button_contest_participate = {
+								size = { 100 30 }
+
+								alwaystransparent = "[Not(ActivityPlanner.IsCharacterInPlanningSubset( PlannedActivityPhase.Self, GetPlayer, 'spectator'))]"
+								down = "[Not(ActivityPlanner.IsCharacterInPlanningSubset( PlannedActivityPhase.Self, GetPlayer, 'spectator'))]"
+								onclick = "[ActivityPlanner.RemoveGuestFromPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'spectator')]"
+								onclick = "[ActivityPlanner.AddGuestToPlanningGuestSubset(PlannedActivityPhase.AccessSelf, GetPlayer, 'contestant')]"
+
+								tooltip_enabled = "[Or( And( Not( IsMartialContest ), IsPlayerAvailableToCompeteNonMartial ), And( IsMartialContest, And( CanPlayerCompeteInMartialContest( GetPlayer ), IsPlayerAvailableToCompeteMartial ) ) )]"
+							}
+						}
+					}
+				}
+			}
+		}
+
+		button_round = {
+			visible = "[Not( ActivityPlanner.IsEditingAnyPhase )]"
+			parentanchor = bottom|hcenter
+			position = { 0 60 }
+			size = { 50 50 }
+
+			datacontext = "[PlannedActivityPhase.GetPhase]"
+
+			onclick = "[ActivityPlanner.RemovePhase( PlannedActivityPhase.AccessSelf )]"
+
+			tooltip = contest_planner_remove_contest_tooltip
+
+			button_cancel = {
+				name = "remove_contest"
+				parentanchor = center
+				size = { 40 40 }
+				alwaystransparent = yes
+			}
+		}
+
+		widget = {
+			name = "planning_contest"
+			visible = "[Not( PlannedActivityPhase.HasPhase )]"
+			size = { 100% 100% }
+
+			widget = {
+				size = { 218 536 }
+				parentanchor = center
+				alpha = 0
+
+				background = {
+					using = Background_Frame_Gold
+
+					modify_texture = {
+						texture = "gfx/interface/window_activities/tournament/mask_corners_contest_selection.dds"
+						blend_mode = alphamultiply
+					}
+				}
+
+				state = {
+					name = a
+					next = b
+					trigger_on_create = yes
+					alpha = 1
+					duration = 1
+
+					using = Animation_Curve_Default
+				}
+
+				state = {
+					name = b
+					next = a
+					alpha = 0
+					duration = 1
+
+					using = Animation_Curve_Default
+				}
+			}
+
+			widget = {
+				parentanchor = center
+				position = { 0 30 }
+				size = { 230 250 }
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					spacing = 4
+
+					button_round = {
+						size = { 50 50 }
+
+						button_plus = {
+							name = "select_contest"
+							parentanchor = center
+							onclick = "[ActivityPlanner.StartEditingPhase( PlannedActivityPhase.AccessSelf, 'phase' )]"
+							size = { 40 40 }
+
+							tooltip = contest_planner_add_contest_tooltip
+						}
+					}
+
+					text_single = {
+						text = contest_planner_empty_slot
+						using = Font_Size_Big
+						max_width = 190
+					}
+
+					text_multi = {
+						text = contest_planner_empty_slot_picking_desc
+						autoresize = yes
+						max_width = 190
+						align = center
+					}
+
+					expand = {}
+				}
+			}
+		}
+	}
+
+	type tournament_empty_contest_slot_widget = tournamnet_contest_slot
+	{
+		icon = {
+			parentanchor = center
+			size = { 226 546 }
+
+			texture = "gfx/interface/window_activities/tournament/contest_selection_active_bg.dds"
+		}
+
+		icon = {
+			parentanchor = center
+			size = { 226 546}
+
+			texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
+			spriteType = Corneredtiled
+			spriteborder = { 5 5 }
+		}
+
+		button_standard_clean = {
+			size = { 100% 100% }
+			onclick = "[ActivityPlanner.AddPhase( 'phase' )]"
+
+			tooltip = contest_planner_add_contest_tooltip
+
+			# Contest Icon
+			widget = {
+				parentanchor = top|hcenter
+				position = { 0 -28}
+				size = { 60 60 }
+
+				# Background
+				highlight_icon = {
+					parentanchor = top|hcenter
+					size = { 60 60 }
+
+					texture = "gfx/interface/window_activities/tournament/contest_selection_inactive_icon_bg.dds"
+
+					modify_texture = {
+						blend_mode = multiply
+						alpha = 0.7
+					}
+				}
+			}
+
+			widget = {
+				name = "empty_contest"
+				parentanchor = center
+				position = { 0 30 }
+				size = { 230 250 }
+
+				alwaystransparent = yes
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					spacing = 4
+
+					button_round = {
+						size = { 50 50 }
+						alwaystransparent = yes
+
+						button_plus = {
+							name = "select_contest"
+							size = { 40 40 }
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+
+					text_single = {
+						text = contest_planner_empty_slot
+						using = Font_Size_Big
+						max_width = 190
+						alwaystransparent = yes
+					}
+
+					text_multi = {
+						text = contest_planner_empty_slot_desc
+						autoresize = yes
+						max_width = 190
+						align = center
+						alwaystransparent = yes
+					}
+
+					expand = {}
+				}
+			}
+		}
+	}
+
+	type tournament_unavailable_contest_slot = tournamnet_contest_slot
+	{
+		enabled = no
+
+		icon = {
+			parentanchor = center
+			size = { 226 546 }
+
+			texture = "gfx/interface/window_activities/tournament/contest_selection_active_bg.dds"
+			alpha = 0.5
+		}
+
+		icon = {
+			parentanchor = center
+			size = { 226 546}
+
+			texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
+			spriteType = Corneredtiled
+			spriteborder = { 5 5 }
+		}
+
+		button_standard_clean = {
+			size = { 100% 100% }
+
+			blockoverride "disabled"  {}
+
+			# Contest Icon
+			widget = {
+				parentanchor = top|hcenter
+				position = { 0 -28}
+				size = { 60 60 }
+
+				# Background
+				highlight_icon = {
+					parentanchor = top|hcenter
+					size = { 60 60 }
+
+					texture = "gfx/interface/window_activities/tournament/contest_selection_inactive_icon_bg.dds"
+
+					modify_texture = {
+						color = { 0.3 0.3 0.4 1 }
+						blend_mode = multiply
+						alpha = 0.7
+					}
+				}
+			}
+
+			widget = {
+				name = "unavailable_contest"
+				parentanchor = center
+				position = { 0 30 }
+				size = { 230 250 }
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					spacing = 4
+
+					button_round = {
+						size = { 50 50 }
+
+						icon_flat_standard = {
+							texture = "gfx/interface/window_activities/tournament/contest_selection_locked_icon.dds"
+							parentanchor = center
+							size = { 40 40 }
+						}
+					}
+
+					text_single = {
+						text = contest_planner_unavailable_slot
+						using = Font_Size_Big
+						max_width = 190
+					}
+
+					text_multi = {
+						text = contest_planner_unavailable_slot_desc
+						autoresize = yes
+						max_width = 190
+						align = center
+						default_format = "#weak"
+					}
+
+					expand = {}
+				}
+			}
+		}
+	}
+
+	type button_select_contest = button_standard_clean {
+		size = { 230 140 }
+
+		visible = "[ActivityPhase.IsShown( GetPlayer, ActivityPlanner.GetSelectedSpecialOption )]"
+		enabled = "[PlannerCanPickActivityPhase( ActivityPhase, ActivityPlanner.GetSingleLocationPhase.GetLocation )]"
+
+		onclick = "[ActivityPlanner.SelectPhaseType( ActivityPhase.Self )]"
+
+		tooltip = contest_planner_contest_tooltip
+
+		icon = {
+			parentanchor = center
+			size = { 226 136 }
+			texture = "[ActivityPhase.GetIllustrationSmall]"
+		}
+
+		icon = {
+			parentanchor = center
+			size = { 226 136}
+
+			texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
+			spriteType = Corneredtiled
+			spriteborder = { 5 5 }
+		}
+
+		widget = {
+			parentanchor = right|top
+			position = { -4 4 }
+			size = { 40 -1 }
+			allow_outside = yes
+
+			vbox_contest_type_affinities_container = {}
+		}
+
+		widget = {
+			parentanchor = bottom|hcenter
+			position = { 0 -4 }
+			size = { 230 50 }
+
+			background = {
+				using = Background_Area_ExtraDark
+
+				margin = { 0 4 }
+			}
+
+			text_single = {
+				parentanchor = hcenter
+				text = "[ActivityPhase.GetName]"
+				max_width = 220
+			}
+
+			widget = {
+				parentanchor = bottom|hcenter
+				size = { 230 30 }
+
+				hbox = {
+					margin_right = 8
+
+					hbox_character_archery_contest_aptitude = {
+						visible = "[IsBowContest]"
+						margin = { 2 2 }
+					}
+
+					hbox_character_foot_contest_aptitude = {
+						visible = "[IsFootContest]"
+						margin = { 2 2 }
+					}
+
+					hbox_character_horse_contest_aptitude = {
+						visible = "[IsHorseContest]"
+						margin = { 2 2 }
+					}
+
+					hbox_character_wit_contest_aptitude = {
+						visible = "[IsWitContest]"
+						margin = { 2 2 }
+					}
+				}
+			}
+		}
+	}
+
+	type vbox_available_contests = vbox {
+		datacontext = "[ActivityPlanner.AccessPhasePageData]"
+		margin_top = 16
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			margin_bottom = 8
+
+			divider_light = {
+				layoutpolicy_horizontal = expanding
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_horizontal_middle_thick.dds"
+					blend_mode = alphamultiply
+				}
+			}
+		}
+
+		hbox = {
+			spacing = 16
+
+			button_round = {
+				size = { 50 50 }
+
+				enabled = "[PagedContainerData.CanShowPreviousPage]"
+				onclick = "[PagedContainerData.ShowPreviousPage]"
+
+				button_back = {
+					parentanchor = center
+					position = { -2 0 }
+
+					alwaystransparent = yes
+				}
+			}
+
+			fixedgridbox = {
+				name = "activity_type_phases"
+				datamodel = "[PagedContainerData.DataModelPage( ActivityType.GetPickablePhases )]"
+
+				visible = "[ActivityPlanner.IsEditingAnyPhase]"
+
+				addcolumn = 240
+				addrow = 150
+				flipdirection = yes
+
+				item = {
+					widget_available_contests_item = { }
+				}
+			}
+
+			button_round = {
+				size = { 50 50 }
+
+				enabled = "[PagedContainerData.CanShowNextPage( GetDataModelSize( ActivityType.GetPickablePhases ) )]"
+				onclick = "[PagedContainerData.ShowNextPage( GetDataModelSize(ActivityType.GetPickablePhases) )]"
+
+				button_forward = {
+					parentanchor = center
+					position = { 2 0 }
+
+					alwaystransparent = yes
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 16
+
+			divider_light = {
+				layoutpolicy_horizontal = expanding
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+					blend_mode = alphamultiply
+					mirror = horizontal
+				}
+			}
+
+			text_single = {
+				align = nobaseline
+				raw_text = "[PagedContainerData.GetCurrentPage] / [PagedContainerData.GetMaxPage( GetDataModelSize( ActivityType.GetPickablePhases ) )]"
+			}
+
+			divider_light = {
+				layoutpolicy_horizontal = expanding
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+					blend_mode = alphamultiply
+				}
+			}
+		}
+	}
+
+	type widget_available_contests_item = widget {
+		size = { 230 150 }
+
+		vbox = {
+			layoutpolicy_vertical = expanding
+			spacing = 4
+
+			blockoverride "contest_aptitude_level_size"
+			{
+				size = { 12 12 }
+			}
+
+			button_select_contest = {
+				name = "activity_phase"
+			}
+		}
+	}
+}

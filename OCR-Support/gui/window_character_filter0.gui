@@ -1,0 +1,722 @@
+types Filters {
+	type filter_item = hbox {
+		spacing = 10
+		margin_bottom = 10
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			text = "[CharacterListFilter.GetName]"
+			default_format = "#medium"
+			align = nobaseline
+			autoresize = no
+		}
+
+		expand = {}
+
+		dropdown_sort_characterlist = {
+			datamodel = "[CharacterListFilter.GetOptions]"
+			onselectionchanged = "[CharacterListFilter.SetCurrentFilterFromIndex]"
+			selectedindex = "[CharacterListFilter.GetCurrentFilterIndex]"
+
+			blockoverride "text_button_drop" {
+				text = "[CharacterListFilterOption.GetName]"
+				tooltip = "[CharacterListFilterOption.GetDescription]"
+			}
+
+			blockoverride "size_button_drop" {
+				size = { 185 33 }
+			}
+
+			blockoverride "size_dropdown" {
+				size = { 175 33 }
+			}
+		}
+	}
+
+	type vbox_filter_group = vbox {
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			margin_top = 4
+
+			button_expand = {
+				name = "show"
+				frame = "[Select_int32( CharacterListFilterCategory.IsExpanded, '(int32)2', '(int32)1' )]"
+				onclick = "[CharacterListFilterCategory.OnExpand]"
+				using = tooltip_ws
+				tooltip = "EXPAND_FILTER"
+				oversound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+				clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_icon_select"
+			}
+
+			text_label_center = {
+				name = "label"
+				layoutpolicy_horizontal = expanding
+				margin_right = 36
+				text = "[CharacterListFilterCategory.GetLabel]"
+				align = center
+			}
+		}
+
+
+		vbox = {
+			visible = "[CharacterListFilterCategory.IsExpanded]"
+			layoutpolicy_horizontal = expanding
+			spacing = 5
+			margin_top = 5
+
+			block "filters" {}
+		}
+	}
+
+	type window_character_filter = window {
+		name = "character_filter_window"
+		visible_at_creation = no
+		visible = "[CharacterSelectionList.FiltersShown]"
+		parentanchor = top|right
+		position = { -730 20 }
+		size = { 510 800 }
+		focuspolicy = click
+
+		allow_outside = yes
+
+		using = Window_Movable
+		using = Window_Background_Subwindow
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+		}
+
+		vbox = {
+			margin = { 4 4 }
+
+			spacing = 10
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "CHARACTER_LIST_FILTERS"
+				}
+				blockoverride "button_close"
+				{
+					onclick = "[CharacterSelectionList.OnToggleFilters]"
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				margin_left = 5
+				margin_right = 5
+				
+				dropdown_menu_standard = {
+					blockoverride "dropdown_properties"
+					{
+						datamodel = "[CharacterSelectionList.GetSavedFilterPresets]"
+						onselectionchanged = "[CharacterSelectionList.SelectPresetIndex]"
+						selectedindex = "[CharacterSelectionList.GetSelectedPresetIndex]"
+					}
+
+					blockoverride "dropdown_active_item_properties"
+					{
+						text = "[SelectLocalization(CharacterSelectionList.HasSelectedPreset, CharacterSelectionList.GetSelectedPreset.GetName, 'CHARACTER_LIST_OPEN_FILTER_PRESET_BUTTON_SELECT')]"
+					}
+
+					blockoverride "dropdown_item_properties"
+                	{
+						raw_text = "[Select_CString(FilterPresetItem.CanBeApplied, '#clickable', '#low')] [FilterPresetItem.GetPreset.GetName]#!"
+						tooltip = "CHARACTER_LIST_FILTER_PRESET_APPLY_TOOLTIP"
+						enabled = "[FilterPresetItem.CanBeApplied]"
+					}
+					blockoverride "dropdown_list_properties"
+					{
+						minimumsize = { 192 50 }
+						hbox = {
+							visible = "[IsDataModelEmpty(CharacterSelectionList.GetSavedFilterPresets)]"
+							textbox = {
+								text = "CHARACTER_LIST_FILTER_PRESET_DROPDOWN_NO_SELECTED_BODY"
+								align = center
+							}
+						}
+					}
+				}
+
+				button_standard_small = {
+					name = "delete_selected_preset"
+
+					text = "CHARACTER_LIST_FILTER_PRESET_DELETE_TOOLTIP"
+
+					enabled = "[CharacterSelectionList.HasSelectedPreset]"
+					onclick = "[CharacterSelectionList.DeleteSelectedPreset]"
+					tooltip = "CHARACTER_LIST_FILTER_PRESET_DELETE_TOOLTIP"
+				}
+
+				button_standard_small = {
+					name = "open_filter_manage_save"
+
+					text = "CHARACTER_LIST_FILTER_PRESET_BUTTON_UNSAVED_PRESET"
+					onclick = "[CharacterSelectionList.ShowFilterPresets]"
+					tooltip = "CHARACTER_LIST_OPEN_SAVE_FILTERS"
+
+					warning_icon = {
+						position = { 3 0 }
+						parentanchor = vcenter
+						visible = "[Not( StringIsEmpty( CharacterSelectionList.GetUnsaveableFiltersWarning ) )]"
+						size = { 24 24 }
+					}
+				}
+			}
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content" {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							margin_top = 5
+							margin_left = -2
+							margin_right = -2
+							margin_bottom = 2
+
+							editbox_search_field = {
+								layoutpolicy_horizontal = expanding
+								margin_right = 6
+
+								blockoverride "editbox_properties"
+								{
+									name = "text_filter"
+									ontextedited = "[CharacterSelectionList.SetPattern]"
+									oneditingfinished = "[CharacterSelectionList.FinishEdit]"
+								}
+
+								tooltip = "CHARACTER_LIST_TEXT_FILTER_TOOLTIP"
+							}
+
+							button_icon = {
+								name = "cross"
+								visible = "[CharacterSelectionList.HasTextInEdit]"
+								texture = "gfx/interface/icons/flat_icons/window_close.dds"
+								onclick = "[CharacterSelectionList.ClearPattern]"
+								tooltip = "CHARACTER_LIST_CLEAR"
+							}
+						}
+
+						vbox = {
+							datamodel = "[CharacterSelectionList.GetMatchedPatterns]"
+							layoutpolicy_horizontal = expanding
+
+							text_single = {
+								name = "label"
+								visible = "[DataModelHasItems(CharacterSelectionList.GetMatchedPatterns)]"
+								layoutpolicy_horizontal = expanding
+								minimumsize = { 0 30 }
+
+								text = "CHARACTER_LIST_TEXT_FILTER_TITLE"
+								align = center|nobaseline
+
+								background = {
+									using = Background_Area
+									margin = { 4 4 }
+								}
+							}
+
+							expand = {
+								minimumsize = { 0 5 }
+							}
+
+							item = {
+								hbox = {
+									layoutpolicy_horizontal = expanding
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										margin_right = 4
+
+										button_standard_list = {
+											name = "drop_filters"
+											layoutpolicy_horizontal = expanding
+											layoutpolicy_vertical = expanding
+											size = { 0 52 }
+
+											default_format = "#low"
+											onclick = "[PatternItem.OnClick]"
+											onclick = "[CharacterSelectionList.ClearPattern]"
+											onclick = "[CharacterSelectionList.ApplyFiltersSort]"
+
+											background = {
+												using = Background_Area_Dark
+											}
+
+											hbox = {
+												margin_left = 6
+
+												button_icon = {
+													name = "cross"
+													visible = "[PatternItem.IsSelected]"
+													size = { 20 20 }
+													texture = "gfx/interface/icons/flat_icons/window_close.dds"
+													alwaystransparent = yes
+												}
+
+												hbox = {
+													visible = "[PatternItem.IsName]"
+													layoutpolicy_horizontal = expanding
+													margin = { 10 0 }
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "CHARACTER_LIST_TEXT_FILTER_MATCH_NAME"
+														align = nobaseline
+													}
+
+													text_single = {
+														text = "[PatternItem.GetType]"
+														align = nobaseline
+													}
+
+													tooltip = "CHARACTER_LIST_FILTER_NAME_TT"
+												}
+
+												hbox = {
+													datacontext = "[PatternItem.GetTrait]"
+													datacontext = "[GetNullCharacter]"
+													datacontext = "[GetPlayer.GetFaith]"
+
+													visible = "[PatternItem.IsTrait]"
+													layoutpolicy_horizontal = expanding
+													margin = { 10 0 }
+													margin_left = 5
+													spacing = 5
+
+													icon_trait = {
+														blockoverride "faith_context"
+														{
+															datacontext = "[GetPlayer.GetFaith]"
+														}
+
+														blockoverride "icon_size"
+														{
+															size = { 45 45 }
+														}
+
+														blockoverride "tooltip_placement"
+														{
+															tooltip_enabled = no
+														}
+
+														blockoverride "glow_radius"
+														{
+															glow_radius = 4
+														}
+													}
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "[PatternItem.GetTrait.GetNameNoTooltip( Character.Self )]"
+														align = nobaseline
+													}
+
+													text_single = {
+														text = "[PatternItem.GetType]"
+														align = nobaseline
+													}
+
+													tooltipwidget = {
+														using = character_trait_tooltip
+													}
+												}
+
+												hbox = {
+													datacontext = "[PatternItem.GetFaith]"
+													visible = "[PatternItem.IsFaith]"
+													layoutpolicy_horizontal = expanding
+													margin = { 10 0 }
+													margin_left = 5
+													spacing = 5
+
+													icon = {
+														size = { 45 45 }
+														texture = "[PatternItem.GetFaith.GetIcon]"
+													}
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "[PatternItem.GetFaith.GetNameNoTooltip]"
+														align = nobaseline
+													}
+
+													text_single = {
+														text = "[PatternItem.GetType]"
+														align = nobaseline
+													}
+
+													tooltipwidget = {
+														faith_tooltip = {}
+													}
+												}
+
+												hbox = {
+													datacontext = "[PatternItem.GetHouse]"
+													visible = "[PatternItem.IsHouse]"
+													layoutpolicy_horizontal = expanding
+													margin = { 10 0 }
+													margin_left = 5
+													spacing = 5
+
+													coa_house_tiny = {
+														blockoverride "coa_button"
+														{
+															onclick = "[DefaultOnHouseCoatOfArmsClick(DynastyHouse.GetID)]"
+														}
+													}
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "[PatternItem.GetHouse.GetBaseNameNoTooltip]"
+														align = nobaseline
+													}
+
+													text_single = {
+														text = "[PatternItem.GetType]"
+														align = nobaseline
+													}
+
+													tooltipwidget = {
+														using = dynasty_house_tooltip
+													}
+												}
+
+												hbox = {
+													datacontext = "[PatternItem.GetDynasty]"
+													visible = "[PatternItem.IsDynasty]"
+													layoutpolicy_horizontal = expanding
+													margin = { 10 0 }
+													margin_left = 5
+													spacing = 5
+
+													coa_dynasty_tiny = {
+														blockoverride "coa_button"
+														{
+															onclick = "[DefaultOnDynastyCoatOfArmsClick(Dynasty.GetID)]"
+														}
+													}
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "[PatternItem.GetDynasty.GetBaseNameNoTooltip]"
+														align = nobaseline
+													}
+
+													text_single = {
+														text = "[PatternItem.GetType]"
+														align = nobaseline
+													}
+
+													tooltipwidget = {
+														using = DynastyTooltip
+													}
+												}
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													margin = { 10 0 }
+													visible = "[PatternItem.IsCulture]"
+													datacontext = "[PatternItem.GetCulture]"
+													spacing = 5
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "[PatternItem.GetCulture.GetNameNoTooltip]"
+														align = nobaseline
+													}
+
+													text_single = {
+														text = "[PatternItem.GetType]"
+														align = nobaseline
+													}
+
+													tooltipwidget = {
+														culture_tooltip = {}
+													}
+												}
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													margin = { 10 0 }
+													visible = "[PatternItem.IsHeritage]"
+													spacing = 5
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "[PatternItem.GetHeritage.GetNameNoTooltip]"
+														align = nobaseline
+													}
+													text_single = {
+														text = "[PatternItem.GetType]"
+														align = nobaseline
+													}
+													tooltip = "CHARACTER_LIST_CULTURE_GROUP_TT"
+												}
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													margin = { 10 0 }
+													visible = "[PatternItem.IsReligion]"
+													datacontext = "[PatternItem.GetReligion]"
+													spacing = 5
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "[PatternItem.GetReligion.GetNameNoTooltip]"
+														align = nobaseline
+													}
+
+													text_single = {
+														text = "[PatternItem.GetType]"
+														align = nobaseline
+													}
+
+													tooltipwidget = {
+														using = religion_tooltip
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+						vbox = {
+							visible = "[Not(CharacterSelectionList.IsSuggesting)]"
+							layoutpolicy_horizontal = expanding
+
+							block "addition_filter" {}
+						}
+					}
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = growing
+				margin_bottom = 10
+
+				button_standard = {
+					name = "drop_filters"
+					text = "CHARACTER_RESET_FILTERS"
+					focuspolicy = click
+					onclick = "[CharacterSelectionList.OnResetFilters]"
+				}
+			}
+		}
+		window_character_filter_manage_presets = {}
+	}
+
+	type window_character_filter_manage_presets = window {
+		name = "character_filter_manage_presets_window"
+		visible = [CharacterSelectionList.IsFilterPresetsShown]
+		parentanchor = right
+		position = { 420 0 }
+		size = { 415 510 }
+
+		layer = confirmation
+		alwaystransparent = no
+		movable = no
+		using = Window_Background_Subwindow
+
+		vbox = {
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "CHARACTER_LIST_FILTER_PRESET_HEADER"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[CharacterSelectionList.HideFilterPresets]"
+					shortcut = "close_window"
+					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_close"
+				}
+			}
+
+			vbox = {
+				name = "current_filter"
+				visible = "[Not( CharacterSelectionList.IsAllDefault )]"
+				layoutpolicy_horizontal = expanding
+
+				text_label_center = {
+					text = "CHARACTER_LIST_FILTER_PRESET_CURRENT_FILTER"
+				}
+
+				editbox_standard_with_label = {
+					layoutpolicy_horizontal = expanding
+					margin = { 24 0 }
+					margin_bottom = 10
+
+					blockoverride "editbox_label"
+					{
+						text = "CHARACTER_LIST_FILTER_PRESET_CURRENT_FILTER_PRESET_NAME"
+						margin_bottom = 2
+					}
+
+					blockoverride "editbox_properties"
+					{
+						name = "preset_name_edit"
+						multiline = no
+						maxcharacters = 40
+						text = "[CharacterSelectionList.GetFilterPresetName]"
+						margin_left = 2
+						ontextedited = "[CharacterSelectionList.OnFilterPresetNameEdit]"
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					margin = { 24 0 }
+					spacing = 8
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						button_standard = {
+							text = "CHARACTER_LIST_FILTER_PRESET_BUTTON_SAVE"
+							onclick = "[CharacterSelectionList.SaveFiltersToPreset]"
+							enabled = "[CharacterSelectionList.CanSavePreset]"
+							tooltip = "[CharacterSelectionList.CanSavePresetTooltip]"
+						}
+						expand = {}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						margin_bottom = 18
+
+						text_single = {
+							text = "[CharacterSelectionList.GetSavePresetWarning]"
+							minimumsize = { 350 12 }
+						}
+						expand = {}
+					}
+				}
+			}
+
+			vbox = {
+				name = "current_filter_all_default"
+				visible = "[CharacterSelectionList.IsAllDefault]"
+				layoutpolicy_horizontal = expanding
+
+				text_label_center = {
+					text = "CHARACTER_LIST_FILTER_PRESET_CURRENT_FILTER"
+				}
+
+				text_single = {
+					margin_top = 24
+					margin_bottom = 24
+					text = "CHARACTER_LIST_FILTER_PRESET_CURRENT_FILTER_DEFAULT_FILTERS"
+				}
+			}
+
+			vbox = {
+				name = "saved_filters"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				margin_bottom = 5
+
+				hbox = {
+					margin_bottom = 6
+
+					text_label_center = {
+						text = "CHARACTER_LIST_FILTER_PRESET_SAVED_PRESETS"
+					}
+				}
+
+				scrollbox = {
+					layoutpolicy_vertical = expanding
+					size = { 406 0 } #hitboxes are wrong?
+
+					blockoverride "scrollbox_content"
+					{
+
+						fixedgridbox = {
+							datamodel = "[CharacterSelectionList.GetSavedFilterPresets]"
+							addcolumn = 366
+							addrow = 70
+							datamodel_wrap = 1
+							maxhorizontalslots = 1
+							flipdirection = yes
+
+							item = {
+								widget = {
+									size = { 370 60 }
+
+									hbox = {
+										spacing = 5
+
+										button_standard = {
+											name = "apply_preset_button"
+											layoutpolicy_horizontal = expanding
+											size = { 0 60 }
+
+											onclick = "[CharacterSelectionList.SetSavePresetName(FilterPresetItem.GetPreset.GetName)]"
+											down = "[And( Not( CharacterSelectionList.IsAllDefault ), EqualTo_string(CharacterSelectionList.GetFilterPresetName, FilterPresetItem.GetPreset.GetName) )]"
+											tooltip = "CHARACTER_LIST_SELECT_TO_OVERWRITE_PRESET_TOOLTIP"
+
+											vbox = {
+												margin_left = 8
+
+												text_label_left = {
+													layoutpolicy_horizontal = expanding
+													text = "[FilterPresetItem.GetPreset.GetName]"
+													align = nobaseline
+													margin_left = 2
+													margin_top = 5
+												}
+
+												text_single = {
+													layoutpolicy_vertical = expanding
+													layoutpolicy_horizontal = expanding
+													margin_left = -10
+													margin_right = 10
+													max_width = 310
+
+													text = "[FilterPresetItem.GetPreset.GetDescription]"
+													align = left|nobaseline
+													default_format = "#low"
+												}
+												expand = {}
+											}
+
+											hbox = {
+												margin_right = 4
+
+												expand = {}
+												
+												button_icon = {
+													name = "delete_preset_button"
+													texture = "gfx/interface/icons/flat_icons/window_close.dds"
+		
+													onclick = "[CharacterSelectionList.DeleteFilterPreset( FilterPresetItem.Self )]"
+													tooltip = "CHARACTER_LIST_FILTER_PRESET_DELETE_TOOLTIP"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

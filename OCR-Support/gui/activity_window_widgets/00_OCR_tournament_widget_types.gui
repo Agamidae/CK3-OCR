@@ -1,0 +1,962 @@
+#
+# Put widgets we reuse within the tournament plugin widgets here.
+#
+types OCR
+{
+
+	type button_contestant_ocr = char_name {
+		layoutpolicy_horizontal = expanding
+		onclick = "[ActivityLocaleWindow.Close]"
+		blockoverride "pre" {
+			block "index" {
+				text_single = {
+					raw_text = "[IndexNumber],"
+				}
+			}
+			text_single = {
+				visible = "[And(Not( GreaterThan_CFixedPoint( GetCharacterPtV, '(CFixedPoint)0') ), Activity.IsCurrentPhaseActive)]"
+				raw_text = "Knocked out,"
+			}
+			text_single = {
+				# visible = "[Character.IsLocalPlayer]"
+				visible = "[Is('show_contest_score')]"
+				raw_text = "[Character.MakeScope.Var('progress_to_victory').GetValue|0] points,"
+			}
+		}
+		blockoverride "relation" {
+		}
+		blockoverride "extra3" {
+			flowcontainer = {
+				ignoreinvisible = yes
+				spacing = 3
+
+				hbox_character_archery_contest_aptitude_ocr = {
+					visible = "[IsBowContest]"
+				}
+
+				hbox_character_foot_contest_aptitude_ocr = {
+					visible = "[IsFootContest]"
+				}
+
+				hbox_character_horse_contest_aptitude_ocr = {
+					visible = "[IsHorseContest]"
+				}
+
+				hbox_character_wit_contest_aptitude_ocr = {
+					visible = "[IsWitContest]"
+				}
+			}
+		}
+	}
+	### Brief: vbox_tournament_favoured_contestants
+	# Has the following blocks:
+	#
+	#	"most_favoured_datacontext"
+	#		Used to specify the character in the most favoured contestant
+	#		widget. Usage:
+	#			datamodel = "[SomeCharacterDatamodel]"
+	#
+	#	"most_favoured_attributes"
+	#		Used to specify other attributes of the most favoured contestants
+	#		widget.
+	#			visible = yes
+	#
+	#	"contestants_attributes"
+	#		Used to populate the list of characters and set other attributes
+	#		for the list Usage:
+	#			datamodel = "[SomeCharacterDatamodel]"
+	#			visible = yes
+	#
+	#	"visible_bottom_bar"
+	#		Controls whether or not the bottom bar below the character list
+	#		will show. Usage:
+	#			visible = yes
+	#
+	#	"bottom_bar_text"
+	#		Which text the bottom bar displays. Usage:
+	#			text = "my_localization_key"
+	#
+	type vbox_tournament_favoured_contestants_ocr = vbox {
+		layoutpolicy_vertical = expanding
+		layoutpolicy_horizontal = expanding
+
+		# button_text = {
+		# 	layoutpolicy_horizontal = expanding
+		# 	shortcut = map_mode_11
+		# 	onclick = "[ActivityLocaleWindow.SetAllPhasesGuestSubsetSortingDescending('contestant', 'progress_to_victory_current')]"
+		#     blockoverride "text" {
+		#         raw_text = "Sort by score, shift e."
+		#     }
+		# }
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[And( Not( Activity.IsCurrentPhaseActive ), DataModelHasItems( ActivityLocaleWindow.GetCurrentPhaseGuestSubset( 'contestant' ) ) )]"
+
+			# state = {
+			# 	name = _show
+			# 	on_start = "[ActivityLocaleWindow.SetAllPhasesGuestSubsetSortingDescending('contestant', 'progress_to_victory_current')]"
+			# }
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "[PdxGuiWidget.AccessParent.FindChild('qualified').CountVisibleChildren] contestants will qualify for [ActivityPhase.GetName]:"
+			}
+
+			vbox = {
+				name = "qualified"
+				datamodel = "[ActivityLocaleWindow.GetCurrentPhaseGuestSubset( 'contestant' )]"
+				layoutpolicy_horizontal = expanding
+
+				item = {
+					button_contestant_ocr = {
+						blockoverride "index" {
+
+						}
+						visible = "[GreaterThanOrEqualTo_CFixedPoint( Character.MakeScope.Var( 'progress_to_victory' ).GetValue, Activity.MakeScope.Var( 'progress_to_victory_threshold').GetValue )]"
+					}
+				}
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "[PdxGuiWidget.FindChild('not_qualified').CountVisibleChildren] won't qualify:"
+
+				vbox = {
+					name = "not_qualified"
+					datamodel = "[ActivityLocaleWindow.GetCurrentPhaseGuestSubset( 'contestant' )]"
+					layoutpolicy_horizontal = expanding
+					item = {
+						widget = {
+							visible = "[LessThan_CFixedPoint( GetCharacterPtV, Activity.MakeScope.Var( 'progress_to_victory_threshold').GetValue)]"
+						}
+					}
+				}
+			}
+
+			vbox = {
+				name = "not_qualified"
+				datamodel = "[ActivityLocaleWindow.GetCurrentPhaseGuestSubset( 'contestant' )]"
+				layoutpolicy_horizontal = expanding
+				visible = "[Isnt('hide_losers')]"
+
+				item = {
+					button_contestant_ocr = {
+						blockoverride "index" {
+
+						}
+						visible = "[LessThan_CFixedPoint( GetCharacterPtV, Activity.MakeScope.Var( 'progress_to_victory_threshold').GetValue)]"
+					}
+				}
+			}
+		}
+
+		vbox = {
+			name = "contestants"
+			visible = "[And( Activity.IsCurrentPhaseActive, DataModelHasItems( ActivityLocaleWindow.GetCurrentPhaseGuestSubset( 'contestant' ) ) )]"
+			state = {
+				name = _show
+				on_start = "[ActivityLocaleWindow.SetAllPhasesGuestSubsetSortingDescending('contestant', 'progress_to_victory_current')]"
+			}
+			datamodel = "[ActivityLocaleWindow.GetCurrentPhaseGuestSubset( 'contestant' )]"
+			layoutpolicy_horizontal = expanding
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "[Subtract_int32(PdxGuiWidget.AccessParent.CountVisibleChildren, '(int32)1')] contestants, ordered by score:"
+			}
+
+			item = {
+				button_contestant_ocr = {
+					visible = "[IsCharacterQualified]"
+				}
+			}
+		}
+		expand = {}
+	}
+
+	### Brief: widget_passive_phase_progress_to_victory
+	# Used to display the player's progress to victory and qualification
+	# threshold.
+	#
+	# Has the following blocks:
+	#
+	#	"widget_size"
+	#		The size of the bar. Usage:
+	#			size = { 100 50 }
+	#
+	#	"threshold_visibility"
+	#		Whether or not to display the qualification threshold bar.
+	#		Usage:
+	#			visible = yes/no
+	#
+	#	"current_visibility"
+	#		Whether or not to display the player's current value.
+	#		Usage:
+	#			visible = yes/no
+	#
+	#	"value_marker"
+	#		Configure value marker for the bars, if any.
+	#		Usage:
+	#			marker = { widget = { ... } }
+	type widget_passive_phase_progress_to_victory_ocr = widget {
+		block "widget_size"
+		{
+		}
+
+		position = { 20 0 }
+
+		## Progressbar used as background to properly be able to layer threshold and bar textures
+		progressbar = {
+			size = { 230 39 }
+
+			min = 0
+			max = 100
+
+			progresstexture = "gfx/interface/progressbars/progress_black.dds"
+			noprogresstexture = "gfx/interface/progressbars/progress_black.dds"
+
+		}
+
+		progress_bar_to_victory = {
+			name = "current_progress_to_victory"
+
+			block "widget_size"
+			{
+			}
+
+			value = "[GetPlayer.MakeScope.Var('progress_to_victory').GetValue]"
+			min = 0
+			max = 100
+
+			progresstexture = "gfx/interface/window_activities/tournament/bar_chance_of_victory.dds"
+			noprogresstexture = "gfx/interface/progressbars/blank.dds"
+
+			marker = {
+				name = "current_value"
+
+				widget = {
+					icon = {
+						size = { 25 32 }
+						position = { -20 4 }
+						texture = "gfx/interface/progressbars/progressbar_center_glow.dds"
+					}
+				}
+			}
+		}
+
+		progress_bar_to_victory = {
+			name = "progress_to_victory_threshold"
+
+			block "widget_size"
+			{
+			}
+
+			value = "[Activity.MakeScope.Var('progress_to_victory_threshold').GetValue]"
+			min = 0
+			max = 100
+
+			progresstexture = "gfx/interface/progressbars/blank.dds"
+			noprogresstexture = "gfx/interface/progressbars/blank.dds"
+
+			marker = {
+				name = "current_value"
+				widget = {
+					size = { 18 54 }
+
+					icon = {
+						parentanchor = vcenter
+						size = { 2 34 }
+						using = Background_Area_Light
+					}
+
+					icon = {
+						position = { -8 -8}
+						size = { 18 56}
+						texture = "gfx/interface/window_activities/tournament/icon_chance_of_victory_threshold.dds"
+					}
+				}
+			}
+		}
+	}
+
+	type widget_actual_victory_chance_marker_ocr = widget {
+		visible = "[And( CharacterHasPtV, IsCharacterQualified )]"
+
+		widget = {
+			icon = {
+				size = { 25 32 }
+				position = { -20 4 }
+				texture = "gfx/interface/progressbars/progressbar_center_glow.dds"
+			}
+		}
+	}
+
+	type icon_progress_to_victory_bar_glow_ocr = icon {
+		size = { 100% 100% }
+		shaderfile = "gfx/FX/pdxgui_repeat_texture.shader"
+
+		modify_texture = {
+			name = "clouds"
+			texture = "gfx/interface/component_masks/mask_clouds.dds"
+			blend_mode = alphamultiply
+			spriteType = corneredtiled
+			texture_density = 3
+		}
+
+		state = {
+			name = mask_a
+			next = mask_b
+			trigger_on_create = yes
+
+			modify_texture = {
+				name = "clouds"
+				translate_uv = { 0 -1 }
+			}
+		}
+
+		state = {
+			name = mask_b
+			next = mask_a
+			duration = 8
+
+			modify_texture = {
+				name = "clouds"
+				translate_uv = { 0 1 }
+			}
+		}
+
+		state = {
+			name = progress_changed
+			next = "fade_out"
+
+			duration = 0.2
+			delay = 0.3
+			bezier = { 0.5 0 1 0.5 }
+			alpha = 1
+
+			modify_texture = {
+				name = "clouds"
+				translate_uv = { 0 -1 }
+			}
+		}
+	}
+
+	type progress_bar_to_victory_ocr = progressbar_standard {
+
+		min = 0
+		max = 100
+
+		progresstexture = "gfx/interface/progressbars/blank.dds"
+		noprogresstexture = "gfx/interface/progressbars/blank.dds"
+
+		using = Progressbar_Changed_Animation
+	}
+
+	type widget_active_phase_progress_to_victory_ocr = widget {
+		block "widget_size"
+		{
+		}
+
+		progress_bar_to_victory = {
+			block "widget_size"
+			{
+			}
+
+			value = "[Activity.MakeScope.Var('progress_to_victory_threshold').GetValue]"
+			min = 0
+			max = 100
+
+			progresstexture = "gfx/interface/progressbars/progress_black.dds"
+			noprogresstexture = "gfx/interface/progressbars/progress_black.dds"
+
+		}
+
+		progress_bar_to_victory = {
+			block "widget_size"
+			{
+			}
+
+			value = "[Multiply_CFixedPoint( Character.MakeScope().ScriptValue( 'character_chance_of_victory' ), '(CFixedPoint)100' )]"
+
+			progresstexture = "gfx/interface/window_activities/tournament/bar_chance_of_victory.dds"
+			noprogresstexture = "gfx/interface/progressbars/blank.dds"
+
+			marker = {
+				name = "current_value"
+
+				widget_actual_victory_chance_marker = {
+					size = { 48 36 }
+					position = { 0 -2 }
+					parentanchor = vcenter
+				}
+			}
+		}
+
+		text_single = {
+			visible = "[And( InDebugMode, And( CharacterHasPtV, IsCharacterQualified ) )]"
+			raw_text = "#I [GetPlayerPtV]#! -- vs -- #X [Character.MakeScope().ScriptValue( 'debug_opposing_progress_to_victory' )]#!"
+			parentanchor = right
+			default_format = "#D"
+			position = { 0 -30 }
+		}
+	}
+
+	type hbox_contest_reward_preview_ocr = hbox {
+
+		expand = {}
+
+		icon = {
+			size = { 240 240 }
+
+			framesize = { 400 400 }
+			frame = "[Add_int32(GetTournamentPrizeLevel.GetIndexInCategory, '(int32)1' )]" # frame is 1 indexed, GetIndexInCategory is 0 indexed.
+			texture = "gfx/interface/window_activities/tournament/tournament_price_chests.dds"
+
+			tooltip = locale_window_before_rewards_tooltip
+		}
+
+		expand = {}
+	}
+
+	type icon_progess_to_victory_ocr = icon {
+		texture = "gfx/interface/icons/flat_icons/war_outcome_victory.dds"
+
+		using = Master_Button_Modify_Texture
+	}
+
+	type icon_contest_affinity_base_ocr = icon_flat_standard {
+		datacontext = "[GetTrait( 'tourney_participant' )]"
+		datacontext = "[GetPlayer]"
+	}
+
+	type icon_contest_affinity_bow_ocr = icon_contest_affinity_base {
+		datacontext = "[GetTrait( 'tourney_participant' ).GetTraitTrackByKey( 'bow' )]"
+		texture = "gfx/interface/window_activities/tournament/icon_tournament_skill_bow.dds"
+	}
+
+	type icon_contest_affinity_foot_ocr = icon_contest_affinity_base {
+		datacontext = "[GetTrait( 'tourney_participant' ).GetTraitTrackByKey( 'foot' )]"
+		texture = "gfx/interface/window_activities/tournament/icon_tournament_skill_foot.dds"
+	}
+
+	type icon_contest_affinity_horse_ocr = icon_contest_affinity_base {
+		datacontext = "[GetTrait( 'tourney_participant' ).GetTraitTrackByKey( 'horse' )]"
+		texture = "gfx/interface/window_activities/tournament/icon_tournament_skill_horse.dds"
+	}
+
+	type icon_contest_affinity_wit_ocr = icon_contest_affinity_base {
+		datacontext = "[GetTrait( 'tourney_participant' ).GetTraitTrackByKey( 'wit' )]"
+		texture = "gfx/interface/window_activities/tournament/icon_tournament_skill_wit.dds"
+	}
+
+	type icon_contest_type_favoured_ocr = icon {
+		texture = "gfx/interface/icons/symbols/arrow_favored.dds"
+	}
+
+	type widget_contest_type_most_favoured_ocr = icon  {
+		texture = "gfx/interface/icons/symbols/arrow_most_favored.dds"
+	}
+
+	### Brief: hbox_contest_type_affinies_bow
+	# Has the following blocks:
+	#
+	#	"icon_sizes"
+	#		The size of the icons. Usage:
+	#			size = { 24 24 }
+	#
+	type hbox_contest_type_affinies_bow_ocr = hbox {
+		visible = "[IsBowContest]"
+
+		text_single = {
+			raw_text = "BOW_EXPERIENCE_GREATER_TOOLTIP"
+			visible = "[IsContestType( 'tournament_phase_archery' )]"
+		}
+
+		text_single = {
+			visible = no
+			raw_text = "BOW_EXPERIENCE_REGULAR_TOOLTIP"
+		}
+
+		dot = { }
+
+		expand = { }
+	}
+
+	### Brief: hbox_contest_type_affinies_foot
+	# Has the following blocks:
+	#
+	#	"icon_sizes"
+	#		The size of the icons. Usage:
+	#			size = { 24 24 }
+	#
+	type hbox_contest_type_affinies_foot_ocr = hbox {
+		visible = "[IsFootContest]"
+
+		text_single = {
+			raw_text = "FOOT_EXPERIENCE_REGULAR_TOOLTIP"
+			visible = "[IsContestType( 'tournament_phase_joust' ))]"
+		}
+
+		text_single = {
+			raw_text = "FOOT_EXPERIENCE_GREATER_TOOLTIP"
+			visible = "[Or( Or( IsContestType( 'tournament_phase_wrestling' ), IsContestType( 'tournament_phase_melee' ) ), IsContestType( 'tournament_phase_duel' ) )]"
+		}
+
+		dot = { }
+
+		expand = { }
+	}
+
+	### Brief: hbox_contest_type_affinies_horse
+	# Has the following blocks:
+	#
+	#	"icon_sizes"
+	#		The size of the icons. Usage:
+	#			size = { 24 24 }
+	#
+	type hbox_contest_type_affinies_horse_ocr = hbox {
+		visible = "[IsHorseContest]"
+
+		text_single = {
+			raw_text = "HORSE_EXPERIENCE_GREATER_TOOLTIP"
+			visible = "[Or( Or( IsContestType( 'tournament_phase_horse_race' ), IsContestType( 'tournament_phase_joust' ) ), IsContestType( 'tournament_phase_melee' ) )]"
+		}
+
+		text_single = {
+			visible = no
+			raw_text = "HORSE_EXPERIENCE_REGULAR_TOOLTIP"
+		}
+
+		dot = { }
+
+		expand = { }
+	}
+
+	### Brief: hbox_contest_type_affinies_wit
+	# Has the following blocks:
+	#
+	#	"icon_sizes"
+	#		The size of the icons. Usage:
+	#			size = { 24 24 }
+	#
+	type hbox_contest_type_affinies_wit_ocr = hbox {
+		visible = "[IsWitContest]"
+
+		text_single = {
+			raw_text = "WIT_EXPERIENCE_GREATER_TOOLTIP"
+			visible = "[Or( IsContestType( 'tournament_phase_board_game' ), IsContestType( 'tournament_phase_recital' ) )]"
+		}
+
+		text_single = {
+			raw_text = "WIT_EXPERIENCE_REGULAR_TOOLTIP"
+			visible = no
+		}
+
+		dot = { }
+
+		expand = { }
+	}
+
+	type vbox_contest_type_affinities_container_ocr = vbox {
+
+		hbox_contest_type_affinies_bow_ocr = {
+			layoutpolicy_horizontal = expanding
+		}
+
+		hbox_contest_type_affinies_foot_ocr = {
+			layoutpolicy_horizontal = expanding
+		}
+
+		hbox_contest_type_affinies_horse_ocr = {
+			layoutpolicy_horizontal = expanding
+		}
+
+		hbox_contest_type_affinies_wit_ocr = {
+			layoutpolicy_horizontal = expanding
+		}
+	}
+
+	type hbox_contest_type_affinities_container_ocr = hbox {
+
+		layoutpolicy_horizontal = expanding
+		spacing = 3
+
+		hbox_contest_type_affinies_bow_ocr = { }
+
+		hbox_contest_type_affinies_foot_ocr = { }
+
+		hbox_contest_type_affinies_horse_ocr = { }
+
+		hbox_contest_type_affinies_wit_ocr = { }
+
+		expand = {}
+	}
+
+	### Brief: vbox_character_contest_aptitude
+	# Aligns the contest affinities a character has with icon on top and then
+	# stars below.
+	#
+	# Has the following blocks:
+	#
+	#	"contest_affinity_icon"
+	#		Used to decide which affinity icon this represents. Use:
+	#			icon_contest_affinity_bow
+	#			icon_contest_affinity_foot
+	#			icon_contest_affinity_horse
+	#			icon_contest_affinity_wit
+	#
+	#	"contest_affinity_datamodel"
+	#		Put script value target here
+	#
+	#
+	#	"contest_aptitude_level_size"
+	#		Size of the boxes that indicate aptitude
+	#
+	type vbox_character_contest_aptitude_ocr = vbox {
+
+		spacing = 4
+
+		block "contest_affinity_icon"
+		{
+		}
+
+		progressbar_segmented_target = {
+			block "contest_affinity_datamodel"
+			{
+			}
+
+			spacing = 2
+
+			background = {
+				using = Background_Area_Light
+				margin = { 6 6 }
+
+				using = Mask_Rough_Edges
+			}
+
+			background = {
+				using = Background_Area_Border_Solid
+
+				margin = { 2 2 }
+			}
+
+			item = {
+				icon = {
+					texture = "gfx/interface/progressbars/progress_magnificence.dds"
+					framesize = { 45 45 }
+					frame = "[int32.GetInt]"
+
+					block "contest_aptitude_level_size"
+					{
+					}
+				}
+			}
+		}
+	}
+
+	type vbox_character_archery_contest_aptitude_ocr = vbox_character_contest_aptitude {
+
+		tooltip = character_contest_type_aptitude_archery
+
+		blockoverride "contest_affinity_icon"
+		{
+			icon_contest_affinity_bow = {
+				size = { 32 32 }
+			}
+		}
+
+		blockoverride "contest_affinity_datamodel"
+		{
+			datamodel = "[GetSegmentedProgressTargetBar( '(int32)5', FixedPointToInt( GetArcheryContestTypeAptitude ), FixedPointToInt( GetArcheryContestTypeAptitude ) )]"
+		}
+	}
+
+	type vbox_character_foot_contest_aptitude_ocr = vbox_character_contest_aptitude {
+
+		tooltip = character_contest_type_aptitude_foot
+
+		blockoverride "contest_affinity_icon"
+		{
+			icon_contest_affinity_foot = {
+				size = { 32 32 }
+			}
+		}
+
+		blockoverride "contest_affinity_datamodel"
+		{
+			datamodel = "[GetSegmentedProgressTargetBar( '(int32)5', FixedPointToInt( GetFootContestTypeAptitude ), FixedPointToInt( GetFootContestTypeAptitude ) )]"
+		}
+	}
+
+	type vbox_character_horse_contest_aptitude_ocr = vbox_character_contest_aptitude {
+
+		tooltip = character_contest_type_aptitude_horse
+
+		blockoverride "contest_affinity_icon"
+		{
+			icon_contest_affinity_horse = {
+				size = { 32 32 }
+			}
+		}
+
+		blockoverride "contest_affinity_datamodel"
+		{
+			datamodel = "[GetSegmentedProgressTargetBar( '(int32)5', FixedPointToInt( GetHorseContestTypeAptitude ), FixedPointToInt( GetHorseContestTypeAptitude ) )]"
+		}
+	}
+
+	type vbox_character_wit_contest_aptitude_ocr = vbox_character_contest_aptitude {
+
+		tooltip = character_contest_type_aptitude_wit
+
+		blockoverride "contest_affinity_icon"
+		{
+			icon_contest_affinity_wit = {
+				size = { 32 32 }
+			}
+		}
+
+		blockoverride "contest_affinity_datamodel"
+		{
+			datamodel = "[GetSegmentedProgressTargetBar( '(int32)5', FixedPointToInt( GetWitContestTypeAptitude ), FixedPointToInt( GetWitContestTypeAptitude ) )]"
+		}
+	}
+
+	### Brief: hbox_character_contest_aptitude
+	# Aligns the contest affinities a character has with icon on to the left and then
+	# stars next to it.
+	#
+	# Has the following blocks:
+	#
+	#	"contest_affinity_icon"
+	#		Used to decide which affinity icon this represents. Use:
+	#			icon_contest_affinity_bow
+	#			icon_contest_affinity_foot
+	#			icon_contest_affinity_horse
+	#			icon_contest_affinity_wit
+	#
+	#	"contest_affinity_datamodel"
+	#		Put script value target here
+	#
+	#	"contest_aptitude_level_size"
+	#		Size of the boxes that indicate aptitude
+	#
+	type hbox_character_contest_aptitude_ocr = flowcontainer {
+		ignoreinvisible = yes
+		spacing = 3
+	}
+
+	type hbox_character_contest_aptitude_all_ocr = hbox {
+		spacing = 3
+
+		hbox_character_archery_contest_aptitude_ocr = {
+		}
+
+		hbox_character_foot_contest_aptitude_ocr = {
+		}
+
+		hbox_character_horse_contest_aptitude_ocr = {
+		}
+
+		hbox_character_wit_contest_aptitude_ocr = {
+		}
+	}
+
+	type hbox_character_contest_aptitude_short_ocr = hbox {
+		spacing = 3
+		hbox_character_archery_contest_aptitude_ocr = {
+			visible = "[IsBowContest]"
+		}
+
+		hbox_character_foot_contest_aptitude_ocr = {
+			visible = "[IsFootContest]"
+		}
+
+		hbox_character_horse_contest_aptitude_ocr = {
+			visible = "[IsHorseContest]"
+		}
+
+		hbox_character_wit_contest_aptitude_ocr = {
+			visible = "[IsWitContest]"
+		}
+	}
+
+	type hbox_character_archery_contest_aptitude_ocr = hbox_character_contest_aptitude_ocr {
+
+		tooltip = character_contest_type_aptitude_archery
+		text_single = {
+			raw_text = "tournament_contest_type_archery"
+		}
+		block "compact" {
+			text_single = {
+				raw_text = "skill is"
+			}
+		}
+		text_single = {
+			raw_text = "[Character.Custom('GetContestTypeArcheryAptitude')]"
+		}
+		block "compact" {
+			comma = {}
+		}
+	}
+
+	type hbox_character_foot_contest_aptitude_ocr = hbox_character_contest_aptitude_ocr {
+
+		tooltip = character_contest_type_aptitude_foot
+
+		text_single = {
+			raw_text = "tournament_contest_type_foot"
+		}
+		block "compact" {
+			text_single = {
+				raw_text = "skill is"
+			}
+		}
+		text_single = {
+			raw_text = "[Character.Custom('GetContestTypeFootAptitude')]"
+		}
+		comma = {}
+	}
+
+	type hbox_character_horse_contest_aptitude_ocr = hbox_character_contest_aptitude_ocr {
+
+		tooltip = character_contest_type_aptitude_horse
+
+		text_single = {
+			raw_text = "tournament_contest_type_horse"
+		}
+		block "compact" {
+			text_single = {
+				raw_text = "skill is"
+			}
+		}
+		text_single = {
+			raw_text = "[Character.Custom('GetContestTypeHorseAptitude')]"
+		}
+		comma = {}
+	}
+
+	type hbox_character_wit_contest_aptitude_ocr = hbox_character_contest_aptitude_ocr {
+
+		tooltip = character_contest_type_aptitude_wit
+
+		text_single = {
+			raw_text = "tournament_contest_type_wit"
+		}
+		block "compact" {
+			text_single = {
+				raw_text = "is"
+			}
+		}
+		text_single = {
+			raw_text = "[Character.Custom('GetContestTypeWitAptitude')]"
+		}
+		comma = {}
+	}
+
+	type button_contest_participate_ocr = button_standard {
+
+		tooltip = tournament_participation_participate_tt
+		using = tooltip_se
+
+		icon_flat_standard = {
+			size = { 46 46 }
+			parentanchor = center
+			texture = "gfx/interface/window_activities/tournament/icon_tournament_phase_participating.dds"
+
+			blockoverride "master_color_frame" {
+				frame = 1
+			}
+		}
+	}
+
+	type button_contest_spectate_ocr = button_standard {
+		tooltip = tournament_participation_spectate_tt
+		using = tooltip_se
+
+		icon_flat_standard = {
+			size = { 46 46 }
+			parentanchor = center
+			texture = "gfx/interface/window_activities/tournament/icon_tournament_phase_spectating.dds"
+
+			blockoverride "master_color_frame" {
+				frame = 1
+			}
+		}
+	}
+
+	### Brief: widget_pivotal_moment_event_window
+	#
+	# Has the same blocks as widget_pivotal_moment_outcome_animation
+	type widget_pivotal_moment_event_window = widget_activity_locale_fullscreen_event {
+		datacontext = "[ActivityLocaleWindow.GetEventWindowInsert( PdxGuiWidget.AccessSelf )]"
+		datacontext = "[EventWindowViewInsert.GetOpenEvent]"
+		visible = "[EventWindowViewInsert.HasOpenEvent]"
+
+		state = {
+			name = activity_new_event_shown
+			on_start = "[PdxGuiWidget.FindChild( 'event_video' ).GfxVideoControl.Restart]"
+			on_start = "[PdxGuiTriggerAllAnimations( 'activity_event_appear' )]"
+		}
+
+		blockoverride "fullscreen_event_attributes"
+		{
+			visible = "[Or( Not( EventWindowData.GetEventBackgroundData.HasVideo ), PdxGuiWidget.AccessParent.FindChild( 'event_video' ).GfxVideoControl.IsPlaybackComplete )]"
+
+			state = {
+				name = _show
+				using = Animation_Curve_Default
+				duration = 1
+				alpha = 1
+			}
+		}
+		blockoverride "event_transition_picture_properties"
+		{
+			parentanchor = center
+			using = PivotalMomentTransitionAnimation
+
+			state = {
+				name = activity_event_appear
+				alpha = 1
+				scale = 1.25
+				next = transition_still
+			}
+		}
+		blockoverride "event_transition_video_properties"
+		{
+			parentanchor = center
+			loop = no
+			restart_on_show = yes
+		}
+
+		video_icon = {
+			visible = "[Is('ocr')]"
+			name = "shrouded_event_effect"
+			video = "gfx/interface/component_masks/animated_masks/contest_reveal_fin.bk2"
+			size = { 100% 100% }
+			loop = no
+			restart_on_show = yes
+		}
+
+		widget_tournament_event = { }
+	}
+}
+#
+# template PivotalMomentTransitionAnimation
+# {
+# 	state = {
+# 		name = transition_still
+# 		trigger_on_create = yes
+# 		next = transition_zoom
+# 		scale = 1.25
+# 		bezier = { 0.25 0.1 0.25 1 }
+# 	}
+# 	state = {
+# 		delay = 2.5
+# 		name = transition_zoom
+# 		duration = 2
+# 		scale = 1
+# 		bezier = { 0.25 0.1 0.25 1 }
+# 	}
+# }

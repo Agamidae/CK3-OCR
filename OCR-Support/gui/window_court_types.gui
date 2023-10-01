@@ -1,0 +1,262 @@
+window = {
+	name = "change_court_type_window"
+	visible = "[CourtTypeWindow.IsCourtTypeWindowVisible]"
+
+	parentanchor = center|hcenter
+	layer = top
+
+	using = Window_Movable
+	using = Window_Size_MainTab
+	using = Window_Background
+	using = Window_Decoration_Spike
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+	}
+
+	vbox = {
+		set_parent_size_to_minimum = yes
+		using = Window_Margins
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			header_pattern_interaction = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text" {
+					text = "CHANGE_COURT_TYPE_HEADER"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[CourtTypeWindow.ToggleShowHideCourtTypeWindow]"
+				}
+			}
+		}
+
+		hbox = {
+			datacontext = "[CourtTypeWindow.GetOwner.GetCulture]"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			margin_top = -5
+
+			icon = {
+				texture = "[Culture.GetEthos.GetIcon]"
+				using = Mask_Rough_Edges
+				size = { 940 202 }
+			}
+		}
+
+		hbox = {
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+			spacing = 10
+			margin = { 20 10 }
+
+			vbox = {
+				# selection list
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+				spacing = 20
+
+				vbox = {
+					# Showing current court type separately in case it's no longer valid
+					datacontext = "[CourtTypeWindow.GetActiveCourtTypeItem]"
+					visible = "[Or(Not(CourtTypeSettingItem.IsShown), Not(CourtTypeSettingItem.IsValid))]"
+					spacing = 10
+					layoutpolicy_horizontal = expanding
+
+					text_label_center = {
+						text = "CURRENT_INVALID_COURT_TYPE"
+						max_width = 330
+					}
+
+					button_standard = {
+						name = "current_court_type"
+						size = { 300 40 }
+
+						onclick = "[CourtTypeWindow.SelectCourtType(CourtTypeSettingItem.Self)]"
+						down = "[ObjectsEqual(CourtTypeWindow.GetCurrentlySelectedCourtTypeItem, CourtTypeSettingItem.Self)]"
+
+						text_single = {
+							parentanchor = center
+							text = "[CourtTypeSettingItem.GetNameNoTooltip]"
+							align = nobaseline
+							default_format = "#clickable"
+						}
+					}
+				}
+
+				vbox = {
+					spacing = 10
+					datacontext = "[CourtTypeWindow.GetOwner.GetCulture]"
+					layoutpolicy_horizontal = expanding
+
+					text_label_center = {
+						text = "COURT_TYPES_FOR_CULTURE"
+						max_width = 330
+					}
+
+					flowcontainer = {
+						name = "court_types"
+						datamodel = "[CourtTypeWindow.GetCourtTypes]"
+						direction = vertical
+						spacing = 5
+						alwaystransparent = no
+						ignoreinvisible = yes
+
+						item = {
+							button_standard = {
+								name = "potential_court_type"
+								visible = "[CourtTypeSettingItem.IsShown]"
+								size = { 300 40 }
+
+								onclick = "[CourtTypeWindow.SelectCourtType(CourtTypeSettingItem.Self)]"
+								down = "[ObjectsEqual(CourtTypeWindow.GetCurrentlySelectedCourtTypeItem, CourtTypeSettingItem.Self)]"
+
+								text_single = {
+									parentanchor = center
+									text = "[CourtTypeSettingItem.GetNameNoTooltip]"
+									align = nobaseline
+									default_format = "#clickable"
+								}
+
+								warning_icon = {
+									parentanchor = right|vcenter
+									visible = "[Not( CourtTypeSettingItem.IsValid )]"
+									size = { 25 25 }
+									position = { -5 1 }
+									alwaystransparent = yes
+									tooltip = "[CourtTypeSettingItem.CannotSelectTooltip]"
+								}
+							}
+						}
+					}
+				}
+
+				expand = {}
+			}
+
+			scrollbox = {
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+
+				size = { 600 360 }
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
+						margin_top = -15
+
+						# header
+						text_label_center = {
+							text = "[CourtTypeWindow.GetCurrentlySelectedCourtTypeItem.GetNameNoTooltip]"
+							layoutpolicy_horizontal = expanding
+							align = center
+						}
+
+						# effects
+						text_multi = {
+							margin = { 10 5 }
+							max_width = 580
+							min_width = 580
+							autoresize = yes
+							text = "[CourtTypeWindow.GetCurrentlySelectedCourtTypeItem.GetDescription]"
+						}
+
+						expand = {}
+					}
+				}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 10
+			margin_bottom = 5
+			margin_top = 10
+
+			background = {
+				using = Background_Area
+				margin_bottom = 10
+				alpha = 1
+			}
+
+			# change warning text
+			text_single = {
+				max_width = 600
+				align = center
+				margin_top = 5
+
+				datacontext = "[CourtTypeWindow.GetActiveCourtTypeItem]"
+				visible = "[Or(Not(CourtTypeSettingItem.IsShown), Not(CourtTypeSettingItem.IsValid))]"
+				multiline = yes
+				text = "CHANGE_COURT_TYPE_WARNING"
+				default_format = "#weak"
+			}
+
+			# cost
+			text_single = {
+				datacontext = "[CourtTypeWindow.GetCurrentlySelectedCourtTypeItem]"
+				margin_bottom = 5
+
+				background = {
+					visible = "[Not(CourtTypeWindow.GetCurrentlySelectedCourtTypeItem.CanAfford)]"
+					using = Status_Bad
+				}
+
+				text = "CHANGE_COURT_TYPE_COST"
+			}
+
+			hbox = {
+				spacing = 20
+				margin_bottom = 10
+
+				# cancel button
+				button_standard = {
+					size = { 200 40 }
+					onclick = "[CourtTypeWindow.ToggleShowHideCourtTypeWindow]"
+
+					text_single = {
+						parentanchor = center
+						position = { 0 0 }
+						text = "CANCEL"
+						align = nobaseline
+					}
+				}
+
+				# confirm button
+				button_primary = {
+					datacontext = "[CourtTypeWindow.GetCurrentlySelectedCourtTypeItem]"
+
+					size = { 200 40 }
+					enabled = "[And(CourtTypeSettingItem.IsValid, And(CourtTypeSettingItem.CanAfford, Not(ObjectsEqual(CourtTypeSettingItem.Self, CourtTypeWindow.GetActiveCourtTypeItem))))]"
+					onclick = "[CourtTypeWindow.FinalizeCourtTypeChange]"
+					onclick = "[CourtTypeWindow.ToggleShowHideCourtTypeWindow]"
+					tooltip = "[CourtTypeSettingItem.GetConfirmChangeTooltip]"
+					# opposite of "enabled"
+					tooltip_enabled = "[Not(And(CourtTypeSettingItem.IsValid, And(CourtTypeSettingItem.CanAfford, Not(ObjectsEqual(CourtTypeSettingItem.Self, CourtTypeWindow.GetActiveCourtTypeItem)))))]"
+
+					text_single = {
+						parentanchor = center
+						text = "CHANGE_COURT_TYPE_ACCEPT"
+						align = nobaseline
+						max_width = 170
+					}
+				}
+			}
+
+		}
+	}
+}

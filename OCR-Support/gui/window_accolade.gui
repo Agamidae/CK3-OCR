@@ -1,0 +1,2363 @@
+######################################################
+################# ACCOLADE VIEW ###################
+######################################################
+
+window = {
+	name = "accolade_view"
+	layer = middle
+	datacontext = "[AccoladeView.AccessMilitaryView]"
+	using = base_ocr_window
+
+	window_ocr = {
+		blockoverride "ocr_content" {
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				visible = "[Isnt('accolade_all_ranks')]"
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					datacontext = "[AccoladeView.GetAccolade]"
+					visible = "[And( And( Not( AccoladeView.IsShowingSuccessors ), Not( AccoladeView.IsShowingPotentialAcclaimed ) ), Not( AccoladeView.IsShowingHistory ) )]"
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						visible = "[AccoladeView.IsRenaming]"
+						raw_text = "You may start typing."
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not( AccoladeView.IsRenaming )]"
+						spacing = 3
+
+						text_single = {
+							raw_text = "[Accolade.GetNameNoTooltip],"
+						}
+
+						text_single = {
+							raw_text = "ACCOLADE_GLORY_AND_LEVEL"
+						}
+
+						dot_l = { }
+
+						expand = { }
+					}
+
+					button = {
+						shortcut = close_window
+						visible = "[Not(AccoladeView.IsRenaming)]"
+						onclick = "[AccoladeView.Close]"
+						onclick = "[OpenGameView( 'knights' )]"
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						editbox_standard = {
+							layoutpolicy_horizontal = expanding
+							size = { 380 30 }
+							visible = "[AccoladeView.IsRenaming]"
+
+							blockoverride "editbox_properties"
+							{
+								focus_on_visible = yes
+								name = "accolade_name"
+								text = "[AccoladeView.GetTempName]"
+								ontextedited = "[AccoladeView.EditName]"
+								onreturnpressed = "[AccoladeView.SubmitName]"
+							}
+
+							button = {
+								shortcut = close_window
+								onclick = "[AccoladeView.SubmitName]"
+							}
+						}
+
+						expand = { }
+					}
+
+					vbox = {
+						datacontext = "[Accolade.GetAcclaimedKnight]"
+						layoutpolicy_horizontal = expanding
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Isnt('accolade_rank_text')]"
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+								button_text = {
+									using = char_click
+									onclick = "[MilitaryView.Close]"
+									blockoverride "text" {
+										raw_text = "[Character.GetNameNoTooltip],"
+									}
+								}
+
+								text_single = {
+									raw_text = "[Character.GetSkill( 'prowess' )] prowess,"
+								}
+
+								text_single = {
+									raw_text = "[Character.GetOpinionOf( GetPlayer.Self )|0] opinion."
+								}
+
+								expand = { }
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								shortcut = map_mode_1
+								blockoverride "text" {
+									raw_text = "Rename accolade, E."
+								}
+								visible = "[Not( AccoladeView.IsRenaming )]"
+								onclick = "[AccoladeView.ToggleRenaming]"
+							}
+
+						}
+
+
+						button = {
+							visible = "[Is('accolade_rank_text')]"
+							shortcut = map_mode_11
+							shortcut = close_window
+							onclick = "[Clear('accolade_rank_text')]"
+						}
+
+						expand = {}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[Accolade.GetSuccessor]"
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+							visible = "[Character.IsValid]"
+
+							char_name = {
+								# onclick = "[]"
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "ACCOLADE_SUCCESSOR"
+									}
+									text_single = {
+										raw_text = "is"
+									}
+								}
+								visible = "[Character.IsValid]"
+							}
+							expand = { }
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "No successor."
+							visible = "[Not(Character.IsValid)]"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							shortcut = action_list
+							blockoverride "text" {
+								raw_text = "ACCOLADE_CHANGE_SUCCESSOR"
+							}
+							blockoverride "extra" {
+								comma = {}
+								text_single = {
+									raw_text = "[PdxGuiWidget.AccessParent.FindChild('successors').CountVisibleChildren] found,"
+								}
+								flowcontainer = {
+								    ignoreinvisible = yes
+									name = "successors"
+								    datamodel = "[MilitaryView.GetKnights]"
+									item = {
+										widget = {
+											visible = "[And( Character.IsBaronOrUnlanded, And( And( Not( Character.IsAcclaimedKnight ), Not( Character.IsAccoladeSuccessor ) ), Accolade.HasSuccessorRequirements( Character.Self ) ) )]"
+										}
+									}
+
+								}
+								text_single = {
+									raw_text = "Tab."
+								}
+							}
+							onclick = "[AccoladeView.ToggleSuccessors]"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							shortcut = increase_speed_1
+							blockoverride "text" {
+								raw_text = "ACCOLADE_CLEAR_SUCCESSOR"
+							}
+							blockoverride "extra" {
+								text_single = {
+									margin_left = -3
+									raw_text = ", Z."
+								}
+							}
+							visible = "[Accolade.GetSuccessor.IsValid]"
+
+							onclick = "[AccoladeView.ClearSuccessor]"
+						}
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Attributes:"
+					}
+
+					hbox = {
+					    layoutpolicy_horizontal = expanding
+						datacontext = "[Accolade.GetPrimaryType]"
+						spacing = 3
+
+						text_single = {
+							raw_text = "[AccoladeType.GetNameWithAccolade( Accolade.Self )], primary,"
+						}
+
+						text_single = {
+							datacontext = "[AccoladeType.GetPrimaryMaaUnlock]"
+							visible = "[AccoladeType.GetPrimaryMaaUnlock.IsValid]"
+							raw_text = "unlocks [MenAtArmsType.GetName]."
+							tooltipwidget = {
+								using = maa_type_container_tooltip
+							}
+						}
+
+					    expand = { }
+					}
+
+					hbox = {
+					    layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						text_single = {
+							datacontext = "[Accolade.GetSecondaryType]"
+							raw_text = "[AccoladeType.GetNameWithAccolade( Accolade.Self )], secondary,"
+						}
+
+						text_single = {
+							datacontext = "[AccoladeType.GetSecondaryMaaUnlock]"
+							visible = "[AccoladeType.GetSecondaryMaaUnlock.IsValid]"
+							raw_text = "unlocks [MenAtArmsType.GetName]."
+							tooltipwidget = {
+								using = maa_type_container_tooltip
+							}
+						}
+
+					    expand = { }
+					}
+
+					scrollbox = {
+						name = "active_effects"
+						visible = "[Accolade.HasActiveEffects]"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						blockoverride "scrollbox_content"
+						{
+							text_multi_wide = {
+								text = "[Accolade.BuildActiveRankEffects]"
+							}
+
+							block "extra_content" {}
+						}
+					}
+					button_text = {
+						shortcut = map_mode_11
+						onclick = "[Toggle('accolade_all_ranks')]"
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "View all ranks, Shift E."
+						}
+					}
+
+					vbox = {
+						visible = "[Accolade.IsActive]"
+						layoutpolicy_horizontal = expanding
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+						    blockoverride "text" {
+								text = "SHOW_ACCOLADE_HISTORY"
+						    }
+							blockoverride "extra" {
+								comma = {}
+								text_single = {
+									raw_text = "H."
+								}
+							}
+							shortcut = army_create_new
+							onclick = "[AccoladeView.ToggleHistory]"
+						}
+
+						button_text = {
+							shortcut = increase_speed_2
+							layoutpolicy_horizontal = expanding
+						    blockoverride "text" {
+								text = "DEACTIVATE_ACCOLADE"
+						    }
+							blockoverride "extra" {
+								comma = {}
+								text_single = {
+									raw_text = "X."
+								}
+							}
+							blockoverride "disabled" {
+								visible = "[Not(AccoladeView.CanDeactivateAccolade)]"
+							}
+							tooltip = "[AccoladeView.GetDeactivateTooltip]"
+							onclick = "[AccoladeView.DeactivateAccolade]"
+							enabled = "[AccoladeView.CanDeactivateAccolade]"
+						}
+
+						text_multi_wide = {
+							raw_text = "[AccoladeView.GetDeactivateTooltip]"
+							visible = "[Not(AccoladeView.CanDeactivateAccolade)]"
+						}
+					}
+
+				}
+
+				# successors
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					datacontext = "[AccoladeView.GetAccolade]"
+					visible = "[And( And( AccoladeView.IsShowingSuccessors, Not( AccoladeView.IsShowingPotentialAcclaimed ) ), Not( AccoladeView.IsShowingHistory ) )]"
+
+					header_pattern = {
+						layoutpolicy_horizontal = expanding
+
+						blockoverride "header_text"
+						{
+							text = "ACCOLADE_CHANGE_SUCCESSOR"
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = ", [PdxGuiWidget.AccessParent.FindChild('successors').CountVisibleChildren] found."
+							}
+							flowcontainer = {
+								ignoreinvisible = yes
+								name = "successors"
+								datamodel = "[MilitaryView.GetKnights]"
+								item = {
+									widget = {
+										visible = "[And( Character.IsBaronOrUnlanded, And( And( Not( Character.IsAcclaimedKnight ), Not( Character.IsAccoladeSuccessor ) ), Accolade.HasSuccessorRequirements( Character.Self ) ) )]"
+									}
+								}
+							}
+						}
+
+						blockoverride "button_close"
+						{
+							onclick = "[AccoladeView.ToggleSuccessors]"
+							texture = "gfx/interface/icons/flat_icons/window_back.dds"
+							tooltip = "BACK_TOOLTIP"
+						}
+					}
+
+					button_text = {
+						shortcut = map_mode_1
+						layoutpolicy_horizontal = expanding
+						onclick = "[Toggle('accolade_requirements')]"
+
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "ACCOLADE_SUCCESSOR_REQUIREMENTS"
+							}
+							comma = {}
+							text_single = {
+								raw_text = "[CollapseIf(Isnt('accolade_requirements'))] E."
+							}
+						}
+					}
+
+					scrollbox = {
+						visible = "[Is('accolade_requirements')]"
+						name = "successor_requirements"
+						layoutpolicy_horizontal = expanding
+						size = { 0 250 }
+
+						blockoverride "scrollbox_content"
+						{
+							text_multi_wide = {
+								text = "[Accolade.GetSuccessorRequirements]"
+							}
+
+							block "extra_content" {}
+						}
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+					        raw_text = "find_suitable_accolade_successor_interaction"
+					    }
+						blockoverride "dot" {
+
+						}
+						blockoverride "disabled" {
+							visible = "[Not(Character.IsPlayerInteractionValid('find_suitable_accolade_successor_interaction'))]"
+						}
+						datacontext = "[Accolade.GetAcclaimedKnight]"
+						enabled = "[Character.IsPlayerInteractionValid('find_suitable_accolade_successor_interaction')]"
+						onclick = "[Character.OpenPlayerInteraction('find_suitable_accolade_successor_interaction')]"
+						tooltip = "[Character.GetPlayerInteractionTooltip('find_suitable_accolade_successor_interaction')]"
+					}
+
+					scrollbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						blockoverride "scrollbox_content" {
+							vbox = {
+								datamodel = "[MilitaryView.GetKnights]"
+								layoutpolicy_horizontal = expanding
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									visible = "[GreaterThan_int32(PdxGuiWidget.AccessParent.CountVisibleChildren, '(int32)1')]"
+									raw_text = "[Subtract_int32(PdxGuiWidget.AccessParent.CountVisibleChildren, '(int32)1')] characters match both attributes"
+								}
+
+								item = {
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										visible = "[And( Character.IsBaronOrUnlanded, And( And( Not( Character.IsAcclaimedKnight ), Not( Character.IsAccoladeSuccessor ) ), And(Accolade.HasSuccessorRequirements( Character.Self ), Accolade.HasSecondaryAccoladeRequirements( Character.Self ))))]"
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+
+											hbox = {
+												layoutpolicy_horizontal = expanding
+
+												button_text = {
+													visible = "[And(Character.IsGuest, Character.IsPlayerInteractionShown('recruit_guest_interaction'))]"
+													blockoverride "disabled" {
+														visible = "[Not(Character.IsPlayerInteractionValid('recruit_guest_interaction'))]"
+													}
+													enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
+													onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
+													blockoverride "text" {
+														raw_text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')]"
+														margin_right = -4
+													}
+													tooltip = "[Character.GetPlayerInteractionTooltip('recruit_guest_interaction')]"
+													using = tooltip_se
+												}
+
+												button_text = {
+													layoutpolicy_horizontal = expanding
+													enabled = "[Accolade.CanBeSuccessor( Character.Self )]"
+
+													onclick = "[AccoladeView.SetSuccessor( Character.Self )]"
+													onclick = "[AccoladeView.ToggleSuccessors]"
+													tooltip = "[Accolade.GetSetSuccessorTooltip( Character.Self )]"
+
+													blockoverride "extra" {
+														text_single = {
+															visible = "[And(Not(Accolade.CanBeSuccessor( Character.Self )), Not(Character.IsGuest))]"
+															raw_text = "Can't pick"
+														}
+														flowcontainer = {
+															visible = "[Not(Character.IsGuest)]"
+
+															text_single = {
+																raw_text = "[Select_CString(Character.IsKnightForced, 'Forced', '')]"
+															}
+
+															text_single = {
+																raw_text = "[Select_CString(Character.IsKnightDisallowed, 'Forbidden,', '')]"
+															}
+														}
+
+														text_single = {
+															raw_text = "Knight"
+															visible = "[Character.IsKnight]"
+														}
+
+														text_single = {
+															raw_text = "[Character.GetNameNoTooltip]."
+														}
+
+														text_single = {
+															raw_text = "[Character.GetSkill( 'prowess' )] prowess,"
+														}
+														text_single = {
+															raw_text = "[Character.GetOpinionOf( GetPlayer )|=] opinion."
+														}
+														text_single = {
+															raw_text = "[Character.GetRelationToString( GetPlayer )]."
+														}
+													}
+												}
+
+												expand = { }
+											}
+
+											hbox = {
+												visible = "[Not(Character.IsGuest)]"
+												layoutpolicy_horizontal = expanding
+												spacing = 3
+												margin_left = 5
+
+												button_text = {
+													visible = "[Not(Character.IsKnightForced)]"
+													onclick = "[MilitaryView.SetKnightForced( Character.Self )]"
+													blockoverride "text" {
+														raw_text = "[Select_CString(Character.IsKnightForced, 'Is forced', 'Force to be a knight')],"
+													}
+													# tooltip = "KNIGHTS_VIEW_TITLE_FORCE_TT"
+												}
+
+												button_text = {
+													visible = "[Not(Character.IsKnightDefault)]"
+													onclick = "[MilitaryView.SetKnightDefault( Character.Self )]"
+													blockoverride "text" {
+														raw_text = "[Select_CString(Character.IsKnightForced, 'Unforce to be a knight', 'Allow')],"
+													}
+													# tooltip = "KNIGHTS_VIEW_TITLE_BY_PROWESS_TT"
+												}
+
+												expand = {}
+											}
+
+											text_multi = {
+												visible = "[Not(Accolade.HasSecondaryAccoladeRequirements( Character.Self ))]"
+												layoutpolicy_horizontal = expanding
+												raw_text = "Can't be [Accolade.GetSecondaryType.GetName]."
+											}
+										}
+
+										button_standard = {
+											visible = no
+											layoutpolicy_horizontal = expanding
+											size = { 0 130 }
+
+											# only show possible successors to this accolade
+
+											using = tooltip_nw
+
+											blockoverride "Background_Guest_pattern_visible"
+											{
+												visible = "[Character.IsGuest]"
+												margin_bottom = -5
+												margin_right = 5
+											}
+											blockoverride "Background_Guest_frame_visible"
+											{
+												visible = "[Character.IsGuest]"
+												margin_left = 3
+												margin_bottom = -5
+												margin_top = 1
+												margin_right = 5
+											}
+
+											vbox = {
+												spacing = 7
+												margin_top = 5
+												margin_left = 5
+												margin_right = 20
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													layoutpolicy_vertical = expanding
+													margin_right = 5
+													spacing = 10
+
+													portrait_head = {
+														alpha = "[Select_float( Character.IsKnight, '(float)1.0', '(float)0.6' )]"
+													}
+
+
+													vbox = {
+														layoutpolicy_vertical = expanding
+														layoutpolicy_horizontal = expanding
+														spacing = 10
+														margin_top = 15
+
+														hbox = {
+															layoutpolicy_horizontal = expanding
+
+															hbox = {
+																layoutpolicy_horizontal = expanding
+																layoutpolicy_vertical = expanding
+
+																icon = {
+																	visible = "[And(Character.IsKnight, Not(Character.IsAcclaimedKnight) )]"
+																	texture = "gfx/interface/icons/icon_knight_small.dds"
+																	size = { 40 40 }
+																}
+
+																icon = {
+																	visible = "[Character.IsAcclaimedKnight]"
+																	texture = "gfx/interface/icons/icon_knight_acclaimed.dds"
+																	size = { 50 50 }
+																}
+
+																vbox = {
+																	layoutpolicy_horizontal = expanding
+																	layoutpolicy_vertical = expanding
+
+																	text_single = {
+																		layoutpolicy_horizontal = expanding
+																		text = "[Character.GetNameNoTooltip]"
+																		using = Font_Size_Medium
+																		autoresize = no
+																	}
+
+
+																	text_single = {
+																		layoutpolicy_horizontal = expanding
+																		text = "[Character.GetRelationToString( GetPlayer )]"
+																		tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+																		default_format = "#low"
+																		autoresize = no
+																		align = nobaseline
+																	}
+
+																	expand = {}
+																}
+															}
+
+															vbox = {
+																layoutpolicy_vertical = expanding
+																margin = { 10 0 }
+
+																text_label_center  = {
+																	text = "[prowess_i][Character.GetSkill( 'prowess' )]"
+																	using = Font_Size_Big
+																	default_format = "#high"
+																}
+
+																expand = {}
+															}
+														}
+
+														hbox = {
+															visible = "[Character.IsGuest]"
+															layoutpolicy_horizontal = expanding
+															spacing = 10
+
+															button_standard = {
+																visible = "[Character.IsPlayerInteractionShown('recruit_guest_interaction')]"
+																enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
+																onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
+																text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')]"
+																tooltip = "[Character.GetPlayerInteractionTooltip('recruit_guest_interaction')]"
+																using = tooltip_se
+															}
+
+															expand = {}
+														}
+
+														expand = {}
+													}
+												}
+
+												divider = {
+													layoutpolicy_horizontal = expanding
+												}
+											}
+										}
+									}
+								}
+							}
+
+							vbox = {
+								name = "successors"
+								datamodel = "[MilitaryView.GetKnights]"
+								layoutpolicy_horizontal = expanding
+
+								hbox = {
+								    layoutpolicy_horizontal = expanding
+
+
+									text_multi_wide = {
+										layoutpolicy_horizontal = expanding
+										max_width = 650
+										raw_text = "If a character can't be [Accolade.GetSecondaryType.GetName], the attribute may be replaced on succession and the accolade will lose more glory."
+									}
+
+								    expand = { }
+								}
+
+								item = {
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										visible = "[And( Character.IsBaronOrUnlanded, And( And( Not( Character.IsAcclaimedKnight ), Not( Character.IsAccoladeSuccessor ) ), And(Accolade.HasSuccessorRequirements( Character.Self ), Not(Accolade.HasSecondaryAccoladeRequirements( Character.Self ))) ) )]"
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+
+											hbox = {
+												layoutpolicy_horizontal = expanding
+
+												button_text = {
+													visible = "[And(Character.IsGuest, Character.IsPlayerInteractionShown('recruit_guest_interaction'))]"
+													blockoverride "disabled" {
+														visible = "[Not(Character.IsPlayerInteractionValid('recruit_guest_interaction'))]"
+													}
+													enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
+													onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
+													blockoverride "text" {
+														raw_text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')]"
+														margin_right = -4
+													}
+													tooltip = "[Character.GetPlayerInteractionTooltip('recruit_guest_interaction')]"
+													using = tooltip_se
+												}
+
+												button_text = {
+													layoutpolicy_horizontal = expanding
+													enabled = "[Accolade.CanBeSuccessor( Character.Self )]"
+
+													onclick = "[AccoladeView.SetSuccessor( Character.Self )]"
+													onclick = "[AccoladeView.ToggleSuccessors]"
+													tooltip = "[Accolade.GetSetSuccessorTooltip( Character.Self )]"
+
+													blockoverride "extra" {
+														text_single = {
+															visible = "[And(Not(Accolade.CanBeSuccessor( Character.Self )), Not(Character.IsGuest))]"
+															raw_text = "Can't pick"
+														}
+														flowcontainer = {
+															visible = "[Not(Character.IsGuest)]"
+
+															text_single = {
+																raw_text = "[Select_CString(Character.IsKnightForced, 'Forced', '')]"
+															}
+
+															text_single = {
+																raw_text = "[Select_CString(Character.IsKnightDisallowed, 'Forbidden,', '')]"
+															}
+														}
+
+														text_single = {
+															raw_text = "Knight"
+															visible = "[Character.IsKnight]"
+														}
+
+														text_single = {
+															raw_text = "[Character.GetNameNoTooltip]."
+														}
+
+														text_single = {
+															raw_text = "[Character.GetSkill( 'prowess' )] prowess,"
+														}
+														text_single = {
+															raw_text = "[Character.GetOpinionOf( GetPlayer )|=] opinion."
+														}
+														text_single = {
+															raw_text = "[Character.GetRelationToString( GetPlayer )]."
+														}
+													}
+												}
+
+												expand = { }
+											}
+
+											hbox = {
+											    layoutpolicy_horizontal = expanding
+
+												hbox = {
+													visible = "[Not(Character.IsGuest)]"
+													spacing = 3
+
+													button_text = {
+														visible = "[Not(Character.IsKnightForced)]"
+														onclick = "[MilitaryView.SetKnightForced( Character.Self )]"
+														blockoverride "text" {
+															raw_text = "[Select_CString(Character.IsKnightForced, 'Is forced', 'Force to be a knight')],"
+														}
+														# tooltip = "KNIGHTS_VIEW_TITLE_FORCE_TT"
+													}
+
+													button_text = {
+														visible = "[Not(Character.IsKnightDefault)]"
+														onclick = "[MilitaryView.SetKnightDefault( Character.Self )]"
+														blockoverride "text" {
+															raw_text = "[Select_CString(Character.IsKnightForced, 'Unforce to be a knight', 'Allow')],"
+														}
+														# tooltip = "KNIGHTS_VIEW_TITLE_BY_PROWESS_TT"
+													}
+
+												}
+
+												text_single = {
+												margin_left = 5
+												visible = "[Not(Accolade.HasSecondaryAccoladeRequirements( Character.Self ))]"
+												layoutpolicy_horizontal = expanding
+												raw_text = "Can't be [Accolade.GetSecondaryType.GetName]."
+											}
+
+											    expand = { }
+											}
+
+										}
+
+										button_standard = {
+											visible = no
+											layoutpolicy_horizontal = expanding
+											size = { 0 130 }
+
+											# only show possible successors to this accolade
+
+											using = tooltip_nw
+
+											blockoverride "Background_Guest_pattern_visible"
+											{
+												visible = "[Character.IsGuest]"
+												margin_bottom = -5
+												margin_right = 5
+											}
+											blockoverride "Background_Guest_frame_visible"
+											{
+												visible = "[Character.IsGuest]"
+												margin_left = 3
+												margin_bottom = -5
+												margin_top = 1
+												margin_right = 5
+											}
+
+											vbox = {
+												spacing = 7
+												margin_top = 5
+												margin_left = 5
+												margin_right = 20
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													layoutpolicy_vertical = expanding
+													margin_right = 5
+													spacing = 10
+
+													portrait_head = {
+														alpha = "[Select_float( Character.IsKnight, '(float)1.0', '(float)0.6' )]"
+													}
+
+
+													vbox = {
+														layoutpolicy_vertical = expanding
+														layoutpolicy_horizontal = expanding
+														spacing = 10
+														margin_top = 15
+
+														hbox = {
+															layoutpolicy_horizontal = expanding
+
+															hbox = {
+																layoutpolicy_horizontal = expanding
+																layoutpolicy_vertical = expanding
+
+																icon = {
+																	visible = "[And(Character.IsKnight, Not(Character.IsAcclaimedKnight) )]"
+																	texture = "gfx/interface/icons/icon_knight_small.dds"
+																	size = { 40 40 }
+																}
+
+																icon = {
+																	visible = "[Character.IsAcclaimedKnight]"
+																	texture = "gfx/interface/icons/icon_knight_acclaimed.dds"
+																	size = { 50 50 }
+																}
+
+																vbox = {
+																	layoutpolicy_horizontal = expanding
+																	layoutpolicy_vertical = expanding
+
+																	text_single = {
+																		layoutpolicy_horizontal = expanding
+																		text = "[Character.GetNameNoTooltip]"
+																		using = Font_Size_Medium
+																		autoresize = no
+																	}
+
+
+																	text_single = {
+																		layoutpolicy_horizontal = expanding
+																		text = "[Character.GetRelationToString( GetPlayer )]"
+																		tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+																		default_format = "#low"
+																		autoresize = no
+																		align = nobaseline
+																	}
+
+																	expand = {}
+																}
+															}
+
+															vbox = {
+																layoutpolicy_vertical = expanding
+																margin = { 10 0 }
+
+																text_label_center  = {
+																	text = "[prowess_i][Character.GetSkill( 'prowess' )]"
+																	using = Font_Size_Big
+																	default_format = "#high"
+																}
+
+																expand = {}
+															}
+														}
+
+														hbox = {
+															visible = "[Character.IsGuest]"
+															layoutpolicy_horizontal = expanding
+															spacing = 10
+
+															button_standard = {
+																visible = "[Character.IsPlayerInteractionShown('recruit_guest_interaction')]"
+																enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
+																onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
+																text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')]"
+																tooltip = "[Character.GetPlayerInteractionTooltip('recruit_guest_interaction')]"
+																using = tooltip_se
+															}
+
+															expand = {}
+														}
+
+														expand = {}
+													}
+												}
+
+												divider = {
+													layoutpolicy_horizontal = expanding
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				# potential
+				vbox = {
+					datacontext = "[AccoladeView.GetAccolade]"
+					visible = "[And( And( AccoladeView.IsShowingPotentialAcclaimed, Not( AccoladeView.IsShowingSuccessors ) ), Not( AccoladeView.IsShowingHistory ) )]"
+
+					margin = { 4 4 }
+					spacing = 5
+
+					header_pattern = {
+						layoutpolicy_horizontal = expanding
+
+						blockoverride "header_text"
+						{
+							text = "CHANGE_ACCLAIMED_KNIGHT"
+						}
+
+						blockoverride "button_close"
+						{
+							onclick = "[AccoladeView.TogglePotentialAcclaimed]"
+							texture = "gfx/interface/icons/flat_icons/window_back.dds"
+							tooltip = "BACK_TOOLTIP"
+						}
+					}
+
+					scrollbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						blockoverride "scrollbox_content" {
+							name = "potential_acclaimed_knights"
+							datamodel = "[MilitaryView.GetKnights]"
+							spacing = 10
+
+							item = {
+								button = {
+									layoutpolicy_horizontal = expanding
+									size = { 0 130 }
+
+									# you need to fulfill accolade reqs to be acclaimed ( same as successor reqs )
+									visible = "[And( Character.IsBaronOrUnlanded, And( And( Not( Character.IsAcclaimedKnight ), Not( Character.IsAccoladeSuccessor ) ), Accolade.HasPrimaryAccoladeRequirements( Character.Self ) ) )]"
+									enabled = "[Accolade.CanBeSuccessor( Character.Self )]"
+
+									using = Background_Frame
+									color = { 0.7 0.4 0.3 0.7 }
+
+									onclick = "[AccoladeView.SetAcclaimedKnight( Character.Self )]"
+									onclick = "[OpenGameView( 'knights' )]"
+
+									tooltip = "[Accolade.GetSetAcclaimedTooltip( Character.Self )]"
+									using = tooltip_nw
+
+									blockoverride "Background_Guest_pattern_visible"
+									{
+										visible = "[Character.IsGuest]"
+										margin_bottom = -5
+										margin_right = 5
+									}
+									blockoverride "Background_Guest_frame_visible"
+									{
+										visible = "[Character.IsGuest]"
+										margin_left = 3
+										margin_bottom = -5
+										margin_top = 1
+										margin_right = 5
+									}
+
+									vbox = {
+										spacing = 7
+										margin_top = 5
+										margin_left = 5
+										margin_right = 20
+
+										hbox = {
+											layoutpolicy_horizontal = expanding
+											layoutpolicy_vertical = expanding
+											margin_right = 5
+											spacing = 10
+
+											portrait_head = {
+												alpha = "[Select_float( Character.IsKnight, '(float)1.0', '(float)0.6' )]"
+											}
+
+											vbox = {
+												layoutpolicy_vertical = expanding
+												layoutpolicy_horizontal = expanding
+												spacing = 10
+												margin_top = 15
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+
+													hbox = {
+														layoutpolicy_horizontal = expanding
+														layoutpolicy_vertical = expanding
+
+														icon = {
+															visible = "[And(Character.IsKnight, Not(Character.IsAcclaimedKnight) )]"
+															texture = "gfx/interface/icons/icon_knight_small.dds"
+															size = { 40 40 }
+														}
+														icon = {
+															visible = "[Character.IsAcclaimedKnight]"
+															texture = "gfx/interface/icons/icon_knight_acclaimed.dds"
+															size = { 50 50 }
+														}
+
+														vbox = {
+															layoutpolicy_horizontal = expanding
+															layoutpolicy_vertical = expanding
+
+															text_single = {
+																layoutpolicy_horizontal = expanding
+																text = "[Character.GetNameNoTooltip]"
+																using = Font_Size_Medium
+																autoresize = no
+															}
+
+
+															text_single = {
+																layoutpolicy_horizontal = expanding
+																text = "[Character.GetRelationToString( GetPlayer )]"
+																tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+																default_format = "#low"
+																autoresize = no
+																align = nobaseline
+															}
+
+															expand = {}
+														}
+													}
+
+													vbox = {
+														layoutpolicy_vertical = expanding
+														margin = { 10 0 }
+
+														text_label_center  = {
+															text = "[prowess_i][Character.GetSkill( 'prowess' )]"
+															using = Font_Size_Big
+															default_format = "#high"
+														}
+
+														expand = {}
+													}
+												}
+
+												hbox = {
+													visible = "[Character.IsGuest]"
+													layoutpolicy_horizontal = expanding
+													spacing = 10
+
+													button_standard = {
+														visible = "[Character.IsPlayerInteractionShown('recruit_guest_interaction')]"
+														enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
+														onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
+														text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')]"
+														tooltip = "[Character.GetPlayerInteractionTooltip('recruit_guest_interaction')]"
+														using = tooltip_se
+													}
+
+													expand = {}
+												}
+
+												expand = {}
+											}
+										}
+
+										divider = {
+											layoutpolicy_horizontal = expanding
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				# history
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					datacontext = "[AccoladeView.GetAccolade]"
+					visible = "[And( And( AccoladeView.IsShowingHistory, Not( AccoladeView.IsShowingSuccessors ) ), Not( AccoladeView.IsShowingPotentialAcclaimed ) )]"
+
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+						text_single = {
+							raw_text = "ACCOLADE_HISTORY"
+						}
+
+						comma = {}
+
+						text_single = {
+							raw_text = "[GetDataModelSize(Accolade.GetHistory)] entries."
+						}
+
+
+						expand = { }
+					}
+
+					button = {
+						shortcut = army_create_new
+						shortcut = close_window
+						onclick = "[AccoladeView.ToggleHistory]"
+					}
+
+					scrollbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						blockoverride "scrollbox_content" {
+							vbox = {
+								name = "accolade_history_entries"
+								datamodel = "[Accolade.GetHistory]"
+								layoutpolicy_horizontal = expanding
+
+								item = {
+									vbox = {
+										layoutpolicy_horizontal = expanding
+
+										char_name = {
+											blockoverride "pre" {
+												text_single = {
+													raw_text = "[IndexNumber],"
+												}
+											}
+											layoutpolicy_horizontal = expanding
+											datacontext = "[AccoladeHistoryEntry.GetAcclaimedKnight]"
+										}
+
+										hbox = {
+										    layoutpolicy_horizontal = expanding
+
+
+											text_single = {
+												raw_text = "ACCOLADE_HISTORY_ENTRY_DATE"
+											}
+
+											dot = { }
+
+										    expand = { }
+										}
+
+									}
+								}
+							}
+						}
+					}
+				}
+
+				expand = { }
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[AccoladeView.GetAccolade]"
+				visible = "[Is('accolade_all_ranks')]"
+
+				button_text = {
+					onclick = "[Toggle('accoladeview_last_ranks')]"
+					shortcut = map_mode_1
+					visible = "[Isnt('accoladeview_last_ranks')]"
+					layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+						raw_text = "Jump to last two ranks, E."
+					}
+				}
+
+				button = {
+					onclick = "[Clear('accolade_all_ranks')]"
+					shortcut = map_mode_11
+					shortcut = close_window
+				}
+
+				button = {
+					# shortcut = close_window
+					shortcut = map_mode_1
+					onclick = "[Clear('accoladeview_last_ranks')]"
+					visible = "[Is('accoladeview_last_ranks')]"
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Isnt('accoladeview_last_ranks')]"
+					vbox_accolade_rank = {
+						datacontext = "[Accolade.GetPrimaryType]"
+						blockoverride "prev" {
+
+						}
+						blockoverride "index" {
+							index = 0
+						}
+					}
+
+					vbox_accolade_rank = {
+						datacontext = "[Accolade.GetSecondaryType]"
+						blockoverride "index" {
+							index = 1
+						}
+					}
+
+					vbox_accolade_rank = {
+						datacontext = "[Accolade.GetPrimaryType]"
+						blockoverride "index" {
+							index = 2
+						}
+					}
+
+					vbox_accolade_rank = {
+						datacontext = "[Accolade.GetSecondaryType]"
+						blockoverride "index" {
+							index = 3
+						}
+					}
+				}
+
+				vbox_accolade_rank = {
+					datacontext = "[Accolade.GetPrimaryType]"
+					blockoverride "index" {
+						index = 4
+					}
+				}
+				vbox_accolade_rank = {
+					datacontext = "[Accolade.GetSecondaryType]"
+					blockoverride "index" {
+						index = 5
+					}
+				}
+			}
+		}
+	}
+
+	window = {
+		position = { -626 170 }
+		size = { 540 865 }
+		parentanchor = top|right
+		movable = no
+		using = vanilla
+
+		using = Window_Background_Subwindow
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+
+			position = { -626 170 }
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+
+			position_x = -570
+		}
+
+		vbox = {
+			datacontext = "[AccoladeView.GetAccolade]"
+			visible = "[And( And( Not( AccoladeView.IsShowingSuccessors ), Not( AccoladeView.IsShowingPotentialAcclaimed ) ), Not( AccoladeView.IsShowingHistory ) )]"
+
+			margin = { 4 4 }
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "[Accolade.GetNameNoTooltip]"
+					visible = "[Not( AccoladeView.IsRenaming )]"
+				}
+
+				editbox_standard = {
+					layoutpolicy_horizontal = expanding
+					parentanchor = top|hcenter
+					size = { 380 30 }
+					position = { 0 10 }
+					visible = "[AccoladeView.IsRenaming]"
+
+					blockoverride "editbox_properties"
+					{
+						name = "accolade_name"
+						text = "[AccoladeView.GetTempName]"
+						ontextedited = "[AccoladeView.EditName]"
+						onreturnpressed = "[AccoladeView.SubmitName]"
+					}
+				}
+
+				blockoverride "button_me"
+				{
+					texture = "gfx/interface/icons/flat_icons/edit_text.dds"
+
+					tooltip = ""
+
+					visible = "[Not( AccoladeView.IsRenaming )]"
+					onclick = "[AccoladeView.ToggleRenaming]"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[AccoladeView.Close]"
+					onclick = "[OpenGameView( 'knights' )]"
+					texture = "gfx/interface/icons/flat_icons/window_back.dds"
+					tooltip = "BACK_TOOLTIP"
+				}
+
+			}
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				background = {
+					margin_top = 10
+					using = Background_Area_Dark
+					alpha = 0.6
+				}
+
+				background = {
+					margin_top = 10
+					texture = "gfx/interface/illustrations/activity_header_backgrounds/activity_tournament.dds"
+					alpha = 0.3
+					using = Mask_Rough_Edges
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					margin_left = 4
+					margin_top = -10
+
+					background = {
+						margin_top = 10
+						using = Background_Area_Dark
+						alpha = 0.9
+
+						modify_texture = {
+							texture = "gfx/interface/component_masks/mask_fade_horizontal_middle_inverse.dds"
+							blend_mode = alphamultiply
+							alpha = 0.9
+						}
+					}
+
+					icon = {
+						texture = "gfx/interface/icons/icon_knight_acclaimed.dds"
+						size = { 50 50 }
+					}
+
+					text_single = {
+						text = "[Accolade.GetAcclaimedKnight.GetFullNameNoTooltip]"
+						align = left
+						using = Font_Size_Medium
+					}
+					expand = {}
+
+					text_single  = {
+						margin_bottom = 8
+						margin_right = 16
+						text = "[prowess_i][Accolade.GetAcclaimedKnight.GetSkill( 'prowess' )]"
+						using = Font_Size_Big
+						default_format = "#high"
+					}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					vbox = {
+						portrait_body = {
+							datacontext = "[Accolade.GetAcclaimedKnight]"
+						}
+
+						text_label_center  = {
+							text = "ACCOLADE_ACCLAIMED_KNIGHT"
+							using = Font_Size_Medium
+						}
+					}
+
+					vbox = {
+						spacing = 4
+
+						visible = "[AccoladeView.HasAnyRelevantTraits]"
+
+						background = {
+							using = Background_Area_Dark
+							alpha = 0.6
+							margin = { 5 -5 }
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 10
+							margin_top = 10
+
+							datamodel = "[AccoladeView.GetPrimaryTraits]"
+
+							item = {
+								icon_trait = {
+									datacontext = "[Accolade.GetAcclaimedKnight]"
+
+									blockoverride "faith_context"
+									{
+										datacontext = "[Accolade.GetAcclaimedKnight.GetFaith]"
+									}
+									blockoverride "icon_size"
+									{
+										size = { 55 55 }
+									}
+								}
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 8
+							margin_bottom = 10
+
+							datamodel = "[AccoladeView.GetSecondaryTraits]"
+							item = {
+								icon_trait = {
+									datacontext = "[Accolade.GetAcclaimedKnight]"
+
+									blockoverride "faith_context"
+									{
+										datacontext = "[Accolade.GetAcclaimedKnight.GetFaith]"
+									}
+									blockoverride "icon_size"
+									{
+										size = { 55 55 }
+									}
+								}
+							}
+						}
+
+						expand = {}
+					}
+
+					vbox = {
+						portrait_body = {
+							datacontext = "[Accolade.GetSuccessor]"
+						}
+
+						hbox = {
+							spacing = 8
+
+							text_label_center  = {
+								text = "ACCOLADE_SUCCESSOR"
+								using = Font_Size_Medium
+							}
+
+							button_round = {
+								name = "change_successor"
+								size = { 40 40 }
+
+								onclick = "[AccoladeView.ToggleSuccessors]"
+								tooltip = "ACCOLADE_CHANGE_SUCCESSOR"
+								using = tooltip_se
+
+								button_change = {
+									alwaystransparent = yes
+									parentanchor = center
+								}
+							}
+
+							button_round = {
+								name = "clear_successor"
+								size = { 40 40 }
+
+								visible = "[Accolade.GetSuccessor.IsValid]"
+
+								onclick = "[AccoladeView.ClearSuccessor]"
+								tooltip = "ACCOLADE_CLEAR_SUCCESSOR"
+								using = tooltip_se
+
+								button_clear = {
+									alwaystransparent = yes
+									parentanchor = center
+								}
+							}
+						}
+					}
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				margin = {20 4}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					text_label_center  = {
+						text = "ACCOLADE_GLORY_AND_LEVEL"
+						using = Font_Size_Medium
+					}
+					expand = {}
+				}
+
+				hbox = {
+					margin = {0 8}
+					allow_outside = yes
+
+					widget = {
+						size = { 460 30 }
+						allow_outside = yes
+
+						datacontext = "[AccoladeView.GetProgressBar]"
+
+						hbox_complex_bar_progress = {
+							layoutpolicy_horizontal = expanding
+						}
+
+						hbox_complex_bar_progress_next = {
+							layoutpolicy_horizontal = expanding
+						}
+
+						hbox_complex_bar_levels = {
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "marker" {
+								icon = {
+									name = "rank_icon"
+									parentanchor = center
+									widgetanchor = center
+									allow_outside = yes
+									size = { 44 44 }
+
+									texture = "[Accolade.GetComplexBarRankIcon( ComplexBar.GetIndexOfItem( ComplexBarItem.Self ) )]"
+									tooltip = "[Accolade.GetComplexBarRankTooltip( ComplexBar.GetIndexOfItem( ComplexBarItem.Self ) )]"
+								}
+							}
+						}
+					}
+
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				margin_left = 16
+				margin_bottom = 16
+				margin_top = 4
+				spacing = 8
+
+				vbox = {
+					margin_top = 8
+
+					widget = {
+						size = { 90 120 }
+
+						accolade_badge = {}
+
+						accolade_rank_icon = {
+							parentanchor = bottom|hcenter
+							position = { 0 12 }
+						}
+					}
+				}
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					margin_left = 8
+					margin_top = 8
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						margin_bottom = 8
+
+						vbox = {
+							spacing = 25
+
+							accolade_type_box = {
+								datacontext = "[Accolade.GetPrimaryType]"
+
+								blockoverride "name_text"
+								{
+									text = "[AccoladeType.GetNameWithAccolade( Accolade.Self )]"
+								}
+
+								blockoverride "subtitle_text"
+								{
+									text = "ACCOLADE_PRIMARY_TYPE"
+								}
+
+								blockoverride "icons" {
+									icon = {
+										visible = "[AccoladeType.GetPrimaryMaaUnlock.IsValid]"
+										datacontext = "[AccoladeType.GetPrimaryMaaUnlock]"
+										texture = "[MenAtArmsType.GetIcon]"
+										tooltipwidget = {
+											using = maa_type_container_tooltip
+										}
+										size = { 30 30 }
+									}
+								}
+							}
+
+							accolade_type_box = {
+								datacontext = "[Accolade.GetSecondaryType]"
+
+								blockoverride "name_text"
+								{
+									text = "[AccoladeType.GetNameWithAccolade( Accolade.Self )]"
+								}
+
+								blockoverride "subtitle_text"
+								{
+									text = "ACCOLADE_SECONDARY_TYPE"
+								}
+
+								blockoverride "icons" {
+									icon = {
+										visible = "[AccoladeType.GetSecondaryMaaUnlock.IsValid]"
+										datacontext = "[AccoladeType.GetSecondaryMaaUnlock]"
+										texture = "[MenAtArmsType.GetIcon]"
+										tooltipwidget = {
+											using = maa_type_container_tooltip
+										}
+										size = { 30 30 }
+									}
+								}
+							}
+						}
+
+						expand = {}
+					}
+				}
+
+				expand = {}
+			}
+
+			expand = {
+				minimumsize = { 0 4 }
+			}
+
+			scrollbox = {
+				name = "active_effects"
+				visible = "[Accolade.HasActiveEffects]"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				size = { 0 120 }
+
+				blockoverride "scrollbox_content"
+				{
+					text_multi = {
+						text = "[Accolade.BuildActiveRankEffects]"
+						autoresize = yes
+						max_width = 500
+					}
+
+					block "extra_content" {}
+				}
+			}
+
+			hbox = {
+				visible = "[Accolade.IsActive]"
+				layoutpolicy_horizontal = expanding
+
+				margin = { 0 16 }
+
+				button_standard = {
+					size = { 200 32 }
+					text = "ACCOLADE_HISTORY"
+					tooltip = "SHOW_ACCOLADE_HISTORY"
+					onclick = "[AccoladeView.ToggleHistory]"
+				}
+
+				button_standard = {
+					size = { 200 32 }
+					text = "DEACTIVATE_ACCOLADE"
+					tooltip = "[AccoladeView.GetDeactivateTooltip]"
+					onclick = "[AccoladeView.DeactivateAccolade]"
+					enabled = "[AccoladeView.CanDeactivateAccolade]"
+				}
+			}
+		}
+
+		vbox = {
+			datacontext = "[AccoladeView.GetAccolade]"
+			visible = "[And( And( AccoladeView.IsShowingSuccessors, Not( AccoladeView.IsShowingPotentialAcclaimed ) ), Not( AccoladeView.IsShowingHistory ) )]"
+
+			margin = { 4 4 }
+			spacing = 4
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "ACCOLADE_CHANGE_SUCCESSOR"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[AccoladeView.ToggleSuccessors]"
+					texture = "gfx/interface/icons/flat_icons/window_back.dds"
+					tooltip = "BACK_TOOLTIP"
+				}
+			}
+
+			text_label_center = {
+				margin_left = 20
+				margin_right = 20
+				text = "ACCOLADE_SUCCESSOR_REQUIREMENTS"
+				using = Font_Size_Medium
+			}
+
+			scrollbox = {
+				name = "successor_requirements"
+				layoutpolicy_horizontal = expanding
+				size = { 0 200 }
+
+				blockoverride "scrollbox_content"
+				{
+					text_multi = {
+						text = "[Accolade.GetSuccessorRequirements]"
+						autoresize = yes
+						max_width = 500
+					}
+
+					block "extra_content" {}
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				margin = { 0 8 }
+
+				button_standard = {
+					name = "find_successor_button"
+					size = { 300 45 }
+					text = "find_suitable_accolade_successor_interaction"
+
+					background = {
+						texture = "gfx/interface/illustrations/decisions/decision_knight_kneeling.dds"
+						fittype = centercrop
+						alpha = 0.7
+					}
+
+					datacontext = "[Accolade.GetAcclaimedKnight]"
+					enabled = "[Character.IsPlayerInteractionValid('find_suitable_accolade_successor_interaction')]"
+					onclick = "[Character.OpenPlayerInteraction('find_suitable_accolade_successor_interaction')]"
+					tooltip = "[Character.GetPlayerInteractionTooltip('find_suitable_accolade_successor_interaction')]"
+				}
+			}
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content" {
+					vbox = {
+						name = "successors"
+						datamodel = "[MilitaryView.GetKnights]"
+						spacing = 8
+						layoutpolicy_horizontal = expanding
+
+						item = {
+							button_standard = {
+								layoutpolicy_horizontal = expanding
+								size = { 0 130 }
+
+								# only show possible successors to this accolade
+								visible = "[And( Character.IsBaronOrUnlanded, And( And( Not( Character.IsAcclaimedKnight ), Not( Character.IsAccoladeSuccessor ) ), Accolade.HasSuccessorRequirements( Character.Self ) ) )]"
+								enabled = "[Accolade.CanBeSuccessor( Character.Self )]"
+
+								onclick = "[AccoladeView.SetSuccessor( Character.Self )]"
+								onclick = "[AccoladeView.ToggleSuccessors]"
+								tooltip = "[Accolade.GetSetSuccessorTooltip( Character.Self )]"
+								using = tooltip_nw
+
+								blockoverride "Background_Guest_pattern_visible"
+								{
+									visible = "[Character.IsGuest]"
+									margin_bottom = -5
+									margin_right = 5
+								}
+								blockoverride "Background_Guest_frame_visible"
+								{
+									visible = "[Character.IsGuest]"
+									margin_left = 3
+									margin_bottom = -5
+									margin_top = 1
+									margin_right = 5
+								}
+
+								vbox = {
+									spacing = 7
+									margin_top = 5
+									margin_left = 5
+									margin_right = 20
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										layoutpolicy_vertical = expanding
+										margin_right = 5
+										spacing = 10
+
+										portrait_head = {
+											alpha = "[Select_float( Character.IsKnight, '(float)1.0', '(float)0.6' )]"
+										}
+
+
+										vbox = {
+											layoutpolicy_vertical = expanding
+											layoutpolicy_horizontal = expanding
+											spacing = 10
+											margin_top = 15
+
+											hbox = {
+												layoutpolicy_horizontal = expanding
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													layoutpolicy_vertical = expanding
+
+													icon = {
+														visible = "[And(Character.IsKnight, Not(Character.IsAcclaimedKnight) )]"
+														texture = "gfx/interface/icons/icon_knight_small.dds"
+														size = { 40 40 }
+													}
+
+													icon = {
+														visible = "[Character.IsAcclaimedKnight]"
+														texture = "gfx/interface/icons/icon_knight_acclaimed.dds"
+														size = { 50 50 }
+													}
+
+													vbox = {
+														layoutpolicy_horizontal = expanding
+														layoutpolicy_vertical = expanding
+
+														text_single = {
+															layoutpolicy_horizontal = expanding
+															text = "[Character.GetNameNoTooltip]"
+															using = Font_Size_Medium
+															autoresize = no
+														}
+
+
+														text_single = {
+															layoutpolicy_horizontal = expanding
+															text = "[Character.GetRelationToString( GetPlayer )]"
+															tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+															default_format = "#low"
+															autoresize = no
+															align = nobaseline
+														}
+
+														expand = {}
+													}
+												}
+
+												vbox = {
+													layoutpolicy_vertical = expanding
+													margin = { 10 0 }
+
+													text_label_center  = {
+														text = "[prowess_i][Character.GetSkill( 'prowess' )]"
+														using = Font_Size_Big
+														default_format = "#high"
+													}
+
+													expand = {}
+												}
+											}
+
+											hbox = {
+												visible = "[Character.IsGuest]"
+												layoutpolicy_horizontal = expanding
+												spacing = 10
+
+												button_standard = {
+													visible = "[Character.IsPlayerInteractionShown('recruit_guest_interaction')]"
+													enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
+													onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
+													text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')]"
+													tooltip = "[Character.GetPlayerInteractionTooltip('recruit_guest_interaction')]"
+													using = tooltip_se
+												}
+
+												expand = {}
+											}
+
+											expand = {}
+										}
+									}
+
+									divider = {
+										layoutpolicy_horizontal = expanding
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		vbox = {
+			datacontext = "[AccoladeView.GetAccolade]"
+			visible = "[And( And( AccoladeView.IsShowingPotentialAcclaimed, Not( AccoladeView.IsShowingSuccessors ) ), Not( AccoladeView.IsShowingHistory ) )]"
+
+			margin = { 4 4 }
+			spacing = 5
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "CHANGE_ACCLAIMED_KNIGHT"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[AccoladeView.TogglePotentialAcclaimed]"
+					texture = "gfx/interface/icons/flat_icons/window_back.dds"
+					tooltip = "BACK_TOOLTIP"
+				}
+			}
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content" {
+					name = "potential_acclaimed_knights"
+					datamodel = "[MilitaryView.GetKnights]"
+					spacing = 10
+
+					item = {
+						button = {
+							layoutpolicy_horizontal = expanding
+							size = { 0 130 }
+
+							# you need to fulfill accolade reqs to be acclaimed ( same as successor reqs )
+							visible = "[And( Character.IsBaronOrUnlanded, And( And( Not( Character.IsAcclaimedKnight ), Not( Character.IsAccoladeSuccessor ) ), Accolade.HasPrimaryAccoladeRequirements( Character.Self ) ) )]"
+							enabled = "[Accolade.CanBeSuccessor( Character.Self )]"
+
+							using = Background_Frame
+							color = { 0.7 0.4 0.3 0.7 }
+
+							onclick = "[AccoladeView.SetAcclaimedKnight( Character.Self )]"
+							onclick = "[OpenGameView( 'knights' )]"
+
+							tooltip = "[Accolade.GetSetAcclaimedTooltip( Character.Self )]"
+							using = tooltip_nw
+
+							blockoverride "Background_Guest_pattern_visible"
+							{
+								visible = "[Character.IsGuest]"
+								margin_bottom = -5
+								margin_right = 5
+							}
+							blockoverride "Background_Guest_frame_visible"
+							{
+								visible = "[Character.IsGuest]"
+								margin_left = 3
+								margin_bottom = -5
+								margin_top = 1
+								margin_right = 5
+							}
+
+							vbox = {
+								spacing = 7
+								margin_top = 5
+								margin_left = 5
+								margin_right = 20
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									layoutpolicy_vertical = expanding
+									margin_right = 5
+									spacing = 10
+
+									portrait_head = {
+										alpha = "[Select_float( Character.IsKnight, '(float)1.0', '(float)0.6' )]"
+									}
+
+									vbox = {
+										layoutpolicy_vertical = expanding
+										layoutpolicy_horizontal = expanding
+										spacing = 10
+										margin_top = 15
+
+										hbox = {
+											layoutpolicy_horizontal = expanding
+
+											hbox = {
+												layoutpolicy_horizontal = expanding
+												layoutpolicy_vertical = expanding
+
+												icon = {
+													visible = "[And(Character.IsKnight, Not(Character.IsAcclaimedKnight) )]"
+													texture = "gfx/interface/icons/icon_knight_small.dds"
+													size = { 40 40 }
+												}
+												icon = {
+													visible = "[Character.IsAcclaimedKnight]"
+													texture = "gfx/interface/icons/icon_knight_acclaimed.dds"
+													size = { 50 50 }
+												}
+
+												vbox = {
+													layoutpolicy_horizontal = expanding
+													layoutpolicy_vertical = expanding
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "[Character.GetNameNoTooltip]"
+														using = Font_Size_Medium
+														autoresize = no
+													}
+
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "[Character.GetRelationToString( GetPlayer )]"
+														tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+														default_format = "#low"
+														autoresize = no
+														align = nobaseline
+													}
+
+													expand = {}
+												}
+											}
+
+											vbox = {
+												layoutpolicy_vertical = expanding
+												margin = { 10 0 }
+
+												text_label_center  = {
+													text = "[prowess_i][Character.GetSkill( 'prowess' )]"
+													using = Font_Size_Big
+													default_format = "#high"
+												}
+
+												expand = {}
+											}
+										}
+
+										hbox = {
+											visible = "[Character.IsGuest]"
+											layoutpolicy_horizontal = expanding
+											spacing = 10
+
+											button_standard = {
+												visible = "[Character.IsPlayerInteractionShown('recruit_guest_interaction')]"
+												enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
+												onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
+												text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')]"
+												tooltip = "[Character.GetPlayerInteractionTooltip('recruit_guest_interaction')]"
+												using = tooltip_se
+											}
+
+											expand = {}
+										}
+
+										expand = {}
+									}
+								}
+
+								divider = {
+									layoutpolicy_horizontal = expanding
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		vbox = {
+			datacontext = "[AccoladeView.GetAccolade]"
+			visible = "[And( And( AccoladeView.IsShowingHistory, Not( AccoladeView.IsShowingSuccessors ) ), Not( AccoladeView.IsShowingPotentialAcclaimed ) )]"
+
+			margin = { 4 4 }
+			spacing = 5
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "ACCOLADE_HISTORY"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[AccoladeView.ToggleHistory]"
+					texture = "gfx/interface/icons/flat_icons/window_back.dds"
+					tooltip = "BACK_TOOLTIP"
+				}
+			}
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content" {
+					vbox = {
+						name = "accolade_history_entries"
+						datamodel = "[Accolade.GetHistory]"
+						spacing = 10
+						layoutpolicy_horizontal = expanding
+
+						item = {
+							icon = {
+								datacontext = "[AccoladeHistoryEntry.GetAcclaimedKnight]"
+								layoutpolicy_horizontal = expanding
+								size = { 0 130 }
+
+								using = Background_Frame
+								color = { 0.7 0.4 0.3 0.7 }
+
+								vbox = {
+									spacing = 7
+									margin_top = 5
+									margin_left = 5
+									margin_right = 20
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										layoutpolicy_vertical = expanding
+										margin_right = 5
+										spacing = 10
+
+										portrait_head = {}
+
+										vbox = {
+											layoutpolicy_vertical = expanding
+											layoutpolicy_horizontal = expanding
+											spacing = 10
+											margin_top = 15
+
+											hbox = {
+												layoutpolicy_horizontal = expanding
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													layoutpolicy_vertical = expanding
+
+													icon = {
+														texture = "gfx/interface/icons/icon_knight_acclaimed.dds"
+														size = { 50 50 }
+													}
+
+													vbox = {
+														layoutpolicy_horizontal = expanding
+														layoutpolicy_vertical = expanding
+
+														text_single = {
+															layoutpolicy_horizontal = expanding
+															text = "[Character.GetNameNoTooltip]"
+															using = Font_Size_Medium
+															autoresize = no
+														}
+
+														expand = {}
+													}
+												}
+
+												vbox = {
+													layoutpolicy_vertical = expanding
+													margin = { 10 0 }
+
+													text_label_center  = {
+														text = "[prowess_i][Character.GetSkill( 'prowess' )]"
+														using = Font_Size_Big
+														default_format = "#high"
+													}
+
+													expand = {}
+												}
+											}
+
+											text_single = {
+												layoutpolicy_horizontal = expanding
+												text = "ACCOLADE_HISTORY_ENTRY_DATE"
+												using = Font_Size_Small
+											}
+
+											expand = {}
+										}
+									}
+
+									divider = {
+										layoutpolicy_horizontal = expanding
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+types AccoladeWindowTypes
+{
+	type accolade_type_box = hbox {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		spacing = 8
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+
+				block "name_text"
+				{
+					text = "[AccoladeType.GetName]"
+				}
+
+				align = nobaseline
+			}
+
+			text_single = {
+				margin_left = 8
+				layoutpolicy_horizontal = expanding
+
+				block "subtitle_text"
+				{
+					text = ""
+				}
+
+				default_format = "#low"
+				align = nobaseline
+				max_width = 290
+			}
+		}
+
+		block "icons"
+		{
+		}
+
+		block "change_button"
+		{
+		}
+
+	}
+
+	type accolade_banner = icon {
+		parentanchor = vcenter
+		size = { 98 98 }
+		alwaystransparent = yes
+		texture = "gfx/interface/icons/knight_badge/badge_base2.dds"
+	}
+
+	type accolade_banner_broken = icon {
+		parentanchor = vcenter
+		size = { 98 98 }
+		alwaystransparent = yes
+		texture = "gfx/interface/icons/knight_badge/badge_base_grey.dds"
+	}
+
+	type accolade_badge = icon {
+		parentanchor = vcenter
+		size = { 92 136 }
+		alwaystransparent = yes
+		texture = "gfx/interface/icons/knight_badge/badge_base.dds"
+
+		icon = {
+			position = { 6 6 }
+			size = { 80 56 }
+			texture = "[Accolade.GetBadgeColor]"
+
+			datacontext = "[Accolade]"
+			tooltip = "ACCOLADE_PRIMARY_TYPE_TT"
+		}
+		icon = {
+			position = { 6 6 }
+			size = { 80 56 }
+			texture = "gfx/interface/icons/knight_badge/badge_corners.dds"
+			alwaystransparent = yes
+		}
+		icon = {
+			position = { 6 6 }
+			size = { 80 56 }
+			texture = "[Accolade.GetPrimaryIcon]"
+			alwaystransparent = yes
+		}
+
+		icon = {
+			position = { 6 73 }
+			size = { 80 56 }
+			texture = "[Accolade.GetBadgeColor]"
+
+			datacontext = "[Accolade]"
+			tooltip = "ACCOLADE_SECONDARY_TYPE_TT"
+		}
+		icon = {
+			position = { 6 73 }
+			size = { 80 56 }
+			texture = "[Accolade.GetSecondaryIcon]"
+			alwaystransparent = yes
+		}
+	}
+
+	type accolade_rank_icon = icon {
+		parentanchor = bottom|hcenter
+		size = { 44 44 }
+
+		icon = {
+			position = { 1 13 }
+			size = { 100% 100% }
+			visible = "[Accolade.HasActiveEffects]"
+			texture = "[Accolade.GetCurrentRankIcon]"
+			tooltipwidget = accolade_tooltip
+		}
+	}
+}
+

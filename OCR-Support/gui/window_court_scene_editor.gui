@@ -1,0 +1,2603 @@
+
+types SceneEditorTypes
+{
+
+type court_scene_editor_tool_checkbutton = checkbutton 
+{
+	size = { 32 32 }
+	gfxtype = checkbuttongfx
+	shaderfile = "gfx/FX/pdxgui_pushbutton.shader"
+	framesize = { 32 32 }
+}
+
+type court_scene_editor_window = window
+{
+	name = "court_scene_editor_window" #Name is referenced by the source, please do not rename.
+	size = { 630 1080 }
+	minimumsize = { 600 300 }
+	filter_mouse = all
+	layer = middle
+	resizable = yes
+	using = Window_Movable
+	using = Window_Background_Sidebar
+
+	# Make entire window transparent while user is holding RMB and moving camera around (according to ck3 developers request).
+	# We can easily check that by checking if we can switch the active camera, because camera switching is not allowed when
+	# user is moving the camera.
+	alpha = "[Select_float( CourtSceneEditorWindow.CanChangeActiveCamera, '(float)1.0', '(float)0.3' )]"
+
+	vbox = {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				text_single = {
+					raw_text = "Editor"
+				}
+			}
+
+			button_close = {
+				raw_tooltip = "Close editor window"
+				onclick = "[GetVariableSystem.Clear( 'scene_editor' )]"
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			datacontext = "[CourtSceneEditorWindow.AccessToolset]"
+
+			court_scene_editor_tool_checkbutton = {
+				name = "dev_cam"
+				texture = "gfx/court_scene/tools/dev_cam.png"
+				enabled = "[And( CourtSceneEditorWindow.CanChangeActiveCamera, CourtSceneEditorWindow.IsToolsetEnabled )]"
+				checked = "[CourtSceneEditorWindow.IsDeveloperCameraActive]"
+				onclick = "[CourtSceneEditorWindow.SetDeveloperCameraActive(Not(CourtSceneEditorWindow.IsDeveloperCameraActive))]"
+				shortcut = court_scene_editor_dev_cam
+				raw_tooltip = "Toggle between a temporary developer camera and a currently selected in-game camera. Developer camera is used to look around the scene without modifying the in-game cameras."
+			}
+
+			checkbutton = {
+				name = "tool_select"
+				texture = "gfx/court_scene/tools/selection.png"
+				enabled = "[And( CourtSceneEditorWindow.CanChangeActiveCamera, CourtSceneEditorWindow.IsToolsetEnabled )]"
+				checked = "[CourtToolset.IsModeSelect]"
+				onclick = "[CourtToolset.SetModeSelect]"
+				shortcut = court_scene_editor_toolset_select
+				raw_tooltip = "Object selection mode."
+			}
+
+			checkbutton = {
+				name = "tool_translate"
+				texture = "gfx/court_scene/tools/translate.png"
+				enabled = "[And( CourtSceneEditorWindow.CanChangeActiveCamera, CourtSceneEditorWindow.IsToolsetEnabled )]"
+				checked = "[CourtToolset.IsModeTranslate]"
+				onclick = "[CourtToolset.SetModeTranslate]"
+				shortcut = court_scene_editor_toolset_translate
+				raw_tooltip = "Object translating mode."
+			}
+
+			checkbutton = {
+				name = "tool_rotate"
+				texture = "gfx/court_scene/tools/rotate.png"
+				enabled = "[And( CourtSceneEditorWindow.CanChangeActiveCamera, CourtSceneEditorWindow.IsToolsetEnabled )]"
+				checked = "[CourtToolset.IsModeRotation]"
+				onclick = "[CourtToolset.SetModeRotation]"
+				shortcut = court_scene_editor_toolset_rotate
+				raw_tooltip = "Object rotation mode."
+			}
+
+			checkbutton = {
+				name = "tool_scale"
+				texture = "gfx/court_scene/tools/scale.png"
+				enabled = "[And( CourtSceneEditorWindow.CanChangeActiveCamera, CourtSceneEditorWindow.IsToolsetEnabled )]"
+				checked = "[CourtToolset.IsModeScale]"
+				onclick = "[CourtToolset.SetModeScale]"
+				shortcut = court_scene_editor_toolset_scale
+				raw_tooltip = "Object scale mode."
+			}
+
+			button_standard = {
+				size = { 100 30 }
+				raw_text = "Toggle tools"
+				onclick = "[CourtSceneEditorWindow.ToggleToolsedEnabled]"
+				raw_tooltip = "Toggle interactive scene editor tools"
+				shortcut = court_scene_editor_toolset_toggle
+			}
+
+			expand = {}
+
+			button_standard = {
+				size = { 80 30 }
+				raw_text = "Save"
+				onclick = "[CourtSceneEditorWindow.Save]"
+				raw_tooltip = "Save current scene configuration. New configuration file can be found in the user Documents folder"
+			}
+
+			button_standard = {
+				size = { 80 30 }
+				raw_text = "Reload"
+				onclick = "[CourtSceneEditorWindow.ReloadEdit]"
+				raw_tooltip = "Reload scene settings. Uses configuration file in the user Documents folder if it exists."
+			}
+
+			button_standard = {
+				raw_text = "Default"
+				size = { 80 30 }
+				onclick = "[CourtSceneEditorWindow.ReloadSafe]"
+				raw_tooltip = "Reload default scene settings. Uses configuration file shipped with game files"
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			button_undo = {
+				size = { 40 40 }
+				onclick = "[CourtSceneEditorWindow.UndoCommand]"
+				enabled = "[CourtSceneEditorWindow.CanUndo]"
+				shortcut = "undo"
+				raw_tooltip = "Undo change"
+			}
+
+			button_redo = {
+				size = { 40 40 }
+				onclick = "[CourtSceneEditorWindow.RedoCommand]"
+				enabled = "[CourtSceneEditorWindow.CanRedo]"
+				shortcut = "redo"
+				raw_tooltip = "Redo change"
+			}
+
+			expand = {}
+
+			text_single = {
+				raw_text = "Settings name"
+			}
+
+			dropdown_menu_standard = {
+
+				blockoverride "dropdown_size"
+				{
+					size = { 150 32 }
+				}
+
+				blockoverride "dropdown_properties"
+				{
+					datamodel = "[CourtSceneEditorWindow.GetAllSettings]"
+					onselectionchanged = "[CourtSceneEditorWindow.OnActiveSettingsChange]"
+					selectedindex = "[CourtSceneEditorWindow.GetActiveSettingsIndex]"
+				}
+
+				blockoverride "dropdown_active_item_properties"
+				{
+					text = "[GetSceneSettingsName( CourtSceneSettings.Self )]"
+					tooltip = "[GetSceneSettingsName( CourtSceneSettings.Self )]"
+				}
+
+				blockoverride "dropdown_item_properties"
+				{
+					text = "[GetSceneSettingsName( CourtSceneSettings.Self )]"
+					tooltip = "[GetSceneSettingsName( CourtSceneSettings.Self )]"
+				}
+			}
+		}
+
+		hbox = {
+			name = "tabs"
+			layoutpolicy_horizontal = expanding
+
+			button_tab = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "Cameras"
+				onclick = "[GetVariableSystem.Set( 'active_tab', 'cameras' )]"
+				down = "[GetVariableSystem.HasValue( 'active_tab', 'cameras' )]"
+			}
+
+			button_tab = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "Lights"
+				onclick = "[GetVariableSystem.Set( 'active_tab', 'lights' )]"
+				down = "[GetVariableSystem.HasValue( 'active_tab', 'lights' )]"
+			}
+
+			button_tab = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "Characters"
+				onclick = "[GetVariableSystem.Set( 'active_tab', 'characters' )]"
+				down = "[GetVariableSystem.HasValue( 'active_tab', 'characters' )]"
+			}
+
+			button_tab = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "Assets"
+				onclick = "[GetVariableSystem.Set( 'active_tab', 'assets' )]"
+				down = "[GetVariableSystem.HasValue( 'active_tab', 'assets' )]"
+			}
+
+			button_tab = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "Artifacts"
+				onclick = "[GetVariableSystem.Set( 'active_tab', 'artifacts' )]"
+				down = "[GetVariableSystem.HasValue( 'active_tab', 'artifacts' )]"
+			}
+
+			button_tab = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "Misc"
+				onclick = "[GetVariableSystem.Set( 'active_tab', 'misc' )]"
+				down = "[GetVariableSystem.HasValue( 'active_tab', 'misc' )]"
+			}
+		}
+
+		vbox = {
+			visible = "[GetVariableSystem.HasValue( 'active_tab', 'cameras' )]"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					button_checkbox_label = {
+
+						onclick = "[CourtSceneEditorWindow.ToggleAnimationCameraIdle]"
+						raw_tooltip = "Animate idle camera"
+
+						blockoverride "checkbox"
+						{
+							checked = "[CourtSceneEditorWindow.IsCameraIdleAnimated]"
+						}
+
+						blockoverride "text"
+						{
+							raw_text = "Animate Camera"
+						}
+					}
+
+					button_checkbox_label = {
+
+						onclick = "[CourtSceneEditorWindow.ToggleAnimationCameraTransition]"
+						raw_tooltip = "Use animated transitions between cameras"
+
+						blockoverride "checkbox"
+						{
+							checked = "[CourtSceneEditorWindow.IsCameraTransitionAnimated]"
+						}
+
+						blockoverride "text"
+						{
+							raw_text = "Use transitions"
+						}
+					}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					button_standard = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Expand all"
+						onclick = "[CourtSceneEditorWindow.ExpandAllCameras]"
+					}
+
+					button_standard = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Collapse all"
+						onclick = "[CourtSceneEditorWindow.CollapseAllCameras]"
+					}
+				}
+			}
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datamodel = "[CourtSceneEditorWindow.AccessCameras]"
+
+						item = {
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									layoutpolicy_vertical = expanding
+
+									button_checkbox_label = {
+										enabled = "[CourtSceneEditorWindow.CanChangeActiveCamera]"
+										onclick = "[CourtSceneEditorWindow.SetCameraActive( Camera.AccessSelf )]"
+										raw_tooltip = "View the scene from this camera"
+
+										blockoverride "checkbox"
+										{
+											checked = "[CourtSceneEditorWindow.IsCameraActive( Camera.Self )]"
+										}
+										
+										blockoverride "text" {}
+									}
+
+									editor_expand_button = {
+										layoutpolicy_horizontal = expanding
+										onclick = "[CourtSceneEditorWindow.ToggleCameraExpanded( Camera.Self )]"
+
+										blockoverride "is_expanded"
+										{
+											frame = "[Select_int32( CourtSceneEditorWindow.IsCameraExpanded( Camera.Self ), '(int32)2', '(int32)1' )]"
+										}
+
+										blockoverride "text"
+										{
+											text = "[Select_CString( StringIsEmpty( CourtSceneEditorWindow.GetCameraDescription( Camera.Self ) ), 'Camera', CourtSceneEditorWindow.GetCameraDescription( Camera.Self ) )]"
+										}
+									}
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+
+									camera_settings_widget = {
+										visible = "[CourtSceneEditorWindow.IsCameraExpanded( Camera.Self )]"
+
+										blockoverride "visible_default_camera" {}
+										blockoverride "visible_screenshot_camera" {}
+
+										blockoverride "command_callbacks"
+										{
+											onchangestart = "[CourtSceneEditorWindow.OnCameraEditStarted( Camera.Self )]"
+											onchangefinish = "[CourtSceneEditorWindow.OnCameraEditFinished( Camera.Self )]"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			button_standard = {
+				raw_text = "Add camera"
+				onclick = "[CourtSceneEditorWindow.AddCamera]"
+			}
+		}
+
+		vbox = {
+			visible = "[GetVariableSystem.HasValue( 'active_tab', 'lights' )]"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				button_standard = {
+					raw_text = "Expand all"
+					onclick = "[CourtSceneEditorWindow.ExpandAllLights]"
+				}
+
+				button_standard = {
+					raw_text = "Collapse all"
+					onclick = "[CourtSceneEditorWindow.CollapseAllLights]"
+				}
+			}
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datamodel = "[CourtSceneEditorWindow.AccessLights]"
+
+						item = {
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+
+									editor_expand_button = {
+										layoutpolicy_horizontal = expanding
+										onclick = "[CourtSceneEditorWindow.ToggleLightExpanded( Light.Self )]"
+
+										blockoverride "is_expanded"
+										{
+											frame = "[Select_int32( CourtSceneEditorWindow.IsLightExpanded( Light.Self ), '(int32)2', '(int32)1' )]"
+										}
+
+										blockoverride "text"
+										{
+											text = "[Select_CString( StringIsEmpty( CourtSceneEditorWindow.GetLightDescription( Light.Self ) ), 'Light', CourtSceneEditorWindow.GetLightDescription( Light.Self ) )]"
+										}
+									}
+
+									text_single = {
+										visible = "[CourtSceneEditorWindow.IsLightEnabled( Light.Self )]"
+										raw_text = "Enabled"
+									}
+
+									spacer = {
+										visible = "[CourtSceneEditorWindow.IsLightEnabled( Light.Self )]"
+										size = { 5 5 }
+									}
+
+									text_single = {
+										visible = "[CourtSceneEditorWindow.IsAffectedByShadow( Light.Self )]"
+										raw_text = "Shadow"
+									}
+
+									spacer = {
+										visible = "[CourtSceneEditorWindow.IsAffectedByShadow( Light.Self )]"
+										size = { 5 5 }
+									}
+								}
+
+								light_settings_vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[CourtSceneEditorWindow.IsLightExpanded( Light.Self )]"
+
+									blockoverride "command_callbacks"
+									{
+										onchangestart = "[CourtSceneEditorWindow.OnLightEditStarted( Light.Self )]"
+										onchangefinish = "[CourtSceneEditorWindow.OnLightEditFinished( Light.Self )]"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			button_standard = {
+				raw_text = "Add light"
+				onclick = "[CourtSceneEditorWindow.AddLight]"
+			}
+		}
+
+		vbox = {
+			visible = "[GetVariableSystem.HasValue( 'active_tab', 'characters' )]"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				button_standard = {
+					raw_text = "Expand all"
+					onclick = "[CourtSceneEditorWindow.ExpandAllCharacters]"
+				}
+
+				button_standard = {
+					raw_text = "Collapse all"
+					onclick = "[CourtSceneEditorWindow.CollapseAllCharacters]"
+				}
+
+				button_checkbox_label = {
+					onclick = "[CourtSceneEditorWindow.ToggleCharacterDebugLines]"
+					raw_tooltip = "Toggle showing debug lines"
+
+					blockoverride "checkbox"
+					{
+						checked = "[CourtSceneEditorWindow.ShowCharacterDebugLines]"
+					}
+
+					blockoverride "text"
+					{
+						raw_text = "Debug lines"
+					}
+				}
+			}
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datamodel = "[CourtSceneEditorWindow.AccessCharacters]"
+
+						item = {
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								editor_expand_button = {
+									layoutpolicy_horizontal = expanding
+									onclick = "[CourtSceneEditorWindow.ToggleCharacterExpanded( CharacterProperties.Self )]"
+
+									blockoverride "is_expanded"
+									{
+										frame = "[Select_int32( CourtSceneEditorWindow.IsCharacterExpanded( CharacterProperties.Self ), '(int32)2', '(int32)1' )]"
+									}
+
+									blockoverride "text"
+									{
+										text = "[Select_CString( StringIsEmpty( CourtSceneEditorWindow.GetCharacterDescription( CharacterProperties.Self ) ), 'Character', CourtSceneEditorWindow.GetCharacterDescription( CharacterProperties.Self ) )]"
+									}
+								}
+
+								character_settings_widget = {
+									layoutpolicy_horizontal = expanding
+									visible = "[CourtSceneEditorWindow.IsCharacterExpanded( CharacterProperties.Self )]"
+
+									blockoverride "command_callbacks"
+									{
+										onchangestart = "[CourtSceneEditorWindow.OnCharacterEditStarted( CharacterProperties.Self )]"
+										onchangefinish = "[CourtSceneEditorWindow.OnCharacterEditFinished( CharacterProperties.Self )]"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			button_standard = {
+				raw_text = "Add character"
+				onclick = "[CourtSceneEditorWindow.AddCharacter]"
+			}
+		}
+
+		vbox = {
+			visible = "[GetVariableSystem.HasValue( 'active_tab', 'assets' )]"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				button_standard = {
+					raw_text = "Expand all"
+					onclick = "[CourtSceneEditorWindow.ExpandAllAssets]"
+				}
+
+				button_standard = {
+					raw_text = "Collapse all"
+					onclick = "[CourtSceneEditorWindow.CollapseAllAssets]"
+				}
+
+				button_checkbox_label = {
+					onclick = "[CourtSceneEditorWindow.ToggleAssetsDebugLines]"
+					raw_tooltip = "Toggle showing debug lines"
+
+					blockoverride "checkbox"
+					{
+						checked = "[CourtSceneEditorWindow.ShowAssetsDebugLines]"
+					}
+
+					blockoverride "text"
+					{
+						raw_text = "Debug lines"
+					}
+				}
+			}
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datamodel = "[CourtSceneEditorWindow.AccessAssets]"
+
+						item = {
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								editor_expand_button = {
+									layoutpolicy_horizontal = expanding
+									onclick = "[CourtSceneEditorWindow.ToggleAssetExpanded( AssetSettings.Self )]"
+
+									blockoverride "is_expanded"
+									{
+										frame = "[Select_int32( CourtSceneEditorWindow.IsAssetExpanded( AssetSettings.Self ), '(int32)2', '(int32)1' )]"
+									}
+
+									blockoverride "text"
+									{
+										text = "[Select_CString( StringIsEmpty( CourtSceneEditorWindow.GetAssetDescription( AssetSettings.Self ) ), 'Asset', CourtSceneEditorWindow.GetAssetDescription( AssetSettings.Self ) )]"
+									}
+								}
+
+								asset_settings_widget = {
+									layoutpolicy_horizontal = expanding
+									visible = "[CourtSceneEditorWindow.IsAssetExpanded( AssetSettings.Self )]"
+
+									blockoverride "command_callbacks"
+									{
+										onchangestart = "[CourtSceneEditorWindow.OnAssetEditStarted( AssetSettings.Self )]"
+										onchangefinish = "[CourtSceneEditorWindow.OnAssetEditFinished( AssetSettings.Self )]"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			button_standard = {
+				raw_text = "Add asset"
+				onclick = "[CourtSceneEditorWindow.AddAsset]"
+			}
+		}
+
+		vbox = {
+			visible = "[GetVariableSystem.HasValue( 'active_tab', 'artifacts' )]"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				button_standard = {
+					raw_text = "Expand all"
+					onclick = "[CourtSceneEditorWindow.ExpandAllArtifacts]"
+				}
+
+				button_standard = {
+					raw_text = "Collapse all"
+					onclick = "[CourtSceneEditorWindow.CollapseAllArtifacts]"
+				}
+
+				button_checkbox_label = {
+					onclick = "[CourtSceneEditorWindow.ToggleArtifactDebugLines]"
+					raw_tooltip = "Toggle showing debug lines"
+
+					blockoverride "checkbox"
+					{
+						checked = "[CourtSceneEditorWindow.ShowArtifactDebugLines]"
+					}
+
+					blockoverride "text"
+					{
+						raw_text = "Debug lines"
+					}
+				}
+			}
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_content"
+				{
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datamodel = "[CourtSceneEditorWindow.AccessArtifacts]"
+
+						item = {
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								editor_expand_button = {
+									layoutpolicy_horizontal = expanding
+									onclick = "[CourtSceneEditorWindow.ToggleArtifactExpanded( ArtifactSettings.Self )]"
+
+									blockoverride "is_expanded"
+									{
+										frame = "[Select_int32( CourtSceneEditorWindow.IsArtifactExpanded( ArtifactSettings.Self ), '(int32)2', '(int32)1' )]"
+									}
+
+									blockoverride "text"
+									{
+										text = "[CourtSceneEditorWindow.GetArtifactDescriptionOrSlot(ArtifactSettings.Self)]"
+									}
+								}
+
+								artifact_settings_widget = {
+									layoutpolicy_horizontal = expanding
+									visible = "[CourtSceneEditorWindow.IsArtifactExpanded( ArtifactSettings.Self )]"
+
+									blockoverride "command_callbacks"
+									{
+										onchangestart = "[CourtSceneEditorWindow.OnArtifactEditStarted( ArtifactSettings.Self )]"
+										onchangefinish = "[CourtSceneEditorWindow.OnArtifactEditFinished( ArtifactSettings.Self )]"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			button_standard = {
+				raw_text = "Add artifact"
+				onclick = "[CourtSceneEditorWindow.AddArtifact]"
+			}
+		}
+
+		vbox = {
+			visible = "[GetVariableSystem.HasValue( 'active_tab', 'misc' )]"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			
+			margin = { 20 0 }
+			spacing = 10
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[GetRoyalCourtSelectedCharacter]"
+				visible = "[Character.IsValid]"
+				raw_text = "Current selection: [Character.GetName] id: [Character.GetID]"
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[GetRoyalCourtSelectedArtifact]"
+				visible = "[Artifact.IsValid]"
+				raw_text = "Current selection: [Artifact.GetName] id: [Artifact.GetID]"
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[GetRoyalCourtHoveredCharacter]"
+				visible = "[Character.IsValid]"
+				raw_text = "Current hovered: [Character.GetName] id: [Character.GetID]"
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[GetRoyalCourtHoveredArtifact]"
+				visible = "[Artifact.IsValid]"
+				raw_text = "Current hovered: [Artifact.GetName] id: [Artifact.GetID]"
+			}
+
+			button_checkbox_label = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[CourtSceneEditorWindow.ToggleSelectionDebugLines]"
+				raw_tooltip = "Toggle showing debug lines"
+
+				blockoverride "checkbox"
+				{
+					checked = "[CourtSceneEditorWindow.ShowSelectionDebugLines]"
+				}
+
+				blockoverride "text"
+				{
+					raw_text = "Debug lines"
+				}
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "Visual culture: [CourtSceneEditorWindow.GetActiveSettings.GetSettingsCulture]"
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetShadowsStrength]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetShadowsStrength]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					max = 1
+					min = -4
+					step = 0.1
+				}
+
+				blockoverride "Label" {
+					raw_text = "Shadows strength"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetShadowsStrength]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnShadowsStrengthEdit]"
+				}
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetShadowsFade]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetShadowsFade]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					max = 1000
+					min = 0
+					step = 1
+				}
+
+				blockoverride "Label" {
+					raw_text = "Shadows fade"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetShadowsFade]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnShadowsFadeEdit]"
+				}
+			}
+
+			expand = {}
+		}
+
+		expand = {}
+	}
+}
+
+type editor_expand_button = button_group {
+	flowcontainer = {
+		spacing = 5
+
+		widget = {
+			size = { 18 22 }
+
+			button_expand = {
+				block "is_expanded" {
+					frame = 1
+				}
+				parentanchor = center
+			}
+		}
+
+		text_single = {
+			block "text" {
+				raw_text = "#D Expand text#!"
+			}
+			default_format = "#low"
+			align = nobaseline
+		}
+	}
+}
+
+type property_scrollbar_hbox = hbox
+{
+	maximumsize = { -1 25 }
+	layoutpolicy_horizontal = expanding
+
+	text_single = {
+		layoutpolicy_horizontal = expanding
+		block "Label" {
+			raw_text = "#D Radius#!"
+		}
+	}
+
+	scrollbar = {
+		direction = horizontal
+		size = { 300 20 }
+		minimumsize = { -1 14 }
+		wheelstep = 0
+
+		onchangestart = "[CourtSceneEditorWindow.PauseSelectionUpdate]"
+		onchangefinish = "[CourtSceneEditorWindow.ResumeSelectionUpdate]"
+
+		block "DataCalls" {}
+
+		block "Scale" {
+			using = ScaleColor
+		}
+
+		track = {
+			button = {
+				texture ="gfx/interface/progressbars/progress_black.dds"
+				size = { 20 14 }
+				spriteType = Corneredtiled
+				spriteborder = { 6 6 }
+			}
+		}
+
+		slider = {
+			using = SettingsValueSlider
+		}
+
+		dec_button = {
+			using = SettingsValueDecButton
+		}
+
+		inc_button = {
+			using = SettingsValueIncButton
+		}
+	}
+
+	editbox_standard = {
+		layoutpolicy_horizontal = expanding
+		maximumsize = { 50 25 }
+		minimumsize = { 50 25 }
+		blockoverride "editbox_properties"
+		{
+			block "LabelValue" {
+				raw_text = "#D 100#!"
+			}
+		}
+	}
+}
+
+
+type camera_position_settings_vbox = vbox
+{
+	block "position_visibility" {}
+
+	property_scrollbar_hbox = {
+		blockoverride "DataCalls" {
+			value = "[CourtSceneEditorWindow.GetCameraPosition( Camera.Self, 'x' )]"
+			onvaluechanged = "[CourtSceneEditorWindow.SetCameraPosition( Camera.AccessSelf, 'x' )]"
+			block "command_callbacks" {}
+		}
+
+		blockoverride "Label" {
+			raw_text = "Position X"
+		}
+
+		blockoverride "Scale" {
+			using = ScaleCoordinates
+		}
+
+		blockoverride "LabelValue" {
+			text = "[CourtSceneEditorWindow.GetCameraPosition( Camera.Self, 'x' )]"
+			oneditingfinished = "[CourtSceneEditorWindow.OnCameraPositionEdit( Camera.AccessSelf, 'x' )]"
+		}
+	}
+
+	property_scrollbar_hbox = {
+		blockoverride "DataCalls" {
+			value = "[CourtSceneEditorWindow.GetCameraPosition( Camera.Self, 'y' )]"
+			onvaluechanged = "[CourtSceneEditorWindow.SetCameraPosition( Camera.AccessSelf, 'y' )]"
+			block "command_callbacks" {}
+		}
+
+		blockoverride "Label" {
+			raw_text = "Position Y"
+		}
+
+		blockoverride "Scale" {
+			using = ScaleCoordinates
+		}
+
+		blockoverride "LabelValue" {
+			text = "[CourtSceneEditorWindow.GetCameraPosition( Camera.Self, 'y' )]"
+			oneditingfinished = "[CourtSceneEditorWindow.OnCameraPositionEdit( Camera.AccessSelf, 'y' )]"
+		}
+	}
+
+	property_scrollbar_hbox = {
+		blockoverride "DataCalls" {
+			value = "[CourtSceneEditorWindow.GetCameraPosition( Camera.Self, 'z' )]"
+			onvaluechanged = "[CourtSceneEditorWindow.SetCameraPosition( Camera.AccessSelf, 'z' )]"
+			block "command_callbacks" {}
+		}
+
+		blockoverride "Label" {
+			raw_text = "Position Z"
+		}
+
+		blockoverride "Scale" {
+			using = ScaleCoordinates
+		}
+
+		blockoverride "LabelValue" {
+			text = "[CourtSceneEditorWindow.GetCameraPosition( Camera.Self, 'z' )]"
+			oneditingfinished = "[CourtSceneEditorWindow.OnCameraPositionEdit( Camera.AccessSelf, 'z' )]"
+		}
+	}
+}
+
+type camera_settings_widget = widget
+{
+	size = { 495 415 }
+
+	vbox = {
+		block "camera_desc"
+		{
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				maximumsize = { 450 25 }
+
+				text_single = {
+					raw_text = "Description:  "
+				}
+
+				expand = {}
+
+				editbox_standard = {
+					layoutpolicy_horizontal = expanding
+					maximumsize = { 340 25 }
+					minimumsize = { 300 25 }
+					blockoverride "editbox_properties"
+					{
+						block "LabelValue" {
+							text = "[CourtSceneEditorWindow.GetCameraDescription( Camera.Self )]"
+							oneditingfinished = "[CourtSceneEditorWindow.OnCameraDescriptionEdit( Camera.AccessSelf )]"
+						}
+					}
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			button_checkbox_label = {
+				layoutpolicy_horizontal = expanding
+
+				block "visible_default_camera"
+				{
+					visible = no
+				}
+
+				onclick = "[CourtSceneEditorWindow.SetCameraDefault( Camera.AccessSelf )]"
+				raw_tooltip = "Set camera as the default one for royal court"
+
+				blockoverride "checkbox"
+				{
+					checked = "[CourtSceneEditorWindow.IsCameraDefault( Camera.Self )]"
+				}
+
+				blockoverride "text"
+				{
+					raw_text = "Default camera"
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			button_checkbox_label = {
+				layoutpolicy_horizontal = expanding
+
+				block "visible_screenshot_camera"
+				{
+					visible = no
+				}
+
+				onclick = "[CourtSceneEditorWindow.ToggleCameraToTakeScreenshot( Camera.AccessSelf )]"
+				raw_tooltip = "Use the camera to take screenshots"
+
+				blockoverride "checkbox"
+				{
+					checked = "[CourtSceneEditorWindow.IsCameraUsedForScreenshots( Camera.Self )]"
+				}
+
+				blockoverride "text"
+				{
+					raw_text = "Use camera for screenshots"
+				}
+			}
+		}
+
+		block "camera_name"
+		{
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				maximumsize = { 450 25 }
+
+				text_single = {
+					raw_text = "Localisation key:  "
+				}
+
+				expand = {}
+
+				visible = "[CourtSceneEditorWindow.IsCameraUsedForScreenshots( Camera.Self )]"
+
+				editbox_standard = {
+					layoutpolicy_horizontal = expanding
+					maximumsize = { 340 25 }
+					minimumsize = { 300 25 }
+					blockoverride "editbox_properties"
+					{
+						block "LabelValue" {
+							text = "[CourtSceneEditorWindow.GetCameraNameLocalizationKey( Camera.Self )]"
+							oneditingfinished = "[CourtSceneEditorWindow.OnCameraNameLocalizationKeyEdit( Camera.AccessSelf )]"
+						}
+					}
+				}
+			}
+		}
+		
+
+		camera_position_settings_vbox = {
+			layoutpolicy_horizontal = expanding
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetCameraFov( Camera.Self )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetCameraFov( Camera.AccessSelf )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Fov"
+			}
+
+			blockoverride "Scale" {
+				max = 170
+				min = 5
+				step = 1
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetCameraFov( Camera.Self )]"
+				block "camera_fov" {
+					oneditingfinished = "[CourtSceneEditorWindow.OnCameraFovEdit( Camera.AccessSelf )]"
+				}
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetPitch( Camera.Self )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetPitch( Camera.AccessSelf )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Pitch"
+			}
+
+
+			blockoverride "Scale" {
+				max =180
+				min = -180
+				step = 1
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetPitch( Camera.Self )]"
+				block "camera_pitch" {
+					oneditingfinished = "[CourtSceneEditorWindow.OnSetPitch( Camera.AccessSelf )]"
+				}
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetYaw( Camera.Self )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetYaw( Camera.AccessSelf )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Yaw"
+			}
+
+			blockoverride "Scale" {
+				max = 180
+				min = -180
+				step = 1
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetYaw( Camera.Self )]"
+				block "camera_yaw" {
+					oneditingfinished = "[CourtSceneEditorWindow.OnSetYaw( Camera.AccessSelf )]"
+				}
+			}
+		}
+
+		spacer = {
+			size = { 10 10 }
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetCameraNear( Camera.Self )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetCameraNear( Camera.AccessSelf )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Scale" {
+				using = ScaleCoord
+			}
+
+			blockoverride "Label" {
+				raw_text = "Near"
+			}
+
+			blockoverride "Scale" {
+				max = "[CourtSceneEditorWindow.GetCameraFar( Camera.Self )]"
+				min = 0
+				step = 10
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetCameraNear( Camera.Self )]"
+				block "camera_near" {
+					oneditingfinished = "[CourtSceneEditorWindow.OnCameraNearEdit( Camera.AccessSelf )]"
+				}
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetCameraFar( Camera.Self )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetCameraFar( Camera.AccessSelf )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Scale" {
+				using = ScaleCoord
+			}
+
+			blockoverride "Label" {
+				raw_text = "Far"
+			}
+
+			blockoverride "Scale" {
+				max = 5000
+				min = "[CourtSceneEditorWindow.GetCameraNear( Camera.Self )]"
+				step = 10
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetCameraFar( Camera.Self )]"
+				block "camera_far" {
+					oneditingfinished = "[CourtSceneEditorWindow.OnCameraFarEdit( Camera.AccessSelf )]"
+				}
+			}
+		}
+
+		hbox = {
+			button_standard = {
+				raw_text = "Remove camera"
+				onclick = "[CourtSceneEditorWindow.RemoveCamera( Camera.Self )]"
+				block "position_visibility" {}
+			}
+			button_standard = {
+				raw_text = "Duplicate camera"
+				onclick = "[CourtSceneEditorWindow.DuplicateCamera( Camera.Self )]"
+				block "position_visibility" {}
+			}
+		}
+
+		expand = {}
+	}
+}
+
+type light_settings_vbox = vbox
+{
+    background = {
+        visible = "[Not( CourtSceneEditorWindow.IsLightInLimits( Light.Self ) )]"
+        using = Status_Bad
+    }
+
+	widget = {
+		size = { 500 380 }
+
+		vbox = {
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "Description"
+				}
+
+				editbox_standard = {
+					size = { 370 25 }
+					minimumsize = { -1 14 }
+					blockoverride "editbox_properties"
+					{
+						block "LabelValue" {
+							text = "[CourtSceneEditorWindow.GetLightDescription( Light.Self )]"
+							oneditingfinished = "[CourtSceneEditorWindow.OnLightDescriptionEdit( Light.AccessSelf )]"
+						}
+					}
+				}
+			}
+
+			spacer = {
+				size = { 10 10 }
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					layoutstretchfactor_horizontal = 1
+
+					hbox = {
+						text_single = {
+							maximumsize = { 150 25 }
+							minimumsize = { 150 0 }
+							raw_text = "Color"
+							raw_tooltip = "Click the colored square to open color picker"
+						}
+
+						tools_colorpicker = {
+							color = "[CourtSceneEditorWindow.GetColor( Light.Self )]"
+							oncolorchanged = "[CourtSceneEditorWindow.OnColorChange( Light.AccessSelf )]"
+							oneditingfinished = "[CourtSceneEditorWindow.OnLightColorPickerFinishChange( Light.Self )]"
+							raw_tooltip = "Click to open color picker"
+							using = tooltip_above
+						}
+					}
+
+					expand = {}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					layoutstretchfactor_horizontal = 1
+					raw_tooltip = "Type of light source"
+
+					text_single = {
+						maximumsize = { 100 25 }
+						minimumsize = { 100 0 }
+						raw_text = "Type"
+					}
+
+					dropdown_menu_standard = {
+
+						blockoverride "dropdown_size"
+						{
+							size = { 150 32 }
+						}
+
+						blockoverride "dropdown_properties"
+						{
+							datamodel = "[GetAllLightTypes]"
+							onselectionchanged = "[CourtSceneEditorWindow.SetLightType( Light.AccessSelf )]"
+						}
+
+						blockoverride "dropdown_active_item_properties"
+						{
+							text = "[CourtSceneEditorWindow.GetLightType( Light.Self )]"
+						}
+
+						blockoverride "dropdown_item_properties"
+						{
+							text = "[CString.GetString]"
+						}
+					}
+
+					expand = {}
+				}
+			}
+
+			spacer = {
+				size = { 10 10 }
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetLightPosition( Light.Self, 'x' )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetLightPosition( Light.AccessSelf, 'x' )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					using = ScaleCoordinates
+				}
+
+				blockoverride "Label" {
+					raw_text = "Position X"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetLightPosition( Light.Self, 'x' )]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnLightPositionEdit( Light.AccessSelf, 'x' )]"
+				}
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetLightPosition( Light.Self, 'y' )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetLightPosition( Light.AccessSelf, 'y' )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					using = ScaleCoordinates
+				}
+
+				blockoverride "Label" {
+					raw_text = "Position Y"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetLightPosition( Light.Self, 'y' )]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnLightPositionEdit( Light.AccessSelf, 'y' )]"
+				}
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetLightPosition( Light.Self, 'z' )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetLightPosition( Light.AccessSelf, 'z' )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					using = ScaleCoordinates
+				}
+
+				blockoverride "Label" {
+					raw_text = "Position Z"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetLightPosition( Light.Self, 'z' )]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnLightPositionEdit( Light.AccessSelf, 'z' )]"
+				}
+			}
+
+			spacer = {
+				size = { 10 10 }
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetRadius( Light.Self )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetRadius( Light.AccessSelf )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					max = 5000
+					min = 0.1
+					step = 0.1
+				}
+
+				blockoverride "Label" {
+					raw_text = "Radius"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetRadius( Light.Self )]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnRadiusEdit( Light.AccessSelf )]"
+				}
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetIntensity( Light.Self )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetIntensity( Light.AccessSelf )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					max = 5000
+					min = 0
+					step = 1
+				}
+
+				blockoverride "Label" {
+					raw_text = "Intensity"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetIntensity( Light.Self )]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnIntensityEdit( Light.AccessSelf )]"
+				}
+			}
+
+			spacer = {
+				size = { 10 10 }
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetLightPitch( Light.Self )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetLightPitch( Light.AccessSelf )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Label" {
+					raw_text = "Pitch"
+				}
+
+				blockoverride "Scale" {
+					max = 360
+					min = -360
+					step = 1
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetLightPitch( Light.Self )]"
+					block "camera_pitch" {
+						oneditingfinished = "[CourtSceneEditorWindow.OnLightPitchEdit( Light.AccessSelf )]"
+					}
+				}
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetLightYaw( Light.Self )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetLightYaw( Light.AccessSelf )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Label" {
+					raw_text = "Yaw"
+				}
+
+				blockoverride "Scale" {
+					max = 360
+					min = -360
+					step = 1
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetLightYaw( Light.Self )]"
+					block "light_yaw" {
+						oneditingfinished = "[CourtSceneEditorWindow.OnLightYawEdit( Light.AccessSelf )]"
+					}
+				}
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetConeInnerAngle( Light.Self )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetConeInnerAngle( Light.AccessSelf )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					max = 1
+					min = 0
+					step = 0.01
+				}
+
+				blockoverride "Label" {
+					raw_text = "Inner Cone"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetConeInnerAngle( Light.Self )]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnConeInnerAngleEdit( Light.AccessSelf )]"
+				}
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetConeOuterAngle( Light.Self )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetConeOuterAngle( Light.AccessSelf )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					max = 1
+					min = 0
+					step = 0.01
+				}
+
+				blockoverride "Label" {
+					raw_text = "Outer Cone"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetConeOuterAngle( Light.Self )]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnConeOuterAngleEdit( Light.AccessSelf )]"
+				}
+			}		
+		}
+	}
+
+	spacer = {
+		size = { 10 10 }
+	}
+
+	vbox = {
+		layoutpolicy_horizontal = expanding
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			button_checkbox_label = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[CourtSceneEditorWindow.ToggleAnimatedLight( Light.AccessSelf )]"
+				raw_tooltip = "Make this light flicker and show animation controls"
+
+				blockoverride "checkbox"
+				{
+					checked = "[CourtSceneEditorWindow.IsAnimatedLight( Light.Self )]"
+				}
+
+				blockoverride "text"
+				{
+					raw_text = "Animated light"
+				}
+			}
+			
+			button_checkbox_label = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[CourtSceneEditorWindow.ToggleLightEnabled( Light.AccessSelf )]"
+				raw_tooltip = "Toggle this light"
+
+				blockoverride "checkbox"
+				{
+					checked = "[CourtSceneEditorWindow.IsLightEnabled( Light.Self )]"
+				}
+
+				blockoverride "text"
+				{
+					raw_text = "Enabled"
+				}
+			}
+
+			expand = {}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[CourtSceneEditorWindow.IsAnimatedLight( Light.Self )]"
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetLightPositionVariation( Light.Self )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetLightPositionVariation( Light.AccessSelf )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					max = 200
+					min = 0
+					step = 1
+				}
+
+				blockoverride "Label" {
+					raw_text = "Position variation"
+					raw_tooltip = "Position variation"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetLightPositionVariation( Light.Self )]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnLightPositionVariationEdit( Light.AccessSelf )]"
+				}
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetLightPositionVariationFrequency( Light.Self )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetLightPositionVariationFrequency( Light.AccessSelf )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					max = 200
+					min = 0
+					step = 1
+				}
+
+				blockoverride "Label" {
+					raw_text = "Position variation frequency"
+					raw_tooltip = "Position variation frequency"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetLightPositionVariationFrequency( Light.Self )]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnLightPositionVariationFrequencyEdit( Light.AccessSelf )]"
+				}
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetLightIntensityVariation( Light.Self )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetLightIntensityVariation( Light.AccessSelf )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					max = 200
+					min = 0
+					step = 1
+				}
+
+				blockoverride "Label" {
+					raw_text = "Intensity variation"
+					raw_tooltip = "Intensity variation"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetLightIntensityVariation( Light.Self )]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnLightIntensityVariationEdit( Light.AccessSelf )]"
+				}
+			}
+
+			property_scrollbar_hbox = {
+				blockoverride "DataCalls" {
+					value = "[CourtSceneEditorWindow.GetLightIntensityVariationFrequency( Light.Self )]"
+					onvaluechanged = "[CourtSceneEditorWindow.SetLightIntensityVariationFrequency( Light.AccessSelf )]"
+					block "command_callbacks" {}
+				}
+
+				blockoverride "Scale" {
+					max = 200
+					min = 0
+					step = 1
+				}
+
+				blockoverride "Label" {
+					raw_text = "Intensity variation frequency"
+					raw_tooltip = "Intensity variation frequency"
+				}
+
+				blockoverride "LabelValue" {
+					text = "[CourtSceneEditorWindow.GetLightIntensityVariationFrequency( Light.Self )]"
+					oneditingfinished = "[CourtSceneEditorWindow.OnLightIntensityVariationFrequencyEdit( Light.AccessSelf )]"
+				}
+			}
+		}
+	}
+
+	vbox = {
+		layoutpolicy_horizontal = expanding
+		
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			button_checkbox_label = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[CourtSceneEditorWindow.ToggleLightAffectedByShadow( Light.AccessSelf )]"
+				raw_tooltip = "Make this light source cast shadows"
+
+				blockoverride "checkbox"
+				{
+					checked = "[CourtSceneEditorWindow.IsAffectedByShadow( Light.Self )]"
+				}
+
+				blockoverride "text"
+				{
+					raw_text = "Cast shadow"
+				}
+			}
+			
+			button_checkbox_label = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[CourtSceneEditorWindow.ToggleCubemapShadow( Light.AccessSelf )]"
+				enabled = "[CourtSceneEditorWindow.IsAffectedByShadow( Light.Self )]"
+				raw_tooltip = "Make this light source use omnidirectional shadows"
+
+				blockoverride "checkbox"
+				{
+					checked = "[And( CourtSceneEditorWindow.IsAffectedByShadow( Light.Self ), CourtSceneEditorWindow.IsCubemapShadow( Light.Self ) )]"
+				}
+
+				blockoverride "text"
+				{
+					raw_text = "Omnidirectional shadows"
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+			
+			button_checkbox_label = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[CourtSceneEditorWindow.ToggleShowDebugLight( Light.AccessSelf )]"
+				raw_tooltip = "Toggle debug widges for light sources"
+
+				blockoverride "checkbox"
+				{
+					checked = "[CourtSceneEditorWindow.IsShowDebugLight( Light.Self )]"
+				}
+
+				blockoverride "text"
+				{
+					raw_text = "Toggle debug widget"
+				}
+			}
+
+			button_checkbox_label = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[CourtSceneEditorWindow.ToggleShowDebugCamera( Light.AccessSelf )]"
+				enabled = "[CourtSceneEditorWindow.IsAffectedByShadow( Light.Self )]"
+				raw_tooltip = "Draw shadow camera volume. Only available when shadow is active"
+
+				blockoverride "checkbox"
+				{
+					checked = "[And( CourtSceneEditorWindow.IsAffectedByShadow( Light.Self ), CourtSceneEditorWindow.IsShowDebugCamera( Light.Self ) )]"
+				}
+
+				blockoverride "text"
+				{
+					raw_text = "Show shadow camera"
+				}
+			}
+		}
+
+		property_scrollbar_hbox = {
+			datacontext = "[CourtSceneEditorWindow.AccessShadowCamera( Light.AccessSelf )]"
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetShadowFade( Camera.Self )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetShadowFade( Camera.AccessSelf )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Scale" {
+				max = 1000
+				min = -1
+				step = 1
+			}
+
+			blockoverride "Label" {
+				raw_text = "Shadow fade"
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetShadowFade( Camera.Self )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnSetShadowFade( Camera.AccessSelf )]"
+			}
+
+		}
+	}
+
+	camera_settings_widget = {
+		size = { 495 180 }
+		visible = "[CourtSceneEditorWindow.IsAffectedByShadow( Light.Self )]"
+
+        background = {
+            visible = "[Not( CourtSceneEditorWindow.IsLightShadowInLimits(Light.Self) )]"
+            using = Status_Bad
+        }
+
+		datacontext = "[CourtSceneEditorWindow.AccessShadowCamera( Light.AccessSelf )]"
+
+		blockoverride "position_visibility"
+		{
+			visible = no
+		}
+
+		blockoverride "camera_desc" {}
+		
+		blockoverride "camera_name" {}
+
+		blockoverride "command_callbacks"
+		{
+			onchangestart = "[CourtSceneEditorWindow.OnLightEditStarted( Light.Self )]"
+			onchangefinish = "[CourtSceneEditorWindow.OnLightEditFinished( Light.Self )]"
+		}
+
+		blockoverride "camera_fov"
+		{
+			oneditingfinished = "[CourtSceneEditorWindow.OnLightCameraEdit( Light.AccessSelf, Camera.AccessSelf, 'fov' )]"
+		}
+
+		blockoverride "camera_pitch"
+		{
+			oneditingfinished = "[CourtSceneEditorWindow.OnLightCameraEdit( Light.AccessSelf, Camera.AccessSelf, 'pitch' )]"
+		}
+
+		blockoverride "camera_yaw"
+		{
+			oneditingfinished = "[CourtSceneEditorWindow.OnLightCameraEdit( Light.AccessSelf, Camera.AccessSelf, 'yaw' )]"
+		}
+
+		blockoverride "camera_far"
+		{
+			oneditingfinished = "[CourtSceneEditorWindow.OnLightCameraEdit( Light.AccessSelf, Camera.AccessSelf, 'far' )]"
+		}
+
+		blockoverride "camera_near"
+		{
+			oneditingfinished = "[CourtSceneEditorWindow.OnLightCameraEdit( Light.AccessSelf, Camera.AccessSelf, 'near' )]"
+		}
+	}
+	
+	hbox = {
+		button_standard = {
+			raw_text = "Remove light"
+			onclick = "[CourtSceneEditorWindow.RemoveLight( Light.Self )]"
+		}
+
+		button_standard = {
+			raw_text = "Duplicate light"
+			onclick = "[CourtSceneEditorWindow.DuplicateLight( Light.Self )]"
+		}
+	}
+
+	spacer = {
+		size = { 10 10 }
+	}
+}
+
+type character_settings_widget = widget
+{
+	size = { 490 310 }
+
+	vbox = {
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			text_single = {
+				raw_text = "Description:  "
+			}
+
+			expand = {}
+
+			editbox_standard = {
+				layoutpolicy_horizontal = expanding
+				maximumsize = { 340 25 }
+				minimumsize = { 300 25 }
+				blockoverride "editbox_properties"
+				{
+					block "LabelValue" {
+						text = "[CourtSceneEditorWindow.GetCharacterDescription( CharacterProperties.Self )]"
+						oneditingfinished = "[CourtSceneEditorWindow.OnCharacterDescriptionEdit( CharacterProperties.AccessSelf )]"
+					}
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			text_single = {
+				raw_text = "Locator:"
+			}
+
+			expand = {}
+
+			editbox_standard = {
+				layoutpolicy_horizontal = expanding
+				maximumsize = { 340 25 }
+				minimumsize = { 300 25 }
+				blockoverride "editbox_properties"
+				{
+					block "LabelValue" {
+						text = "[CourtSceneEditorWindow.GetCharacterLocator( CharacterProperties.Self )]"
+						oneditingfinished = "[CourtSceneEditorWindow.OnCharacterLocatorEdit( CharacterProperties.AccessSelf )]"
+					}
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			text_single = {
+				raw_text = "Roles:"
+			}
+
+			expand = {}
+
+			editbox_standard = {
+				layoutpolicy_horizontal = expanding
+				maximumsize = { 340 25 }
+				minimumsize = { 300 25 }
+				blockoverride "editbox_properties"
+				{
+					block "LabelValue" {
+						text = "[CourtSceneEditorWindow.GetCharacterRoles( CharacterProperties.Self )]"
+						oneditingfinished = "[CourtSceneEditorWindow.OnCharacterRolesEdit( CharacterProperties.AccessSelf )]"
+					}
+				}
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetCharacterPosition( CharacterProperties.Self, 'x' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetCharacterPosition( CharacterProperties.AccessSelf, 'x' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Position X"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleCoordinates
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetCharacterPosition( CharacterProperties.Self, 'x' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnCharacterPositionEdit( CharacterProperties.AccessSelf, 'x' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetCharacterPosition( CharacterProperties.Self, 'y' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetCharacterPosition( CharacterProperties.AccessSelf, 'y' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Position Y"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleCoordinates
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetCharacterPosition( CharacterProperties.Self, 'y' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnCharacterPositionEdit( CharacterProperties.AccessSelf, 'y' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetCharacterPosition( CharacterProperties.Self, 'z' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetCharacterPosition( CharacterProperties.AccessSelf, 'z' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Position Z"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleCoordinates
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetCharacterPosition( CharacterProperties.Self, 'z' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnCharacterPositionEdit( CharacterProperties.AccessSelf, 'z' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetCharacterRotation( CharacterProperties.Self, 'x' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetCharacterRotation( CharacterProperties.AccessSelf, 'x' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Rotation X"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleRotation
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetCharacterRotation( CharacterProperties.Self, 'x' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnCharacterRotationEdit( CharacterProperties.AccessSelf, 'x' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetCharacterRotation( CharacterProperties.Self, 'y' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetCharacterRotation( CharacterProperties.AccessSelf, 'y' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Rotation Y"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleRotation
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetCharacterRotation( CharacterProperties.Self, 'y' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnCharacterRotationEdit( CharacterProperties.AccessSelf, 'y' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetCharacterRotation( CharacterProperties.Self, 'z' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetCharacterRotation( CharacterProperties.AccessSelf, 'z' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Rotation Z"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleRotation
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetCharacterRotation( CharacterProperties.Self, 'z' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnCharacterRotationEdit( CharacterProperties.AccessSelf, 'z' )]"
+			}
+		}
+
+		hbox = {
+			button_standard = {
+				raw_text = "Remove character"
+				onclick = "[CourtSceneEditorWindow.RemoveCharacter( CharacterProperties.Self )]"
+			}
+
+			button_standard = {
+				raw_text = "Duplicate character"
+				onclick = "[CourtSceneEditorWindow.DuplicateCharacter( CharacterProperties.Self )]"
+			}
+		}
+
+		expand = {}
+	}
+}
+type asset_settings_widget = widget {
+	size = { 490 345 }
+
+	vbox = {
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			text_single = {
+				raw_text = "Description:  "
+			}
+
+			expand = {}
+
+			editbox_standard = {
+				layoutpolicy_horizontal = expanding
+				maximumsize = { 340 25 }
+				minimumsize = { 300 25 }
+				blockoverride "editbox_properties"
+				{
+					block "LabelValue" {
+						text = "[CourtSceneEditorWindow.GetAssetDescription( AssetSettings.Self )]"
+						oneditingfinished = "[CourtSceneEditorWindow.OnAssetDescriptionEdit( AssetSettings.AccessSelf )]"
+					}
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			text_single = {
+				raw_text = "Asset:"
+			}
+
+			expand = {}
+
+			editbox_standard = {
+				layoutpolicy_horizontal = expanding
+				maximumsize = { 340 25 }
+				minimumsize = { 300 25 }
+				blockoverride "editbox_properties"
+				{
+					block "LabelValue" {
+						text = "[CourtSceneEditorWindow.GetAssetName( AssetSettings.Self )]"
+						oneditingfinished = "[CourtSceneEditorWindow.OnAssetNameEdit( AssetSettings.AccessSelf )]"
+					}
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			text_single = {
+				raw_text = "Locator:"
+			}
+
+			expand = {}
+
+			editbox_standard = {
+				layoutpolicy_horizontal = expanding
+				maximumsize = { 340 25 }
+				minimumsize = { 300 25 }
+				blockoverride "editbox_properties"
+				{
+					block "LabelValue" {
+						text = "[CourtSceneEditorWindow.GetAssetLocator( AssetSettings.Self )]"
+						oneditingfinished = "[CourtSceneEditorWindow.OnAssetLocatorEdit( AssetSettings.AccessSelf )]"
+					}
+				}
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetAssetPosition( AssetSettings.Self, 'x' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetAssetPosition( AssetSettings.AccessSelf, 'x' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Position X"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleCoordinates
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetAssetPosition( AssetSettings.Self, 'x' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnAssetPositionEdit( AssetSettings.AccessSelf, 'x' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetAssetPosition( AssetSettings.Self, 'y' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetAssetPosition( AssetSettings.AccessSelf, 'y' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Position Y"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleCoordinates
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetAssetPosition( AssetSettings.Self, 'y' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnAssetPositionEdit( AssetSettings.AccessSelf, 'y' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetAssetPosition( AssetSettings.Self, 'z' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetAssetPosition( AssetSettings.AccessSelf, 'z' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Position Z"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleCoordinates
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetAssetPosition( AssetSettings.Self, 'z' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnAssetPositionEdit( AssetSettings.AccessSelf, 'z' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetAssetRotation( AssetSettings.Self, 'y' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetAssetRotation( AssetSettings.AccessSelf, 'y' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Direction"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleRotation
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetAssetRotation( AssetSettings.Self, 'y' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnAssetRotationEdit( AssetSettings.AccessSelf, 'y' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetAssetRotation( AssetSettings.Self, 'x' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetAssetRotation( AssetSettings.AccessSelf, 'x' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Pitch"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleRotation
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetAssetRotation( AssetSettings.Self, 'x' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnAssetRotationEdit( AssetSettings.AccessSelf, 'x' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetAssetRotation( AssetSettings.Self, 'z' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetAssetRotation( AssetSettings.AccessSelf, 'z' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Roll"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleRotation
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetAssetRotation( AssetSettings.Self, 'z' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnAssetRotationEdit( AssetSettings.AccessSelf, 'z' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetAssetScale( AssetSettings.Self )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetAssetScale( AssetSettings.AccessSelf )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Scale"
+			}
+
+			blockoverride "Scale" {
+				min = 0
+				max = 100
+				step = 0.1
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetAssetScale( AssetSettings.Self )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnAssetScaleEdit( AssetSettings.AccessSelf )]"
+			}
+		}
+
+		hbox = {
+			button_standard = {
+				raw_text = "Remove asset"
+				onclick = "[CourtSceneEditorWindow.RemoveAsset( AssetSettings.Self )]"
+			}
+
+			button_standard = {
+				raw_text = "Duplicate asset"
+				onclick = "[CourtSceneEditorWindow.DuplicateAsset( AssetSettings.Self )]"
+			}
+		}
+
+		expand = {}
+	}
+}
+
+type artifact_settings_widget = widget
+{
+	size = { 490 310 }
+
+	vbox = {
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			text_single = {
+				raw_text = "Description:"
+			}
+
+			expand = {}
+
+			editbox_standard = {
+				layoutpolicy_horizontal = expanding
+				maximumsize = { 340 25 }
+				minimumsize = { 300 25 }
+				blockoverride "editbox_properties"
+				{
+					block "LabelValue" {
+						text = "[CourtSceneEditorWindow.GetArtifactDescription( ArtifactSettings.Self )]"
+						oneditingfinished = "[CourtSceneEditorWindow.OnArtifactDescriptionEdit( ArtifactSettings.AccessSelf )]"
+					}
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			text_single = {
+				raw_text = "Slot Type:"
+			}
+
+			expand = {}
+
+			editbox_standard = {
+				layoutpolicy_horizontal = expanding
+				maximumsize = { 340 25 }
+				minimumsize = { 300 25 }
+				blockoverride "editbox_properties"
+				{
+					block "LabelValue" {
+						text = "[CourtSceneEditorWindow.GetArtifactSlotType( ArtifactSettings.Self )]"
+						oneditingfinished = "[CourtSceneEditorWindow.OnArtifactSlotTypeEdit( ArtifactSettings.AccessSelf )]"
+					}
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			maximumsize = { 450 25 }
+
+			text_single = {
+				raw_text = "Locator:"
+			}
+
+			expand = {}
+
+			editbox_standard = {
+				layoutpolicy_horizontal = expanding
+				maximumsize = { 340 25 }
+				minimumsize = { 300 25 }
+				blockoverride "editbox_properties"
+				{
+					block "LabelValue" {
+						text = "[CourtSceneEditorWindow.GetArtifactLocator( ArtifactSettings.Self )]"
+						oneditingfinished = "[CourtSceneEditorWindow.OnArtifactLocatorEdit( ArtifactSettings.AccessSelf )]"
+					}
+				}
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetArtifactPosition( ArtifactSettings.Self, 'x' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetArtifactPosition( ArtifactSettings.AccessSelf, 'x' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Position X"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleCoordinates
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetArtifactPosition( ArtifactSettings.Self, 'x' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnArtifactPositionEdit( ArtifactSettings.AccessSelf, 'x' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetArtifactPosition( ArtifactSettings.Self, 'y' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetArtifactPosition( ArtifactSettings.AccessSelf, 'y' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Position Y"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleCoordinates
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetArtifactPosition( ArtifactSettings.Self, 'y' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnArtifactPositionEdit( ArtifactSettings.AccessSelf, 'y' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetArtifactPosition( ArtifactSettings.Self, 'z' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetArtifactPosition( ArtifactSettings.AccessSelf, 'z' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Position Z"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleCoordinates
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetArtifactPosition( ArtifactSettings.Self, 'z' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnArtifactPositionEdit( ArtifactSettings.AccessSelf, 'z' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetArtifactRotation( ArtifactSettings.Self, 'y' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetArtifactRotation( ArtifactSettings.AccessSelf, 'y' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Direction"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleRotation
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetArtifactRotation( ArtifactSettings.Self, 'y' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnArtifactRotationEdit( ArtifactSettings.AccessSelf, 'y' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetArtifactRotation( ArtifactSettings.Self, 'x' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetArtifactRotation( ArtifactSettings.AccessSelf, 'x' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Pitch"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleRotation
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetArtifactRotation( ArtifactSettings.Self, 'x' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnArtifactRotationEdit( ArtifactSettings.AccessSelf, 'x' )]"
+			}
+		}
+
+		property_scrollbar_hbox = {
+			blockoverride "DataCalls" {
+				value = "[CourtSceneEditorWindow.GetArtifactRotation( ArtifactSettings.Self, 'z' )]"
+				onvaluechanged = "[CourtSceneEditorWindow.SetArtifactRotation( ArtifactSettings.AccessSelf, 'z' )]"
+				block "command_callbacks" {}
+			}
+
+			blockoverride "Label" {
+				raw_text = "Roll"
+			}
+
+			blockoverride "Scale" {
+				using = ScaleRotation
+			}
+
+			blockoverride "LabelValue" {
+				text = "[CourtSceneEditorWindow.GetArtifactRotation( ArtifactSettings.Self, 'z' )]"
+				oneditingfinished = "[CourtSceneEditorWindow.OnArtifactRotationEdit( ArtifactSettings.AccessSelf, 'z' )]"
+			}
+		}
+
+		hbox = {
+			button_standard = {
+				raw_text = "Remove artifact"
+				onclick = "[CourtSceneEditorWindow.RemoveArtifact( ArtifactSettings.Self )]"
+			}
+
+			button_standard = {
+				raw_text = "Duplicate artifact"
+				onclick = "[CourtSceneEditorWindow.DuplicateArtifact( ArtifactSettings.Self )]"
+			}
+		}
+
+		expand = {}
+	}
+}
+}
+
+template ScaleCoordinates
+{
+	max = 1500
+	min = -1500
+	step = 0.1
+}
+
+template ScaleColor
+{
+	max = 2
+	min = 0
+	step = 0.1
+}
+
+template ScaleRotation
+{
+	max = 180
+	min = -180
+	step = 1
+}

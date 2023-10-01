@@ -1,0 +1,265 @@
+######################################################
+################ APPOINT COUNCILLOR ##################
+######################################################
+
+window = {
+	name = "potential_councillor_window"
+	parentanchor = right
+	position = { -700 90 }
+	layer = middle
+	allow_outside = yes
+
+	using = Window_Movable
+	using = Window_Size_CharacterList
+	using = Window_Background
+	using = Window_Decoration
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+	}
+
+	datacontext = "[PotentialCouncillorWindow.GetCharacterList]"
+
+	vbox = {
+		using = Window_Margins
+
+		header_pattern = {
+			layoutpolicy_horizontal = expanding
+
+			blockoverride "header_text"
+			{
+				datacontext = "[PotentialCouncillorWindow.GetCouncilPositionType]"
+				text = "POTENTIAL_COUNCILLOR_TITLE"
+			}
+
+			blockoverride "button_close"
+			{
+				onclick = "[PotentialCouncillorWindow.Close]"
+			}
+		}
+
+		vbox = {
+			datacontext = "[PotentialCouncillorWindow.GetCouncillor]"
+			visible = "[PotentialCouncillorWindow.HasCouncillor]"
+			layoutpolicy_horizontal = expanding
+			margin = { 15 0 }
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				margin_right = 3
+
+				portrait_shoulders = {}
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					margin = { 10 20 }
+					spacing = 2
+
+					text_label_center = {
+						text = "COUNCIL_WINDOW_CURRENTLY_APPOINTED"
+						default_format = "#low"
+					}
+
+					text_multi = {
+						layoutpolicy_horizontal = expanding
+						autoresize = yes
+						text = "[Character.GetUINameNoTooltip]"
+						default_format = "#high"
+						using = Font_Size_Medium
+						min_width = 320
+						max_width = 320
+					}
+
+					text_single = {
+						visible = "[Character.HasRelationTo( GetPlayer )]"
+						layoutpolicy_horizontal = expanding
+						autoresize = no
+						text = "[Character.GetRelationToString( GetPlayer )]"
+						tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+					}
+
+					expand = {}
+
+					button_standard = {
+						visible = "[PotentialCouncillorWindow.HasCouncillor]"
+
+						text = "CONFIRM_FIRE_COUNCILLOR_ACCEPT"
+
+						onclick = "[PotentialCouncillorWindow.FireCouncillor]"
+						enabled = "[PotentialCouncillorWindow.CanFireCouncillor]"
+						tooltip = "[PotentialCouncillorWindow.GetFireCouncillorTooltip]"
+					}
+				}
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+					margin_bottom = 28
+
+					expand = {}
+
+					vbox = {
+						spacing = 10
+
+						background = {
+							using = Background_Area
+							margin = { 5 0 }
+							margin_bottom = 10
+						}
+
+						text_single = {
+							text = "COUNCIL_WINDOW_SKILLS"
+							default_format = "#low;italic"
+						}
+
+						hbox = {
+							name = "skills_grid"
+							datamodel = "[PotentialCouncillorWindow.GetCouncillorSkillItems]"
+
+							item = {
+								widget_skill_item_no_icon = {}
+							}
+						}
+					}
+				}
+			}
+
+			divider_light = {
+				layoutpolicy_horizontal = expanding
+			}
+		}
+
+		fixed_gridbox_character_list = {
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+			visible = "[PotentialCouncillorWindow.CanReassignCouncillor]"
+
+			blockoverride "scrollbox_empty"
+			{
+				text = "NO_POTENTIAL_COUNCILLORS"
+				visible = "[Not(PotentialCouncillorWindow.HasMembers)]"
+			}
+
+			blockoverride "item_size" 
+			{
+				size = { 630 110 }
+			}
+
+			blockoverride "button"
+			{
+				using = Background_Guest
+			}
+
+			blockoverride "base_button"
+			{
+				alwaystransparent = yes
+			}
+
+			blockoverride "bottom_right_box"
+			{
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					expand = {}
+
+					button_standard = {
+						name = "reassign_to_position"
+						visible = "[And(And( Not( CharacterListItem.GetBool('can_swap') ), Character.IsCouncillor ), Not(CharacterListItem.GetCharacter.IsGuest))]"
+						onclick = "[CharacterListItem.OnClick('set_position')]"
+						enabled = "[Not( PotentialCouncillorWindow.HasPendingInteraction( CharacterListItem.GetCharacter ) )]"
+
+						text = "POTENTIAL_COUNCILLOR_REASSIGN"
+						default_format = "#high"
+
+						tooltip = "[CharacterListItem.GetText('assign_tooltip')]"
+						using = tooltip_below
+
+					}
+
+					button_standard = {
+						name = "add_to_position"
+						visible = "[And(Not( Character.IsCouncillor ), Not(CharacterListItem.GetCharacter.IsGuest))]"
+						onclick = "[CharacterListItem.OnClick('set_position')]"
+						enabled = "[And( PotentialCouncillorWindow.CanFireCouncillor, Not( PotentialCouncillorWindow.HasPendingInteraction( CharacterListItem.GetCharacter ) ) )]"
+
+						text = "POTENTIAL_COUNCILLOR_ASSIGN"
+						default_format = "#high"
+
+						using = tooltip_below
+						tooltip = "[Select_CString( PotentialCouncillorWindow.CanFireCouncillor, CharacterListItem.GetText('assign_tooltip'), PotentialCouncillorWindow.GetFireCouncillorTooltip )]"
+					}
+
+					button_standard = {
+						name = "swap_position"
+						visible = "[And(CharacterListItem.GetBool('can_swap'), Not(CharacterListItem.GetCharacter.IsGuest))]"
+						onclick = "[CharacterListItem.OnClick('swap_position')]"
+
+						text = "POTENTIAL_COUNCILLOR_SWAP"
+						default_format = "#high"
+
+						using = tooltip_below
+						tooltip = "[CharacterListItem.GetText('swap_tooltip')]"
+					}
+
+					button_standard = {
+						name = "recruit_guest"
+						visible = "[And(Character.IsPlayerInteractionShown('recruit_guest_interaction'), Character.IsGuest)]"
+						onclick = "[Character.OpenPlayerInteraction('recruit_guest_interaction')]"
+						enabled = "[Character.IsPlayerInteractionValid('recruit_guest_interaction')]"
+
+						text = "[Character.GetPlayerInteractionName('recruit_guest_interaction')]"
+
+						tooltip = "[Character.GetPlayerInteractionTooltip('recruit_guest_interaction')]"
+						using = tooltip_below
+					}
+				}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+			visible = "[Not(PotentialCouncillorWindow.CanReassignCouncillor)]"
+
+			textbox = {
+				name = "cannot_assign_info"
+				size = { 30 20 }
+				margin_bottom = 4
+				default_format = "#low;italic"
+				align = center
+				text = "COUNCIL_WINDOW_CANT_REASSIGN_WARNING"
+			}
+		}
+	}
+
+	window_character_filter = {
+		blockoverride "addition_filter" {
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('ruler_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('health_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('religion_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('culture_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+			}
+		}
+	}
+}
