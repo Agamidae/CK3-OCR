@@ -5,7 +5,6 @@ window = {
 	movable = no
 	visible = "[And( InventoryView.IsVisible, Not(IsGameViewOpen('barbershop')) )]"
 
-	using = Window_Background_No_Edge
 
 	datacontext = "[GetVariableSystem]"
 	datacontext = "[InventoryView.GetCharacter]"
@@ -27,6 +26,8 @@ window = {
 	vbox = {
 		using = fullscreen_window
 		using = ocr_margins
+		using = ocr
+		using = Window_Background_No_Edge
 
 		header_pattern = {
 			layoutpolicy_horizontal = expanding
@@ -48,15 +49,6 @@ window = {
 
 				button_text = {
 				    blockoverride "text" {
-				        raw_text = "Errors: [NumberOrErrors]."
-						align = left
-				    }
-					onclick = "[ClearErrorLog]"
-					visible = "[Not(ReleaseMode)]"
-				}
-
-				button_text = {
-				    blockoverride "text" {
 				        raw_text = "INVENTORY_TITLE"
 						align = left
 				    }
@@ -73,7 +65,7 @@ window = {
 
 						text_single = {
 							raw_text = "selected"
-							visible = "[And(Not(GetVariableSystem.Exists('claims')), Not(GetVariableSystem.Exists('all_artifacts')))]"
+							visible = "[And(And(Not(GetVariableSystem.Exists('claims')), Not(GetVariableSystem.Exists('all_artifacts'))), Isnt('court_artifacts'))]"
 						}
 
 						dot = { }
@@ -111,6 +103,52 @@ window = {
 					onclick = "[GetVariableSystem.Set('all_artifacts', 'yes')]"
 					onclick = "[GetScriptedGui('artifacts_list').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 				}
+
+				button_text = {
+					visible = "[Not(Character.HasRoyalCourt)]"
+					datacontext = "[AccessLocalPlayerCachedData.AccessNewArtifacts]"
+					blockoverride "pre" {
+						text_single = {
+							visible = "[GreaterThan_int32( InventoryView.GetNumCourtArtifacts, '(int32)0' )]"
+							text = "[InventoryView.GetNumCourtArtifacts]"
+						}
+					}
+					blockoverride "text" {
+						raw_text = "Court Artifacts, tab 4."
+					}
+					blockoverride "extra" {
+						text_single = {
+							visible = "[Is('court_artifacts')]"
+							raw_text = "selected."
+						}
+					}
+					shortcut = speed_4
+					onclick = "[GetVariableSystem.Clear('claims')]"
+					onclick = "[VariableSystem.Set( 'court_artifacts', 'yes' )]"
+					onclick  = "[Clear('all_artifacts')]"
+				}
+
+				button_text = {
+					visible = "[Character.HasRoyalCourt]"
+					datacontext = "[AccessLocalPlayerCachedData.AccessNewArtifacts]"
+					blockoverride "pre" {
+						text_single = {
+							visible = "[GreaterThan_int32( InventoryView.GetNumCourtArtifacts, '(int32)0' )]"
+							text = "[InventoryView.GetNumCourtArtifacts]"
+						}
+					}
+					blockoverride "text" {
+						raw_text = "Court Artifacts, control Q."
+					}
+					shortcut = map_mode_5
+					# onclick = "[VariableSystem.Set( 'artifacts_tab', 'artifacts' )]"
+					onclick = "[GetVariableSystem.Set('royal_details', 'artifacts')]"
+					onclick = "[Character.OpenRoyalCourtView( 'throne' )]"
+
+					onclick = "[InventoryView.Close]"
+					onclick = "[LocalPlayerNewArtifacts.ClearNewArtifactsOfCategory( 'court' )]"
+				}
+
 				expand = { }
 			}
 
@@ -168,6 +206,10 @@ window = {
 		vbox = {
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
 
 			# right side is other artifacts and claims
 			vbox = {
@@ -235,7 +277,6 @@ window = {
 						expand = { }
 					}
 
-
 					hbox = {
 						visible = "[GetVariableSystem.Exists('artifact_filters')]"
 						layoutpolicy_horizontal = expanding
@@ -252,7 +293,7 @@ window = {
 								blockoverride "extra" {
 									text_single = {
 										raw_text = ", Selected"
-										visible = "[Not( InventoryView.HasSelectedSlot )]"
+										visible = "[And(Not( InventoryView.HasSelectedSlot ), Isnt('court_artifacts'))]"
 										align = left
 									}
 									dot = { }
@@ -279,7 +320,7 @@ window = {
 										dot = { }
 									}
 									datacontext = "[AccessLocalPlayerCachedData.AccessNewArtifacts]"
-									datacontext = "[Inventory.GetSlot('crown')]"									onclick = "[InventoryView.OnClickSlotTypeTab( InventorySlotType.Self )]"
+									datacontext = "[Inventory.GetSlot('crown')]"				onclick = "[InventoryView.OnClickSlotTypeTab( InventorySlotType.Self )]"
 									visible = "[InventorySlotType.IsInventoryType]"
 								}
 							}
@@ -305,19 +346,17 @@ window = {
 					margin = { 20 0 }
 					spacing = 5
 
-					text_label_center = {
-						layoutpolicy_horizontal = expanding
-						align = center
-						text = "[court_artifacts|E]"
-						margin = { 0 2 }
-					}
 
-					text_multi = {
-						size = { 0 45 }
+					hbox = {
 						layoutpolicy_horizontal = expanding
-						datacontext = "[InventoryView.GetCharacter]"
-						text = "CHARACTER_WITHOUT_ROYAL_COURT_COURT_ARTIFACT_TAB"
-						default_format = "#weak"
+
+						text_multi_wide = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[InventoryView.GetCharacter]"
+							text = "CHARACTER_WITHOUT_ROYAL_COURT_COURT_ARTIFACT_TAB"
+						}
+
+						expand = { }
 					}
 				}
 
@@ -415,10 +454,10 @@ window = {
 							name = "artifacts_list"
 							datamodel = "[InventoryView.GetSortedArtifacts]"
 							layoutpolicy_horizontal = expanding
-							spacing = 6
 
 							item = {
-								widget_artifact_entry = {
+								widget_artifact_entry_ocr = {
+									layoutpolicy_horizontal = expanding
 									visible = "[Artifact.IsCourtArtifact]"
 									datacontext = "[InventoryView.GetCharacter.GetInventory]"
 									datacontext = "[InventoryView.GetSelectedSlot]"
@@ -835,8 +874,7 @@ window = {
 		}
 	}
 
-	old_inventory = {
-		visible = "[GetVariableSystem.Exists('ocr')]"
+	window_inventory_vanilla = {
 	}
 }
 
@@ -1524,6 +1562,7 @@ types InventoryViewTypes
 							# text_single = {
 							# 	raw_text = "[IndexNumber], "
 							# }
+							block "index" {}
 							flowcontainer = {
 								ignoreinvisible = yes
 								visible = "[Inventory.IsEquipped( Artifact.Self )]"
@@ -1589,7 +1628,9 @@ types InventoryViewTypes
 						layoutpolicy_horizontal = expanding
 
 						text_multi = {
-							visible = "[GetVariableSystem.Exists('artifact_desc')]"
+							block "court" {
+								visible = "[GetVariableSystem.Exists('artifact_desc')]"
+							}
 							text = "[Artifact.GetDesc]"
 							autoresize = yes
 							max_width = 600
@@ -1653,21 +1694,27 @@ types InventoryViewTypes
 
 						expand = { }
 					}
+					hbox = {
+					    layoutpolicy_horizontal = expanding
+						block "destroy" {}
+						button_text = {
+							datacontext = "[GetPlayer]"
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "INVENTORY_DESTROY_ARTIFACT"
+							}
+							blockoverride "disabled" {
+								visible = "[Not(Character.IsPlayerInteractionWithTargetArtifactValid( 'destroy_artifact_interaction', Artifact.Self ))]"
+							}
+							blockoverride "dot" {
+							}
+							visible = "[Character.IsPlayerInteractionShown( 'destroy_artifact_interaction' )]"
+							enabled = "[Character.IsPlayerInteractionWithTargetArtifactValid( 'destroy_artifact_interaction', Artifact.Self )]"
+							onclick = "[Character.OpenPlayerInteractionWithTargetArtifact( 'destroy_artifact_interaction', Artifact.Self )]"
+							tooltip = "[Character.GetPlayerInteractionWithTargetArtifactTooltip( 'destroy_artifact_interaction', Artifact.Self )]"
+						}
 
-					button_text = {
-						layoutpolicy_horizontal = expanding
-						blockoverride "text" {
-							raw_text = "INVENTORY_DESTROY_ARTIFACT"
-						}
-						blockoverride "disabled" {
-							visible = "[Not(Character.IsPlayerInteractionWithTargetArtifactValid( 'destroy_artifact_interaction', Artifact.Self ))]"
-						}
-						blockoverride "dot" {
-						}
-						visible = "[Character.IsPlayerInteractionShown( 'destroy_artifact_interaction' )]"
-						enabled = "[Character.IsPlayerInteractionWithTargetArtifactValid( 'destroy_artifact_interaction', Artifact.Self )]"
-						onclick = "[Character.OpenPlayerInteractionWithTargetArtifact( 'destroy_artifact_interaction', Artifact.Self )]"
-						tooltip = "[Character.GetPlayerInteractionWithTargetArtifactTooltip( 'destroy_artifact_interaction', Artifact.Self )]"
+					    expand = { }
 					}
 
 					flowcontainer = {
@@ -2011,20 +2058,9 @@ types InventoryViewTypes
 					}
 				}
 			}
-			blockoverride "claim" {
-				text_single = {
-					name = "house_claim"
-					visible = "[ArtifactClaim.IsHouseClaim]"
-					text = "ARTIFACT_HOUSE_CLAIM"
-					align = left
-				}
-
-				text_single = {
-					name = "personal_claim"
-					visible = "[ArtifactClaim.IsPersonalClaim]"
-					text = "ARTIFACT_PERSONAL_CLAIM"
-					align = left
-				}
+			blockoverride "claim" {}
+			blockoverride "destroy" {
+				visible = "[Artifact.GetOwner.IsLocalPlayer]"
 			}
 		}
 	}

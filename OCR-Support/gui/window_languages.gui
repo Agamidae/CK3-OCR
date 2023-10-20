@@ -1,0 +1,338 @@
+window = {
+	name = "languages_window"
+	using = base_ocr_window
+	layer = middle
+
+	datacontext = "[LanguageWindow.GetLanguage]"
+	datacontext = "[GetPlayer]"
+	datacontext = "[Character.GetCulture]"
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+		using = Animation_FadeIn_BottomLeft
+
+		on_finish = "[GetScriptedGui('find_languages').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+		using = Animation_FadeOut_BottomLeft
+	}
+
+	window_ocr = {
+		blockoverride "ocr_header" {
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 3
+
+				text_single = {
+					text = COURT_LANGUAGE_NAME
+				}
+
+				hbox = {
+					spacing = 3
+
+					text_single = {
+						raw_text = "[court_language|E]."
+					}
+
+					text_single = {
+						text = IS_NATIVE_LANGUAGE
+						visible = "[ObjectsEqual( Culture.GetLanguage, CulturePillar.Self )]"
+					}
+
+					dot_l = {
+						visible = "[ObjectsEqual( Culture.GetLanguage, CulturePillar.Self )]"
+					}
+				}
+
+				header_text = {
+					visible = "[Or( Not( HasDlcFeature( 'royal_court' ) ), Not( LanguageWindow.IsOpenedFromRoyalCourt ) )]"
+
+					blockoverride "header_text"
+					{
+					}
+					blockoverride "dot" {
+						visible = no
+					}
+
+					blockoverride "button_close"
+					{
+						onclick = "[LanguageWindow.Close]"
+					}
+				}
+				header_text = {
+					visible = "[And( HasDlcFeature( 'royal_court' ), LanguageWindow.IsOpenedFromRoyalCourt) )]"
+
+					blockoverride "header_text"
+					{
+						# text = COURT_LANGUAGE_NAME
+					}
+					blockoverride "dot" {
+						visible = no
+					}
+
+					blockoverride "button_close"
+					{
+						onclick = "[LanguageWindow.Close]"
+						onclick = "[Character.OpenRoyalCourtView( 'grandeur' )]"
+					}
+				}
+
+				expand = { }
+			}
+
+			hbox = {
+			    layoutpolicy_horizontal = expanding
+				visible = "[ObjectsEqual( Culture.GetLanguage, CulturePillar.Self )]"
+
+				text_single = {
+					text = LANGUAGE_ADOPTED_ON
+				}
+
+				dot = { }
+
+
+			    expand = { }
+			}
+		}
+
+		blockoverride "ocr_content" {
+
+			vbox = {
+				name = "window_content"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				vbox = {
+					name = "grandeur_effects"
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						text_grandeur_from_language = { }
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							text = COURT_GRANDEUR_EFFECTS
+						}
+
+						expand = {}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						text_multi_wide = {
+							margin_top = 5
+							text = "COURT_GRANDEUR_EFFECTS_DESCRIPTION"
+						}
+
+						expand = { }
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = map_mode_1
+						onclick = "[Toggle('switch_languges')]"
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('royal_court_languages'))] [AddTextIf(Not(GetPlayer.MakeScope.Var('all_languages').IsSet), 'grander ')]languages, [Collapse('switch_languges')] E."
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Isnt('switch_languges')]"
+
+						state = {
+							name = _show
+							on_finish = "[GetScriptedGui('find_languages').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						}
+
+						datamodel = "[GetPlayer.MakeScope.GetList('royal_court_languages')]"
+
+						item = {
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								datacontext = "[Scope.GetCharacter.GetCourtLanguage]"
+								onclick = "[OpenGameViewData('language', Scope.GetCharacter.GetCourtLanguage)]"
+								onclick = "[Set('switch_languges', 'yes')]"
+								shortcuts_list = {
+									blockoverride "click" {
+										onclick = "[OpenGameViewData('language', Scope.GetCharacter.GetCourtLanguage)]"
+										onclick = "[Set('switch_languges', 'yes')]"
+									}
+								}
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "[IndexNumber],"
+									}
+									text_grandeur_from_language = {
+										text = "[Character.CalculateGrandeurFromCourtLanguage( CulturePillar.Self )|+=1]"
+									}
+									comma = {}
+								}
+								blockoverride "text" {
+									raw_text = "[Scope.GetCharacter.GetCourtLanguage.GetName],"
+								}
+								blockoverride "extra" {
+
+									text_single = {
+										raw_text = "[Scope.GetCharacter.GetCourtGrandeurData.GetCurrent|0] highest."
+									}
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					margin_top = 10
+					name = "adopt_as_court_language"
+					layoutpolicy_horizontal = expanding
+
+					button_primary_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							text = ADOPT_COURT_LANGUAGE
+						}
+						blockoverride "disabled" {
+							visible = "[Not(Character.CanAdoptCourtLanguage( CulturePillar.Self ))]"
+						}
+						onclick = "[Character.AdoptCourtLanguage( CulturePillar.Self )]"
+						enabled = "[Character.CanAdoptCourtLanguage( CulturePillar.Self )]"
+						tooltip = "[Character.GetCanAdoptCourtLanguageText( CulturePillar.Self )]"
+						visible = "[Not(Character.IsCharacterCourtLanguage(CulturePillar.Self))]"
+					}
+
+					text_multi_wide = {
+						visible = "[Not(Character.CanAdoptCourtLanguage( CulturePillar.Self ))]"
+						raw_text = "[Character.GetCanAdoptCourtLanguageText( CulturePillar.Self )]"
+					}
+
+					text_multi_wide = {
+						text = ADOPT_COURT_LANGUAGE_INFO
+					}
+				}
+
+				vbox = {
+					margin_top = 10
+					name = "grandest_royal_court"
+					layoutpolicy_horizontal = expanding
+
+					visible = "[DataModelHasItems( LanguageWindow.GetRankedRoyalCourtItems )]"
+
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "[GetDataModelSize(LanguageWindow.GetRankedRoyalCourtItems)] courts speaking [CulturePillar.GetName]:"
+					}
+
+					vbox = {
+						datacontext = "[LanguageWindow.GetGrandestRoyalCourt.GetCharacter]"
+						layoutpolicy_horizontal = expanding
+
+						vbox = {
+							name = "court_ranked_items"
+							layoutpolicy_horizontal = expanding
+							datamodel = "[LanguageWindow.GetRankedRoyalCourtItems]"
+
+							item = {
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									using = char_click
+
+									datacontext = "[RankedRoyalCourtItem.GetCharacter]"
+								    blockoverride "extra" {
+										text_single = {
+											raw_text = "[RankedRoyalCourtItem.GetRank],"
+										}
+										text_single = {
+											raw_text = "[Character.GetPrimaryTitle.GetNameNoTooltip],"
+										}
+										text_single = {
+											raw_text = "[Character.GetCourtGrandeurData.GetCurrent|0] grandeur."
+										}
+								    }
+								}
+							}
+						}
+
+						expand = { }
+					}
+				}
+
+				expand = {}
+			}
+		}
+
+		blockoverride "ocr_footer" {
+			button_text = {
+				shortcut = map_mode_11
+				layoutpolicy_horizontal = expanding
+				onclick = "[GetScriptedGui('find_languages').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
+			    blockoverride "text" {
+			        raw_text = "Refresh languages, Shift E."
+			    }
+			}
+			button_checked_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = mapmode_faith_secondary
+				onclick = "[GetScriptedGui('all_languages').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				onclick = "[GetScriptedGui('find_languages').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				blockoverride "text" {
+					raw_text = "Show all languages, Shift A."
+				}
+				blockoverride "visible" {
+					visible = "[Not(GetPlayer.MakeScope.Var('all_languages').IsSet)]"
+				}
+			}
+		}
+	}
+
+	languages_old = {}
+}
+
+types LanguageTypes
+{
+	type coa_language_county = coa_title_tiny
+	{
+		blockoverride "coa_tooltip"
+		{
+			tooltipwidget = {
+				using = CountyTitleTooltipLanguage
+			}
+		}
+	}
+
+	type text_grandeur_from_language = text_single
+	{
+		name = "current"
+		text = "[Character.CalculateGrandeurFromCourtLanguage( CulturePillar.Self )|+=]"
+		using = Font_Size_Big
+
+		tooltip_enabled = "[NotEqualTo_CFixedPoint( Character.CalculateGrandeurFromCourtLanguage( CulturePillar.Self ), '(CFixedPoint)0' )]"
+		tooltipwidget = {
+			widget_value_breakdown_tooltip = {
+				datacontext = "[Character.CalculateGrandeurFromCourtLanguageBreakdown( CulturePillar.Self )]"
+
+				blockoverride "header" {
+					text_single = {
+						text = COURT_LANGUAGE_BASELINE_BONUS_BREAKDOWN_HEADER
+						default_format = "#T"
+					}
+				}
+			}
+		}
+	}
+}
