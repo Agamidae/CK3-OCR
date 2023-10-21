@@ -1,10 +1,11 @@
 types OCR
 {
-	type widget_inspiration_details_ocr = widget
+	type widget_inspiration_details_ocr = vbox
 	{
 		datacontext = "[InspirationsWindow.GetSelectedInspiration]"
 		datacontext = "[Inspiration.GetOwner]"
 		visible = "[InspirationsWindow.HasSelectedInspiration]"
+		layoutpolicy_horizontal = expanding
 
 		using = Window_Background_Subwindow
 
@@ -24,30 +25,46 @@ types OCR
 
 		vbox = {
 			name = "selected_inspiration"
-			set_parent_size_to_minimum = yes
-			margin = { 4 4 }
-			margin_bottom = 20
-			spacing = 5
+			layoutpolicy_horizontal = expanding
+			margin = { 5 5 }
 
-			vbox = {
-				layoutpolicy_horizontal = expanding
-
-				header_pattern = {
-					layoutpolicy_horizontal = expanding
-
-					blockoverride "header_text"
-					{
-						text = "SELECTED_INSPIRATION_HEADER"
-					}
-
-					blockoverride "button_close"
-					{
+			block "hud" {
+				hbox = {
+					button = {
+						visible = "[Has('royal_details', 'inspirations')]"
+						shortcut = close_window
 						onclick = "[InspirationsWindow.ClearSelectedInspiration]"
 					}
+					button = {
+						visible = "[Has('royal_details', 'selected_inspiration')]"
+						shortcut = close_window
+						onclick = "[Clear('royal_details')]"
+						onclick = "[InspirationsWindow.ClearSelectedInspiration]"
+					}
+				}
 
-					blockoverride "button_back"
-					{
-						visible = no
+				vbox = {
+					visible = "[Not( Inspiration.GetSponsor.IsValid )]"
+					layoutpolicy_horizontal = expanding
+
+					button_primary_text = {
+						layoutpolicy_horizontal = expanding
+						name = "sponsor_inspiration_tutorial_uses_this"
+						blockoverride "disabled" {
+							visible = "[Not(Character.IsPlayerInteractionValid( 'fund_inspiration_interaction' ))]"
+						}
+						blockoverride "text" {
+							text = START_SPONSOR_INSPIRATION
+						}
+
+						enabled = "[Character.IsPlayerInteractionValid( 'fund_inspiration_interaction' )]"
+						onclick = "[Character.OpenPlayerInteraction( 'fund_inspiration_interaction' )]"
+						tooltip = "[Character.GetPlayerInteractionTooltip( 'fund_inspiration_interaction' )]"
+					}
+
+					text_multi_wide = {
+						raw_text = "[Character.GetPlayerInteractionValidBlockers( 'fund_inspiration_interaction' )]."
+						visible = "[Not(Character.IsPlayerInteractionValid( 'fund_inspiration_interaction' ))]"
 					}
 				}
 			}
@@ -56,115 +73,143 @@ types OCR
 				name = "selected_inspiration_data"
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding
-				margin_left = 20
-
-				background = {
-					using = Background_Area
-					layoutpolicy_horizontal = expanding
-					margin_top = 14
-				}
-
-				portrait_shoulders = {
-					name = "inspiration_owner_portrait"
-
-					blockoverride "inspiration_status_icons"
-					{
-					}
-				}
 
 				vbox = {
 					name = "text"
 					layoutpolicy_horizontal = expanding
-					margin_left = 10
-					margin_bottom = 10
-					margin_top = -14
 
-					text_multi = {
+					vbox = {
+						name = "inspiration_progress"
+						layoutpolicy_horizontal = expanding
+
+						visible = "[Inspiration.GetSponsor.IsValid]"
+
+						hbox = {
+						    layoutpolicy_horizontal = expanding
+								spacing = 3
+
+						    text_single = {
+						    	raw_text = "[Inspiration.GetNameNoTooltip]"
+						    }
+
+								text_single = {
+									raw_text = "in progress."
+								}
+
+						    expand = { }
+						}
+						hbox = {
+						    layoutpolicy_horizontal = expanding
+								spacing = 3
+
+								text_single = {
+									text = INSPIRATION_ESTIMATED_REMAINING
+									tooltip = INSPIRATION_ESTIMATED_TIME_TOOLTIP
+								}
+
+								text_single = {
+									raw_text = "left."
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									raw_text = "[Inspiration.GetProgress] out of [GetDefine( 'NInspiration', 'MAX_PROGRESS')] steps, [Inspiration.GetProgressChance]% chance to progress every month."
+								}
+
+						    expand = { }
+						}
+					}
+
+					text_multi_wide = {
 						name = "inspiration_text"
-						min_width = 300
-						max_width = 300
-						autoresize = yes
 						text = "SELECTED_INSPIRATION_TEXT"
-						margin_right = 10
 					}
 
-					spacer = {
-						size = { 0 6 }
-					}
 
 					hbox = {
+						visible = "[Not(Inspiration.GetSponsor.IsValid)]"
 						name = "recuirt_owner"
 						layoutpolicy_horizontal = expanding
-						spacing = 5
-
-						text_single = {
-							text = "[Character.GetRelationToString( RoyalCourtWindow.GetCharacter )]"
-							tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-						}
+						spacing = 3
 
 						button_recruit_character = {}
 
-						warning_icon = {
-							name = "wants_to_leave"
-							visible = "[And( Character.CourtierWantsToLeaveCourt, Not( Character.IsImprisoned))]"
-							size = { 20 20 }
-							tooltip = "[Character.GetCourtierLeaveDescription]"
+						text_single = {
+							raw_text = "[Character.GetSheHe|U] is [Character.GetRelationToString( RoyalCourtWindow.GetCharacter )]"
+							tooltip = "EXTENDED_RELATIONS_TOOLTIP"
 						}
+
+						dot_l = { }
+
 
 						expand = {}
 					}
 
 					text_single = {
-						name = "gold_invested"
-						visible = "[Inspiration.GetSponsor.IsLocalPlayer]"
 						layoutpolicy_horizontal = expanding
-						text = INSPIRATION_INVESTED_GOLD
+						raw_text = "Warning, wants to leave."
+						tooltip = "[Character.GetCourtierLeaveDescription]"
+						visible = "[And( Character.CourtierWantsToLeaveCourt, Not( Character.IsImprisoned))]"
+					}
+
+					hbox = {
+				    layoutpolicy_horizontal = expanding
+
+						visible = "[Inspiration.GetSponsor.IsLocalPlayer]"
+
+						text_single = {
+							name = "gold_invested"
+							text = INSPIRATION_INVESTED_GOLD
+						}
+
+				    expand = { }
 					}
 				}
 			}
 
-			hbox = {
-				layoutpolicy_horizontal = expanding
-				margin_top = 4
-
-				button_primary = {
-					name = "sponsor_inspiration_tutorial_uses_this"
-					text = START_SPONSOR_INSPIRATION
-					visible = "[Not( Inspiration.GetSponsor.IsValid )]"
-
-					enabled = "[Character.IsPlayerInteractionValid( 'fund_inspiration_interaction' )]"
-					onclick = "[Character.OpenPlayerInteraction( 'fund_inspiration_interaction' )]"
-					tooltip = "[Character.GetPlayerInteractionTooltip( 'fund_inspiration_interaction' )]"
-				}
-			}
-
 			vbox = {
-				name = "inspiration_progress"
 				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-				margin_bottom = -8
-				margin_top = -10
-				spacing = 5
+				hbox = {
+				    layoutpolicy_horizontal = expanding
+						spacing = 3
 
-				visible = "[Inspiration.GetSponsor.IsValid]"
+						char_name = {
+							block "hud" {
+								onclick = "[Set('hide_court', 'yes')]"
+							}
+						}
 
-				text_single = {
-					text = INSPIRATION_IN_PROGRESS
+						text_single = {
+							raw_text = "[Character.GetAge], [Character.Custom('character_health')] health."
+						}
+
+				    expand = { }
 				}
 
-				progressbar_segmented_chance = {
-					name = "progress_bar"
-					tooltip = "INSPIRATION_ITEM_PROGRESS_TOOLTIP"
-					datamodel = "[GetSegmentedProgressChanceBar( GetDefine( 'NInspiration', 'MAX_PROGRESS' ), GetDefine( 'NScheme', 'PROGRESS_FRAMES' ), Inspiration.GetProgress, Inspiration.GetProgressChance )]"
+				hbox = {
+				    layoutpolicy_horizontal = expanding
+
+						hbox = {
+							spacing = 3
+							datamodel = "[Character.GetTraitIndices]"
+
+							item = {
+								text_single = {
+									datacontext = "[GetTraitForIndex(int32.GetInt)]"
+									visible = "[Trait.IsPersonality]"
+									raw_text = "[Trait.GetName( GetNullCharacter )],"
+								}
+							}
+						}
+
+				    expand = { }
 				}
 
-				text_single = {
-					text = INSPIRATION_ESTIMATED_REMAINING
-					tooltip = INSPIRATION_ESTIMATED_TIME_TOOLTIP
-				}
+				hbox = {
+				    layoutpolicy_horizontal = expanding
+						hbox_skills_grid_character_named_full = {}
 
-				expand = {
-					layoutpolicy_vertical = expanding
+				    expand = { }
 				}
 			}
 		}
@@ -173,18 +218,30 @@ types OCR
 	type flowcontainer_inspiration_list_item_ocr = button_text
 	{
 		datacontext = "[Inspiration.GetOwner]"
-		tooltip = "TT_INSPIRATION_WIDGET"
+		# tooltip = "TT_INSPIRATION_WIDGET"
 		onclick = "[InspirationsWindow.ToggleInspiration( Inspiration.Self )]"
 		onclick = "[InspirationsWindow.RemoveNewInspiration( Inspiration.Self )]"
 
-	    blockoverride "text" {
-	        raw_text = "[Inspiration.GetName]."
-	    }
+    blockoverride "text" {
+				alwaystransparent = yes
+        raw_text = "[Inspiration.GetNameNoTooltip],"
+    }
 
 		blockoverride "pre" {
 			text_single = {
 				visible = "[InspirationsWindow.IsNewInspiration( Inspiration.Self ) ]"
-				raw_text = "New,"
+				raw_text = "New"
+			}
+			text_single = {
+				visible = "[And( Inspiration.GetSponsor.IsValid, Not( Inspiration.IsComplete ) )]"
+
+				# raw_text = "[Select_float( GreaterThan_int32( Inspiration.GetProgress, '(int32)0' ), CurrentAndMaxToProgressbarValueInt32( Inspiration.GetProgress, GetDefine( 'NInspiration', 'MAX_PROGRESS' ) ), '(float)2' )] progress."
+
+				raw_text = "INSPIRATION_ESTIMATED_REMAINING"
+			}
+			text_single = {
+				visible = "[And( Inspiration.GetSponsor.IsValid, Not( Inspiration.IsComplete ) )]"
+				raw_text = "left,"
 			}
 			text_single = {
 				visible = "[ObjectsEqual( InspirationsWindow.GetSelectedInspiration, Inspiration.Self )]"
@@ -193,12 +250,24 @@ types OCR
 		}
 		blockoverride "extra" {
 			text_single = {
-				visible = "[And( Inspiration.GetSponsor.IsValid, Not( Inspiration.IsComplete ) )]"
+				raw_text = "[Inspiration.GetOwner.Custom('InspiredPersonQualityShort')]"
+			}
+			text_single = {
+				visible = "[Inspiration.GetOwner.IsGuest]"
+				raw_text = "guest"
+			}
 
-				raw_text = "[Select_float( GreaterThan_int32( Inspiration.GetProgress, '(int32)0' ), CurrentAndMaxToProgressbarValueInt32( Inspiration.GetProgress, GetDefine( 'NInspiration', 'MAX_PROGRESS' ) ), '(float)2' )] progress."
+			comma = { }
+
+			text_single = {
+				visible = "[And( Not(Inspiration.GetSponsor.IsValid), Not( Inspiration.IsComplete ) )]"
+				raw_text = "[Inspiration.GetBaseGoldCost] base cost."
+			}
+			text_single = {
+				visible = "[And(Inspiration.GetSponsor.IsValid, Inspiration.GetSponsor.IsLocalPlayer)]"
+				raw_text = "INSPIRATION_INVESTED_GOLD"
 			}
 		}
-
 	}
 
 	type flowcontainer_inspirations_list_ocr = flowcontainer
@@ -208,44 +277,87 @@ types OCR
 
 		flowcontainer = {
 			direction = vertical
-
-			text_single = {
-				visible = "[RoyalCourtWindow.GetCharacter.IsLocalPlayer]"
-				layoutpolicy_horizontal = expanding
-				raw_text = "[GetDataModelSize(InspirationsWindow.GetPotentialInspirations)] [inspirations|E] available:"
-			}
+			ignoreinvisible = yes
 
 			flowcontainer = {
+		    ignoreinvisible = yes
 				direction = vertical
-				visible = "[RoyalCourtWindow.GetCharacter.IsLocalPlayer]"
-				name = "potential_inspirations"
-				datamodel = "[InspirationsWindow.GetPotentialInspirations]"
+				visible = "[And(RoyalCourtWindow.GetCharacter.IsLocalPlayer, DataModelHasItems(InspirationsWindow.GetPotentialInspirations))]"
 
-				item = {
-					flowcontainer_inspiration_list_item_ocr = {
-						name = "inspiration_item"
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[SetOrToggle('royal_details', 'inspirations')]"
+					shortcut = mapmode_kingdoms_secondary
+			    blockoverride "text" {
+						alwaystransparent = yes
+							raw_text = "[GetDataModelSize(InspirationsWindow.GetPotentialInspirations)] [inspirations|E] available,"
+			    }
+					blockoverride "extra" {
+						text_single = {
+							visible = "[Isnt('royal_details')]"
+							raw_text = " i."
+						}
+					}
+				}
+
+				flowcontainer = {
+					visible = "[Isnt('royal_details')]"
+					direction = vertical
+					name = "potential_inspirations"
+					datamodel = "[DataModelFirst(InspirationsWindow.GetPotentialInspirations, '(int32)3')]"
+
+					item = {
+						flowcontainer_inspiration_list_item_ocr = {
+							name = "inspiration_item"
+							onclick = "[Set('royal_details', 'selected_inspiration')]"
+						}
+					}
+				}
+
+				button_text = {
+					visible = "[And(GreaterThan_int32(GetDataModelSize(InspirationsWindow.GetPotentialInspirations), '(int32)3'), Isnt('royal_details'))]"
+					onclick = "[SetOrToggle('royal_details', 'inspirations')]"
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "+ [Subtract_int32(GetDataModelSize(InspirationsWindow.GetPotentialInspirations), '(int32)3')] more."
+						}
+					}
+				}
+
+				flowcontainer = {
+					direction = vertical
+					visible = "[Has('royal_details', 'inspirations')]"
+					datamodel = "[InspirationsWindow.GetPotentialInspirations]"
+
+					item = {
+						flowcontainer_inspiration_list_item_ocr = {
+							name = "inspiration_item"
+						}
 					}
 				}
 			}
 
-			text_single = {
-				raw_text = "[GetDataModelSize(InspirationsWindow.GetSponsoredInspirations)] sponsored inspirations:"
-			}
-
-
 			flowcontainer = {
-				direction = vertical
-				name = "sponsored_inspirations"
-				datamodel = "[InspirationsWindow.GetSponsoredInspirations]"
+			    ignoreinvisible = yes
+					direction = vertical
+					visible = "[DataModelHasItems(InspirationsWindow.GetSponsoredInspirations)]"
 
-				item = {
-					flowcontainer_inspiration_list_item_ocr = {
-						name = "sponsored_item"
+					text_single = {
+						raw_text = "[GetDataModelSize(InspirationsWindow.GetSponsoredInspirations)] sponsored inspirations:"
 					}
-				}
+
+					flowcontainer = {
+						direction = vertical
+						name = "sponsored_inspirations"
+						datamodel = "[InspirationsWindow.GetSponsoredInspirations]"
+
+						item = {
+							flowcontainer_inspiration_list_item_ocr = {
+								name = "sponsored_item"
+							}
+						}
+					}
 			}
 		}
-
-		widget_inspiration_details = {}
 	}
 }

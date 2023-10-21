@@ -996,6 +996,27 @@ widget = {
 		size = { 0 0 }
 		visible = "[GetVariableSystem.Exists('resources')]"
 
+		# state = {
+		# 	name = _show
+		# 	on_finish = "[ExecuteConsoleCommand(Select_CString(Character.IsAdult, Character.GetKnightEffectivenessBreakdown, 'x'))]"
+		# 	# on_finish = "[ExecuteConsoleCommand(AddTextIf(GetPlayer.IsAdult, 'gold 100'))]"
+		# 	# on_start = "[GetVariableSystem.Set('opened', 'yes')]"
+		# }
+
+		# state = {
+		# 	name = _hide
+		# 	on_finish = "[GetVariableSystem.Clear('opened')]"
+		# }
+		#
+		#
+		# widget = {
+		# 	visible = "[And(GetVariableSystem.Exists('opened'), GetPlayer.IsAdult)]"
+		# 	state = {
+		# 		name = _show
+		# 		on_finish = "[ExecuteConsoleCommand('gold 100')]"
+		# 	}
+		# }
+
 		vbox = {
 			margin = { 15 10 }
 			name = "spendables"
@@ -1566,6 +1587,13 @@ icon = {
 			button = {
 				onclick = "[OnPause]"
 				shortcut = pause
+			}
+
+			button = {
+				visible = "[GetVariableSystem.Exists('event_active')]"
+				visible = "[Is('hide_event')]"
+				shortcut = pause
+				onclick = "[GetVariableSystem.Clear('hide_event')]"
 			}
 
 			button = {
@@ -2679,14 +2707,14 @@ widget = {
 		}
 
 		flowcontainer = {
-		    ignoreinvisible = yes
+	    ignoreinvisible = yes
 			direction = vertical
 			datacontext = "[Character.GetTravelPlan]"
 			datacontext = "[Character.GetTravelPlan.GetData]"
 			visible = "[And(Character.IsTraveling, TravelPlanData.HasNextDestination)]"
 
 			flowcontainer = {
-			    ignoreinvisible = yes
+		    ignoreinvisible = yes
 				direction = vertical
 
 				button_text = {
@@ -2826,9 +2854,7 @@ widget = {
 		visible_at_creation = no
 		datacontext = "[InGameBottomBar.GetSelectedInspiration]"
 		datacontext = "[Inspiration.GetOwner]"
-
-		parentanchor = bottom|right
-		position = { -200 -150 }
+		position = { 5 150 }
 		using = Window_Background_Subwindow
 
 		alwaystransparent = no
@@ -2846,153 +2872,13 @@ widget = {
 			using = Sound_WindowHide_Standard
 		}
 
-		vbox = {
-			name = "selected_inspiration"
-			set_parent_size_to_minimum = yes
-			margin = { 4 4 }
-			margin_bottom = 20
-			spacing = 5
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-
-				header_pattern = {
-					layoutpolicy_horizontal = expanding
-
-					blockoverride "header_text"
-					{
-						text = "SELECTED_INSPIRATION_HEADER"
-					}
-
-					blockoverride "button_close"
-					{
-						onclick = "[InGameBottomBar.ClearSelectedInspiration]"
-					}
-
-					blockoverride "button_back"
-					{
-						visible = no
-					}
-				}
+		widget_inspiration_details_ocr = {
+			margin_left = 5
+			button = {
+				shortcut = close_window
+				onclick = "[InGameBottomBar.ClearSelectedInspiration]"
 			}
-
-			hbox = {
-				name = "selected_inspiration_data"
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-				margin_left = 20
-
-
-				background = {
-					using = Background_Area
-					layoutpolicy_horizontal = expanding
-					margin_top = 14
-				}
-
-				portrait_shoulders = {
-					name = "inspiration_owner_portrait"
-
-					blockoverride "inspiration_status_icons"
-					{
-					}
-				}
-
-				vbox = {
-					name = "text"
-					layoutpolicy_horizontal = expanding
-					margin_left = 10
-					margin_bottom = 10
-					margin_top = -14
-
-					text_multi = {
-						name = "inspiration_text"
-						min_width = 300
-						max_width = 300
-						autoresize = yes
-						text = "SELECTED_INSPIRATION_TEXT"
-						margin_right = 10
-						margin_top = 4
-					}
-
-					spacer = {
-						size = { 0 6 }
-					}
-
-					hbox = {
-						name = "recuirt_owner"
-						layoutpolicy_horizontal = expanding
-						spacing = 5
-
-						text_single = {
-							text = "[Character.GetRelationToString( GetPlayer )]"
-							tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-						}
-
-						button_recruit_character = { }
-
-						warning_icon = {
-							name = "wants_to_leave"
-							visible = "[And( Character.CourtierWantsToLeaveCourt, Not( Character.IsImprisoned))]"
-							size = { 20 20 }
-							tooltip = "[Character.GetCourtierLeaveDescription]"
-						}
-
-						expand = { }
-					}
-
-					text_single = {
-						name = "gold_invested"
-						text = INSPIRATION_INVESTED_GOLD
-						layoutpolicy_horizontal = expanding
-						visible = "[Inspiration.GetSponsor.IsLocalPlayer]"
-					}
-				}
-			}
-
-
-			hbox = {
-				layoutpolicy_horizontal = expanding
-				margin_top = 4
-
-				button_primary = {
-					name = "sponsor_inspiration"
-					text = START_SPONSOR_INSPIRATION
-					visible = "[Not( Inspiration.GetSponsor.IsValid )]"
-
-					enabled = "[Character.IsPlayerInteractionValid( 'fund_inspiration_interaction' )]"
-					onclick = "[Character.OpenPlayerInteraction( 'fund_inspiration_interaction' )]"
-					tooltip = "[Character.GetPlayerInteractionTooltip( 'fund_inspiration_interaction' )]"
-				}
-			}
-
-			vbox = {
-				name = "inspiration_progress"
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-				margin_bottom = -8
-				margin_top = -10
-				spacing = 5
-
-				visible = "[Inspiration.GetSponsor.IsValid]"
-
-				text_single = {
-					text = INSPIRATION_IN_PROGRESS
-				}
-
-				progressbar_segmented_chance = {
-					name = "progress_bar"
-					tooltip = "INSPIRATION_ITEM_PROGRESS_TOOLTIP"
-					datamodel = "[GetSegmentedProgressChanceBar( GetDefine( 'NInspiration', 'MAX_PROGRESS' ), GetDefine( 'NScheme', 'PROGRESS_FRAMES' ), Inspiration.GetProgress, Inspiration.GetProgressChance )]"
-				}
-
-				text_single = {
-					text = INSPIRATION_ESTIMATED_REMAINING
-					tooltip = INSPIRATION_ESTIMATED_TIME_TOOLTIP
-				}
-
-				expand = {
-					layoutpolicy_vertical = expanding
-				}
+			blockoverride "hud" {
 			}
 		}
 	}
@@ -3071,13 +2957,14 @@ widget = {
 					name = "player_inspirations"
 					datamodel = "[GetPlayer.GetSponsoredInspirations]"
 					allow_outside = yes
+					visible = "[Not(IsLeftWindowOpen)]"
 
 					item = {
-
 						button_text = {
-						    blockoverride "text" {
-						        raw_text = "[Inspiration.GetName], [Multiply_int32(Inspiration.GetProgress, '(int32)10')]%. [Inspiration.GetEstimatedTimeRemaining]."
-						    }
+					    blockoverride "text" {
+								alwaystransparent = yes
+				        raw_text = "[Inspiration.GetName], [Multiply_int32(Inspiration.GetProgress, '(int32)10')]%. [Inspiration.GetEstimatedTimeRemaining]."
+					    }
 							datacontext = "[Inspiration.GetOwner]"
 							tooltip = "TT_INSPIRATION_WIDGET"
 							onclick = "[InGameBottomBar.ToggleSelectedInspiration( Inspiration.Self )]"
@@ -3526,33 +3413,6 @@ widget = {
 				background = { using = Background_Area_Border_Solid }
 				visible = "[And(Not(IsLeftWindowOpen), Not(GetVariableSystem.Exists('ocr')))]"
 				margin = { 5 0 }
-
-				button_text = {
-					using = zoom_out_title
-					shortcut = redo
-					blockoverride "text" {
-						raw_text = "Hello. Please, press Control Y, it will fix a visual bug. I'm looking for a solution."
-					}
-					# visible = "[Isnt('flicker')]"
-					visible = no
-
-					onclick = "[PdxGuiWidget.TriggerAnimation('flicker')]"
-					state = {
-						delay = 0.3
-						name = flicker
-						on_finish = "[Toggle('ocr')]"
-						next = "flicker_end"
-					}
-					state = {
-						name = flicker_end
-						using = Sound_WindowHide_Standard
-					}
-					onclick = "[Toggle('ocr')]"
-					# onclick = "[Toggle('ocr')]"
-					onclick = "[Set('flicker', 'yes')]"
-				}
-
-
 				direction = vertical
 
 				flowcontainer = {
@@ -3741,6 +3601,7 @@ widget = {
 					# onclick = "[Sgui('toggle_hud_hotkeys', Execute, GetPlayer)]"
 					# onclick = "[Toggle('hide_shortcuts')]"
 				}
+
 				widget = {
 					size = { 0 5 }
 				}
@@ -4049,7 +3910,7 @@ widget = {
 	# bottom_huds = { }
 
 	flowcontainer = {
-	    ignoreinvisible = yes
+    ignoreinvisible = yes
 		position = { 10 600 }
 		background = { using = Background_Area_Border_Solid }
 		direction = vertical

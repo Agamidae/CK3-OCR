@@ -7,6 +7,7 @@ window = {
 
 	using = Window_Size_MainTab
 	filter_mouse = all
+	alwaystransparent = yes
 
 	datacontext = "[RoyalCourtWindow.AccessCourtEventWindow]"
 	datacontext = "[GetVariableSystem]"
@@ -27,6 +28,7 @@ window = {
 		on_start = "[GetVariableSystem.Clear( 'court_type' )]"
 		on_finish = "[CourtAmenitiesWindow.NotifyAmenityWidgetHidden]"
 		on_start = "[RoyalCourtWindow.ClearSelectedArtifact]"
+		on_finish = "[Clear('hide_court')]"
 
 		using = Sound_EP1_Courtroom_MapMute_Snapshot
 		# using = Animation_FadeIn_Standard
@@ -44,23 +46,34 @@ window = {
 		on_finish = "[Clear('changed_amenity')]"
 	}
 
-	background = {
-		texture = "gfx/interface/colors/black.dds"
-	}
+	# background = {
+	# 	texture = "gfx/interface/colors/black.dds"
+	# }
+	container = {
+		visible = "[Not(IsGameViewOpen('character'))]"
+		#
+		# text_single = {
+		# 	raw_text = "CLOSE"
+		# }
+		button_close = {
+			name = "close_court_view"
+			visible = "[And( Not( VariableSystem.Exists('royal_court_screenshot_window' ) ), Not( RoyalCourtWindow.IsPlacingArtifact ) )]"
+			size = { 0 0 }
 
-	button_close = {
-		name = "close_court_view"
-		visible = "[And( Not( VariableSystem.Exists('royal_court_screenshot_window' ) ), Not( RoyalCourtWindow.IsPlacingArtifact ) )]"
-		size = { 0 0 }
+			shortcut = map_mode_5
+			shortcut = "close_window"
+			tooltip = "CLOSE_TOOLTIP"
+			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_close"
+			onclick = "[RoyalCourtWindow.Close]"
 
-		shortcut = map_mode_5
-		shortcut = "close_window"
-		tooltip = "CLOSE_TOOLTIP"
-		clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_close"
-		onclick = "[RoyalCourtWindow.Close]"
+			using = Animation_ShowHide_Quick
+		}
 
-		using = Animation_ShowHide_Quick
-
+		button = {
+			shortcut = close_window
+			visible = "[Is('royal_details')]"
+			onclick = "[Clear('royal_details')]"
+		}
 	}
 
 	widget = {
@@ -155,9 +168,18 @@ window = {
 			datacontext = "[RoyalCourtWindow.GetCharacter]"
 			datacontext = "[Character.GetCourtGrandeurData]"
 			blockoverride "show_window" {
-				visible = "[And(Isnt('ocr'), Isnt('royal_court_screenshot_window'))]"
+				visible = "[And(And(Isnt('ocr'), Isnt('royal_court_screenshot_window')), Isnt('hide_court'))]"
 			}
 			blockoverride "ocr_header" {
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					widget_inspiration_details_ocr = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[RoyalCourtWindow.AccessInspirationsWindow]"
+						using = TooltipFocus
+					}
+				}
 				vbox = {
 					layoutpolicy_horizontal = expanding
 					name = "top_left_info"
@@ -177,7 +199,7 @@ window = {
 							}
 
 							hbox = {
-							    layoutpolicy_horizontal = expanding
+								layoutpolicy_horizontal = expanding
 								spacing =3
 
 								# text_single = {
@@ -197,13 +219,63 @@ window = {
 									raw_text = "Speaking [Character.GetCourtLanguage.GetName]."
 								}
 
-							    expand = { }
+								 expand = { }
+							}
+
+							button_text = {
+								visible = "[CourtEventWindow.GetEventWindowInsert.HasOpenEvent]"
+								onclick = "[GetVariableSystem.Toggle('hide_event')]"
+								layoutpolicy_horizontal = expanding
+								shortcut = map_mode_1
+								blockoverride "text" {
+									raw_text = "[Select_CString(Is('hide_event'), 'Show', 'Hide')] event window, hotkey E."
+								}
+							}
+
+							vbox = {
+								name = "character_positioned_buttons"
+								visible = "[And( Or( RoyalCourtWindow.GetCharacter.IsLocalPlayer, And(RoyalCourtWindow.IsInPetitionMode, RoyalCourtWindow.GetPetitionCharacter.IsLocalPlayer ) ), Not( RoyalCourtWindow.ShouldShowFadeToBlack ) )]"
+								layoutpolicy_horizontal = expanding
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									name = "court_events_popups"
+									datamodel = "[CourtEventWindow.GetCourtEventItems]"
+									visible = "[Not( CourtEventWindow.GetEventWindowInsert.HasOpenEvent )]"
+
+									using = Animation_ShowHide_Quick
+
+									item = {
+										flowcontainer = {
+											layoutpolicy_horizontal = expanding
+											direction = vertical
+											ignoreinvisible = yes
+											tooltip = "[CourtEventItem.GetTooltip]"
+
+											button_text = {
+												onclick = "[CourtEventWindow.OpenEvent( CourtEventItem.Self )]"
+												shortcut = map_mode_1
+												layoutpolicy_horizontal = expanding
+												blockoverride "text" {
+													raw_text = "An event is available. E."
+												}
+												blockoverride "extra" {
+													text_single = {
+														name = "court_event_timeout"
+														visible = "[LessThanOrEqualTo_int32( CourtEventItem.GetDaysRemaining, '(int32)30' )]"
+														text = "COURT_EVENT_DAYS_REMAINING"
+													}
+												}
+											}
+										}
+									}
+								}
 							}
 
 							button_hold_court_ocr = {
 								layoutpolicy_horizontal = expanding
 								name = "button_hold_court_tutorial_uses_this"
-								visible = "[And( And( Not(VariableSystem.Exists('royal_court_screenshot_window')) , RoyalCourtWindow.IsActiveThroneTab ) , RoyalCourtWindow.GetCharacter.IsLocalPlayer) ]"
+								visible = "[And(And( And( Not(VariableSystem.Exists('royal_court_screenshot_window')) , RoyalCourtWindow.IsActiveThroneTab ) , RoyalCourtWindow.GetCharacter.IsLocalPlayer), Not(CourtEventWindow.GetEventWindowInsert.HasOpenEvent))]"
 								datacontext = "[GetDecisionWithKey( 'hold_court_decision' )]"
 
 								container = {
@@ -222,36 +294,6 @@ window = {
 								}
 							}
 
-
-
-							hbox = {
-							    layoutpolicy_horizontal = expanding
-								spacing = 3
-
-								text_single = {
-									raw_text = "[CourtGrandeurData.GetCurrent|0] [court_grandeur|e],"
-								}
-
-								text_single = {
-									raw_text = "level [CourtGrandeurData.GetCurrentLevel]."
-								}
-
-								text_single = {
-									visible = "[EqualTo_CFixedPoint(CourtGrandeurData.GetCurrent, CourtGrandeurData.GetBase)]"
-									raw_text = "At baseline."
-								}
-
-								text_single = {
-									raw_text = "ROYAL_COURT_WINDOW_WORLD_RANK"
-									tooltip = "[CourtGrandeurWindow.GetWorldRankTooltip]"
-								}
-
-
-								dot_l = { }
-
-							    expand = { }
-							}
-
 							#TODO find out about grace
 
 							# text_single = {
@@ -263,75 +305,107 @@ window = {
 							# 	raw_text = "[CourtGrandeurData.GetCurrentLevelIgnoreGrace]"
 							# }
 
-							hbox = {
-							    layoutpolicy_horizontal = expanding
-								spacing = 3
-
-								tooltipwidget = {
-									court_grandeur_progress_bar_tooltip_ocr = {}
-								}
-
-								text_single = {
-									visible = "[GreaterThan_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel)]"
-									raw_text = "Above"
-								}
-
-								text_single = {
-									visible = "[LessThan_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel)]"
-									raw_text = "Below"
-								}
-
-								text_single = {
-									visible = "[EqualTo_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel)]"
-									raw_text = "At expected level."
-								}
-
-								text_single = {
-									visible = "[Not(EqualTo_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel))]"
-									raw_text = "expected level of [CourtGrandeurData.GetMinimumExpectedLevel],"
-								}
-
-								text_single = {
-									visible = "[GreaterThan_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel)]"
-									raw_text = "providing benefits."
-								}
-
-								text_single = {
-									visible = "[LessThan_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel)]"
-									raw_text = "causing issues."
-								}
-
-								text_single = {
-									visible = "[Not(EqualTo_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel))]"
-									raw_text = "See tooltip."
-								}
-
-							    expand = { }
-							}
-
-							hbox = {
+							vbox = {
 								layoutpolicy_horizontal = expanding
-								spacing = 3
+								visible = "[Isnt('grandeur')]"
 
-								visible = "[Not(EqualTo_CFixedPoint(CourtGrandeurData.GetCurrent, CourtGrandeurData.GetBase))]"
+								hbox = {
+								   layoutpolicy_horizontal = expanding
+									spacing = 3
 
-								text_single = {
-									raw_text = "Baseline is [CourtGrandeurData.GetBase]."
+									text_single = {
+										raw_text = "[CourtGrandeurData.GetCurrent|0] [court_grandeur|e],"
+									}
+
+									text_single = {
+										raw_text = "level [CourtGrandeurData.GetCurrentLevel]."
+									}
+
+									text_single = {
+										visible = "[EqualTo_CFixedPoint(CourtGrandeurData.GetCurrent, CourtGrandeurData.GetBase)]"
+										raw_text = "At baseline."
+									}
+
+									text_single = {
+										raw_text = "ROYAL_COURT_WINDOW_WORLD_RANK"
+										tooltip = "[CourtGrandeurWindow.GetWorldRankTooltip]"
+									}
+
+									dot_l = { }
+
+								    expand = { }
 								}
 
-								text_single = {
-									raw_text = "Will reach it in"
-								}
-								text_single = {
-									raw_text = "[GetTimeDifferenceWithDays( CourtGrandeurData.GetDaysUntilAtBase )],"
+								hbox = {
+								    layoutpolicy_horizontal = expanding
+									spacing = 3
+
+									tooltipwidget = {
+										court_grandeur_progress_bar_tooltip_ocr = {}
+									}
+
+									text_single = {
+										visible = "[GreaterThan_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel)]"
+										raw_text = "Above"
+									}
+
+									text_single = {
+										visible = "[LessThan_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel)]"
+										raw_text = "Below"
+									}
+
+									text_single = {
+										visible = "[EqualTo_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel)]"
+										raw_text = "At expected level."
+									}
+
+									text_single = {
+										visible = "[Not(EqualTo_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel))]"
+										raw_text = "expected level of [CourtGrandeurData.GetMinimumExpectedLevel],"
+									}
+
+									text_single = {
+										visible = "[GreaterThan_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel)]"
+										raw_text = "providing benefits."
+									}
+
+									text_single = {
+										visible = "[LessThan_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel)]"
+										raw_text = "causing issues."
+									}
+
+									text_single = {
+										visible = "[Not(EqualTo_int32(CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel))]"
+										raw_text = "See tooltip."
+									}
+
+								    expand = { }
 								}
 
-								text_single = {
-									raw_text = "at [CourtGrandeurData.GetChangeTowardsBase] a month."
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									spacing = 3
+
+									visible = "[Not(EqualTo_CFixedPoint(CourtGrandeurData.GetCurrent, CourtGrandeurData.GetBase))]"
+
+									text_single = {
+										raw_text = "Baseline is [CourtGrandeurData.GetBase]."
+									}
+
+									text_single = {
+										raw_text = "Will reach it in"
+									}
+									text_single = {
+										raw_text = "[GetTimeDifferenceWithDays( CourtGrandeurData.GetDaysUntilAtBase )],"
+									}
+
+									text_single = {
+										raw_text = "at [CourtGrandeurData.GetChangeTowardsBase] a month."
+									}
+
+
+									expand = { }
 								}
-
-
-								expand = { }
 							}
 
 							expand = {}
@@ -470,12 +544,32 @@ window = {
 						}
 					}
 
-					button_text = {
+					hbox = {
 						layoutpolicy_horizontal = expanding
-						blockoverride "text" {
-							raw_text = "View effects for all levels."
+
+						button_text = {
+							shortcut = find_title_shortcut
+							blockoverride "text" {
+								raw_text = "View effects for all levels, V."
+							}
+							onclick = "[Set('royal_details', 'levels')]"
+							visible = "[Isnt('grandeur')]"
 						}
-						onclick = "[Set('royal_details', 'levels')]"
+
+						text_single = {
+							raw_text = "[CourtGrandeurData.GetCurrent|0] [court_grandeur|e],"
+							visible = "[Is('grandeur')]"
+						}
+
+						button_text = {
+							shortcut = map_mode_11
+							onclick = "[Toggle('grandeur')]"
+							blockoverride "text" {
+								raw_text = "[Select_CString(Is('grandeur'), 'Show', 'Hide')] details, Shift E."
+							}
+						}
+
+						expand = { }
 					}
 				}
 			}
@@ -503,6 +597,18 @@ window = {
 				# 	onclick = "[Clear('artifacts_tab')]"
 				# 	shortcut = "close_window"
 				# }
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Or(Isnt('royal_details'), Has('royal_details', 'inspirations'))]"
+
+					flowcontainer_inspirations_list_ocr = {
+						name = "inspirations_tutorial_uses_this"
+						datacontext = "[RoyalCourtWindow.AccessInspirationsWindow]"
+
+						visible = "[And(Not( CourtEventWindow.GetEventWindowInsert.HasOpenEvent ), InspirationsWindow.HasPotentialOrSponsoredInspirations)]"
+					}
+				}
 
 				# artifacts
 				vbox = {
@@ -1311,13 +1417,14 @@ window = {
 
 					button = {
 						shortcut = close_window
+						shortcut = find_title_shortcut
 						onclick = "[Clear('royal_details')]"
 					}
 
 					datamodel = "[CourtGrandeurWindow.GetLevels]"
 
 					hbox = {
-					    layoutpolicy_horizontal = expanding
+				    layoutpolicy_horizontal = expanding
 						spacing = 3
 
 						text_single = {
@@ -1342,7 +1449,6 @@ window = {
 
 					    expand = { }
 					}
-
 
 					item = {
 						vbox = {
@@ -1383,16 +1489,6 @@ window = {
 						}
 					}
 				}
-
-				# text_single = {
-				# 	layoutpolicy_horizontal = expanding
-				# 	raw_text = "[Get('royal_details')]"
-				# }
-				#
-				# text_single = {
-				# 	layoutpolicy_horizontal = expanding
-				# 	raw_text = "[Get('amenity')]"
-				# }
 
 
 				widget_court_amenity_changed_ocr = {
@@ -1551,13 +1647,6 @@ window = {
 					}
 				}
 
-				flowcontainer_inspirations_list_ocr = {
-					name = "inspirations_tutorial_uses_this"
-					datacontext = "[RoyalCourtWindow.AccessInspirationsWindow]"
-
-					visible = "[And( And( Not( RoyalCourtWindow.IsActiveArtifactsTab ), Not( CourtEventWindow.GetEventWindowInsert.HasOpenEvent ) ), InspirationsWindow.HasPotentialOrSponsoredInspirations )]"
-				}
-
 				# amenities
 				widget_court_grandeur_view_ocr = {
 					visible = "[And(Or(Isnt('royal_details'), Has('royal_details', 'amenities')), Isnt('amenity'))]"
@@ -1631,6 +1720,7 @@ window = {
 					}
 				}
 
+				# description
 				vbox = {
 					visible = "[Isnt('royal_details')]"
 					layoutpolicy_horizontal = expanding
@@ -1638,7 +1728,7 @@ window = {
 
 					text_single = {
 						layoutpolicy_horizontal = expanding
-						raw_text = "Room description:"
+						raw_text = "Hall description:"
 					}
 
 					text_multi_wide = {
@@ -1669,55 +1759,6 @@ window = {
 		empty_screen = {
 			using = ocr
 
-			widget = {
-				name = "character_positioned_buttons"
-				visible = "[And( Not(VariableSystem.Exists('royal_court_screenshot_window')), And( Or( RoyalCourtWindow.GetCharacter.IsLocalPlayer, And(RoyalCourtWindow.IsInPetitionMode, RoyalCourtWindow.GetPetitionCharacter.IsLocalPlayer ) )   , Not( RoyalCourtWindow.ShouldShowFadeToBlack ) ) )]"
-				size = { 100% 100% }
-
-				using = Animation_ShowHide_Quick
-
-				widget = {
-					name = "court_events_popups"
-					datamodel = "[CourtEventWindow.GetCourtEventItems]"
-					visible = "[RoyalCourtWindow.IsActiveThroneTab]"
-					parentanchor = center
-					size = { 100% 100% }
-
-					using = Animation_ShowHide_Quick
-
-					item = {
-						flowcontainer = {
-							widgetanchor = bottom|hcenter
-							position = "[CourtEventItem.GetPositionCharacter.GetCourtScenePosition( PdxGuiWidget.AccessParent.Self )]"
-							direction = vertical
-							ignoreinvisible = yes
-							margin_bottom = 50
-
-							text_label_center = {
-								name = "court_event_timeout"
-								visible = "[LessThanOrEqualTo_int32( CourtEventItem.GetDaysRemaining, '(int32)30' )]"
-								parentanchor = hcenter
-								text = "COURT_EVENT_DAYS_REMAINING"
-							}
-
-							button = {
-								name = "court_event_icon"
-								parentanchor = hcenter
-
-								texture = "gfx/interface/icons/alerts/action_has_open_court_event.dds"
-								size = { 70 70 }
-								framesize = { 144 144 }
-								frame = 1
-
-								onclick = "[CourtEventWindow.OpenEvent( CourtEventItem.Self )]"
-								tooltip = "[CourtEventItem.GetTooltip]"
-								enabled = "[Not( CourtEventWindow.GetEventWindowInsert.HasOpenEvent )]"
-							}
-						}
-					}
-				}
-			}
-
 			container = {
 				name = "static_hovered_icons"
 				visible = "[And( Not(VariableSystem.Exists('royal_court_screenshot_window')), RoyalCourtWindow.HasStaticHoveredObject )]"
@@ -1740,26 +1781,158 @@ window = {
 				size = { 100% 100% }
 				datacontext = "[CourtEventWindow.GetEventWindowInsert]"
 
-				visible = "[And( Not(VariableSystem.Exists('royal_court_screenshot_window')), And(EventWindowViewInsert.HasOpenEvent, RoyalCourtWindow.IsActiveThroneTab ) )]"
+				visible = "[And( Not(VariableSystem.Exists('royal_court_screenshot_window')), EventWindowViewInsert.HasOpenEvent )]"
+
+				state = {
+					name = _show
+					on_finish = "[Clear('hide_court')]"
+				}
+
+				state = {
+					name = _hide
+					on_finish = "[Clear('hide_court')]"
+				}
 
 				using = Animation_ShowHide_Quick
 
-
-				widget_court_event = {
+				window = {
+					using = base_ocr_window
 					datacontext = "[EventWindowViewInsert.GetOpenEvent]"
-					visible = "[CourtEventWindow.IsVisible]"
-					name = "court_event_window"
-					parentanchor = bottom|right
-					position = { 30 0 }
-					size = { 600 800 }
+					datacontext = "[EventWindow.AccessEventWindowData]"
 
-					widget = {
-						visible = "[EventWindowData.ShowDebugOptionTooltips]"
-						position = { -160 -40 }
-						parentanchor = bottom|left
-						using = Event_Window_Debug_OptionTooltips
+					state = {
+						name = _show
+						trigger_on_create = yes
+						# on_finish = "[Set('event_active', 'yes')]"
+						on_finish = "[Clear('hide_court')]"
+
+						# start_sound = {
+						# 	soundeffect = "event:/SFX/Events/Panels/sfx_event_panel_large"
+						#
+						# 	soundparam = {
+						# 		name = StateChange
+						# 		value = 1
+						# 	}
+						# }
+					}
+
+					state = {
+						name = _hide
+						# on_finish = "[Clear('event_active')]"
+						on_finish = "[Clear('hide_event')]"
+						on_finish = "[Clear('hide_activity')]"
+						on_finish = "[Clear('hide_court')]"
+
+						# start_sound = {
+						# 	soundeffect = "event:/MUSIC/Cues/Events/kill_mx_cue"
+						# }
+					}
+
+					window = {
+						using = ocr_window_bg
+						size = { 930 100% }
+
+						visible = "[And(Isnt('hide_event'),CourtEventWindow.IsVisible)]"
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+							base_event_ocr = {
+								blockoverride "event_header" {
+									name = "court_event_data"
+								}
+								blockoverride "event_characters" {
+
+									# text_single = {
+									# 	layoutpolicy_horizontal = expanding
+									# 	visible = "[RoyalCourtWindow.HasStaticHoveredObject]"
+									# 	raw_text = "yes"
+									# }
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										datacontex = "[RoyalCourtWindow.GetPetitionCharacter]"
+										visible = "[And(Character.IsValid, Not(Character.IsLocalPlayer))]"
+
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											raw_text = "Character:"
+										}
+										char_name = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "opinion" {
+											}
+										}
+									}
+
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										visible = "[DataModelHasItems(EventWindowData.GetInvolvedCharacters)]"
+										raw_text = "[GetDataModelSize(EventWindowData.GetInvolvedCharacters)] participants:"
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										datamodel = "[EventWindowData.GetInvolvedCharacters]"
+
+										item = {
+											char_name = {
+												layoutpolicy_horizontal = expanding
+												# onclick = "[GetVariableSystem.Toggle('hide_event')]"
+												blockoverride "extra" {
+													spacing = 3
+													flowcontainer = {
+													    ignoreinvisible = yes
+
+															visible = "[Not(Character.IsLocalPlayer)]"
+
+															text_single = {
+																raw_text = "[Character.GetOpinionOf( GetPlayer )] opinion,"
+															}
+															text_single = {
+																visible = "[Character.HasLandedTitles]"
+																raw_text = "[Character.GetMilitaryStrengthText] men,"
+															}
+															text_single = {
+																raw_text = "[Character.GetRelationToString(GetPlayer)]."
+															}
+													}
+												}
+											}
+										}
+									}
+								}
+								# blockoverride "event_name" {
+								# 	text_single = {
+								# 		raw_text = "Court event"
+								# 	}
+								# }
+							}
+
+							expand = { }
+						}
 					}
 				}
+
+
+				# widget_court_event = {
+				# 	datacontext = "[EventWindowViewInsert.GetOpenEvent]"
+				# 	visible = "[CourtEventWindow.IsVisible]"
+				# 	name = "court_event_window"
+				# 	parentanchor = bottom|right
+				# 	position = { 30 0 }
+				# 	size = { 600 800 }
+				#
+				# 	widget = {
+				# 		visible = "[EventWindowData.ShowDebugOptionTooltips]"
+				# 		position = { -160 -40 }
+				# 		parentanchor = bottom|left
+				# 		using = Event_Window_Debug_OptionTooltips
+				# 	}
+				# }
 			}
 
 			# court artifacts window tab
@@ -2273,6 +2446,7 @@ window = {
 			using = Animation_ShowHide_Quick
 
 		}
+
 		flowcontainer = {
 			name = "debug_buttons"
 			datacontext = "[RoyalCourtWindow.GetCourtSceneEditorWindow]"
@@ -2359,6 +2533,7 @@ window = {
 		}
 	}
 
+
 	button = {
 		shortcut = close_window
 		shortcut = army_split_half
@@ -2412,6 +2587,7 @@ types OCR {
 	{
 		enabled = "[And( Decision.IsPossibleForPlayer, Not(CourtEventWindow.GetEventWindowInsert.HasOpenEvent) )]"
 		onclick = "[RoyalCourtWindow.OpenDecisionDetailView( GetDecisionWithKey( 'hold_court_decision' ) )]"
+		onclick = "[Set('hide_court', 'yes')]"
 
 		tooltip = SHOW_DECISION_TOOLTIP
 		blockoverride "text" {
@@ -2428,6 +2604,7 @@ types OCR {
 		onclick = "[RoyalCourtWindow.SetPetitionerCharacter( GetPlayer )]"
 		onclick = "[RoyalCourtWindow.OpenDecisionDetailView( GetDecisionWithKey( 'petition_liege_decision' ) )]"
 		onclick = "[GetVariableSystem.Set('show_decision_step_two', 'true')]"
+		onclick = "[Set('hide_court', 'yes')]"
 
 		tooltip = SHOW_DECISION_TOOLTIP
 		clicksound = "event:/DLC/EP1/SFX/UI/hold_court"
