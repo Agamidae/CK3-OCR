@@ -4,16 +4,9 @@
 
 window = {
 	name = "replace_pillar_window"
-	parentanchor = center
-	layer = windows_layer
-	using = TooltipFocus
 	layoutpolicy_vertical = expanding
-	size = { 600 100% }
-
+	using = base_ocr_window
 	datacontext = "[GetPlayer.GetCulture]"
-
-	using = Window_Background
-	using = Window_Decoration
 
 	state = {
 		name = _show
@@ -25,109 +18,180 @@ window = {
 		using = Animation_FadeOut_Quick
 	}
 
-	vbox = {
-		# set_parent_size_to_minimum = yes
-		using = ocr_margins
-		layoutpolicy_vertical = expanding
+	window_ocr = {
+		blockoverride "ocr_header" {
+			header_text = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[ReplacePillarWindow.GetSelectedPillar]"
 
-		header_pattern = {
-			layoutpolicy_horizontal = expanding
+				blockoverride "header_text"
+				{
+					# text = "REPLACE_PILLAR_WINDOW_TITLE"
+				}
+				blockoverride "pre_header" {
+					spacing = 2
+					text_single = {
+						visible = "[Not(CulturePillar.IsValid)]"
+						raw_text = "REPLACE_PILLAR_WINDOW_TITLE"
+					}
+					comma = {
+						visible = "[Not(CulturePillar.IsValid)]"
+					}
+					text_single = {
+						visible = "[Not(CulturePillar.IsValid)]"
+						raw_text = "[GetDataModelSize(ReplacePillarWindow.GetPossiblePillars)] options"
+					}
+					text_single = {
+						visible = "[CulturePillar.IsValid]"
+						raw_text = "Replacing [ReplacePillarWindow.GetReplacedPillar.GetName] with [ReplacePillarWindow.GetSelectedPillar.GetName]"
+					}
+				}
 
-			blockoverride "header_text"
-			{
-				text = "REPLACE_PILLAR_WINDOW_TITLE"
-			}
-
-			blockoverride "button_close"
-			{
-				onclick = "[ReplacePillarWindow.Close]"
+				blockoverride "button_close"
+				{
+					onclick = "[ReplacePillarWindow.Close]"
+				}
 			}
 		}
-
-		vbox = {
-			name = "pillar_selection"
-			margin = { 0 8 }
-			spacing = 6
-
-			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
-
-			scrollbox = {
-				size = { 0 500 }
-
-				layoutpolicy_horizontal = expanding
+		blockoverride "ocr_content" {
+			vbox = {
 				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
 
-				blockoverride "scrollbox_content"
-				{
-					flowcontainer = {
-						datamodel = "[ReplacePillarWindow.GetPossiblePillars]"
-						direction = vertical
-						spacing = 15
+				vbox = {
+					name = "cost"
+					datacontext = "[ReplacePillarWindow.GetSelectedPillar]"
+					visible = "[CulturePillar.IsValid]"
+					layoutpolicy_horizontal = expanding
 
-						layoutpolicy_vertical = growing
+					hbox = {
+						layoutpolicy_horizontal = expanding
 
-						item = {
-							widget_pillar_item = {
+						text_single = {
+							tooltip = "REPLACE_PILLAR_COST_TOOLTIP"
+							text = "REPLACE_PILLAR_TOTAL_COST"
+						}
+
+						dot = { }
+
+						expand = { }
+					}
+
+
+					button_primary_text = {
+						name = "done"
+						layoutpolicy_horizontal = expanding
+						onclick = "[ReplacePillarWindow.ReplacePillar]"
+						onclick = "[ReplacePillarWindow.Close]"
+						enabled = "[ReplacePillarWindow.CanReplacePillar]"
+						blockoverride "text" {
+							text = "REPLACE_PILLAR_EXECUTE_LABEL"
+						}
+						blockoverride "disabled" {
+							visible = "[Not(ReplacePillarWindow.CanReplacePillar)]"
+						}
+
+
+						# visible = "[Culture.IsReforming]"
+					}
+
+					text_multi_wide = {
+						raw_text = "[ReplacePillarWindow.GetBlockers].[AddLine(SelectLocalization(GetPlayer.GetCulture.IsReforming, 'REFORM_CULTURE_TOOLTIP_WARNING',''))]"
+						visible = "[Not(ReplacePillarWindow.CanReplacePillar)]"
+					}
+				}
+
+				vbox = {
+					name = "pillar_selection"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					scrollbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						blockoverride "scrollbox_content"
+						{
+							vbox = {
+								datamodel = "[ReplacePillarWindow.GetPossiblePillars]"
+								layoutpolicy_horizontal = expanding
+
+								item = {
+									widget_pillar_item_ocr = {
+									}
+								}
 							}
 						}
 					}
 				}
 			}
+		}
+	}
 
-			vbox = {
-				name = "cost"
-				datacontext = "[ReplacePillarWindow.GetSelectedPillar]"
-				visible = "[CulturePillar.IsValid]"
-				minimumsize = { 0 28 }
-				spacing = 10
-				tooltip = "REPLACE_PILLAR_COST_TOOLTIP"
+	window_replace_ethos_old = {}
+}
 
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					align = center
-					text = "REPLACE_PILLAR_TOTAL_COST"
-					default_format = "#high"
-					using = Font_Size_Medium
+types OCR
+{
+	type widget_pillar_item_ocr = vbox {
+		layoutpolicy_horizontal = expanding
 
-					background = {
-						visible = "[Not( ReplacePillarWindow.CanPayCost )]"
-						margin = { 5 0 }
-						using = Status_Bad
-					}
-				}
+		tooltipwidget = {
+			using = culture_pillar_tooltip
+
+			blockoverride "above_description_text" {
+				text = "[ReplacePillarWindow.GetPickPillarBlockers( CulturePillar.Self )]"
 			}
+		}
 
-			hbox = {
+		vbox = {
+			layoutpolicy_horizontal = expanding
+
+			button_text = {
 				layoutpolicy_horizontal = expanding
-				margin = { 44 8 }
-				spacing = 20
-
-				button_standard= {
-					name = "decline_button"
-					text = "CANCEL_BUTTON"
-					onclick = [ReplacePillarWindow.Close]
-					shortcut = "close_window"
-				}
-
-				button_primary = {
-					name = "done"
-					layoutpolicy_horizontal = expanding
-					onclick = "[ReplacePillarWindow.ReplacePillar]"
-					onclick = "[ReplacePillarWindow.Close]"
-					enabled = "[ReplacePillarWindow.CanReplacePillar]"
-					text = "REPLACE_PILLAR_EXECUTE_LABEL"
-
-					tooltip = "REPLACE_PILLAR_EXECUTE_TOOLTIP"
-
-					warning_icon = {
-						visible = "[Culture.IsReforming]"
-						parentanchor = vcenter|right
-						size = { 25 25 }
-						position = { -3 0 }
-						alwaystransparent = yes
+				shortcuts_list = {
+					blockoverride "click" {
+						onclick = "[ReplacePillarWindow.SelectPillar( CulturePillar.Self )]"
 					}
 				}
+				blockoverride "pre" {
+					#TODO
+					# text_single = {
+					# 	visible = "[ReplacePillarWindow.IsMartial]"
+					# 	raw_text = "Martial custom"
+					# }
+
+					text_single = {
+						raw_text = "[IndexNumber],"
+					}
+					text_single = {
+						visible = "[ObjectsEqual( ReplacePillarWindow.GetSelectedPillar, CulturePillar.Self )]"
+						raw_text = "Selected,"
+					}
+					text_single = {
+						visible = "[Not(ReplacePillarWindow.CanPickPillar( CulturePillar.Self ))]"
+						raw_text = "Can't pick"
+					}
+				}
+				blockoverride "text" {
+					raw_text = "[CulturePillar.GetNameNoTooltip]."
+				}
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "[ReplacePillarWindow.GetPillarCostString( CulturePillar.Self )],"
+					}
+					text_single = {
+						visible = "[Not( ReplacePillarWindow.CanAffordPillar( CulturePillar.Self ) )]"
+						raw_text = "not enough,"
+					}
+					text_single = {
+						margin_left = -3
+						raw_text = "[Culture.GetTotalReformTimeForPillar]."
+						tooltip = "ESTABLISHMENT_TIME_TOOLTIP_PILLAR"
+					}
+				}
+				onclick = "[ReplacePillarWindow.SelectPillar( CulturePillar.Self )]"
+				enabled = "[ReplacePillarWindow.CanPickPillar( CulturePillar.Self )]"
 			}
 		}
 	}
