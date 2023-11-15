@@ -1,0 +1,1070 @@
+window = {
+	name = "window_tax_slot_vassals"
+	using = base_ocr_window
+	layer = middle
+	allow_outside = yes
+
+	datacontext = "[TaxSlotVassalWindow.GetTaxSlot]"
+
+	state = {
+		name = _show
+		on_start = "[GetVariableSystem.Set( 'tax_slot_vassal_tab', Select_CString( TaxSlot.HasTaxpayers, 'manage_vassals', 'assign_vassals' ) )]"
+	}
+
+	state = {
+		name = _hide
+		# on_finish = "[Set('assign_vassals_tip', 'yes')]"
+		# on_finish = "[Set('manage_vassals_tip', 'yes')]"
+	}
+
+	window_ocr = {
+		blockoverride "ocr_header" {
+			header_text = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					# text = "TAX_SLOT_VASSAL_WINDOW_HEADER"
+				}
+
+				blockoverride "pre_header" {
+
+					text_single = {
+						visible = "[GetVariableSystem.HasValue( 'tax_slot_vassal_tab', 'assign_vassals' )]"
+						raw_text = "TAX_SLOT_VASSAL_WINDOW_TAB_ASSIGN"
+					}
+
+					text_single = {
+						raw_text = "TAX_SLOT_VASSAL_WINDOW_TAB_CURRENT"
+						visible = "[GetVariableSystem.HasValue( 'tax_slot_vassal_tab', 'manage_vassals' )]"
+					}
+
+					text_single = {
+						raw_text = "in [TaxSlot.GetName]"
+					}
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[TaxSlotVassalWindow.Close]"
+				}
+			}
+
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = speed_1
+				onclick = "[GetVariableSystem.Set( 'tax_slot_vassal_tab', 'manage_vassals' )]"
+				visible = "[GetVariableSystem.HasValue( 'tax_slot_vassal_tab', 'assign_vassals' )]"
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "Other"
+					}
+					text_single = {
+						raw_text = "Tab 1,"
+					}
+				}
+				blockoverride "text" {
+					text = "TAX_SLOT_VASSAL_WINDOW_TAB_CURRENT"
+				}
+				blockoverride "dot" {
+				}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				visible = "[GetVariableSystem.HasValue( 'tax_slot_vassal_tab', 'manage_vassals' )]"
+				shortcut = speed_2
+				onclick = "[GetVariableSystem.Set( 'tax_slot_vassal_tab', 'assign_vassals' )]"
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "Other"
+					}
+					text_single = {
+						raw_text = "Tab 2,"
+					}
+				}
+				blockoverride "text" {
+					text = "TAX_SLOT_VASSAL_WINDOW_TAB_ASSIGN"
+				}
+				blockoverride "dot" {
+				}
+			}
+
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
+
+				datacontext = "[TaxSlotVassalWindow.GetLiege]"
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						text_single = {
+							raw_text = "Current taxpayers: [TaxSlot.GetTaxedVassalsAmount] out of [TaxSlot.GetVassalLimit],"
+						}
+
+						text_single = {
+							raw_text = "[TaxSlot.GetObligation.GetName]."
+						}
+						expand = {}
+					}
+
+					vbox = {
+						name = "manage_vassals_tab"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						datacontext = "[TaxSlotVassalWindow.AccessAssignedVassals]"
+						visible = "[GetVariableSystem.HasValue( 'tax_slot_vassal_tab', 'manage_vassals' )]"
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[DataModelHasItems( AssignedVassalList.GetSelectedCharacters )]"
+
+							vbox = {
+								name = "assign_vassals_effects"
+								layoutpolicy_horizontal = expanding
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									spacing = 3
+
+									text_single = {
+										raw_text = "Effects:"
+									}
+
+									text_single = {
+										text = "TAX_SLOT_VASSAL_WINDOW_TAB_CURRENT_EFFECT_SUB_HEADER"
+									}
+
+									dot_l = {}
+
+									expand = {}
+								}
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									datacontext = "[TaxSlotVassalWindow.GetRemoveChanges]"
+
+									text_single = {
+										raw_text = "Will result in:"
+									}
+									spacing = 3
+
+									text_single = {
+										raw_text = "Taxes:"
+									}
+
+									text_single = {
+										datacontext = "[TaxSlotVassalChange.GetTaxBreakdown]"
+
+										text = "TAX_SLOT_REMOVE_VASSAL_TAX_CHANGE"
+
+										tooltipwidget = {
+											tax_contribution_tooltip = {
+												blockoverride "descriptive_text"
+												{
+													text = "TAX_SLOT_REMOVE_VASSAL_TAX_DESC"
+												}
+											}
+										}
+										using = tooltip_ws
+									}
+
+									comma = {}
+
+									text_single = {
+										raw_text = "Levies:"
+									}
+
+									text_single = {
+										datacontext = "[TaxSlotVassalChange.GetLeviesBreakdown]"
+
+										text = "TAX_SLOT_REMOVE_VASSAL_LEVIES_CHANGE"
+
+										tooltipwidget = {
+											tax_contribution_tooltip = {
+												blockoverride "descriptive_text"
+												{
+													text = "TAX_SLOT_REMOVE_VASSAL_LEVIES_DESC"
+												}
+
+												blockoverride "contribution_icon"
+												{
+													texture = "gfx/interface/icons/icon_soldier.dds"
+												}
+											}
+										}
+										using = tooltip_ws
+									}
+
+									dot_l = {}
+
+									expand = {}
+								}
+							}
+
+							button_primary_text = {
+							layoutpolicy_horizontal = expanding
+							onclick = "[TaxSlotVassalWindow.RemoveVassals]"
+							visible = "[DataModelHasItems( AssignedVassalList.GetSelectedCharacters )]"
+							blockoverride "text" {
+								text = "TAX_SLOT_VASSAL_WINDOW_TAB_CURRENT_BUTTON"
+							}
+						}
+						}
+
+
+						text_multi_wide = {
+							visible = "[Isnt('manage_vassals_tip')]"
+							layoutpolicy_horizontal = expanding
+
+							text = "TAX_SLOT_VASSAL_WINDOW_TAB_CURRENT_DESC"
+						}
+
+						vbox_character_list = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+							datacontext = "[TaxSlotVassalWindow.AccessAssignedVassalsBase]"
+
+							blockoverride "sort_buttons"
+							{
+								hbox_list_sort_buttons = {
+									layoutpolicy_horizontal = expanding
+									blockoverride "sort_dropdown" {
+										dropdown_sort_characterlist = {
+											name = "assigned_vassals_sort_options"
+										}
+									}
+
+									blockoverride "skill_sort_buttons" {}
+
+									expand = {}
+
+									button_text = {
+										shortcut = find_title_shortcut
+										onclick = "[AssignedVassalList.SelectAllCharacters]"
+										onclick = "[Set('manage_vassals_tip', 'yes')]"
+										layoutpolicy_horizontal = expanding
+										blockoverride "text" {
+											text = "TAX_SLOT_VASSAL_WINDOW_SELECT_ALL"
+										}
+										blockoverride "extra" {
+											comma = {}
+											text_single = {
+												raw_text = "V."
+											}
+										}
+									}
+
+									button_text = {
+										shortcut = increase_speed_2
+										layoutpolicy_horizontal = expanding
+										visible = "[DataModelHasItems( AssignedVassalList.GetSelectedCharacters )]"
+										onclick = "[AssignedVassalList.ClearSelectedCharacters]"
+										blockoverride "text" {
+											raw_text = "Clear selection, X."
+										}
+									}
+								}
+							}
+
+							blockoverride "container_implementation" {
+								fixedgridbox = {
+									name = "assigned_vassals_grid"
+									datamodel = "[CharacterSelectionList.GetList]"
+
+									layoutpolicy_horizontal = expanding
+
+									addcolumn = 600
+									addrow = 70
+
+									item = {
+										tax_slot_vassal_item_ocr = {
+											layoutpolicy_horizontal = expanding
+											datacontext = "[CharacterListItem.GetCharacter]"
+
+											blockoverride "selected_icon"
+											{
+												visible = "[AssignedVassalList.IsCharacterSelected( CharacterListItem.Self )]"
+											}
+
+											blockoverride "character_selected_down" {}
+
+											blockoverride "button_content"
+											{
+												assigned_vassal_button_content_ocr = {}
+											}
+										}
+									}
+								}
+							}
+						}
+						#
+						# vbox = {
+						# 	name = "manage_vassals_effects"
+						# 	layoutpolicy_horizontal = expanding
+						#
+						# 	visible = "[DataModelHasItems( AssignedVassalList.GetSelectedCharacters )]"
+						#
+						# 	text_label_center = {
+						# 		layoutpolicy_horizontal = expanding
+						# 		text = "TAX_SLOT_VASSAL_WINDOW_EFFECT_HEADER"
+						# 	}
+						#
+						# 	text_single = {
+						# 		text = "TAX_SLOT_VASSAL_WINDOW_TAB_CURRENT_EFFECT_SUB_HEADER"
+						# 	}
+						#
+						# 	vbox = {
+						# 		layoutpolicy_vertical = expanding
+						# 		layoutpolicy_horizontal = expanding
+						#
+						# 		hbox = {
+						# 			layoutpolicy_vertical = expanding
+						# 			layoutpolicy_horizontal = expanding
+						#
+						# 			hbox = {
+						# 				layoutpolicy_vertical = expanding
+						# 				layoutpolicy_horizontal = expanding
+						#
+						# 				text_single = {
+						# 					text = "TAX_SLOT_VASSAL_WINDOW_EFFECT_THIS_JURISDICTION"
+						# 				}
+						# 				expand = {}
+						# 				expand = {}
+						# 			}
+						#
+						# 			hbox = {
+						# 				layoutpolicy_horizontal = expanding
+						#
+						# 				datacontext = "[TaxSlotVassalWindow.GetRemoveChanges]"
+						#
+						# 				expand = {}
+						# 				icon = {
+						# 					texture = "gfx/interface/icons/icon_gold.dds"
+						# 				}
+						#
+						# 				text_single = {
+						# 					datacontext = "[TaxSlotVassalChange.GetTaxBreakdown]"
+						#
+						# 					text = "TAX_SLOT_REMOVE_VASSAL_TAX_CHANGE"
+						#
+						# 					tooltipwidget = {
+						# 						tax_contribution_tooltip = {
+						# 							blockoverride "descriptive_text"
+						# 							{
+						# 								text = "TAX_SLOT_REMOVE_VASSAL_TAX_DESC"
+						# 							}
+						# 						}
+						# 					}
+						# 					using = tooltip_ws
+						# 				}
+						#
+						# 				expand = {}
+						#
+						# 				divider_light = {
+						# 					layoutpolicy_vertical = expanding
+						# 				}
+						#
+						# 				expand = {}
+						#
+						# 				icon = {
+						# 					texture = "gfx/interface/icons/icon_soldier.dds"
+						# 				}
+						#
+						# 				text_single = {
+						# 					datacontext = "[TaxSlotVassalChange.GetLeviesBreakdown]"
+						#
+						# 					text = "TAX_SLOT_REMOVE_VASSAL_LEVIES_CHANGE"
+						#
+						# 					tooltipwidget = {
+						# 						tax_contribution_tooltip = {
+						# 							blockoverride "descriptive_text"
+						# 							{
+						# 								text = "TAX_SLOT_REMOVE_VASSAL_LEVIES_DESC"
+						# 							}
+						#
+						# 							blockoverride "contribution_icon"
+						# 							{
+						# 								texture = "gfx/interface/icons/icon_soldier.dds"
+						# 							}
+						# 						}
+						# 					}
+						# 					using = tooltip_ws
+						# 				}
+						# 				expand = {}
+						# 			}
+						#
+						# 		}
+						# 	}
+						# }
+					}
+
+					vbox = {
+						name = "assign_vassals_tab"
+						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
+
+						datacontext = "[TaxSlotVassalWindow.AccessUnassignedVassals]"
+
+						visible = "[GetVariableSystem.HasValue( 'tax_slot_vassal_tab', 'assign_vassals' )]"
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							visible = "[DataModelHasItems( UnassignedVassalList.GetSelectedCharacters )]"
+
+							vbox = {
+								name = "assign_vassals_effects"
+								layoutpolicy_horizontal = expanding
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									spacing = 3
+
+									text_single = {
+										raw_text = "Effects:"
+									}
+
+									text_single = {
+										text = "TAX_SLOT_VASSAL_WINDOW_TAB_ASSIGN_EFFECT_SUB_HEADER"
+									}
+
+									dot_l = {}
+
+									expand = {}
+								}
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									datacontext = "[TaxSlotVassalWindow.GetAssignChanges]"
+
+									text_single = {
+										raw_text = "Will result in:"
+									}
+									spacing = 3
+
+									text_single = {
+										raw_text = "Taxes:"
+									}
+
+									text_single = {
+										datacontext = "[TaxSlotVassalChange.GetTaxBreakdown]"
+
+										text = "TAX_SLOT_ASSIGN_VASSAL_TAX_CHANGE"
+
+										tooltipwidget = {
+											tax_contribution_tooltip = {
+												blockoverride "descriptive_text"
+												{
+													text = "TAX_SLOT_ASSIGN_VASSAL_TAX_DESC"
+												}
+											}
+										}
+										using = tooltip_ws
+									}
+
+									comma = {}
+
+									text_single = {
+										raw_text = "Levies:"
+									}
+
+									text_single = {
+										datacontext = "[TaxSlotVassalChange.GetLeviesBreakdown]"
+
+										text = "TAX_SLOT_ASSIGN_VASSAL_LEVIES_CHANGE"
+
+										tooltipwidget = {
+											tax_contribution_tooltip = {
+												blockoverride "descriptive_text"
+												{
+													text = "TAX_SLOT_ASSIGN_VASSAL_LEVIES_DESC"
+												}
+
+												blockoverride "contribution_icon"
+												{
+													texture = "gfx/interface/icons/icon_soldier.dds"
+												}
+											}
+										}
+										using = tooltip_ws
+									}
+
+									dot_l = {}
+
+									expand = {}
+								}
+							}
+
+							button_primary_text = {
+								layoutpolicy_horizontal = expanding
+								onclick = "[TaxSlotVassalWindow.AssignVassals]"
+								visible = "[DataModelHasItems( UnassignedVassalList.GetSelectedCharacters )]"
+								blockoverride "text" {
+									text = "TAX_SLOT_VASSAL_WINDOW_TAB_ASSIGN_BUTTON"
+								}
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[TaxSlotVassalWindow.AccessUnassignedVassalsBase]"
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								shortcut = increase_speed_2
+								visible = "[DataModelHasItems( UnassignedVassalList.GetSelectedCharacters )]"
+								onclick = "[UnassignedVassalList.ClearSelectedCharacters]"
+								blockoverride "text" {
+									raw_text = "Clear selection, X."
+								}
+								tooltip = "TAX_SLOT_VASSAL_WINDOW_CLEAR_SELECTION"
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								shortcut = find_title_shortcut
+								onclick = "[UnassignedVassalList.SelectAllCharacters]"
+								onclick = "[Set('assign_vassals_tip', 'yes')]"
+								#tooltip = "TAX_SLOT_VASSAL_WINDOW_TAB_ASSIGN_SELECT_ALL"
+								blockoverride "text" {
+									text = "TAX_SLOT_VASSAL_WINDOW_TAB_ASSIGN_SELECT_ALL"
+								}
+								blockoverride "extra" {
+									comma = {}
+									text_single = {
+										raw_text = "V."
+									}
+								}
+							}
+
+							button_checked_text = {
+								shortcut = mapmode_house_secondary
+								layoutpolicy_horizontal = expanding
+								onclick = "[Toggle('unassigned_vassals')]"
+								blockoverride "visible" {
+									visible = "[Isnt('unassigned_vassals')]"
+								}
+								blockoverride "text" {
+									raw_text = "show only [CountItems] unassigned, shift D."
+									hbox = {
+										name = "items"
+										datacontext = "[TaxSlotVassalWindow.AccessUnassignedVassalsBase]"
+										datamodel = "[CharacterSelectionList.GetList]"
+										item = {
+											hbox = {
+												datacontext = "[CharacterListItem.GetCharacter]"
+												visible = "[Not(Character.IsAssignedAsTaxpayer)]"
+											}
+										}
+									}
+								}
+							}
+						}
+
+						text_multi_wide = {
+							layoutpolicy_horizontal = expanding
+							# visible = "[Isnt('assign_vassals_tip')]"
+							visible = "[And(Not(DataModelHasItems( UnassignedVassalList.GetSelectedCharacters )), Isnt('assign_vassals_tip'))]"
+							text = "TAX_SLOT_VASSAL_WINDOW_TAB_ASSIGN_DESC"
+						}
+
+						vbox_character_list = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+							datacontext = "[TaxSlotVassalWindow.AccessUnassignedVassalsBase]"
+							blockoverride "count_extra" {
+								visible = "[Isnt('unassigned_vassals')]"
+							}
+
+							blockoverride "sort_buttons"
+							{
+								hbox_list_sort_buttons = {
+									layoutpolicy_horizontal = expanding
+
+									blockoverride "sort_dropdown" {
+										dropdown_sort_characterlist = {
+											name = "unassigned_vassals_sort_options"
+										}
+									}
+									blockoverride "skill_sort_buttons" {}
+								}
+							}
+
+							blockoverride "container_implementation"
+							{
+								fixedgridbox = {
+									name = "unassgiend_vassals_grid"
+									datamodel = "[CharacterSelectionList.GetList]"
+									visible = "[Isnt('unassigned_vassals')]"
+									layoutpolicy_horizontal = expanding
+
+									addcolumn = 600
+									addrow = 70
+									datamodel_reuse_widgets = yes
+
+									item = {
+										tax_slot_vassal_item_ocr = {
+											datacontext = "[CharacterListItem.GetCharacter]"
+
+											blockoverride "selected_icon"
+											{
+												visible = "[UnassignedVassalList.IsCharacterSelected( CharacterListItem.Self )]"
+											}
+
+											blockoverride "button_content"
+											{
+												unassigned_vassal_button_content_ocr = {
+													tooltip = "[CharacterListItem.GetText('tooltip')]"
+												}
+											}
+										}
+									}
+								}
+
+								vbox = {
+									datamodel = "[CharacterSelectionList.GetList]"
+									visible = "[Is('unassigned_vassals')]"
+									layoutpolicy_horizontal = expanding
+
+									item = {
+										tax_slot_vassal_item_ocr = {
+											layoutpolicy_horizontal = expanding
+											visible = "[Not(Character.IsAssignedAsTaxpayer)]"
+											datacontext = "[CharacterListItem.GetCharacter]"
+
+											blockoverride "selected_icon"
+											{
+												visible = "[UnassignedVassalList.IsCharacterSelected( CharacterListItem.Self )]"
+											}
+
+											blockoverride "button_content"
+											{
+												unassigned_vassal_button_content_ocr = {
+													tooltip = "[CharacterListItem.GetText('tooltip')]"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+					expand = {}
+				}
+			}
+		}
+	}
+
+	window_tax_slot_vassals_old = {}
+
+	window_character_filter = {
+		name = "tax_slot_assigned_vassals_filter_window"
+		datacontext = "[TaxSlotVassalWindow.AccessAssignedVassalsBase]"
+
+		blockoverride "editbox_properties"
+		{
+			name = "assigned_vassals_text_filter"
+			ontextedited = "[CharacterSelectionList.SetPattern]"
+			oneditingfinished = "[CharacterSelectionList.FinishEdit]"
+		}
+
+		blockoverride "addition_filter" {
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('religion_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('culture_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('dynasty_house_filter')]"
+			}
+		}
+	}
+
+	window_character_filter = {
+		name = "tax_slot_unassigned_vassals_filter_window"
+		datacontext = "[TaxSlotVassalWindow.AccessUnassignedVassalsBase]"
+
+		blockoverride "editbox_properties"
+		{
+			name = "unassigned_vassals_text_filter"
+			ontextedited = "[CharacterSelectionList.SetPattern]"
+			oneditingfinished = "[CharacterSelectionList.FinishEdit]"
+		}
+
+		blockoverride "addition_filter" {
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('religion_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('culture_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('dynasty_filter')]"
+			}
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('dynasty_house_filter')]"
+			}
+		}
+	}
+}
+
+types OCR
+{
+	type tax_slot_vassal_item_ocr = button {
+		size = { 600 70 }
+
+		onclick = "[CharacterListItem.OnClick('character')]"
+		onclick = "[Set('assign_vassals_tip', 'yes')]"
+		enabled = "[CharacterListItem.IsSelectable]"
+
+		block "button_content" {}
+	}
+
+	type assigned_vassal_button_content_ocr = unassigned_vassal_button_content_ocr {
+		blockoverride "taxable" {
+			visible = no
+		}
+		blockoverride "taxes" {
+			vassal_progressbars_ocr = {
+				blockoverride "tax_value"
+				{
+					text = "TAX_SLOT_VASSAL_WINDOW_ASSIGNED_VASSAL_TAX_CONTRIBUTION"
+				}
+				blockoverride "tax_breakdown"
+				{
+					datacontext = "[AssignedVassalList.GetTaxBreakdown( CharacterListItem.Self )]"
+				}
+				blockoverride "levy_value"
+				{
+					text = "TAX_SLOT_VASSAL_WINDOW_ASSIGNED_VASSAL_LEVY_CONTRIBUTION"
+				}
+				blockoverride "levy_breakdown"
+				{
+					datacontext = "[AssignedVassalList.GetLevyBreakdown( CharacterListItem.Self )]"
+				}
+			}
+		}
+	}
+
+	type unassigned_vassal_button_content_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					spacing =3
+
+					text_single = {
+						raw_text = "Selected,"
+						alwaystransparent = yes
+						block "selected_icon" {}
+					}
+
+					text_single = {
+						visible = "[Not(Character.IsAssignedAsTaxpayer)]"
+						raw_text = "Unassigned,"
+					}
+
+					text_single = {
+						visible = "[Character.IsAssignedAsTaxpayer]"
+						raw_text = "[Character.GetAssignedTaxSlot.GetObligation.GetName],"
+						alwaystransparent = yes
+					}
+
+					# Name
+					text_single = {
+						alwaystransparent = yes
+
+						raw_text = "[Character.GetUINameNoTooltip]."
+					}
+
+					expand = {}
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 3
+
+			hbox = {
+				block "taxable" {}
+				spacing = 3
+				text_single = {
+					text = "TAX_SLOT_VASSAL_WINDOW_TAXABLE"
+				}
+				text_single = {
+					alwaystransparent = yes
+					raw_text = "gold [UnassignedVassalList.GetTaxableIncome( CharacterListItem.Self )|=2],"
+				}
+
+				text_single = {
+					raw_text = "levies"
+				}
+
+				text_single = {
+					alwaystransparent = yes
+					raw_text = "[UnassignedVassalList.GetLevies( CharacterListItem.Self )]"
+				}
+
+				dot_l = {}
+			}
+
+			block "taxes" {}
+
+			text_single = {
+				raw_text = "[Character.GetOpinionOf(GetPlayer)|=] opinion,"
+				tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+			}
+
+			text_single = {
+				raw_text = "[Character.GetFaith.GetAdjective],"
+			}
+
+			hbox = {
+				datacontext = "[Character.GetCulture]"
+
+				tooltipwidget = {
+					culture_tooltip = {}
+				}
+
+				using = tooltip_se
+
+				text_single = {
+					text = "CULTURE_LISTS_WINDOW"
+				}
+			}
+
+			dot_l = {}
+
+			expand = {}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 3
+
+			text_single = {
+				datacontext = "[Character.GetVassalStance]"
+				raw_text = "[VassalStance.GetName],"
+				alwaystransparent = yes
+				tooltipwidget = {
+					using = vassal_stance_tooltip
+				}
+			}
+
+			text_single = {
+				name = "character_relation"
+				visible = "[Character.HasRelationTo( GetPlayer )]"
+				alwaystransparent = yes
+
+				text = "[Character.GetRelationToString( GetPlayer )]"
+
+				tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+			}
+
+			comma = {}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "[TaxSlotVassalWindow.GetTaxSlotStatusForCharacter( CharacterListItem.GetCharacter )]."
+			}
+		}
+
+		expand = {}
+	}
+
+	type tax_contribution_tooltip_ocr = widget {
+		alwaystransparent = no
+
+		using = GeneralTooltipSetup
+
+		widget = {
+			name = "background"
+			using = DefaultTooltipBackground
+			alwaystransparent = no
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			set_parent_size_to_minimum = yes
+			ignoreinvisible = yes
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					text = "[ValueBreakdown.GetName]"
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					text = "[ValueBreakdown.GetValue]"
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				text_multi_wide = {
+					block "descriptive_text"
+					{
+						text = "TAX_SLOT_VASSAL_WINDOW_TAX_SLOT_TAX_DESC"
+					}
+				}
+
+				expand = {}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datamodel = "[ValueBreakdown.GetSubValues]"
+				alwaystransparent = no
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						block "sub_header"
+						{
+							text = "TAX_SLOT_VASSAL_WINDOW_TAX_SLOT_SUBHEADER"
+						}
+					}
+
+					expand = {}
+
+					icon = {
+						block "contribution_icon"
+						{
+							texture = "gfx/interface/icons/icon_gold.dds"
+						}
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[IsDataModelEmpty( ValueBreakdown.GetSubValues)]"
+
+					block "no_sub_values"
+					{
+						text = "TAX_SLOT_VASSAL_WINDOW_TAX_SLOT_NO_VASSALS_ASSIGNED"
+					}
+
+				}
+
+				item = {
+					hbox = {
+						name = "value_breakdown"
+						layoutpolicy_horizontal = expanding
+
+						text_single = {
+							name = "name"
+							layoutpolicy_horizontal = expanding
+							text = "[ValueBreakdown.GetName]"
+							min_width = 180
+							fonttintcolor = "[TooltipInfo.GetTintColor]"
+						}
+
+						text_single= {
+							visible = "[And(ValueBreakdown.HasTooltip, ValueBreakdown.ShouldShowValue)]"
+							name = "value_with_tooltip"
+							text = "[ValueBreakdown.GetValue|L]"
+							fonttintcolor = "[TooltipInfo.GetTintColor]"
+
+							using = tooltip_below
+
+							tooltipwidget = {
+								recursive = yes
+
+								widget_value_breakdown_tooltip = {}
+							}
+						}
+
+						text_single = {
+							visible = "[And( Not(ValueBreakdown.HasTooltip), ValueBreakdown.ShouldShowValue )]"
+							name = "value_with_no_tooltip"
+							text = "[ValueBreakdown.GetValue]"
+							fonttintcolor = "[TooltipInfo.GetTintColor]"
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+
+# vassal_progressbars = {
+# 	blockoverride "width"
+# 	{
+# 		layoutpolicy_horizontal = expanding
+# 	}
+#
+# 	blockoverride "background"
+# 	{
+# 	}
+#
+# 	blockoverride "tax_progressbar_size"
+# 	{
+# 	}
+# 	blockoverride "tax_progressbar_value"
+# 	{
+# 		value = "[FixedPointToProgressbarValue( AssignedVassalList.GetTaxPercentage( CharacterListItem.Self ) )]"
+# 	}
+# 	blockoverride "tax_value"
+# 	{
+# 		text = "TAX_SLOT_VASSAL_WINDOW_ASSIGNED_VASSAL_TAX_CONTRIBUTION"
+# 	}
+# 	blockoverride "tax_breakdown"
+# 	{
+# 		datacontext = "[AssignedVassalList.GetTaxBreakdown( CharacterListItem.Self )]"
+# 	}
+#
+# 	blockoverride "levy_progressbar_size"
+# 	{
+# 	}
+# 	blockoverride "levy_progressbar_value"
+# 	{
+# 		value = "[FixedPointToProgressbarValue( AssignedVassalList.GetLevyPercentage( CharacterListItem.Self ) )]"
+# 	}
+# 	blockoverride "levy_value"
+# 	{
+# 		text = "TAX_SLOT_VASSAL_WINDOW_ASSIGNED_VASSAL_LEVY_CONTRIBUTION"
+# 	}
+# 	blockoverride "levy_breakdown"
+# 	{
+# 		datacontext = "[AssignedVassalList.GetLevyBreakdown( CharacterListItem.Self )]"
+# 	}
+# }

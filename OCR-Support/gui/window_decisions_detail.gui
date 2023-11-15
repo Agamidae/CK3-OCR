@@ -8,12 +8,13 @@ window = {
 	# position = "[DecisionDetailView.GetDynamicPosition]" # can be changed by DECISION_DETAILS_VIEW_POSITION_DEFAULT and DECISION_DETAILS_VIEW_POSITION_COURT in 00_graphics.txt
 	using = base_ocr_window
 	layer = windows_layer_top
+	movable = "[Is('ocr')]"
 
 	state = {
 		name = _show
 		using = Sound_WindowShow_Standard
 		# position = "[DecisionDetailView.GetDynamicPosition]"
-		on_start = "[GetVariableSystem.Clear('show_decision_step_two')]"
+		on_start = "[GetVariableSystem.Clear('show_decision_next_step')]"
 	}
 
 	state = {
@@ -21,31 +22,21 @@ window = {
 		using = Sound_WindowHide_Standard
 	}
 
-	window = {
-		using = ocr_window
+	window_ocr = {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		blockoverride "show_window" {
 
-		vbox = {
-			datacontext = "[DecisionDetailView.GetDecision]"
-			using = ocr_margins
+		}
 
-			state = {
-				name = "decisions_detail_refresh"
-				alpha = 1
-				next = "b"
-				on_start = "[GetVariableSystem.Clear('show_decision_step_two')]"
-			}
-
-			state = {
-				name = "b"
-				alpha = 1
-			}
+		blockoverride "ocr_header" {
 
 			header_pattern = {
 				layoutpolicy_horizontal = expanding
 
 				blockoverride "header_text"
 				{
-					raw_text = "[DecisionDetailView.GetTitle]."
+					text = "[DecisionDetailView.GetTitle]"
 				}
 
 				blockoverride "button_close"
@@ -53,275 +44,224 @@ window = {
 					onclick = "[DecisionDetailView.Close]"
 				}
 			}
+		}
 
-			error_button = {
+		blockoverride "ocr_content" {
+			vbox = {
+				datacontext = "[DecisionDetailView.GetDecision]"
+				layoutpolicy_vertical = expanding
 				layoutpolicy_horizontal = expanding
+				decision_detail_buttons = {}
+
+				decision_detail_view_content = {}
+
+				expand = { }
 			}
-
-			decision_detail_view_step_one_ocr = {}
-
-			decision_detail_view_step_two_ocr = {}
 		}
 	}
 
-	old_decision_details = { }
+	# old_decision_details = {
+	# 	using = vanilla
+	# }
 }
-
 
 types DecisionDetailViewTypes
 {
-	type decision_detail_view_step_one_ocr = vbox
-	{
+	type decision_detail_description_content = vbox {
 		layoutpolicy_horizontal = expanding
-		layoutpolicy_vertical = expanding
-		visible = "[Not( GetVariableSystem.HasValue( 'show_decision_step_two', 'true' ) )]"
 
-		# vbox = {
-		# 	layoutpolicy_horizontal = expanding
-		# 	minimumsize = { 550 220 }
-		# 	visible = "[Not(DecisionDetailView.IsOpenedFromRoyalCourt) ]"
+		visible = "[DecisionDetailView.IsDefaultWidgetShown]"
 
-		# 	background = {
-		# 		name = "illustrations"
-		# 		texture = "[DecisionDetailView.GetPicture]"
-		# 		margin_top = 10
-		# 		alpha = 0.7
-		# 		using = Mask_Rough_Edges
-		# 	}
-		# }
 		vbox = {
-			name = "footer"
+			layoutpolicy_vertical = expanding
+			layoutpolicy_horizontal = expanding
+			margin_bottom = 10
+
+			dynamicgridbox = {
+				layoutpolicy_horizontal = expanding
+				name = "additional_widgets_desc_container"
+			}
+		}
+
+		vbox = {
 			layoutpolicy_horizontal = expanding
 
 			vbox = {
-				margin_bottom = 4
+				name = "effect"
+				visible = "[DecisionDetailView.HasEffect]"
 				layoutpolicy_horizontal = expanding
 
-				dynamicgridbox = {
+				button_text = {
 					layoutpolicy_horizontal = expanding
-					name = "custom_widgets_container"
-				}
-			}
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-
-				text_single = {
-					name = "cost"
-					visible = "[DecisionDetailView.HasCost]"
-					raw_text = "[DecisionDetailView.GetCostDescription]."
-					layoutpolicy_horizontal = expanding
-				}
-
-
-				button_primary_text = {
-					layoutpolicy_horizontal = expanding
-					name = "next_step"
-					visible = "[DecisionDetailView.GetDecision.HasStepTwo]"
+					shortcut = map_mode_1
+					onclick = "[Toggle('decision_effects')]"
 					blockoverride "text" {
-						raw_text = "[DecisionDetailView.GetDecision.GetNextStepButtonLabel]"
+						text = "DECISION_DETAIL_EFFECTS"
 					}
-					# blockoverride "disabled" {
-					# 	visible = "[Not(Decision.IsPossibleForPlayer)]"
-					# }
-
-					tooltip = "[DecisionDetailView.GetConfirmTooltip]"
-					onclick = "[GetVariableSystem.Set('show_decision_step_two', 'true')]"
-
-					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_advance"
-				}
-
-				button_primary_text = {
-					name = "confirm"
-					layoutpolicy_horizontal = expanding
-					visible = "[Not( DecisionDetailView.GetDecision.HasStepTwo )]"
-					blockoverride "text" {
-						raw_text = "[DecisionDetailView.GetConfirmText]"
-					}
-
-					blockoverride "disabled" {
-						visible = "[Not(DecisionDetailView.CanConfirm)]"
-					}
-
-					blockoverride "hotkey" {
-						visible = "[DecisionDetailView.CanConfirm]"
-					}
-
-					enabled = "[DecisionDetailView.CanConfirm]"
-					tooltip = "[DecisionDetailView.GetConfirmTooltip]"
-					onclick = "[DecisionDetailView.Confirm]"
-
-					default_clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
-					clicksound = "[DecisionDetailView.GetConfirmClickSound]"
-				}
-
-
-				button_checked_text = {
-					layoutpolicy_horizontal = expanding
-					onclick = "[Decision.OnToggleImportantForPlayer]"
-					blockoverride "visible" {
-						visible = "[Not(Decision.IsImportantForPlayer)]"
-					}
-
-					blockoverride "text"
-					{
-						text = "DECISIONS_VIEW_MAJOR_TOGGLE"
-					}
-					blockoverride "extra_text"
-					{
-						raw_text = "."
+					blockoverride "extra" {
+						comma = {}
+						text_single = {
+							raw_text = "[Collapse('decision_effects')] E."
+						}
 					}
 				}
 
 				text_multi_wide = {
-					raw_text = "[Decision.GetCommandDescForPlayer]"
-					visible = "[Not(Decision.IsPossibleForPlayer)]"
-				}
-
-				expand = { }
-			}
-		}
-
-		scrollbox = {
-			name = "description_scrollarea"
-			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
-
-			blockoverride "scrollbox_content"
-			{
-				vbox = {
+					visible = "[Isnt('decision_effects')]"
 					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
-					# spacing = 10
-
-					vbox = {
-						name = "effect"
-						visible = "[DecisionDetailView.HasEffect]"
-						layoutpolicy_horizontal = expanding
-
-						text_single = {
-							text = "DECISION_DETAIL_EFFECTS"
-							layoutpolicy_horizontal = expanding
-						}
-
-						text_multi = {
-							layoutpolicy_horizontal = expanding
-							max_width = @decision_width
-							autoresize = yes
-							raw_text = "[DecisionDetailView.GetEffectDescription]."
-						}
-					}
-
-					vbox = {
-						name = "requirements"
-						visible = "[DecisionDetailView.HasRequirements]"
-						layoutpolicy_horizontal = expanding
-
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							text = "DECISION_DETAIL_REQUIREMENTS"
-						}
-
-						text_multi = {
-							alwaystransparent = no
-							minimumsize = { @decision_width -1 }
-							maximumsize = { @decision_width -1 }
-							autoresize = yes
-							raw_text = "[DecisionDetailView.GetRequirementsDescription]."
-						}
-					}
-
-					text_single = {
-						raw_text = "Description:"
-						layoutpolicy_horizontal = expanding
-					}
-
-					text_multi = {
-						name = "description"
-						minimumsize = { @decision_width -1 }
-						maximumsize = { @decision_width -1 }
-						autoresize = yes
-						raw_text = "[DecisionDetailView.GetDescription]."
-						using = Font_Size_Small
-					}
-
-					expand = { }
-
+					text = "[DecisionDetailView.GetEffectDescription]"
 				}
 			}
 
-			blockoverride "scrollbox_background_fade" {}
+			vbox = {
+				name = "requirements"
+				visible = "[DecisionDetailView.HasRequirements]"
+				layoutpolicy_horizontal = expanding
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					text = "DECISION_DETAIL_REQUIREMENTS"
+				}
+
+				text_multi_wide = {
+					text = "[DecisionDetailView.GetRequirementsDescription]"
+				}
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "Description:"
+			}
+
+			text_multi_wide = {
+				name = "description"
+				text = "[DecisionDetailView.GetDescription]"
+			}
 		}
-
-		# expand = { }
-
 	}
 
-	type decision_detail_view_step_two_ocr = vbox
-	{
+	type decision_custom_widget_content = vbox {
 		layoutpolicy_horizontal = expanding
 		layoutpolicy_vertical = expanding
-		visible = "[GetVariableSystem.HasValue( 'show_decision_step_two', 'true' )]"
 
-		vbox = {
+		visible = "[Not(DecisionDetailView.IsDefaultWidgetShown)]"
+
+		dynamicgridbox = {
+			name = "custom_widgets_container"
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
+		}
+	}
 
-			dynamicgridbox = {
-				name = "custom_widgets_container_step_two"
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-			}
+	type decision_detail_view_content = vbox {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		decision_custom_widget_content = {}
+		decision_detail_description_content = {}
+
+		expand = { }
+	}
+
+	type decision_confirm_button = button_primary_text {
+		blockoverride "disabled" {
+			visible = "[Not(DecisionDetailView.CanConfirm)]"
+		}
+		enabled = "[DecisionDetailView.CanConfirm]"
+    tooltip = "[DecisionDetailView.GetConfirmTooltip]"
+    onclick = "[DecisionDetailView.Confirm]"
+		blockoverride "text" {
+			raw_text = "Confirm [DecisionDetailView.GetConfirmText]"
+		}
+		blockoverride "hotkey" {
+			visible = "[DecisionDetailView.CanConfirm]"
 		}
 
+    default_clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+    clicksound = "[DecisionDetailView.GetConfirmClickSound]"
+	}
+
+	type decision_detail_buttons = vbox {
+		layoutpolicy_horizontal = expanding
+
 		vbox = {
-			name = "footer"
 			layoutpolicy_horizontal = expanding
 
 			text_single = {
-				name = "cost"
-				visible = "[DecisionDetailView.HasCost]"
-				text = "[DecisionDetailView.GetCostDescription]"
 				layoutpolicy_horizontal = expanding
+				visible = "[DecisionDetailView.HasCost]"
+				raw_text = "[DecisionDetailView.GetCostDescription]."
 			}
 
-			hbox = {
+			# default step
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Not(GetVariableSystem.HasValue( 'show_decision_next_step', 'true' ))]"
+
+				# next step button
+				button_primary_text = {
+					layoutpolicy_horizontal = expanding
+
+					visible = "[DecisionDetailView.HasNextStep]"
+
+					tooltip = "[DecisionDetailView.GetConfirmTooltip]"
+					onclick = "[GetVariableSystem.Set('show_decision_next_step', 'true')]"
+					onclick = "[DecisionDetailView.ToggleCustomWidgetState]"
+
+					blockoverride "text" {
+						raw_text = "Next step: [DecisionDetailView.GetNextStepButtonLabel]"
+					}
+
+					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_advance"
+				}
+
+				decision_confirm_button = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not( DecisionDetailView.HasNextStep )]"
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					text_multi_wide = {
+						visible = "[And(Not( DecisionDetailView.HasNextStep ), Not(DecisionDetailView.CanConfirm))]"
+						raw_text = "[DecisionDetailView.GetConfirmTooltip]."
+					}
+
+					expand = { }
+				}
+			}
+
+			vbox = {
+				visible = "[GetVariableSystem.HasValue( 'show_decision_next_step', 'true' )]"
 				layoutpolicy_horizontal = expanding
 
 				button_text = {
+					layoutpolicy_horizontal = expanding
+					name = "back"
+					visible = "[DecisionDetailView.HasNextStep]"
+					onclick = "[GetVariableSystem.Clear('show_decision_next_step')]"
+					onclick = "[DecisionDetailView.ToggleCustomWidgetState]"
 					shortcut = go_back
-					shortcut = go_back_2
-					shortcut = go_back_3
-				    blockoverride "text" {
-				        raw_text = "Go back, hotkey B."
-						align = left
-				    }
-					onclick = "[GetVariableSystem.Clear('show_decision_step_two')]"
+					blockoverride "text" {
+						text = "BACK_LABEL"
+					}
+					blockoverride "extra" {
+						comma = {}
+						text_single = {
+							raw_text = "B."
+						}
+					}
 					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_close"
 				}
 
-				button_primary_text = {
-					name = "step_two_confirm"
-					blockoverride "disabled" {
-						visible = "[Not(DecisionDetailView.CanConfirm)]"
-					}
-					blockoverride "text" {
-						raw_text = "[DecisionDetailView.GetConfirmText]."
-					}
-					enabled = "[DecisionDetailView.CanConfirm]"
-					tooltip = "[DecisionDetailView.GetConfirmTooltip]"
-					tooltip_enabled = "[Not(DecisionDetailView.CanConfirm)]"
-					onclick = "[DecisionDetailView.Confirm]"
-
-					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+				decision_confirm_button = {
+					layoutpolicy_horizontal = expanding
 				}
-
-				expand = { }
 			}
 
 			button_checked_text = {
 				layoutpolicy_horizontal = expanding
-				name = "step_two_major_checkbox"
+				shortcut = army_split_half
 				onclick = "[Decision.OnToggleImportantForPlayer]"
 
 				blockoverride "visible"
@@ -333,9 +273,16 @@ types DecisionDetailViewTypes
 				{
 					text = "DECISIONS_VIEW_MAJOR_TOGGLE"
 				}
+				blockoverride "extra" {
+					spacing = 3
+					comma = {}
+					text_single = {
+						raw_text = "F."
+					}
+				}
 			}
 
-			expand = { }
+			expand = {}
 		}
 	}
 }

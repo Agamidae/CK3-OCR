@@ -1,0 +1,416 @@
+﻿window = {
+	name = "window_tax_slot_obligations"
+	using = base_ocr_window
+	layer = middle
+	allow_outside = yes
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+		on_finish = "[Clear('tax_warnings')]"
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+	}
+
+	window_ocr = {
+		datacontext = "[TaxSlotObligationsWindow.GetTaxSlot]"
+		blockoverride "ocr_header" {
+			header_text = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "TAX_COLLECTOR_OBLIGATION_WINDOW_HEADER"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[TaxSlotObligationsWindow.Close]"
+				}
+			}
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					### LEVIES AND TAXES COMPARISON
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						visible = "[TaxSlotObligationsWindow.HasObligationChanges]"
+						text = "TAX_SLOT_OBLIGATIONS_WINDOW_SELECTED"
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not( TaxSlotObligationsWindow.HasObligationChanges )]"
+						text = "TAX_SLOT_OBLIGATIONS_WINDOW_CURRENT"
+						datacontext = "[TaxSlotObligationsWindow.GetSelectedObligation]"
+						tooltipwidget = {
+							tax_slot_obligation_tooltip = {
+								blockoverride "warning_description_text"
+								{
+									text = "TAX_SLOT_OBLIGATION_SELECT_WARNING_TOOLTIP"
+								}
+							}
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						hbox = {
+							name = "current_contributions"
+							visible = "[Not(TaxSlotObligationsWindow.HasObligationChanges)]"
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+
+							text_single = {
+								raw_text = "Current"
+							}
+
+							text_single = {
+								datacontext = "[TaxSlotObligationsWindow.GetCurrentTaxBreakdown]"
+								raw_text = "Taxes: [ValueBreakdown.GetValue],"
+
+								tooltipwidget = {
+									tax_contribution_tooltip = {}
+								}
+								using = tooltip_ws
+							}
+
+							text_single = {
+								datacontext = "[TaxSlotObligationsWindow.GetCurrentLevyBreakdown]"
+								raw_text = "levies: [ValueBreakdown.GetValue]."
+
+								tooltipwidget = {
+									tax_contribution_tooltip = {
+										blockoverride "descriptive_text"
+										{
+											text = "TAX_SLOT_VASSAL_WINDOW_TAX_SLOT_LEVIES_DESC"
+										}
+
+										blockoverride "contribution_icon"
+										{
+											texture = "gfx/interface/icons/icon_soldier.dds"
+										}
+									}
+								}
+								using = tooltip_ws
+							}
+
+							expand = {}
+						}
+
+						vbox = {
+							name = "preview_contributions"
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+
+							visible = "[TaxSlotObligationsWindow.HasObligationChanges]"
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								datacontext = "[TaxSlotObligationsWindow.GetPreviewTaxBreakdown]"
+								raw_text = "Taxes will change from [TaxSlotObligationsWindow.GetCurrentTaxBreakdown.GetValue] to [ValueBreakdown.GetValue],"
+
+								tooltipwidget = {
+									tax_contribution_tooltip = {}
+								}
+								using = tooltip_ws
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								datacontext = "[TaxSlotObligationsWindow.GetPreviewLevyBreakdown]"
+								raw_text = "Levies will change from [TaxSlotObligationsWindow.GetCurrentLevyBreakdown.GetValue] to [ValueBreakdown.GetValue]."
+
+								tooltipwidget = {
+									tax_contribution_tooltip = {
+										blockoverride "descriptive_text"
+										{
+											text = "TAX_SLOT_VASSAL_WINDOW_TAX_SLOT_LEVIES_DESC"
+										}
+
+										blockoverride "contribution_icon"
+										{
+											texture = "gfx/interface/icons/icon_soldier.dds"
+										}
+									}
+								}
+								using = tooltip_ws
+							}
+
+							expand = {}
+						}
+
+						# hbox = {
+						# 	name = "preview_contributions"
+						# 	spacing = 3
+						#
+						# 	visible = "[TaxSlotObligationsWindow.HasObligationChanges]"
+						#
+						#
+						# 	text_single = {
+						# 		datacontext = "[TaxSlotObligationsWindow.GetPreviewTaxBreakdown]"
+						# 		raw_text = "Taxes: [ValueBreakdown.GetValue],"
+						#
+						# 		tooltipwidget = {
+						# 			tax_contribution_tooltip = {}
+						# 		}
+						# 		using = tooltip_ws
+						# 	}
+						#
+						#
+						# 	text_single = {
+						# 		datacontext = "[TaxSlotObligationsWindow.GetPreviewLevyBreakdown]"
+						# 		raw_text = "levies [ValueBreakdown.GetValue]."
+						#
+						# 		tooltipwidget = {
+						# 			tax_contribution_tooltip = {
+						# 				blockoverride "descriptive_text"
+						# 				{
+						# 					text = "TAX_SLOT_VASSAL_WINDOW_TAX_SLOT_LEVIES_DESC"
+						# 				}
+						#
+						# 				blockoverride "contribution_icon"
+						# 				{
+						# 					texture = "gfx/interface/icons/icon_soldier.dds"
+						# 				}
+						# 			}
+						# 		}
+						# 		using = tooltip_ws
+						# 	}
+						#
+						# 	expand = {}
+						# }
+
+						expand = {}
+					}
+
+					text_single = {
+						visible = "[TaxSlotObligationsWindow.HasObligationChanges]"
+						layoutpolicy_horizontal = expanding
+						raw_text = "Won't be able to change the decree for [GetDefine('NTaxSlot', 'TAX_DECREE_COOLDOWN')|0] years."
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						button_primary_text = {
+							visible = "[TaxSlotObligationsWindow.HasObligationChanges]"
+							enabled = "[TaxSlotObligationsWindow.CanApplyObligationChanges]"
+							blockoverride "disabled" {
+								visible = "[Not(TaxSlotObligationsWindow.CanApplyObligationChanges)]"
+							}
+							blockoverride "text" {
+								text = "TAX_SLOT_OBLIGATIONS_WINDOW_ACCEPT"
+							}
+							onclick = "[TaxSlotObligationsWindow.ApplyChanges]"
+							onclick = "[TaxSlotObligationsWindow.Close]"
+						}
+
+						expand = { }
+					}
+
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[TaxSlotObligationsWindow.HasObligationChanges]"
+
+						datamodel = "[TaxSlotObligationsWindow.GetObligations]"
+
+						item = {
+							button_text = {
+								shortcut = go_back
+								layoutpolicy_horizontal = expanding
+								onclick = "[TaxSlotObligationsWindow.SelectObligation( TaxSlotObligation.Self )]"
+								visible = "[IsCurrentTaxObligation( TaxSlotObligation.Self )]"
+								blockoverride "text" {
+									raw_text = "Cancel, B."
+								}
+							}
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[TaxSlotObligationsWindow.GetSelectedObligation]"
+						visible = "[Not(TaxSlotObligationsWindow.HasObligationChanges)]"
+
+						button_text = {
+							shortcut = map_mode_1
+							layoutpolicy_horizontal = expanding
+							onclick = "[Toggle('current_decree_details')]"
+							blockoverride "text" {
+								raw_text = "All details, [CollapseIf(Isnt('current_decree_details'))] E."
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Is('current_decree_details')]"
+
+							text_multi_wide = {
+								text = "[TaxSlotObligationsWindow.GetSelectedObligation.GetFlavorDesc]"
+							}
+
+							text_multi_wide = {
+								raw_text = "[TaxSlotObligation.GetEffectText]"
+							}
+
+							expand = { }
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[TaxSlotObligationsWindow.GetSelectedObligation]"
+						visible = "[TaxSlotObligationsWindow.HasObligationChanges]"
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Not(StringIsEmpty(TaxSlotObligationsWindow.GetInvalidVassalsForObligationDesc( TaxSlotObligation.Self)))]"
+
+								button_text = {
+									shortcut = map_mode_10
+									layoutpolicy_horizontal = expanding
+									onclick = "[Toggle('tax_warnings')]"
+									blockoverride "text" {
+										raw_text = "Warnings, [Collapse('tax_warnings')] Shift W."
+									}
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[Isnt('tax_warnings')]"
+									text_multi_wide = {
+										# visible = "[Not(TaxSlotObligationsWindow.CanApplyObligationChanges)]"
+										raw_text = "[TaxSlotObligationsWindow.CanSelectObligationDesc( TaxSlotObligation.Self )]"
+										# raw_text = "[TaxSlotObligationsWindow.GetInvalidVassalsForObligationDesc( TaxSlotObligation.Self )]"
+									}
+
+									text_multi_wide = {
+										# visible = "[Not(TaxSlotObligationsWindow.CanApplyObligationChanges)]"
+										# raw_text = "[TaxSlotObligationsWindow.CanSelectObligationDesc( TaxSlotObligation.Self )]"
+										raw_text = "[TaxSlotObligationsWindow.GetInvalidVassalsForObligationDesc( TaxSlotObligation.Self )]"
+									}
+								}
+							}
+
+							text_multi_wide = {
+								text = "[TaxSlotObligationsWindow.GetSelectedObligation.GetFlavorDesc]"
+							}
+
+							text_multi_wide = {
+								raw_text = "[TaxSlotObligation.GetEffectText]"
+							}
+
+							expand = { }
+						}
+					}
+
+					###SELECTABLE OBLIGATIONS
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						text_multi_wide = {
+							visible = "[Not(TaxSlotObligationsWindow.HasObligationChanges)]"
+							text = "TAX_COLLECTION_OPTION_INSTRUCTIONS"
+						}
+
+						vbox = {
+							name = "obligations"
+							layoutpolicy_horizontal = expanding
+
+							datamodel = "[TaxSlotObligationsWindow.GetObligations]"
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[GetDataModelSize(TaxSlotObligationsWindow.GetObligations)] options:"
+							}
+
+							item = {
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									obligation_option_widget_ocr = {}
+									text_multi_wide = {
+										raw_text = "[TaxSlotObligationsWindow.CanSelectObligationDesc( TaxSlotObligation.Self )]"
+									}
+								}
+							}
+						}
+					}
+				}
+
+				expand = { }
+			}
+		}
+	}
+
+	window_tax_slot_obligations_old = {}
+}
+
+######################################################
+################ TYPES AND TEMPLATES #################
+######################################################
+
+types TaxSlotObligationsTypes
+{
+	type obligation_option_widget_ocr = button_text {
+		layoutpolicy_horizontal = expanding
+		tooltipwidget = {
+			tax_slot_obligation_tooltip = {
+				blockoverride "warning_description_text"
+				{
+					text = "TAX_SLOT_OBLIGATION_SELECT_WARNING_TOOLTIP"
+				}
+			}
+		}
+		blockoverride "text" {
+			raw_text = "[TaxSlotObligation.GetNameNoTooltip]."
+			alwaystransparent = yes
+		}
+		shortcuts_list = {
+			blockoverride "click" {
+				onclick = "[Clear('tax_warnings')]"
+				onclick = "[TaxSlotObligationsWindow.SelectObligation( TaxSlotObligation.Self )]"
+			}
+		}
+		blockoverride "num" {
+		}
+		blockoverride "pre" {
+			text_single = {
+				raw_text = "Can't use"
+				visible = "[And(Not(TaxSlotObligationsWindow.CanSelectObligation( TaxSlotObligation.Self )), And(Not(IsCurrentTaxObligation( TaxSlotObligation.Self )), Not(IsSelectedTaxObligation( TaxSlotObligation.Self ))))]"
+			}
+			text_single = {
+				visible = "[IsCurrentTaxObligation( TaxSlotObligation.Self )]"
+				text = "TAX_SLOT_OBLIGATIONS_WINDOW_CURRENT_OBLIGATION"
+			}
+			text_single = {
+				visible = "[And(IsSelectedTaxObligation( TaxSlotObligation.Self ), Not(IsCurrentTaxObligation( TaxSlotObligation.Self )))]"
+				text = "TAX_SLOT_OBLIGATIONS_WINDOW_SELECTED_OBLIGATION"
+			}
+		}
+		blockoverride "extra" {
+			text_single = {
+				visible = "[Not(StringIsEmpty(TaxSlotObligationsWindow.GetInvalidVassalsForObligationDesc( TaxSlotObligation.Self)))]"
+				raw_text = "Some vassals are invalid!"
+			}
+		}
+		onclick = "[Clear('tax_warnings')]"
+		onclick = "[TaxSlotObligationsWindow.SelectObligation( TaxSlotObligation.Self )]"
+	}
+}

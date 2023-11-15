@@ -7,6 +7,7 @@ window = {
 	movable = no
 	allow_outside = yes
 	layer = windows_layer
+	using = base_ocr_window
 
 	using = Window_Size_Sidebar
 	using = Window_Background_Sidebar
@@ -15,99 +16,240 @@ window = {
 		name = _show
 		using = Animation_FadeIn_Quick
 		using = Sound_WindowShow_Standard
-		position_x = 0
+
 		on_start = "[GetVariableSystem.Set( 'hide_bottom_left_HUD', 'true' )]"
 	}
 
 	state = {
 		name = _hide
-
+		on_finish = "[Set('unity_tip', 'yes')]"
+		on_finish = "[Clear('dynasty_view_expand')]"
 		using = Animation_FadeOut_Quick
 		using = Sound_WindowHide_Standard
-		position_x = -60
+
 		on_start = "[GetVariableSystem.Clear( 'hide_bottom_left_HUD' )]"
 	}
 
-	vbox = {
-		name = "dynasty_house"
-		margin_left = 10
-		using = ocr_margins
+	window_ocr = {
+		layoutpolicy_horizontal = expanding
+		blockoverride "ocr_header" {
 
-		using = Window_Margins_Sidebar
+			button = {
+				shortcut = close_window
+				onclick = "[Clear('dynasty_view_expand')]"
+				visible = "[Is('dynasty_view_expand')]"
+			}
 
-		background = {
-			using = Background_Bottom_Fade
-			margin_right = -10
-		}
+			button = {
+				shortcut = close_window
+				visible = "[Isnt('dynasty_view_expand')]"
+				onclick = "[DynastyHouseView.Close]"
+				onclick = "[DynastyHouseView.CloseMembersWindow]"
+			}
 
-		### HOUSE ###
-		vbox = {
-			layoutpolicy_horizontal = expanding
-
-			#### HEADER
 			hbox = {
 				layoutpolicy_horizontal = expanding
+				spacing = 3
 
-				vbox = {
+				visible = "[Isnt('dynasty_view_expand')]"
+
+				text_single = {
+					raw_text = "HOUSE_VIEW_NAME_WITH_HOUSE"
+				}
+
+				comma = {}
+
+				text_single = {
+					visible = "[DynastyHouseView.HasHouseUnity]"
+					raw_text = "[DynastyHouse.GetHouseUnityValue] unity."
+				}
+				text_single = {
+					visible = [Dynasty.IsValid]
+					raw_text = "[Dynasty.GetName] [dynasty|e]."
+				}
+
+				expand = {}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 3
+				visible = "[Has('dynasty_view_expand', 'unity_changelog')]"
+
+				text_single = {
+					raw_text = "[GetDataModelSize(DynastyHouseView.GetDynastyHouse.GetChangelog)]"
+				}
+
+				text_single = {
+					raw_text = "HOUSE_UNITY_RECENT_CHANGES_LABEL"
+				}
+
+				dot_l = {}
+
+				expand = {}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Has('dynasty_view_expand', 'unity_levels')]"
+
+				text_single = {
 					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
+					raw_text = "[Subtract_int32(GetDataModelSize(DynastyHouseView.GetHouseUnityStages), '(int32)1')] levels of unity:"
+				}
+				expand = {}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Has('dynasty_view_expand', 'houses')]"
+				spacing = 3
+				text_single = {
+					raw_text = "[GetDataModelSize(DynastyHouseView.GetDynastyHouses)]"
+				}
+				text_single = {
+					raw_text = "DYNASTY_VIEW_HOUSES"
+				}
+				dot_l = {}
+
+				expand = {}
+			}
+		}
+
+		blockoverride "ocr_content" {
+			vbox = {
+				name = "dynasty_house"
+				layoutpolicy_horizontal = expanding
+
+				### HOUSE ###
+				vbox = {
+					visible = "[Isnt('dynasty_view_expand')]"
+					layoutpolicy_horizontal = expanding
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = map_mode_1
+						onclick = "[Toggle('house_details')]"
+						blockoverride "text" {
+							raw_text = "House details, [Collapse('house_details')] E."
+						}
+					}
 
 					vbox = {
 						layoutpolicy_horizontal = expanding
-						layoutpolicy_vertical = expanding
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							layoutpolicy_vertical = fixed
-
-							text_single = {
-								layoutpolicy_vertical = expanding
-								text = "HOUSE_VIEW_NAME_WITH_HOUSE"
-							}
-
-							dot = { }
-
-							expand = { }
-
-							buttons_window_control = {
-
-								blockoverride "button_close"
-								{
-									onclick = "[DynastyHouseView.Close]"
-									onclick = "[DynastyHouseView.CloseMembersWindow]"
-								}
-
-								blockoverride "button_back"
-								{
-									size = { 0 0 }
-									visible = "[HasViewHistory]"
-									onclick = "[OpenFromViewHistory]"
-									tooltip = "[GetViewHistoryTooltip]"
-								}
-
-								blockoverride "button_me"
-								{
-									size = { 0 0 }
-									onclick = "[DefaultOnCharacterClick(GetPlayer.GetID)]"
-								}
-							}
-						}
-
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							visible = "[DynastyHouse.CanPlayerCustomize]"
-							onclick = "[OpenHouseCustomizationWindow(DynastyHouse.Self)]"
-							blockoverride "text" {
-								raw_text = "Change name."
-							}
-						}
+						visible = "[Isnt('house_details')]"
 
 						vbox = {
 							layoutpolicy_horizontal = expanding
 							layoutpolicy_vertical = expanding
-							margin_bottom = 10
-							margin_right = 25
-							spacing = 3
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+
+								text_single = {
+									text = "HOUSE_VIEW_CONCEPT"
+								}
+
+								dot_l = {}
+
+								text_single = {
+									raw_text = "Motto:"
+								}
+
+								expand = {}
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_multi_wide = {
+									layoutpolicy_horizontal = expanding
+									text = "HOUSE_VIEW_MOTTO"
+								}
+								expand = {}
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								visible = "[DynastyHouse.CanPlayerCustomize]"
+								onclick = "[OpenHouseCustomizationWindow(DynastyHouse.Self)]"
+								blockoverride "text" {
+									raw_text = "Rename house."
+								}
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								shortcut = find_title_shortcut
+								onclick = "[DynastyHouseView.ToggleMembersWindow('house')]"
+								blockoverride "text" {
+									text = "HOUSE_VIEW_MEMBERS"
+								}
+								blockoverride "extra" {
+									comma = {}
+									text_single = {
+										raw_text = "V."
+									}
+								}
+							}
+
+							vbox = {
+								visible = "[DataModelHasItems( DynastyHouseView.GetHouseModifiers )]"
+								layoutpolicy_horizontal = expanding
+
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									shortcut = map_mode_11
+									onclick = "[Toggle('house_modifiers')]"
+									blockoverride "pre" {
+										text_single = {
+											raw_text = "[GetDataModelSize(DynastyHouseView.GetHouseModifiers)]"
+										}
+									}
+									blockoverride "text" {
+										text = "HOUSE_MODIFIERS"
+									}
+									blockoverride "extra" {
+										text_single = {
+											raw_text = "[Collapse('house_modifiers')] Shift E."
+										}
+									}
+								}
+
+								vbox = {
+									datamodel = "[DynastyHouseView.GetHouseModifiers]"
+									layoutpolicy_horizontal = expanding
+									visible = "[Isnt('house_modifiers')]"
+
+									item = {
+										modifier_item_ocr = {
+											layoutpolicy_horizontal = expanding
+										}
+									}
+								}
+
+								expand = {}
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_multi_wide = {
+									layoutpolicy_horizontal = expanding
+									text = "HOUSE_VIEW_FOUNDED"
+
+								}
+								expand = {}
+							}
+						}
+
+						### INVALID ###
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[DynastyHouse.GetFounder]"
+							visible = "[Not( DynastyHouse.GetHeadOfHouse.IsValid )]"
+
+							datacontext = "[GetIllustration( 'character_view_bg' )]"
 
 							state = {
 								name = "house_view_refresh"
@@ -120,301 +262,310 @@ window = {
 
 							text_single = {
 								layoutpolicy_horizontal = expanding
-								text = "HOUSE_VIEW_CONCEPT"
-								autoresize = no
+								text = "DYNASTY_TT_DEAD_HOUSE"
 							}
 
-							hbox = {
+							expand = {}
+						}
+
+						#### VALID ####
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[DynastyHouse.GetHeadOfHouse]"
+							datacontext = "[GetIllustration( 'character_view_bg' )]"
+							visible = "[DynastyHouse.GetHeadOfHouse.IsValid]"
+
+							state = {
+								name = "house_view_refresh"
+								using = Animation_Refresh_FadeOut
+							}
+
+							state = {
+								using = Animation_Refresh_FadeIn
+							}
+
+							vbox = {
 								layoutpolicy_horizontal = expanding
 
-								text_multi = {
+								vbox = {
 									layoutpolicy_horizontal = expanding
-									maximumsize = { 0 40 }
-									max_width = 400
-									autoresize = yes
-									text = "HOUSE_VIEW_MOTTO"
-									fontsize = 17
-									default_format = "#medium;bold;italic"
-								}
 
-								expand = { }
-							}
-
-							hbox = {
-								visible = "[DataModelHasItems( DynastyHouseView.GetHouseModifiers )]"
-								layoutpolicy_horizontal = expanding
-
-								hbox = {
-									datamodel = "[DynastyHouseView.GetHouseModifiers]"
+									char_name = {
+										blockoverride "pre" {
+											text_single = {
+												raw_text = "[house_head|E]:"
+											}
+										}
+										layoutpolicy_horizontal = expanding
+									}
 
 									text_single = {
-										maximumsize = { 0 40 }
-										max_width = 400
-										autoresize = yes
-										text = "HOUSE_MODIFIERS"
-										align = left
+										layoutpolicy_horizontal = expanding
+										visible = "[Not(Character.IsLocalPlayer)]"
+										text = "[Character.GetRelationToString( GetPlayer )]"
+										tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+									}
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									text = "HOUSE_VIEW_MAX_MILITARY_STRENGTH"
+								}
+								### Dynasty Head
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[Character.IsDynast]"
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+
+										text_multi_wide = {
+											visible = "[NotEqualTo_int32(Character.GetDynasty.GetFoundedDynastyHousesCount, '(int32)1')]"
+											text = "DYNASTY_VIEW_BECOME_DYNAST"
+										}
+
+										expand = {}
 									}
 
-									item = {
-										icon = {
-											size = { 25 25 }
-											alwaystransparent = no
-											texture = "[ModifierItem.GetIcon]"
-											tooltip = "[ModifierItem.GetTooltip]"
+									hbox = {
+										layoutpolicy_horizontal = expanding
+
+										text_multi_wide = {
+											visible = "[EqualTo_int32(Character.GetDynasty.GetFoundedDynastyHousesCount, '(int32)1')]"
+											text = "DYNASTY_VIEW_BECOME_DYNAST_ONE_HOUSE"
+										}
+										expand = {}
+									}
+								}
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									char_name = {
+										visible = "[DynastyHouse.HasHeirOfHouse]"
+										datacontext = "[DynastyHouse.GetHeirOfHouse]"
+										blockoverride "pre" {
+											text_single = {
+												raw_text = "House head heir:"
+											}
 										}
 									}
+									expand = {}
 								}
-
-								expand = { }
-							}
-
-							hbox = {
-								layoutpolicy_horizontal = expanding
-
-								text_multi = {
-									layoutpolicy_horizontal = expanding
-									text = "HOUSE_VIEW_FOUNDED"
-									default_format = "#low"
-									autoresize = yes
-									max_width = 400
-								}
-								expand = { }
 							}
 						}
 					}
-				}
-			}
 
-			### INVALID ###
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				datacontext = "[DynastyHouse.GetFounder]"
-				visible = "[Not( DynastyHouse.GetHeadOfHouse.IsValid )]"
-				margin = { 15 0 }
-				minimumsize = { 0 260 }
-
-				datacontext = "[GetIllustration( 'character_view_bg' )]"
-
-				state = {
-					name = "house_view_refresh"
-					using = Animation_Refresh_FadeOut
-				}
-
-				state = {
-					using = Animation_Refresh_FadeIn
-				}
-
-				background = {
-					visible = "[Character.IsValid]"
-					texture = "[Illustration.GetTexture( Character.Self )]"
-					alpha = 0.5
-					fittype = centercrop
-					using = Mask_Rough_Edges
-					margin_top = 10
-
-					modify_texture = {
-						texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
-						blend_mode = alphamultiply
-						mirror = horizontal
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = map_mode_4
+						onclick = "[Toggle('house_unity')]"
+						visible = "[DynastyHouseView.HasHouseUnity]"
+						blockoverride "text" {
+							raw_text = "House Unity, [Collapse('house_unity')] Y."
+						}
 					}
-				}
-
-				spacer = {
-					size = { 100 100 }
-				}
-
-				expand = { }
-
-				text_label_center = {
-					layoutpolicy_horizontal = expanding
-					text = "DYNASTY_TT_DEAD_HOUSE"
-					max_width = 370
-				}
-
-				expand = { }
-			}
-
-			#### VALID ####
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				datacontext = "[DynastyHouse.GetHeadOfHouse]"
-				datacontext = "[GetIllustration( 'character_view_bg' )]"
-				visible = "[DynastyHouse.GetHeadOfHouse.IsValid]"
-
-				state = {
-					name = "house_view_refresh"
-					using = Animation_Refresh_FadeOut
-				}
-
-				state = {
-					using = Animation_Refresh_FadeIn
-				}
-
-				expand = { }
-
-				hbox = {
-					margin = { 10 2 }
-					layoutpolicy_horizontal = expanding
 
 					vbox = {
+						visible = "[And(Isnt('house_unity'), DynastyHouseView.HasHouseUnity)]"
+						datacontext = "[DynastyHouseView.GetCurrentHouseUnityStage]"
 						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
 
-						vbox = {
+							vbox = {
+							name = house_unity_panel_widget # Used for Reactive Advice
 							layoutpolicy_horizontal = expanding
-							margin_bottom = 5
-							spacing = 0
+							layoutpolicy_vertical = expanding
+							# House Unity score & Name
 
-							hbox = {
+							vbox = {
 								layoutpolicy_horizontal = expanding
-								margin_left = 5
+								visible = "[DataModelHasItems( DynastyHouseView.GetHouseUnityModifiers )]"
+								datamodel = "[DynastyHouseView.GetHouseUnityModifiers]"
 
-								text_label_center = {
-									text = "[Character.GetUINameNotMeNoTooltip|U]"
-									default_format = "#high"
-									using = Font_Size_Medium
-									max_width = 355
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									spacing = 3
+
+									text_single = {
+										raw_text = "[GetDataModelSize(DynastyHouseView.GetHouseUnityModifiers)]"
+									}
+
+									text_single = {
+										text = "HOUSE_UNITY_MODIFIERS"
+									}
+
+									dot_l = {}
+
+									expand = {}
 								}
 
-								expand = { }
+
+								item = {
+									modifier_item_ocr = {
+										layoutpolicy_horizontal = expanding
+									}
+								}
 							}
 
 							hbox = {
 								layoutpolicy_horizontal = expanding
-								margin_left = 5
+								spacing = 3
+
+								text_single = {
+									raw_text = "[HouseUnityStage.GetNameNoTooltip],"
+								}
+
+
+								text_single = {
+									text = "HOUSE_UNITY_VALUE"
+
+								}
+
+								text_single = {
+									raw_text = "[house_unity|E]."
+								}
+
+								expand = {}
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
 
 								text_single = {
 									layoutpolicy_horizontal = expanding
-									text = "[Character.GetRelationToString( GetPlayer )]"
-									tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-									max_width = 400
+									visible = "[Not(DataModelHasItems( DynastyHouseView.GetDynastyHouse.GetChangelog ))]"
+									raw_text = "HOUSE_UNITY_NO_RECENT_CHANGE_LABEL"
 								}
-
-								expand = { }
 							}
-						}
 
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							margin = { 0 5 }
-							margin_right = 20
-
-							divider_light = {
+							button_text = {
 								layoutpolicy_horizontal = expanding
-							}
-						}
-
-						### House Head
-						vbox = {
-							layoutpolicy_horizontal = expanding
-
-							hbox = {
-								layoutpolicy_horizontal = expanding
-								spacing = 5
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									raw_text = "[Localize('HOUSE_VIEW_HOUSE_HEAD_OF')]."
-									autoresize = no
-									max_width = 500
+								shortcut = character_finder
+								onclick = "[SetOrToggle('dynasty_view_expand', 'unity_changelog')]"
+								visible = "[DataModelHasItems( DynastyHouseView.GetDynastyHouse.GetChangelog )]"
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "[GetDataModelSize(DynastyHouseView.GetDynastyHouse.GetChangelog)]"
+									}
 								}
-
-								expand = { }
+								blockoverride "text" {
+									raw_text = "HOUSE_UNITY_RECENT_CHANGES_LABEL"
+								}
+								blockoverride "extra" {
+									comma = {}
+									text_single = {
+										raw_text = "C."
+									}
+								}
 							}
 
 							text_single = {
+								visible = "[Isnt('unity_tip')]"
 								layoutpolicy_horizontal = expanding
-								text = "HOUSE_VIEW_MAX_MILITARY_STRENGTH"
-								autoresize = no
+								text = "HOUSE_UNITY_ACTIONS_INSTRUCTIONS"
 							}
 
-							hbox = {
+							### HOUSE UNITY DECISIONS ###
+							vbox = {
+								visible = "[DataModelHasItems(DynastyHouseView.GetDecisions(DynastyHouseView.GetCurrentHouseUnityStage))]"
 								layoutpolicy_horizontal = expanding
 
-								text_multi = {
-									visible = "[DynastyHouse.HasHeirOfHouse]"
-									datacontext = "[DynastyHouse.GetHeirOfHouse]"
-
-									text = "HOUSE_HEAD_HEIR"
-									max_width = 500
-									autoresize = yes
-								}
-
-								expand = { }
-							}
-						}
-
-
-						### Dynasty Head
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							visible = "[Character.IsDynast]"
-
-							hbox = {
-								layoutpolicy_horizontal = expanding
-								spacing = 5
-
-
-								text_single = {
+								hbox = {
 									layoutpolicy_horizontal = expanding
-									text = "DYNASTY_VIEW_DYNAST_OF"
-									autoresize = no
-									max_width = 360
-									default_format = "#high"
-									align = left
+									spacing = 3
+
+									text_single = {
+										raw_text = "[CountItems]"
+
+										hbox = {
+											name = "items"
+											datamodel = "[DynastyHouseView.GetDecisions(DynastyHouseView.GetCurrentHouseUnityStage)]"
+
+											item = {
+												hbox = {
+													visible = "[Decision.IsValid]"
+												}
+											}
+										}
+									}
+
+									text_single = {
+										text = "HOUSE_UNITY_DECISIONS_TITLE"
+									}
+
+									dot_l = {}
+
+									expand = {}
 								}
 
-								expand = { }
+
+								vbox = {
+									name = house_unity_decisions # Used for Reactive Advice
+									datamodel = "[DynastyHouseView.GetDecisions(DynastyHouseView.GetCurrentHouseUnityStage)]"
+									layoutpolicy_horizontal = expanding
+									item = {
+										button_decision_entry_text = {
+											blockoverride "num" {
+											}
+											shortcuts_list = {
+												blockoverride "click" {
+													onclick = "[DynastyHouseView.OnDecisionClick(Decision.Self)]"
+												}
+											}
+											visible = "[Decision.IsValid]"
+											datacontext = "[DynastyHouseView.GetCurrentHouseUnityStage]"
+											onclick = "[DynastyHouseView.OnDecisionClick(Decision.Self)]"
+											layoutpolicy_horizontal = expanding
+										}
+									}
+								}
 							}
 
-							hbox = {
+							### DECISIONS AND EFFECTS ###
+							vbox = {
 								layoutpolicy_horizontal = expanding
 
-								text_multi = {
-									visible = "[NotEqualTo_int32(Character.GetDynasty.GetFoundedDynastyHousesCount, '(int32)1')]"
-									text = "DYNASTY_VIEW_BECOME_DYNAST"
-									max_width = 500
-									autoresize = yes
-								}
+								vbox = {
+									name = house_unity_effects # Used for Reactive Advice
+									datacontext = "[DynastyHouseView.GetCurrentHouseUnityStage]"
+									layoutpolicy_horizontal = expanding
+									### HOUSE UNITY EFFECTS ###
 
-								expand = { }
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										text = "HOUSE_UNITY_EFFECTS_TITLE"
+									}
+
+									text_multi_wide = {
+										layoutpolicy_horizontal = expanding
+										text = "[HouseUnityStage.GetModifierDesc]"
+									}
+								}
 							}
 
-							hbox = {
+							button_text = {
+								shortcut = army_split_half
+								onclick = "[SetOrToggle('dynasty_view_expand', 'unity_levels')]"
 								layoutpolicy_horizontal = expanding
-
-								text_multi = {
-									visible = "[EqualTo_int32(Character.GetDynasty.GetFoundedDynastyHousesCount, '(int32)1')]"
-									text = "DYNASTY_VIEW_BECOME_DYNAST_ONE_HOUSE"
-									max_width = 500
-									autoresize = yes
+								blockoverride "text" {
+									raw_text = "View all levels of unity, F."
 								}
-								expand = { }
 							}
+
+							# House Unity status bar
+							# widget = {
+							# 	widget_house_unity_status_bar = {}
+							# }
 						}
+
+
+						expand = {}
 					}
-				}
-			}
 
-			### DYNASTY
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-
-				background = {
-					using = Background_Area
-					alpha = 0.5
-				}
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					margin = {  0 5 }
-					margin_top = 10
-					margin_left = 15
-					margin_right = 10
-
-					hbox = {
+					### DYNASTY
+					vbox = {
 						layoutpolicy_horizontal = expanding
-						margin_top = 5
+						layoutpolicy_vertical = expanding
 
 						vbox = {
 							layoutpolicy_horizontal = expanding
@@ -422,390 +573,472 @@ window = {
 
 							hbox = {
 								layoutpolicy_horizontal = expanding
-								margin_bottom = 5
-								margin_right = 5
+
+								text_multi_wide = {
+									text = "HOUSE_VIEW_PART_OF_DYNASTY"
+								}
+
+								expand = {}
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Dynasty.CanPlayerCustomize]"
+								onclick = "[OpenDynastyCustomizationWindow(Dynasty.Self)]"
+								blockoverride "text" {
+									raw_text = "Rename dynasty."
+								}
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								text = "DYNASTY_VIEW_CONCEPT"
+							}
+
+							text_single = {
+								visible = "[Dynasty.GetDynast.IsValid]"
+								layoutpolicy_horizontal = expanding
+								text = "DYNASTY_TT_DYNAST"
+							}
+
+							text_single = {
+								visible = "[Not( Dynasty.GetDynast.IsValid )]"
+								layoutpolicy_horizontal = expanding
+								text = "DYNASTY_TT_DEAD_DYNASTY"
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									onclick = "[DynastyHouseView.ToggleMembersWindow('dynasty')]"
+									tooltip = "DYNASTY_VIEW_MEMBERS_TT"
+									blockoverride "text"
+									{
+										text = "DYNASTY_VIEW_MEMBERS"
+									}
+								}
 
 								vbox = {
+									visible = "[GreaterThan_int32( GetDataModelSize( Dynasty.GetDynastyHouses ), '(int32)1' )]"
 									layoutpolicy_horizontal = expanding
-									layoutpolicy_vertical = expanding
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										shortcut = army_create_new
+										onclick = "[GetVariableSystem.SetOrToggle( 'dynasty_view_expand', 'houses' )]"
+										tooltip = "DYNASTY_VIEW_HOUSES_TT"
 
+										blockoverride "text"
+										{
+											text = "DYNASTY_VIEW_HOUSES_AMOUNT"
+										}
+
+										blockoverride "extra" {
+											comma = {}
+											text_single = {
+												raw_text = "H."
+											}
+										}
+									}
+								}
+							}
+
+							button_primary_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "HOUSE_VIEW_SHOW_LEGACIES"
+								}
+								datacontext = "[DynastyHouseView.GetTopLegacy]"
+
+								onclick = "[OpenGameViewData( 'dynasty_view', Dynasty.GetID )]"
+							}
+							### MODIFIERS ###
+							vbox = {
+								visible = "[DataModelHasItems( DynastyHouseView.GetDynastyModifiers )]"
+								layoutpolicy_horizontal = expanding
+
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									shortcut = map_mode_11
+									onclick = "[Toggle('dynasty_modifiers')]"
+									blockoverride "pre" {
+										text_single = {
+											raw_text = "[GetDataModelSize(DynastyHouseView.GetDynastyModifiers)]"
+										}
+									}
+									blockoverride "text" {
+										text = "DYNASTY_MODIFIERS"
+									}
+									blockoverride "extra" {
+										text_single = {
+											raw_text = "[Collapse('dynasty_modifiers')] Shift E."
+										}
+									}
+								}
+
+								vbox = {
+									visible = "[Isnt('dynasty_modifiers')]"
+									name = "dynasty modifiers"
+									datamodel = "[DynastyHouseView.GetDynastyModifiers]"
+									layoutpolicy_horizontal = expanding
+
+									item = {
+										modifier_item_ocr = {
+											layoutpolicy_horizontal = expanding
+										}
+									}
+								}
+								expand = {}
+							}
+
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								onclick = "[Toggle('unlocked_legacies')]"
+								blockoverride "extra" {
+
+									text_single = {
+										raw_text = "[CountItems]"
+										hbox = {
+											datamodel = "[DynastyHouseView.GetLegacies]"
+											name = "items"
+											item = {
+												hbox = {
+													visible = "[GreaterThan_int32(DynastyLegacyItem.GetUnlockedPerksCount, '(int32)0')]"
+												}
+											}
+										}
+									}
+
+									text_single = {
+										raw_text = "unlocked legacies, [Collapse('unlocked_legacies')]"
+									}
+								}
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								datamodel = "[DynastyHouseView.GetLegacies]"
+								visible = "[Isnt('unlocked_legacies')]"
+								margin_left = 5
+
+								item = {
 									hbox = {
 										layoutpolicy_horizontal = expanding
-										spacing = 5
+										spacing = 3
+										visible = "[GreaterThan_int32(DynastyLegacyItem.GetUnlockedPerksCount, '(int32)0')]"
 
-										text_multi = {
-											text = "HOUSE_VIEW_PART_OF_DYNASTY"
-											autoresize = yes
-											maximumsize = { 0 60 }
-											max_width = 390
-										}
-
-										# button_text = {
-										#     blockoverride "text" {
-										#         raw_text = "Change name."
-										#     }
-										# 	visible = "[Dynasty.CanPlayerCustomize]"
-										# 	onclick = "[OpenDynastyCustomizationWindow(Dynasty.Self)]"
-										# }
-
-											expand = { }
+										text_single = {
+											raw_text = "[DynastyLegacyItem.GetLegacy.GetName],"
 										}
 
 										text_single = {
-											layoutpolicy_horizontal = expanding
-											text = "DYNASTY_VIEW_CONCEPT"
-											max_width = 600
-											align = left
+											raw_text = "[DynastyLegacyItem.GetUnlockedPerksCount] perks."
 										}
 
-										text_single = {
-											visible = "[Dynasty.GetDynast.IsValid]"
-											layoutpolicy_horizontal = expanding
-											text = "DYNASTY_TT_DYNAST"
-											default_format = "#low"
-											autoresize = no
-											max_width = 600
-											align = left
-										}
+										expand = {}
+									}
+								}
+							}
 
-										text_single = {
-											visible = "[Not( Dynasty.GetDynast.IsValid )]"
-											layoutpolicy_horizontal = expanding
-											text = "DYNASTY_TT_DEAD_DYNASTY"
-											default_format = "#low"
-											autoresize = no
-											max_width = 600
-											align = left
-										}
 
-										### MODIFIERS ###
-										hbox = {
-											visible = "[DataModelHasItems( DynastyHouseView.GetDynastyModifiers )]"
-											layoutpolicy_horizontal = expanding
-											spacing = 5
+							expand = {}
 
-											text_single = {
-												text =  "DYNASTY_MODIFIERS"
-												align = left
-											}
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "Level of splendor: [Dynasty.GetPrestigeLevelName]. Next level: [Dynasty.GetNextPrestigeLevelName]."
+							}
+						}
 
-											hbox = {
-												name = "dynasty modifiers"
-												datamodel = "[DynastyHouseView.GetDynastyModifiers]"
-
-												item = {
-													icon = {
-														size = { 25 25 }
-														alwaystransparent = no
-														texture = "[ModifierItem.GetIcon]"
-														tooltip = "[ModifierItem.GetTooltip]"
-													}
-												}
-											}
-											expand = { }
-											}
-
-											expand = { }
-
-												text_single = {
-													layoutpolicy_horizontal = expanding
-													raw_text = "Level of splendor: [Dynasty.GetPrestigeLevelName]. Next level: [Dynasty.GetNextPrestigeLevelName]."
-												}
-											}
-										}
+						vbox = {
+							layoutpolicy_horizontal = expanding
 
 							text_single = {
 								layoutpolicy_horizontal = expanding
 								raw_text = "[Dynasty.GetPrestigeLevelProgressTooltip]."
 							}
 
-							expand = { }
+							### LEGACY ###
+							vbox = {
+								datacontext = "[DynastyHouse.GetDynasty]"
+								datacontext = "[DynastyHouseView.GetTopLegacy]"
+								layoutpolicy_horizontal = expanding
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									layoutpolicy_horizontal = expanding
+
+									text_single = {
+										raw_text = "DYNASTY_HOUSE_VIEW_PROGRESS_TOOLTIP"
+									}
+									dot = {}
+								}
+
+								vbox = {
+									name = "tutorial_highlight_dynasty_perks_button"
+									layoutpolicy_horizontal = expanding
+
+								}
+
+
+								expand = {
+									layoutpolicy_vertical = expanding
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					visible = "[Has('dynasty_view_expand', 'unity_levels')]"
+					layoutpolicy_horizontal = expanding
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[Toggle('unity_levels_desc')]"
+						onclick = "[Clear('unity_levels_decisions')]"
+						shortcut = map_mode_1
+						blockoverride "text" {
+							raw_text = "Show effects, E."
+						}
+						blockoverride "visible" {
+							visible = "[Is('unity_levels_desc')]"
 						}
 					}
 
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[Toggle('unity_levels_decisions')]"
+						onclick = "[Set('unity_levels_desc', 'yes')]"
+						shortcut = mapmode_house_secondary
+						blockoverride "text" {
+							raw_text = "Show decisions, Shift D."
+						}
+						blockoverride "visible" {
+							visible = "[Isnt('unity_levels_decisions')]"
+						}
+					}
+
+					datamodel = "[DataModelSkipLast(DynastyHouseView.GetHouseUnityStages, '(int32)1')]"
+
+					item = {
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								datacontext = "[GUIHouseUnityStage.GetHouseUnityStage]"
+								tooltipwidget = {
+									house_unity_stage_tooltip = {}
+								}
+								spacing = 3
+								text_single = {
+									visible = "[GUIHouseUnityStage.IsActive]"
+									raw_text = "Active"
+								}
+
+								text_single = {
+									raw_text = "Level [GUIHouseUnityStage.GetValue], [GUIHouseUnityStage.GetHouseUnityStage.GetName]."
+								}
+								expand = {}
+							}
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Isnt('unity_levels_desc')]"
+
+								text_multi_wide = {
+									raw_text = "[GUIHouseUnityStage.GetModifierDesc]"
+								}
+
+								expand = {}
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Is('unity_levels_decisions')]"
+								datacontext = "[GUIHouseUnityStage.GetHouseUnityStage]"
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									spacing = 3
+									visible = no
+
+									text_single = {
+										raw_text = "[CountItems]"
+
+										hbox = {
+											name = "items"
+											datamodel = "[DynastyHouseView.GetDecisions(HouseUnityStage.Self)]"
+
+											item = {
+												hbox = {
+													visible = "[Decision.IsValid]"
+												}
+											}
+										}
+									}
+
+									text_single  = {
+										text = "HOUSE_UNITY_DECISIONS_TITLE"
+									}
+
+									comma = {}
+
+									expand = {}
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									datamodel = "[DynastyHouseView.GetDecisions(HouseUnityStage.Self)]"
+
+									item = {
+										vbox = {
+											layoutpolicy_horizontal = expanding
+											visible = "[Decision.IsValid]"
+											text_single = {
+												raw_text = "[Decision.GetName],"
+												layoutpolicy_horizontal = expanding
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Has('dynasty_view_expand', 'unity_changelog')]"
+
+					datamodel = "[DynastyHouseView.GetDynastyHouse.GetChangelog]"
+
+					item = {
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							hbox_house_unity_changelog_entry_ocr = {}
+						}
+					}
+				}
+
+				vbox = {
+					# using = Window_Margins
+					layoutpolicy_horizontal = expanding
+					visible = "[Has('dynasty_view_expand', 'houses')]"
+					datacontext = "[DynastyHouseView.GetDynastyHouse.GetDynasty]"
 
 					hbox = {
 						layoutpolicy_horizontal = expanding
-						minimumsize = { 0 54 }
-
-						### DYNASTY TREE ###
-						button_standard_clean = {
-							tooltip = "DYNASTY_VIEW_TT_DYNASTY_TREE"
-							onclick = "[OpenGameViewData( 'dynasty_tree_view', DynastyHouse.GetHeadOfHouseOrLastHistoricHead.GetID )]"
-							size = { 300 42 }
-							visible = no
-
-							button_dynasty_tree = {
-								alwaystransparent = yes
-								position = { 10 0 }
-								parentanchor = left|vcenter
-							}
-
-							text_label_center = {
-								name = "legacies"
-								text = "DYNASTY_VIEW_DYNASTY_TREE"
-								parentanchor = center
-								align = center
-								default_format = "#clickable"
-							}
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							layoutpolicy_vertical = expanding
-
-							button_sidepanel_right = {
-								layoutpolicy_horizontal = expanding
-								onclick = "[DynastyHouseView.ToggleMembersWindow('dynasty')]"
-								tooltip = "DYNASTY_VIEW_MEMBERS_TT"
-								blockoverride "button_text"
-								{
-									text = "DYNASTY_VIEW_MEMBERS"
-								}
-							}
-
-							hbox = {
-								visible = "[GreaterThan_int32( GetDataModelSize( Dynasty.GetDynastyHouses ), '(int32)1' )]"
-								layoutpolicy_horizontal = expanding
-
-								button_sidepanel_right = {
-									layoutpolicy_horizontal = expanding
-									visible = "[GetVariableSystem.HasValue( 'dynasty_view_expand', 'houses' )]"
-									onclick = "[GetVariableSystem.Set( 'dynasty_view_expand', 'none' )]"
-									tooltip = "DYNASTY_VIEW_HOUSES_TT"
-
-									blockoverride "button_text"
-									{
-										text = "DYNASTY_VIEW_HOUSES_AMOUNT"
-									}
-								}
-
-								button_sidepanel_right = {
-									layoutpolicy_horizontal = expanding
-									visible = "[Not(GetVariableSystem.HasValue( 'dynasty_view_expand', 'houses' ))]"
-									onclick = "[GetVariableSystem.Set( 'dynasty_view_expand', 'houses' )]"
-									tooltip = "DYNASTY_VIEW_HOUSES_TT"
-
-									blockoverride "button_text"
-									{
-										text = "DYNASTY_VIEW_HOUSES_AMOUNT"
-									}
-								}
-							}
-						}
-					}
-				}
-
-				### LEGACY ###
-				vbox = {
-					datacontext = "[DynastyHouse.GetDynasty]"
-					datacontext = "[DynastyHouseView.GetTopLegacy]"
-					layoutpolicy_vertical = expanding
-					layoutpolicy_horizontal = expanding
-					spacing = 3
-
-					flowcontainer = {
-						ignoreinvisible = yes
-						layoutpolicy_horizontal = expanding
 
 						text_single = {
-							raw_text = "DYNASTY_HOUSE_VIEW_PROGRESS_TOOLTIP"
+							raw_text = "Sort by:"
+
 						}
-						dot = { }
+
+						dropdown_menu_standard =
+						{
+							blockoverride "dropdown_properties"
+							{
+								datamodel = "[DynastyHouseView.GetOrderOptions]"
+								onselectionchanged = "[DynastyHouseView.SortHouses]"
+								selectedindex = "[DynastyHouseView.GetSortSelectedIndex]"
+							}
+
+							blockoverride "dropdown_active_item_properties"
+							{
+								raw_text = "[HouseOrderOption.GetName]."
+							}
+
+							blockoverride "dropdown_item_properties"
+							{
+								raw_text = "[HouseOrderOption.GetName]."
+							}
+
+						}
+
+						expand = {}
 					}
 
-					vbox = {
-						name = "tutorial_highlight_dynasty_perks_button"
+					scrollbox = {
+						name = "houses"
 						layoutpolicy_horizontal = expanding
-						spacing = 5
-					}
-
-					button_primary_text = {
-						layoutpolicy_horizontal = expanding
-					    blockoverride "text" {
-					        raw_text = "HOUSE_VIEW_SHOW_LEGACIES"
-					    }
-						datacontext = "[DynastyHouseView.GetTopLegacy]"
-
-						onclick = "[OpenGameViewData( 'dynasty_view', Dynasty.GetID )]"
-					}
-
-					expand = {
 						layoutpolicy_vertical = expanding
-					}
-				}
-			}
-		}
 
-		expand = {
-			layoutpolicy_vertical = expanding
-		}
-	}
-
-	window = {
-		name = "houses_list"
-		size = { 580 100% }
-		resizable = no
-		focuspolicy = click
-		visible = "[GetVariableSystem.HasValue( 'dynasty_view_expand', 'houses' )]"
-		datacontext = "[DynastyHouseView.GetDynastyHouse.GetDynasty]"
-
-		attachto = {
-			widgetid = "dynasty_house_view"
-			inherit_visibility = no
-		}
-
-		using = Window_Movable
-		using = Window_Background_No_Edge
-
-		state = {
-			name = _show
-			using = Animation_FadeIn_Quick
-			on_start = "[GetVariableSystem.Set( 'houses_list_open', 'true'  )]"
-		}
-
-		state = {
-			name = _hide
-			using = Animation_FadeOut_Quick
-			on_start = "[GetVariableSystem.Clear( 'houses_list_open' )]"
-		}
-
-		vbox = {
-			# using = Window_Margins
-
-			header_pattern = {
-				layoutpolicy_horizontal = expanding
-
-				blockoverride "header_text"
-				{
-					text = "DYNASTY_VIEW_HOUSES"
-				}
-
-				blockoverride "button_close"
-				{
-					onclick = "[GetVariableSystem.Set( 'dynasty_view_expand', 'none' )]"
-				}
-			}
-
-			hbox = {
-				layoutpolicy_horizontal = expanding
-				margin_left = 10
-				margin_right = 20
-				margin_top = 5
-				spacing = 1
-
-				text_single = {
-					raw_text = "Sort by:"
-					align = left
-				}
-
-				dropdown_menu_standard =
-				{
-					blockoverride "dropdown_properties"
-					{
-						datamodel = "[DynastyHouseView.GetOrderOptions]"
-						onselectionchanged = "[DynastyHouseView.SortHouses]"
-						selectedindex = "[DynastyHouseView.GetSortSelectedIndex]"
-					}
-
-					blockoverride "dropdown_active_item_properties"
-					{
-						raw_text = "[HouseOrderOption.GetName]."
-					}
-
-					blockoverride "dropdown_item_properties"
-					{
-						raw_text = "[HouseOrderOption.GetName]."
-					}
-
-				}
-
-				expand = { }
-			}
-
-			scrollbox = {
-				name = "houses"
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-
-				blockoverride "scrollbox_content"
-				{
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						datamodel = "[DynastyHouseView.GetDynastyHouses]"
-
-						item = {
-							button_standard_hover = {
-								visible = "[DynastyHouse.HasBeenFounded]"
+						blockoverride "scrollbox_content"
+						{
+							vbox = {
 								layoutpolicy_horizontal = expanding
-								size = { 0 0 }
+								datamodel = "[DynastyHouseView.GetDynastyHouses]"
 
-								onclick = "[PdxGuiTriggerAllAnimations('house_view_refresh')]"
-								onclick = "[DefaultOnHouseCoatOfArmsClick(DynastyHouse.GetID)]"
-
-								vbox = {
-									resizeparent = yes
-									margin_left = 5
-									hbox = {
+								item = {
+									button_standard_hover = {
+										visible = "[DynastyHouse.HasBeenFounded]"
 										layoutpolicy_horizontal = expanding
+										onclick = "[PdxGuiTriggerAllAnimations('house_view_refresh')]"
+										onclick = "[DefaultOnHouseCoatOfArmsClick(DynastyHouse.GetID)]"
 
 										vbox = {
-											layoutpolicy_horizontal = expanding
+											resizeparent = yes
 
 											hbox = {
 												layoutpolicy_horizontal = expanding
 
-												text_single = {
-													raw_text = "[DynastyHouse.GetBaseNameNoTooltip],"
-												}
-												space = { }
-
-												text_single = {
-													text = "HOUSE_LIST_MEMBERS"
-												}
-
-												dot = { }
-												space = { }
-
-												text_single = {
-													visible = "[DynastyHouse.IsFoundingHouse]"
-													text = "HOUSE_LIST_FOUNDING"
-												}
-
-												text_single = {
-													visible = "[Not(DynastyHouse.IsFoundingHouse)]"
-													text = "HOUSE_LIST_CADET"
-												}
-												text_single = {
-													raw_text = ","
-												}
-												space = { }
-
-												text_single = {
-													text = "HOUSE_LIST_FOUNDATION"
-												}
-												dot = { }
-												expand = { }
-											}
-
-											flowcontainer = {
-												visible = "[DynastyHouse.GetHeadOfHouse.IsValid]"
-												layoutpolicy_horizontal = expanding
-
-												text_single = {
+												vbox = {
 													layoutpolicy_horizontal = expanding
-													text = HOUSE_LIST_HEAD
-												}
 
-												dot = { }
+													hbox = {
+														layoutpolicy_horizontal = expanding
 
-												text_single = {
-													text = "HOUSE_LIST_HEAD_MAX_MILITARY_STRENGTH"
-													tooltip = "HOUSE_LIST_MILITARY_STRENGTH_TT"
-												}
+														text_single = {
+															raw_text = "[DynastyHouse.GetBaseNameNoTooltip],"
+														}
+														text_single = {
+															text = "HOUSE_LIST_MEMBERS"
+														}
 
-												text_single = {
-													raw_text = " soldiers."
+														dot = {}
+														text_single = {
+															visible = "[DynastyHouse.IsFoundingHouse]"
+															text = "HOUSE_LIST_FOUNDING"
+														}
+
+														text_single = {
+															visible = "[Not(DynastyHouse.IsFoundingHouse)]"
+															text = "HOUSE_LIST_CADET"
+														}
+														text_single = {
+															raw_text = ","
+														}
+														text_single = {
+															text = "HOUSE_LIST_FOUNDATION"
+														}
+														dot = {}
+														expand = {}
+													}
+
+													flowcontainer = {
+														visible = "[DynastyHouse.GetHeadOfHouse.IsValid]"
+														layoutpolicy_horizontal = expanding
+
+														text_single = {
+															layoutpolicy_horizontal = expanding
+															text = HOUSE_LIST_HEAD
+														}
+
+														dot = {}
+
+														text_single = {
+															text = "HOUSE_LIST_HEAD_MAX_MILITARY_STRENGTH"
+															tooltip = "HOUSE_LIST_MILITARY_STRENGTH_TT"
+														}
+
+														text_single = {
+															raw_text = " soldiers."
+														}
+													}
 												}
 											}
 										}
@@ -815,6 +1048,48 @@ window = {
 						}
 					}
 				}
+			}
+		}
+	}
+
+	window_dynasty_house_view_old = {}
+}
+
+types OCR {
+	type hbox_house_unity_changelog_entry_ocr = hbox {
+		layoutpolicy_horizontal = expanding
+
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				visible = "[HouseUnityChangelogEntry.GetNextHouseUnityStageType.IsValid]"
+				text = "HOUSE_UNITY_STAGE_CHANGE_VALUE_TRIGGER_CHANGE_STAGE"
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 3
+
+				text_single = {
+					raw_text = "[HouseUnityChangelogEntry.GetProgress|+=],"
+				}
+
+				text_single = {
+					block "change_value_text" {
+						layoutpolicy_horizontal = expanding
+						text = "HOUSE_UNITY_STAGE_CHANGE_VALUE_TRIGGER_CHARACTER"
+					}
+				}
+
+				expand = {}
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				text = "[HouseUnityChangelogEntry.GetDescription]"
 			}
 		}
 	}
@@ -823,50 +1098,13 @@ window = {
 types DynastyView
 {
 	type widget_legacy_icon = widget {
-		size = { 100% 100% }
-
-		background = {
-			texture = "gfx/interface/icons/lifestyle_tree_backgrounds/temptation.dds"
-			tintcolor = { 0.2 0.2 0.2 1 }
-
-			using = Mask_Rough_Edges
-			alpha = 0.8
-			fittype = centercrop
-			mirror = horizontal
-
-			modify_texture = {
-				texture = "gfx/interface/component_masks/mask_fade_circle.dds"
-				blend_mode = alphamultiply
-			}
-		}
-
-		background = {
-			texture = "gfx/interface/icons/lifestyle_tree_backgrounds/temptation.dds"
-			tintcolor = { 1 0.9 1 0.15 }
-
-			using = Mask_Rough_Edges
-			fittype = centercrop
-			mirror = horizontal
-			margin_right = 10
-			margin_top = 20
-
-			modify_texture = {
-				texture = "gfx/interface/component_masks/mask_fade_circle.dds"
-				blend_mode = alphamultiply
-			}
-		}
-
 		icon_flat_standard = {
-			size = { 80 80 }
-			parentanchor = top|hcenter
 			visible = "[GreaterThan_int32(DynastyLegacyItem.GetUnlockedPerksCount, '(int32)0')]"
 			texture = "[DynastyLegacyItem.GetLegacy.GetIcon]"
 			alwaystransparent = yes
 		}
 
 		icon_flat_standard = {
-			size = { 80 80 }
-			parentanchor = top|hcenter
 			visible = "[EqualTo_int32(DynastyLegacyItem.GetUnlockedPerksCount, '(int32)5')]"
 			texture = "[DynastyLegacyItem.GetLegacy.GetIcon]"
 			alwaystransparent = yes
@@ -874,8 +1112,6 @@ types DynastyView
 
 		icon_flat_standard = {
 			visible = "[EqualTo_int32(DynastyLegacyItem.GetUnlockedPerksCount, '(int32)0')]"
-			size = { 80 80 }
-			parentanchor = top|hcenter
 			texture = "[DynastyLegacyItem.GetLegacy.GetIcon]"
 			alwaystransparent = yes
 			blockoverride "master_color_frame" {
@@ -886,13 +1122,13 @@ types DynastyView
 
 	type legacy_progress_none = icon {
 		texture = "gfx/interface/progressbars/progress_scheme.dds"
-		size = { 14 14 }
+
 		framesize = { 45 45 }
 	}
 
 	type legacy_progress = icon {
 		texture = "gfx/interface/progressbars/progress_scheme.dds"
-		size = { 14 14 }
+
 		framesize = { 45 45 }
 		frame = 3
 	}
