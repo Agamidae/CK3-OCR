@@ -23,7 +23,7 @@ window = {
 		# on_start = "[GetScriptedGui('adjacent_rulers').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
 		on_start = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
 		on_finish = "[Set('hide_court','yes')]"
-		on_finish = "[Set('hide_event', 'yes')]"
+		on_finish = "[Set('hide_event', 'yes')]" #TODO should remove it, currently used to hide the event when opening your character and if selecting someone in the text, like in Royal Court events.
 		# on_start = "[DefaultOnCoatOfArmsRightClick(CharacterWindow.GetCharacter.GetCurrentLocation.GetCoATitle.GetID)]"
 	}
 
@@ -35,6 +35,7 @@ window = {
 		on_start = "[GetVariableSystem.Clear( 'hide_bottom_left_HUD' )]"
 		on_finish = "[Click('clear_last_view')]"
 		on_finish = "[Clear('hide_court')]"
+		on_finish = "[Clear('hide_event')]"
 	}
 
 
@@ -232,43 +233,66 @@ window = {
 									layoutpolicy_horizontal = expanding
 
 									hbox = {
-											layoutpolicy_horizontal = expanding
-											margin_left = 5
+										layoutpolicy_horizontal = expanding
+										margin_left = 5
+										spacing = 3
+
+										hbox = {
+											spacing = 3
+											visible = "[Character.IsAlive]"
+											text_single = {
+												visible = "[Not(Character.IsLocalPlayer)]"
+												raw_text = "[Character.GetOpinionOf(GetPlayer)|=] opinion,"
+												tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+											}
+
+											text_single = {
+												visible = "[Character.HasLandedTitles]"
+												raw_text = "[Character.GetMilitaryStrengthText] soldiers."
+											}
+										}
+
+										hbox = {
+											datacontext = "[CharacterWindow.GetTraitArrays]"
+											datamodel = "[TraitArrays.GetPersonalityTraits]"
 											spacing = 3
 
-											hbox = {
-												spacing = 3
-												visible = "[Character.IsAlive]"
+											item = {
 												text_single = {
-													visible = "[Not(Character.IsLocalPlayer)]"
-													raw_text = "[Character.GetOpinionOf(GetPlayer)|=] opinion,"
-													tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
-												}
-
-												text_single = {
-													visible = "[Character.HasLandedTitles]"
-													raw_text = "[Character.GetMilitaryStrengthText] soldiers."
+													datacontext = "[Character.GetFaith]"
+													raw_text = "[Trait.GetName(Character.Self)],"
 												}
 											}
+										}
+										text_single = {
+											datacontext = "[CharacterWindow.GetTraitArrays]"
+											visible = "[DataModelHasItems(TraitArrays.GetTraits)]"
+											raw_text = "+[GetDataModelSize(TraitArrays.GetTraits)]."
+										}
 
-											hbox = {
-												datacontext = "[CharacterWindow.GetTraitArrays]"
-												datamodel = "[TraitArrays.GetPersonalityTraits]"
-												spacing = 3
 
-												item = {
-													text_single = {
-														datacontext = "[Character.GetFaith]"
-														raw_text = "[Trait.GetName(Character.Self)],"
-													}
-												}
+										flowcontainer = {
+											layoutpolicy_horizontal = expanding
+
+											text_single = {
+												datacontext = "[Character.GetFaith]"
+												raw_text = "[Faith.GetAdjective]"
+												tooltipwidget = { faith_tooltip_click = { } }
 											}
 
-											expand = { }
+											text_single = {
+												datacontext = "[Character.GetCulture]"
+												raw_text = ", [Culture.GetName]."
+												tooltipwidget = { culture_tooltip_click = { } }
+											}
+										}
+
+										expand = { }
 									}
 
 									# ruler
 									button_text = {
+										shortcut = map_mode_2
 										layoutpolicy_horizontal = expanding
 										visible = "[Character.HasLandedTitles]"
 										blockoverride "extra" {
@@ -281,7 +305,7 @@ window = {
 											}
 
 											text_single = {
-												raw_text = "[Character.RealmSize] counties."
+												raw_text = "[Character.RealmSize] counties, T."
 											}
 											text_single = {
 												raw_text = "[AddTextIf(Character.IsIndependentRuler, ' Independent,')]"
@@ -532,7 +556,6 @@ window = {
 										expand = { }
 									}
 
-
 									# imprisoned
 									hbox = {
 										layoutpolicy_horizontal = expanding
@@ -647,16 +670,18 @@ window = {
 										spacing = 3
 
 										text_single = {
-											raw_text = "Opinion [Character.GetOpinionOf(GetPlayer)]."
+											raw_text = "Opinion [Character.GetOpinionOf(GetPlayer)|=]."
 											tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
 										}
 
 										text_single = {
-											raw_text = "Yours of [Character.GetHerHim] [GetPlayer.GetOpinionOf(Character.Self)]."
+											raw_text = "Yours of [Character.GetHerHim] [GetPlayer.GetOpinionOf(Character.Self)|=]."
 											tooltip = "[GetPlayer.GetOpinionBreakdownText(Character.Self)]"
 										}
 										expand = { }
 									}
+
+									close_relations_vbox = {}
 
 									hbox = {
 										layoutpolicy_horizontal = expanding
@@ -911,7 +936,11 @@ window = {
 									vbox = {
 										layoutpolicy_horizontal = expanding
 
-										close_relations_vbox = { }
+										# close_relations_vbox = {
+										# 	blockoverride "heir" {
+										#
+										# 	}
+										# }
 
 										#liege
 										vbox = {
@@ -1243,7 +1272,7 @@ window = {
 															raw_text = "[Scope.GetLandedTitle.GetCountyData.GetCulture.GetName],"
 														}
 														text_single = {
-															raw_text = "[Scope.GetLandedTitle.GetCountyData.GetFaith.GetName]."
+															raw_text = "[Scope.GetLandedTitle.GetCountyData.GetFaith.GetAdjective]."
 														}
 													}
 												}
@@ -1361,9 +1390,33 @@ window = {
 													spacing = 3
 
 													text_single = {
-														raw_text = "[Title.GetNameNoTooltip]."
+														raw_text = "[Title.GetNameNoTooltip],"
 													}
 
+													flowcontainer = {
+														ignoreinvisible = yes
+														visible = "[And(Character.IsAlive, GreaterThan_CFixedPoint(Title.MakeScope.ScriptValue('counties_in_title'), '(CFixedPoint)1'))]"
+														spacing = 3
+														text_single = {
+															raw_text = "[AddTextIf(Character.IsLocalPlayer, 'you ')]hold[AddTextIf(Not(Character.IsLocalPlayer), 's')]"
+														}
+
+														text_single = {
+															visible = "[EqualTo_CFixedPoint(GuiScope.SetRoot(Title.MakeScope).AddScope('player', Character.MakeScope).ScriptValue('your_counties_in_title'), Title.MakeScope.ScriptValue('counties_in_title'))]"
+															raw_text = "all"
+														}
+
+														text_single = {
+															raw_text = "[GuiScope.SetRoot(Title.MakeScope).AddScope('player', Character.MakeScope).ScriptValue('your_counties_in_title')] counties"
+														}
+
+														text_single = {
+															visible = "[LessThan_CFixedPoint(GuiScope.SetRoot(Title.MakeScope).AddScope('player', Character.MakeScope).ScriptValue('your_counties_in_title'), Title.MakeScope.ScriptValue('counties_in_title'))]"
+															raw_text = "out of [Title.MakeScope.ScriptValue('counties_in_title')]"
+														}
+
+														dot_l = {}
+													}
 													# text_single = {
 													# 	visible = "[Not(ObjectsEqual(Title.Self, Character.GetPrimaryTitle))]"
 													# 	datacontext = "[Title.GetPreferredCapital.GetProvince]"
@@ -1603,7 +1656,7 @@ window = {
 												# }
 
 												widget = {
-													size = { 550 45 }
+													size = { 600 45 }
 													scissor = yes
 
 													visible = "[Not(GetVariableSystem.Exists('show_diplo_descriptions'))]"
@@ -1611,7 +1664,7 @@ window = {
 													text_multi = {
 														raw_text = "[DiplomacyItem.GetWarScoreFraction|%0] [DiplomacyItem.GetInfo]"
 														autoresize = yes
-														max_width = 550
+														max_width = 600
 														alwaystransparent = yes
 														visible = "[DiplomacyItem.HasWarScore]"
 													}
@@ -1619,7 +1672,7 @@ window = {
 													text_multi = {
 														raw_text = "[DiplomacyItem.GetInfo]"
 														autoresize = yes
-														max_width = 550
+														max_width = 600
 														alwaystransparent = yes
 														visible = "[Not(DiplomacyItem.HasWarScore)]"
 													}
@@ -1629,7 +1682,7 @@ window = {
 													visible = "[GetVariableSystem.Exists('show_diplo_descriptions')]"
 													text = "[DiplomacyItem.GetInfo]"
 													autoresize = yes
-													max_width = 550
+													max_width = 600
 													alwaystransparent = yes
 												}
 
@@ -1649,16 +1702,25 @@ window = {
 												# }
 
 												flowcontainer = {
-													visible = no#"[DiplomacyItem.HasReasonCharacters]"
+													visible = "[And(DiplomacyItem.HasReasonCharacters, Is('show_diplo_descriptions'))]"
 													direction = vertical
 
-													text_single = {
+													char_name = {
 														datacontext = "[DiplomacyItem.GetLeftReasonCharacter]"
-														raw_text = "[Character.GetName]"
+														blockoverride "pre" {
+															text_single = {
+																raw_text = "Select"
+															}
+														}
 													}
-													text_single = {
+
+													char_name = {
 														datacontext = "[DiplomacyItem.GetRightReasonCharacter]"
-														raw_text = "[Character.GetName]"
+														blockoverride "pre" {
+															text_single = {
+																raw_text = "Select"
+															}
+														}
 													}
 												}
 											}
@@ -1717,7 +1779,7 @@ window = {
 						visible = "[Not(GetVariableSystem.Exists('expand_view'))]"
 						blockoverride "text" {
 							margin_left = 7
-							raw_text = "View all relations, hotkey 4."
+							raw_text = "View family and other relations, hotkey 4."
 						}
 					}
 
@@ -3257,7 +3319,8 @@ types CharOCRTypes {
 
 	type opinion_text = text_single {
 		visible = "[And(Not(Character.IsLocalPlayer), CharacterWindow.GetCharacter.IsLocalPlayer)]"
-		raw_text = ", opinion [Character.GetOpinionOf(GetPlayer)]"
+		margin_left = -3
+		raw_text = ", opinion [Character.GetOpinionOf(GetPlayer)|=]"
 		tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
 	}
 
@@ -3394,13 +3457,110 @@ types CharOCRTypes {
 
 			visible = "[And(And(Not( Character.IsPlayer ), Not(GetVariableSystem.HasValue('personality_view', 'traits'))), Not(GetVariableSystem.HasValue('personality_view', 'skills')))]"
 
-				expand = { }
+			expand = { }
 		}
 
 		button = {
 			shortcut = close_window
 			visible = "[GetVariableSystem.Exists('personality_view')]"
 			onclick = "[GetVariableSystem.Clear('personality_view')]"
+		}
+		# skills
+		vbox = {
+			visible = "[Or(Not(GetVariableSystem.Exists('personality_view')), GetVariableSystem.HasValue('personality_view', 'skills'))]"
+			layoutpolicy_horizontal = expanding
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				block "hide" { }
+				blockoverride "text" {
+					raw_text = "Skills."
+				}
+				blockoverride "extra" {
+					text_single = {
+						visible = "[Not(GetVariableSystem.HasValue('personality_view', 'skills'))]"
+						raw_text = "Hotkey 1."
+					}
+				}
+				block "hotkeys" {
+					shortcut = speed_1
+				}
+				onclick = "[GetVariableSystem.Set('expand_view', 'personality')]"
+				onclick = "[GetVariableSystem.Set('personality_view', 'skills')]"
+			}
+
+			hbox = {
+				visible = "[Not(GetVariableSystem.HasValue('personality_view', 'skills'))]"
+				layoutpolicy_horizontal = expanding
+				spacing = 3
+
+				hbox = {
+					name = "skills_grid"
+					datamodel = "[CharacterWindow.GetSkills]"
+					spacing = 3
+					item = {
+						container = {
+							text_single = {
+								raw_text = "[SkillItem.GetName] [SkillItem.GetValue|+],"
+								alwaystransparent = yes
+								default_format = "#high"
+							}
+
+							widget = {
+								size = { 100% 100% }
+								tooltip = "SKILL_ITEM_TOOLTIP"
+
+								block_tooltip = { }
+							}
+						}
+					}
+				}
+
+				text_single = {
+					using = tooltip_ne
+					tooltip = "[CharacterWindow.GetCharacter.GetProwessBreakdown]"
+					raw_text = "Prowess [CharacterWindow.GetCharacter.GetProwess|0]."
+					default_format = "#high"
+				}
+
+				expand = { }
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				block "hide" {
+					visible = "[GetVariableSystem.HasValue('personality_view', 'skills')]"
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					name = "skills_grid"
+					datamodel = "[CharacterWindow.GetSkills]"
+
+					item = {
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "[SkillItem.GetName] [SkillItem.GetValue|+],"
+							alwaystransparent = yes
+
+							widget = {
+								size = { 100% 100% }
+								tooltip = "SKILL_ITEM_TOOLTIP"
+
+								block_tooltip = { }
+							}
+						}
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					tooltip = "[CharacterWindow.GetCharacter.GetProwessBreakdown]"
+					raw_text = "Prowess [CharacterWindow.GetCharacter.GetProwess|0]."
+				}
+
+				expand = { }
+			}
 		}
 
 		vbox = {
@@ -3510,104 +3670,6 @@ types CharOCRTypes {
 						}
 					}
 				}
-				expand = { }
-			}
-		}
-
-		# skills
-		vbox = {
-			visible = "[Or(Not(GetVariableSystem.Exists('personality_view')), GetVariableSystem.HasValue('personality_view', 'skills'))]"
-			layoutpolicy_horizontal = expanding
-
-			button_text = {
-				layoutpolicy_horizontal = expanding
-				block "hide" { }
-				blockoverride "text" {
-					raw_text = "Skills."
-				}
-				blockoverride "extra" {
-					text_single = {
-						visible = "[Not(GetVariableSystem.HasValue('personality_view', 'skills'))]"
-						raw_text = "Hotkey 1."
-					}
-				}
-				block "hotkeys" {
-					shortcut = speed_1
-				}
-				onclick = "[GetVariableSystem.Set('expand_view', 'personality')]"
-				onclick = "[GetVariableSystem.Set('personality_view', 'skills')]"
-			}
-
-			hbox = {
-				visible = "[Not(GetVariableSystem.HasValue('personality_view', 'skills'))]"
-				layoutpolicy_horizontal = expanding
-				spacing = 3
-
-				hbox = {
-					name = "skills_grid"
-					datamodel = "[CharacterWindow.GetSkills]"
-					spacing = 3
-					item = {
-						container = {
-							text_single = {
-								raw_text = "[SkillItem.GetName] [SkillItem.GetValue|+],"
-								alwaystransparent = yes
-								default_format = "#high"
-							}
-
-							widget = {
-								size = { 100% 100% }
-								tooltip = "SKILL_ITEM_TOOLTIP"
-
-								block_tooltip = { }
-							}
-						}
-					}
-				}
-
-				text_single = {
-					using = tooltip_ne
-					tooltip = "[CharacterWindow.GetCharacter.GetProwessBreakdown]"
-					raw_text = "Prowess [CharacterWindow.GetCharacter.GetProwess|0]."
-					default_format = "#high"
-				}
-
-				expand = { }
-			}
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				block "hide" {
-					visible = "[GetVariableSystem.HasValue('personality_view', 'skills')]"
-				}
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					name = "skills_grid"
-					datamodel = "[CharacterWindow.GetSkills]"
-
-					item = {
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							raw_text = "[SkillItem.GetName] [SkillItem.GetValue|+],"
-							alwaystransparent = yes
-
-							widget = {
-								size = { 100% 100% }
-								tooltip = "SKILL_ITEM_TOOLTIP"
-
-								block_tooltip = { }
-							}
-						}
-					}
-				}
-
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					tooltip = "[CharacterWindow.GetCharacter.GetProwessBreakdown]"
-					raw_text = "Prowess [CharacterWindow.GetCharacter.GetProwess|0]."
-				}
-
 				expand = { }
 			}
 		}
@@ -3838,11 +3900,12 @@ types CharOCRTypes {
 			datacontext = "[CharacterWindow.GetSecondaryCharater]"
 
 			char_name = {
+				visible = "[Character.IsValid]"
 				layoutpolicy_horizontal = expanding
 				blockoverride "pre" {
 					flowcontainer = {
-							ignoreinvisible = yes
-							spacing = 3
+						ignoreinvisible = yes
+						spacing = 3
 						margin_right = 3
 						text_single = {
 							raw_text = "[AddTextIf(Character.IsDeadAndValid, 'Dead ')]"
@@ -3862,7 +3925,7 @@ types CharOCRTypes {
 				}
 				blockoverride "extra" {
 					flowcontainer = {
-							ignoreinvisible = yes
+						ignoreinvisible = yes
 						visible = "[Character.IsValid]"
 
 						text_single = {
@@ -3892,60 +3955,60 @@ types CharOCRTypes {
 			}
 		}
 
-
 		expand = { }
 	}
 
 	type close_relations_vbox = vbox {
 		layoutpolicy_horizontal = expanding
-		# player heir
-		hbox = {
-			datacontext = "[CharacterWindow.GetCharacter.GetPlayerHeir]"
-			visible = "[And( Character.IsValid, CharacterWindow.GetCharacter.IsLocalPlayer )]"
-			layoutpolicy_horizontal = expanding
+		block "heir" {
+			# player heir
+			hbox = {
+				datacontext = "[CharacterWindow.GetCharacter.GetPlayerHeir]"
+				visible = "[And( Character.IsValid, CharacterWindow.GetCharacter.IsLocalPlayer )]"
+				layoutpolicy_horizontal = expanding
 
-			char_name = {
-				shortcut = "zoom_in"
-				blockoverride "pre" {
-					text_single = {
-						raw_text = "Your heir,"
-						margin_right = 3
+				char_name = {
+					shortcut = "zoom_in"
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "Your heir,"
+						}
+					}
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "[Character.GetAge]"
+						}
+						opinion_text = { }
+						text_single = {
+							raw_text = ", Page Down."
+						}
 					}
 				}
-				blockoverride "extra" {
-					text_single = {
-						raw_text = "[Character.GetAge]"
-					}
-					opinion_text = { }
-					text_single = {
-						raw_text = ", Page Down."
-					}
-				}
+				expand = { }
 			}
-			expand = { }
-		}
-		# heir
-		hbox = {
-			datacontext = "[CharacterWindow.GetCharacter.GetPrimaryTitle.GetHeir]"
-			visible = "[And( And( Character.IsValid, Not(CharacterWindow.GetCharacter.IsLocalPlayer) ), CharacterWindow.GetCharacter.IsAlive )]"
-			layoutpolicy_horizontal = expanding
-			spacing = 3
+			# heir
+			hbox = {
+				datacontext = "[CharacterWindow.GetCharacter.GetPrimaryTitle.GetHeir]"
+				visible = "[And( And( Character.IsValid, Not(CharacterWindow.GetCharacter.IsLocalPlayer) ), CharacterWindow.GetCharacter.IsAlive )]"
+				layoutpolicy_horizontal = expanding
+				spacing = 3
 
 
-			char_name = {
-				shortcut = "zoom_in"
-				blockoverride "pre" {
-					spacing = 3
-					text_single = {
-						raw_text = "Heir,"
+				char_name = {
+					shortcut = "zoom_in"
+					blockoverride "pre" {
+						spacing = 3
+						text_single = {
+							raw_text = "Heir,"
+						}
 					}
 				}
-			}
 
-			text_single = {
-				raw_text = "Page Down."
+				text_single = {
+					raw_text = "Page Down."
+				}
+				expand = { }
 			}
-			expand = { }
 		}
 		# spouse
 		vbox = {
