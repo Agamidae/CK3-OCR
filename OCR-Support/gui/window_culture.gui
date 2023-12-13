@@ -65,27 +65,110 @@ window = {
 
 				flowcontainer = {
 					ignoreinvisible = yes
-
+					spacing = 3
 					text_single = {
 						raw_text = "CULTURE_WINDOW_CULTURE"
 					}
-
+					comma = {}
 					text_single = {
-						raw_text = ", [Culture.GetPlayerRelationString]."
-						default_format = "#low"
+						visible = "[Has('culture_view_tabs', 'overview')]"
+						raw_text = "[Culture.GetPlayerRelationString]."
+					}
+					text_single = {
+						raw_text = "[Get('culture_view_tabs')] tab,"
 					}
 				}
 			}
 		}
+
 		blockoverride "ocr_content" {
 			vbox = {
 				visible = "[Not(GetVariableSystem.Exists('ocr'))]"
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding
+				hbox = {
+					name = "tabs"
+					layoutpolicy_horizontal = expanding
+					margin_top = 10
+					visible = "[Not(CultureWindow.IsInReformationMode)]"
+
+					text_single = {
+						raw_text = "Tabs:"
+					}
+
+					button_text = {
+						shortcut = speed_1
+						blockoverride "text" {
+							raw_text = "Overview,"
+						}
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "1,"
+							}
+						}
+						onclick = "[GetVariableSystem.Set( 'culture_view_tabs', 'overview' )]"
+						onclick = "[CultureWindow.HideReformationMode]"
+					}
+
+					button_text = {
+						shortcut = speed_2
+						name = innovations_tab_tutorial_uses_this
+						blockoverride "text" {
+							raw_text = "2, Innovations,"
+						}
+						onclick = "[GetVariableSystem.Set( 'culture_view_tabs', 'innovations' )]"
+						onclick = "[CultureWindow.HideReformationMode]"
+					}
+
+					button_text = {
+						shortcut = speed_3
+						blockoverride "text" {
+							raw_text = "3, other cultures."
+						}
+						onclick = "[GetVariableSystem.Set( 'culture_view_tabs', 'other cultures' )]"
+						onclick = "[ClickAdd('culture_list', GetPlayer, Culture)]"
+						onclick = "[CultureWindow.HideReformationMode]"
+					}
+
+					button_text = {
+						shortcut = speed_4
+						blockoverride "text" {
+							raw_text = "4, counties."
+						}
+						onclick = "[GetVariableSystem.Set( 'culture_view_tabs', 'counties' )]"
+						onclick = "[ClickAdd('culture_counties_list', GetPlayer, Culture)]"
+						onclick = "[CultureWindow.HideReformationMode]"
+					}
+
+					expand = {}
+				}
 
 				vbox = {
 					layoutpolicy_horizontal = expanding
 					visible = "[Has('culture_view_tabs', 'overview')]"
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						text_single = {
+							raw_text = "There are"
+						}
+
+						text_single = {
+							raw_text = "[Culture.MakeScope.ScriptValue('culture_counties')] [Culture.GetNameNoTooltip] counties"
+						}
+
+						text_single = {
+							raw_text = "and"
+						}
+
+						text_single = {
+							raw_text = "[Culture.MakeScope.ScriptValue('culture_rulers')] rulers."
+						}
+
+						expand = {}
+					}
 
 					hbox = {
 						visible = "[Not( ObjectsEqual( Culture.Self, GetPlayer.GetCulture ) )]"
@@ -283,50 +366,140 @@ window = {
 					expand = { }
 				}
 
+				#tabs
+
+				#cultures
 				vbox = {
-					name = "tabs"
+					datamodel = "[GetPlayer.MakeScope.GetList('cultures')]"
 					layoutpolicy_horizontal = expanding
-					margin_top = 10
-					visible = "[Not(CultureWindow.IsInReformationMode)]"
+					visible = "[Has('culture_view_tabs', 'other cultures')]"
 
 					button_text = {
 						layoutpolicy_horizontal = expanding
-						shortcut = speed_1
+						shortcut = map_mode_11
 						blockoverride "text" {
-							raw_text = "CULTURE_VIEW_OVERVIEW"
+							raw_text = "Refresh, Shift E."
 						}
-						blockoverride "extra" {
-							comma = {}
-							text_single = {
-								raw_text = "tab 1,"
-							}
-							text_single = {
-								raw_text = "[Select_CString(GetVariableSystem.HasValue('culture_view_tabs', 'overview'), 'Selected.', '')]"
-							}
+						onclick = "[ClickAdd('culture_list', GetPlayer, Culture)]"
+					}
+
+					button_checked_text = {
+						layoutpolicy_horizontal = expanding
+
+						visible = "[Or(GetPlayer.MakeScope.Var('heritage_filter').IsSet, GreaterThan_CFixedPoint(Culture.MakeScope.ScriptValue('same_heritage_cultures'), '(CFixedPoint)0'))]"
+						onclick = "[Click('heritage_filter')]"
+						onclick = "[ClickAdd('culture_list', GetPlayer, Culture)]"
+						shortcut = army_create_new
+
+						blockoverride "visible" {
+							visible = "[Not(GetPlayer.MakeScope.Var('heritage_filter').IsSet)]"
 						}
-						onclick = "[GetVariableSystem.Set( 'culture_view_tabs', 'overview' )]"
-						onclick = "[CultureWindow.HideReformationMode]"
+						blockoverride "text" {
+							raw_text = "same heritage, H, [Culture.MakeScope.ScriptValue('same_heritage_cultures')]."
+						}
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						visible = "[EqualTo_CFixedPoint(Culture.MakeScope.ScriptValue('same_heritage_cultures'), '(CFixedPoint)0')]"
+						raw_text = "There are no cultures with the same heritage."
 					}
 
 					button_text = {
 						layoutpolicy_horizontal = expanding
-						shortcut = speed_2
-						name = innovations_tab_tutorial_uses_this
+						onclick = "[Click('cultural_acceptance_sorting')]"
+						onclick = "[ClickAdd('culture_list', GetPlayer, Culture)]"
+						shortcut = map_mode_2
 						blockoverride "text" {
-							raw_text = "Innovations,"
-							align = left
+							raw_text = "Sorted by [Select_CString( GetPlayer.MakeScope.Var('cultural_acceptance_sorting').IsSet, 'acceptance', 'counties' )]. T to sort by [Select_CString( GetPlayer.MakeScope.Var('cultural_acceptance_sorting').IsSet, 'counties', 'acceptance' )]."
 						}
-						blockoverride "extra" {
+					}
 
-							text_single = {
-								raw_text = "tab 2,"
-							}
-							text_single = {
-								raw_text = "[Select_CString(GetVariableSystem.HasValue('culture_view_tabs', 'innovations'), 'Selected.', '')]"
+					text_single = {
+						visible = "[Not(GetPlayer.MakeScope.Var('heritage_filter').IsSet)]"
+						layoutpolicy_horizontal = expanding
+						raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('cultures'))] cultures:"
+					}
+
+					item = {
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[Scope.Culture]"
+							onclick = "[OpenGameViewData( 'culture_window', Culture.GetID )]"
+							onclick = "[Set('culture_view_tabs', 'overview')]"
+
+							blockoverride "extra" {
+								text_single = {
+									raw_text = "[Culture.GetNameNoTooltip],"
+								}
+
+								text_single = {
+									visible = "[And(Not( ObjectsEqual( Culture.Self, GetPlayer.GetCulture ) ), GetPlayer.MakeScope.Var('cultural_acceptance_sorting').IsSet)]"
+									raw_text = "[Culture.GetAcceptance( GetPlayer.GetCulture )|%/0],"
+									tooltip = "CULTURE_ACCEPTANCE_TOOLTIP"
+								}
+
+								text_single = {
+									raw_text = "[Culture.MakeScope.ScriptValue('culture_counties')] counties."
+								}
+
+								# text_single = {
+								# 	raw_text = "[Culture.MakeScope.ScriptValue('culture_rulers')] rulers."
+								# }
+
+								text_single = {
+									visible = "[And(Not( ObjectsEqual( Culture.Self, GetPlayer.GetCulture ) ), Not(GetPlayer.MakeScope.Var('cultural_acceptance_sorting').IsSet))]"
+									raw_text = "[Culture.GetAcceptance( GetPlayer.GetCulture )|%/0] acceptance."
+									tooltip = "CULTURE_ACCEPTANCE_TOOLTIP"
+								}
 							}
 						}
-						onclick = "[GetVariableSystem.Set( 'culture_view_tabs', 'innovations' )]"
-						onclick = "[CultureWindow.HideReformationMode]"
+					}
+				}
+
+				#culture counties
+				vbox = {
+					datamodel = "[GetPlayer.MakeScope.GetList('culture_counties')]"
+					layoutpolicy_horizontal = expanding
+					visible = "[Has('culture_view_tabs', 'counties')]"
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = map_mode_11
+						blockoverride "text" {
+							raw_text = "Refresh, Shift E."
+						}
+						onclick = "[ClickAdd('culture_counties_list', GetPlayer, Culture)]"
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('culture_counties'))] counties:"
+					}
+
+					item = {
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[Scope.Title]"
+							onclick = "[OpenGameViewData('holding_view', Scope.Title.GetProvince.Self)]"
+							onclick = "[CloseGameView('culture_window')]"
+
+							blockoverride "extra" {
+								text_single = {
+									raw_text = "[Title.GetNameNoTierNoTooltip],"
+								}
+								text_single = {
+									visible = "[Not(ObjectsEqual(Title.Self, Title.GetHolder.GetTopLiege.GetPrimaryTitle))]"
+									raw_text = "in [Title.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+								}
+
+								text_single = {
+									datacontext = "[Title.GetProvince]"
+									visible = "[Not(ObjectsEqual(MyCapital, Province.Self))]"
+									raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]"
+								}
+							}
+						}
 					}
 				}
 
@@ -649,7 +822,7 @@ window = {
 						visible = "[Not(Is('all_eras'))]"
 
 						item = {
-							vbox_era_tab = {
+							vbox_era_tab_ocr = {
 								visible = "[GuiCultureEra.IsSelected]"
 							}
 						}
@@ -661,7 +834,7 @@ window = {
 						visible = "[Is('all_eras')]"
 
 						item = {
-							vbox_era_tab = {
+							vbox_era_tab_ocr = {
 							}
 						}
 					}
@@ -800,128 +973,138 @@ window = {
 					}
 				}
 
-				hbox = {
-					name = "no_culture_head"
-					visible = "[And(Not(CultureWindow.IsInReformationMode), Not( Culture.HasCultureHead ))]"
+				#head
+				vbox = {
 					layoutpolicy_horizontal = expanding
+					visible = "[Or(Has('culture_view_tabs', 'overview'), Has('culture_view_tabs', 'innovations'))]"
+					hbox = {
+						name = "no_culture_head"
+						visible = "[And(Not(CultureWindow.IsInReformationMode), Not( Culture.HasCultureHead ))]"
+						layoutpolicy_horizontal = expanding
+						spacing = 3
 
-					text_single = {
-						text = "CULTURE_WINDOW_NO_HEAD"
+						text_single = {
+							text = "CULTURE_WINDOW_NO_HEAD"
+						}
+
+						comma = {}
+
+						text_single = {
+							raw_text = "[Culture.GetNoHeadReason]."
+						}
+
+						expand = { }
 					}
-
-					text_single = {
-						text = "[Culture.GetNoHeadReason]"
-					}
-
-					expand = { }
-				}
-
-				hbox = {
-					name = "culture_head_tutorial_uses_this"
-					datacontext = "[Culture.GetCultureHead]"
-					visible = "[And(Not(CultureWindow.IsInReformationMode), Culture.HasCultureHead)]"
-					layoutpolicy_horizontal = expanding
 
 					hbox = {
+						name = "culture_head_tutorial_uses_this"
+						datacontext = "[Culture.GetCultureHead]"
+						visible = "[And(Not(CultureWindow.IsInReformationMode), Culture.HasCultureHead)]"
 						layoutpolicy_horizontal = expanding
 
-						vbox = {
+						hbox = {
 							layoutpolicy_horizontal = expanding
 
-							text_single = {
-								layoutpolicy_horizontal = expanding
-								datacontext = "[CultureWindow.GetLearningLevel]"
-								tooltip = "SKILL_ITEM_TOOLTIP"
-								visible = "[Character.IsLocalPlayer]"
-								raw_text = "You are the [culture_head|E], [CultureWindow.GetLearningLevel.GetValue] [learning|e]."
-							}
-
-							realm_name = {
-								visible = "[Not(Character.IsLocalPlayer)]"
-								layoutpolicy_horizontal = expanding
-								blockoverride "pre" {
-									text_single = {
-										alwaystransparent = yes
-										raw_text = "[culture_head|E],"
-									}
-									text_single = {
-										datacontext = "[CultureWindow.GetLearningLevel]"
-										tooltip = "SKILL_ITEM_TOOLTIP"
-										raw_text = "[CultureWindow.GetLearningLevel.GetValue] [learning|e]."
-									}
-								}
-							}
-
 							vbox = {
-								name = "culture_head_influence_info"
-								visible = "[And(EqualTo_uint32( CultureWindow.GetCulture.GetID, GetPlayer.GetCulture.GetID ), Hasnt('culture_view_tabs', 'innovations'))]"
 								layoutpolicy_horizontal = expanding
 
-								text_multi_wide = {
-									visible = "[Not(CultureWindow.ShouldShowMyCultureInfo)]"
+								text_single = {
 									layoutpolicy_horizontal = expanding
-									text = "[CultureWindow.GetCultureHeadInfo]"
+									datacontext = "[CultureWindow.GetLearningLevel]"
+									tooltip = "SKILL_ITEM_TOOLTIP"
+									visible = "[Character.IsLocalPlayer]"
+									raw_text = "You are the [culture_head|E], [CultureWindow.GetLearningLevel.GetValue] [learning|e]."
 								}
 
-								text_multi_wide = {
-									visible = "[CultureWindow.ShouldShowMyCultureInfo]"
+								realm_name = {
+									visible = "[Not(Character.IsLocalPlayer)]"
 									layoutpolicy_horizontal = expanding
-									text = "CULTURE_WINDOW_CULTURE_HEAD_NOTPLAYER"
+									blockoverride "pre" {
+										text_single = {
+											alwaystransparent = yes
+											raw_text = "[culture_head|E],"
+										}
+										text_single = {
+											datacontext = "[CultureWindow.GetLearningLevel]"
+											tooltip = "SKILL_ITEM_TOOLTIP"
+											raw_text = "[CultureWindow.GetLearningLevel.GetValue] [learning|e]."
+										}
+									}
 								}
-							}
-
-							hbox = {
-								name = "fascination_info_tutorial_uses_this"
-								datacontext = "[CultureWindow.GetCulture]"
-								visible = "[Culture.HasFascination]"
-								layoutpolicy_horizontal = expanding
 
 								vbox = {
+									name = "culture_head_influence_info"
+									visible = "[And(EqualTo_uint32( CultureWindow.GetCulture.GetID, GetPlayer.GetCulture.GetID ), Hasnt('culture_view_tabs', 'innovations'))]"
 									layoutpolicy_horizontal = expanding
 
-									hbox = {
+									text_multi_wide = {
+										visible = "[Not(CultureWindow.ShouldShowMyCultureInfo)]"
 										layoutpolicy_horizontal = expanding
-										datacontext = "[CultureWindow.GetCulture.GetFascination]"
-										spacing = 3
+										text = "[CultureWindow.GetCultureHeadInfo]"
+									}
 
-										text_single = {
-											tooltipwidget = {
-												using = culture_innovation_tooltip
-											}
-											name = "current_fascination"
-											raw_text = "Fascination: [CultureWindow.GetCulture.GetFascination.GetName],"
-										}
-
-										text_single = {
-											raw_text = "[CultureInnovation.GetProgress|1]%."
-										}
-
-										text_single = {
-											raw_text = "[CultureInnovation.GetInnovationState]."
-										}
-
-										# hbox = {
-										# 	spacing = 3
-										# 	visible = "[And(CultureInnovation.CanGainProgress, Not(CultureInnovation.IsActive))]"
-										#
-										# 	text_single = {
-										# 		raw_text = "[CultureInnovation.GetProgressChance]% to gain"
-										# 	}
-										#
-										# 	text_single = {
-										# 		raw_text = "[CultureInnovation.GetProgressGain]% every month."
-										# 	}
-										# }
-
-										expand = { }
+									text_multi_wide = {
+										visible = "[CultureWindow.ShouldShowMyCultureInfo]"
+										layoutpolicy_horizontal = expanding
+										text = "CULTURE_WINDOW_CULTURE_HEAD_NOTPLAYER"
 									}
 								}
 
-								expand = { }
+								hbox = {
+									name = "fascination_info_tutorial_uses_this"
+									datacontext = "[CultureWindow.GetCulture]"
+									visible = "[Culture.HasFascination]"
+									layoutpolicy_horizontal = expanding
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+
+										hbox = {
+											layoutpolicy_horizontal = expanding
+											datacontext = "[CultureWindow.GetCulture.GetFascination]"
+											spacing = 3
+
+											text_single = {
+												tooltipwidget = {
+													using = culture_innovation_tooltip
+												}
+												name = "current_fascination"
+												raw_text = "Fascination: [CultureWindow.GetCulture.GetFascination.GetName],"
+											}
+
+											text_single = {
+												raw_text = "[CultureInnovation.GetProgress|1]%."
+											}
+
+											text_single = {
+												raw_text = "[CultureInnovation.GetInnovationState]."
+											}
+
+											# hbox = {
+											# 	spacing = 3
+											# 	visible = "[And(CultureInnovation.CanGainProgress, Not(CultureInnovation.IsActive))]"
+											#
+											# 	text_single = {
+											# 		raw_text = "[CultureInnovation.GetProgressChance]% to gain"
+											# 	}
+											#
+											# 	text_single = {
+											# 		raw_text = "[CultureInnovation.GetProgressGain]% every month."
+											# 	}
+											# }
+
+											expand = { }
+										}
+									}
+
+									expand = { }
+								}
 							}
 						}
 					}
 				}
+
+				expand = {}
 			}
 		}
 	}
@@ -934,9 +1117,9 @@ window = {
 ################ TYPES AND TEMPLATES #################
 ######################################################
 
-types CultureWindow
-{
-	type vbox_era_tab = hbox {
+types OCR {
+
+	type vbox_era_tab_ocr = hbox {
 		datacontext = "[GuiCultureEra.GetCultureEra]"
 		layoutpolicy_horizontal = expanding
 
@@ -980,6 +1163,137 @@ types CultureWindow
 						using = culture_era_tooltip
 					}
 				}
+			}
+		}
+	}
+}
+
+types CultureWindow
+{
+
+	type vbox_era_tab = vbox {
+		datacontext = "[GuiCultureEra.GetCultureEra]"
+		layoutpolicy_horizontal = expanding
+
+		tooltipwidget = {
+			using = culture_era_tooltip
+		}
+
+		using = tooltip_se
+
+		spacer = {
+			visible = "[GuiCultureEra.IsSelected]"
+			size = { 150 0 }
+
+			state = {
+				name = _show
+				size = { 135 0 }
+				duration = 0.3
+			}
+
+			state = {
+				name = _hide
+				size = { 0 0 }
+				duration = 0.3
+			}
+		}
+
+		button = {
+			layoutpolicy_horizontal = expanding
+			size = { 0 128 }
+			onclick = "[PdxGuiTriggerAllAnimations('culture_refresh')]"
+			scissor = yes
+
+			state = {
+				name = _mouse_click
+				on_finish = "[GuiCultureEra.Select]"
+			}
+
+			highlight_icon = {
+				parentanchor = center
+				size = { 248 128 }
+				texture = "[CultureEra.GetType.GetIllustration]"
+				using = Mask_Rough_Edges
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_culture_era_tab.dds"
+					blend_mode = alphamultiply
+					alpha = 0.9
+				}
+			}
+
+			highlight_icon = {
+				visible = "[Not(CultureEra.IsActive)]"
+				parentanchor = center
+				size = { 248 128 }
+				texture = "[CultureEra.GetType.GetIllustration]"
+				tintcolor = { 0 0 0 0.5 }
+			}
+
+			##### FRAYED EDGES ####
+			widget = {
+				parentanchor = left
+				size = { 6 128 }
+
+				background = {
+					using = Background_Area_Solid
+					spriteType = Corneredtiled
+					spriteborder = { 20 20 }
+					spriteborder_right = 11
+					margin = { 0 20 }
+					margin_left = 10
+				}
+			}
+
+			widget = {
+				parentanchor = right
+				size = { 6 128 }
+
+				background = {
+					using = Background_Area_Solid
+					mirror = horizontal
+					spriteType = Corneredtiled
+					spriteborder = { 20 20 }
+					spriteborder_right = 11
+					margin = { 0 20 }
+					margin_right = 10
+				}
+			}
+
+			text_multi = {
+				visible = "[GuiCultureEra.IsSelected]"
+				size = { 100% 100% }
+				margin = { 5 10 }
+				autoresize = no
+				text = "[CultureEra.GetNameNoTooltip]"
+				align = top|hcenter
+				default_format = "#low"
+
+				state = {
+					name = _show
+					using = Animation_FadeIn_Standard
+				}
+
+				state = {
+					name = _hide
+					using = Animation_FadeOut_Standard
+				}
+			}
+
+			text_label_center = {
+				visible = "[Not(CultureEra.IsActive)]"
+				parentanchor = bottom|hcenter
+				position = { 0 -8 }
+				text = "CULTURE_ERA_INNOVATION_COUNT"
+				default_format = "#low"
+			}
+
+			text_label_center = {
+				visible = "[CultureEra.IsActive]"
+				parentanchor = bottom|hcenter
+				position = { 0 -8 }
+				text = "CULTURE_ERA_INNOVATION_COUNT_JOIN_LEAVE"
+				default_format = "#high"
 			}
 		}
 	}

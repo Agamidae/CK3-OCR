@@ -7,7 +7,7 @@ window = {
 	name = "decisiondetail_view"
 	# position = "[DecisionDetailView.GetDynamicPosition]" # can be changed by DECISION_DETAILS_VIEW_POSITION_DEFAULT and DECISION_DETAILS_VIEW_POSITION_COURT in 00_graphics.txt
 	using = base_ocr_window
-	layer = windows_layer_top
+	layer = middle
 	movable = "[Is('ocr')]"
 
 	state = {
@@ -26,7 +26,7 @@ window = {
 		layoutpolicy_horizontal = expanding
 		layoutpolicy_vertical = expanding
 		blockoverride "show_window" {
-
+			# visible = "[Or(Isnt('ocr'), Not(DecisionDetailView.IsDefaultWidgetShown))]"
 		}
 
 		blockoverride "ocr_header" {
@@ -51,7 +51,22 @@ window = {
 				datacontext = "[DecisionDetailView.GetDecision]"
 				layoutpolicy_vertical = expanding
 				layoutpolicy_horizontal = expanding
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					minimumsize = { 550 220 }
+					visible = "[And(Not(DecisionDetailView.IsOpenedFromRoyalCourt), Is('ocr'))]"
+
+					background = {
+						name = "illustrations"
+						texture = "[DecisionDetailView.GetPicture]"
+						margin_top = 10
+						alpha = 0.7
+						using = Mask_Rough_Edges
+					}
+				}
+
 				decision_detail_buttons = {}
+				decision_detail_buttons_old = {}
 
 				decision_detail_view_content = {}
 
@@ -60,8 +75,8 @@ window = {
 		}
 	}
 
-	# old_decision_details = {
-	# 	using = vanilla
+	# decisiondetail_view_old = {
+	# 	visible = "[And(Is('ocr'), DecisionDetailView.IsDefaultWidgetShown)]"
 	# }
 }
 
@@ -85,6 +100,7 @@ types DecisionDetailViewTypes
 
 		vbox = {
 			layoutpolicy_horizontal = expanding
+			spacing = 10
 
 			vbox = {
 				name = "effect"
@@ -128,14 +144,17 @@ types DecisionDetailViewTypes
 				}
 			}
 
-			text_single = {
+			vbox = {
 				layoutpolicy_horizontal = expanding
-				raw_text = "Description:"
-			}
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "Description:"
+				}
 
-			text_multi_wide = {
-				name = "description"
-				text = "[DecisionDetailView.GetDescription]"
+				text_multi_wide = {
+					name = "description"
+					text = "[DecisionDetailView.GetDescription]"
+				}
 			}
 		}
 	}
@@ -163,6 +182,7 @@ types DecisionDetailViewTypes
 	}
 
 	type decision_confirm_button = button_primary_text {
+		using = ocr
 		blockoverride "disabled" {
 			visible = "[Not(DecisionDetailView.CanConfirm)]"
 		}
@@ -181,6 +201,7 @@ types DecisionDetailViewTypes
 	}
 
 	type decision_detail_buttons = vbox {
+		using = ocr
 		layoutpolicy_horizontal = expanding
 
 		vbox = {
@@ -279,6 +300,113 @@ types DecisionDetailViewTypes
 					text_single = {
 						raw_text = "F."
 					}
+				}
+			}
+
+			expand = {}
+		}
+	}
+
+	type decision_confirm_button_old = button_primary {
+		block "visible" {
+			using = vanilla
+		}
+		enabled = "[DecisionDetailView.CanConfirm]"
+				tooltip = "[DecisionDetailView.GetConfirmTooltip]"
+				onclick = "[DecisionDetailView.Confirm]"
+
+				text = "[DecisionDetailView.GetConfirmText]"
+
+				default_clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+				clicksound = "[DecisionDetailView.GetConfirmClickSound]"
+	}
+
+	type decision_detail_buttons_old = vbox {
+		layoutpolicy_horizontal = expanding
+		using = vanilla
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			margin_top = 4
+			margin_bottom = 10
+			spacing = 5
+
+			text_single = {
+				name = "cost"
+				visible = "[DecisionDetailView.HasCost]"
+				text = "[DecisionDetailView.GetCostDescription]"
+				using = Font_Size_Medium
+				default_format = "#high"
+				align = nobaseline
+			}
+
+			spacer = {
+				size = { 10 2 }
+			}
+
+			# default step
+			widget = {
+				visible = "[Not(GetVariableSystem.HasValue( 'show_decision_next_step', 'true' ))]"
+				size = { 380 50 }
+
+				# next step button
+				button_primary = {
+					size = { 100% 100% }
+
+					visible = "[DecisionDetailView.HasNextStep]"
+
+					tooltip = "[DecisionDetailView.GetConfirmTooltip]"
+					onclick = "[GetVariableSystem.Set('show_decision_next_step', 'true')]"
+					onclick = "[DecisionDetailView.ToggleCustomWidgetState]"
+
+					text = "[DecisionDetailView.GetNextStepButtonLabel]"
+					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_advance"
+				}
+
+
+				decision_confirm_button_old = {
+					blockoverride "visible" {
+						visible = "[Not( DecisionDetailView.HasNextStep )]"
+					}
+					size = { 100% 100% }
+				}
+			}
+
+			hbox = {
+				visible = "[GetVariableSystem.HasValue( 'show_decision_next_step', 'true' )]"
+
+				spacing = 10
+
+				button_standard_back = {
+					name = "back"
+					size = { 180 50 }
+					visible = "[DecisionDetailView.HasNextStep]"
+					onclick = "[GetVariableSystem.Clear('show_decision_next_step')]"
+					onclick = "[DecisionDetailView.ToggleCustomWidgetState]"
+					text = "BACK_LABEL"
+					clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_close"
+				}
+
+				decision_confirm_button_old = {
+					size = { 250 50 }
+				}
+			}
+
+			spacer = {
+				size = { 0 2 }
+			}
+
+			button_checkbox_label = {
+				onclick = "[Decision.OnToggleImportantForPlayer]"
+
+				blockoverride "checkbox"
+				{
+					checked = "[Decision.IsImportantForPlayer]"
+				}
+
+				blockoverride "text"
+				{
+					text = "DECISIONS_VIEW_MAJOR_TOGGLE"
 				}
 			}
 

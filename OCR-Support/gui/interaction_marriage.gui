@@ -11,6 +11,18 @@ window = {
 	using = base_ocr_window
 	layer = middle
 
+	state = {
+		name = ocr
+		position = { 0 0 }
+		trigger_when = "[Isnt('ocr')]"
+	}
+
+	state = {
+		name = vanilla
+		position = { 610 0 }
+		trigger_when = "[Is('ocr')]"
+	}
+
 
 	state = {
 		name = _show
@@ -27,7 +39,7 @@ window = {
 
 	window_ocr = {
 		blockoverride "show_window" {
-			visible = "[And(Or(Isnt('hide_interaction'), And(Is('hide_interaction'), Not(IsGameViewOpen('character')))), Isnt('ocr'))]"
+			visible = "[Or(Isnt('hide_interaction'), And(Is('hide_interaction'), Not(IsGameViewOpen('character'))))]"
 		}
 		blockoverride "ocr_header" {
 			header_pattern_interaction = {
@@ -324,15 +336,6 @@ window = {
 								text = "MARRIAGE_GRAND_WEDDING_TOGGLE"
 							}
 						}
-
-						# text_single = {
-						# 	visible = "[Or( MatchmakerInteractionWindow.GetCharacterList.HasItems, MatchmakerInteractionWindow.HasTopCharacterItem )]"
-						# 	layoutpolicy_horizontal = expanding
-						# 	text = "[MarriageInteractionWindow.GetPrompt]"
-						#
-						# 	align = center
-						# 	autoresize = no
-						# }
 					}
 
 					vbox_character_list = {
@@ -343,49 +346,100 @@ window = {
 
 
 						blockoverride "container_implementation" {
-							fixedgridbox = {
-								addcolumn = 650
-								addrow = 65
-								name = "characters_grid"
-								datamodel_reuse_widgets = yes
+							vbox = {
+								layoutpolicy_horizontal = expanding
 
-								datamodel = "[CharacterSelectionList.GetList]"
-								visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+								fixedgridbox = {
+									addcolumn = 650
+									addrow = 66
+									# name = "characters_grid"
+									datamodel_reuse_widgets = yes
+									datamodel = "[CharacterSelectionList.GetList]"
+									visible = "[And(Not(CharacterSelectionList.IsBuildingList), Isnt('ocr'))]"
 
-								item = {
-									widget_marriage_list_item = {
-										size = { 650 70 }
-										blockoverride "small_traits" { }
-										blockoverride "click" {
-											onclick = "[CharacterListItem.OnClick('character')]"
-											onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
-											onrightclick = "[Set('hide_interaction', 'yes')]"
-											enabled = "[CharacterListItem.IsSelectable]"
-										}
-										blockoverride "expand_traits" {
-											flowcontainer = {
-												# spacing = 2
-												name = "traits_grid"
-												datamodel = "[CharacterListItem.GetTraits]"
-												ignoreinvisible = yes
-												righttoleft = yes
-												# layoutpolicy_horizontal = expanding
+									item = {
+										widget_marriage_list_item = {
+											size = { 650 70 }
+											blockoverride "small_traits" { }
+											blockoverride "click" {
+												onclick = "[CharacterListItem.OnClick('character')]"
+												onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+												onrightclick = "[Set('hide_interaction', 'yes')]"
+												enabled = "[CharacterListItem.IsSelectable]"
+											}
+											blockoverride "expand_traits" {
+												flowcontainer = {
+													# spacing = 2
+													name = "traits_grid"
+													datamodel = "[CharacterListItem.GetTraits]"
+													ignoreinvisible = yes
+													righttoleft = yes
+													# layoutpolicy_horizontal = expanding
 
-												item = {
-													widget = {
-														tooltip = "trait_tooltip"
+													item = {
+														widget = {
+															tooltip = "trait_tooltip"
 
-														text_single = {
-															resizeparent = yes
-															margin_left = 3
-															margin_top = 1
-															visible = "[Trait.IsValid]"
-															datacontext = "[Character.GetFaith]"
-															raw_text = "[Trait.GetNameNoTooltip(Character.Self)][AddTextIf(Faith.IsTraitVirtue( Trait.Self ), ' (virtue)')][AddTextIf(Faith.IsTraitSin( Trait.Self ), ' (sin)')][AddTextIf(Trait.IsInheritable, ' (inheritable)')],"
+															text_single = {
+																resizeparent = yes
+																margin_left = 3
+																margin_top = 1
+																visible = "[Trait.IsValid]"
+																datacontext = "[Character.GetFaith]"
+																raw_text = "[Trait.GetNameNoTooltip(Character.Self)][AddTextIf(Faith.IsTraitVirtue( Trait.Self ), ' (virtue)')][AddTextIf(Faith.IsTraitSin( Trait.Self ), ' (sin)')][AddTextIf(Trait.IsInheritable, ' (inheritable)')],"
+															}
 														}
 													}
 												}
 											}
+										}
+									}
+								}
+
+								fixedgridbox = {
+									addcolumn = 667
+									addrow = 100
+									name = "characters_grid"
+									datamodel_reuse_widgets = yes
+									visible = "[And(Not(CharacterSelectionList.IsBuildingList), Is('ocr'))]"
+
+									datamodel = "[CharacterSelectionList.GetList]"
+									using = vanilla
+
+									item = {
+										widget_character_list_item = {
+											blockoverride "bottom_middle_box" {
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													margin_bottom = 5
+
+													expand = {}
+
+													hbox = {
+														name = "alliances_grid"
+														datamodel = "[CharacterListItem.GetOtherCharacterItems]"
+
+														item = {
+															container = {
+																button = {
+																	parentanchor = center
+																	position = { 0 -20 }
+																	texture = "gfx/interface/icons/diplomatic_icons.dds"
+																	frame = 2
+																	framesize = { 120 120 }
+																	size = { 30 30 }
+																	tooltip_enabled = no
+																}
+
+																coa_realm_tiny_crown = {
+																	tooltip = "MATCHMAKER_INTERACTION_ALLIANCE"
+																}
+															}
+														}
+													}
+												}
+											}
+											size = { 630 110 }
 										}
 									}
 								}
@@ -406,6 +460,7 @@ window = {
 								layoutpolicy_horizontal = expanding
 
 								widget_character_list_item_finder = {
+									using = ocr
 									layoutpolicy_horizontal = expanding
 									blockoverride "click" {
 										enabled = "[CharacterListItem.IsSelectable]"
@@ -414,6 +469,11 @@ window = {
 										onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
 									}
 								}
+
+								widget_character_list_item = {
+									using = vanilla
+									layoutpolicy_horizontal = expanding
+								}
 							}
 						}
 					}
@@ -421,6 +481,8 @@ window = {
 			}
 		}
 	}
+
+	# marriage_interaction_window_old = {}
 
 	window_character_filter = {
 		layer = top

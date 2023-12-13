@@ -1,7 +1,12 @@
 types OCR {
 	type old_county = window {
+		# name = "holding_view"
+		# widgetid = "holding_view_id"
+		parentanchor = bottom|left
+		allow_outside = yes
+		movable = no
+		layer = windows_layer
 		size = { 625 620 }
-		parentanchor = bottom
 		visible = "[And(GetScriptedGui('is_land').IsShown( GuiScope.SetRoot( Province.MakeScope ).End ), Is('ocr'))]"
 
 		background = {
@@ -210,11 +215,12 @@ types OCR {
 					datamodel = "[HoldingView.GetCountyModifiers]"
 
 					item = {
-						icon = {
+						modifier_item_icon = {
 							size = { 30 30 }
-							texture = "[ModifierItem.GetIcon]"
-							using = tooltip_ne
-							tooltip = "[ModifierItem.GetTooltip]"
+
+							blockoverride "icon_data" {
+								using = tooltip_ne
+							}
 						}
 					}
 				}
@@ -396,7 +402,7 @@ types OCR {
 
 					hbox = {
 						layoutpolicy_horizontal = expanding
-						datacontext = "[HoldingView.GetProvince.GetCounty]"
+						datacontext = "[HoldingView.GetProvince.GetCounty]";
 
 						text_single = {
 							layoutpolicy_horizontal = expanding
@@ -1187,12 +1193,13 @@ types OCR {
 							flipdirection = yes
 
 							item = {
-								icon = {
+								modifier_item_icon = {
 									size = { 30 30 }
-									alwaystransparent = no
-									texture = "[ModifierItem.GetIcon]"
-									using = tooltip_ne
-									tooltip = "[ModifierItem.GetTooltip]"
+
+									blockoverride "icon_data" {
+										using = tooltip_ne
+										alwaystransparent = no
+									}
 								}
 							}
 						}
@@ -1429,7 +1436,7 @@ types OCR {
 									margin_bottom = 3
 									fontsize = 15
 									default_format = "#low;bold"
-									align = center|nobaseline
+									align = center;nobaseline
 
 									background = {
 										using = Background_Area_Dark
@@ -1532,6 +1539,1107 @@ types OCR {
 					}
 				}
 
+			}
+		}
+	}
+
+	type holding_tracks_view_old = window {
+		# name = "holding_tracks_view"
+		size = { 100% 100% }
+		movable = yes
+		using = vanilla
+		layer = windows_layer
+		datacontext = "[HoldingView.GetHolder]"
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+			position_x = 0
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+			position_x = -50
+		}
+
+		alwaystransparent = yes
+
+		hbox = {
+			expand = {
+				max_width = 610
+			}
+
+			widget = {
+				layoutpolicy_vertical = expanding
+				size = { 725 0 }
+
+				vbox = {
+					margin_top = 170
+					margin_bottom = 10
+
+					expand = {}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						minimumsize = { 0 700 }
+
+						## New Building
+						vbox = {
+							visible = "[Not(HoldingView.IsSelectingBuildingToConstruct)]"
+							layoutpolicy_horizontal = expanding
+							alwaystransparent = no
+							margin = { 3 3 }
+							margin_bottom = 5
+							using = Window_Background_Subwindow
+
+							header_pattern = {
+								layoutpolicy_horizontal = expanding
+
+								blockoverride "header_text"
+								{
+									text = "[HoldingView.GetTracksViewLabel]"
+								}
+
+								blockoverride "button_close"
+								{
+									onclick = "[HoldingView.CloseSubwindows]"
+								}
+							}
+
+							building_in_vassal_warning_hbox = {}
+
+							text_single = {
+								layoutpolicy_horizontal = shrinking
+								name = "prompt"
+								text = "[HoldingView.GetTracksViewPrompt]"
+								margin_bottom = 10
+							}
+
+							text_single = {
+								visible = "[IsDataModelEmpty(HoldingView.GetPotentialBuildings)]"
+								layoutpolicy_horizontal = shrinking
+								name = "no_potential_buildings_text"
+								text = "NO_POTENTIAL_BUILDINGS_WARNING"
+								margin_bottom = 10
+							}
+
+							## Construct New Building
+							container = {
+								visible = "[Not(IsDataModelEmpty(HoldingView.GetPotentialBuildings))]"
+								layoutpolicy_vertical = expanding
+
+								scrollbox = {
+									visible = "[Not(HoldingView.IsSelectingBuildingToConstruct)]"
+									size = { 700 300 }
+									autoresizescrollarea = yes
+									maximumsize = { -1 800 }
+
+									blockoverride "scrollbox_content"
+									{
+										name = "tracks_grid"
+										datamodel = "[HoldingView.GetPotentialBuildings]"
+										datacontext = "[HoldingView.GetProvince]"
+										datacontext = "[HoldingView.GetProvince.GetCounty.GetCulture]"
+										visible = "[HoldingView.IsSelectingNewBuilding]"
+										spacing = 10
+										set_parent_size_to_minimum = yes
+
+										block "scrollbox_margins"
+										{
+											using = Scrollbox_Margins
+											margin_right = 15
+											margin_top = 5
+										}
+
+										item = {
+											vbox = {
+												layoutpolicy_horizontal = expanding
+
+												background = {
+													using = Background_Area_Light
+												}
+
+												hbox = {
+													name = "header"
+													layoutpolicy_horizontal = expanding
+
+													background = {
+														using = Background_Area
+													}
+
+													hbox = {
+														layoutpolicy_horizontal = expanding
+														margin = { 10 10 }
+														spacing = 10
+
+														icon_building = {
+															name = "building_icon"
+															size = { 75 65 }
+															texture = "[GUIPotentialBuildingItem.GetBuilding.GetTypeIcon]"
+														}
+
+														vbox = {
+															spacing = 5
+															layoutpolicy_horizontal = expanding
+
+															text_single = {
+																layoutpolicy_horizontal = expanding
+																text = "[GUIPotentialBuildingItem.GetBuilding.GetTypeName]"
+																using = Font_Size_Medium
+																align = left
+																autoresize = no
+															}
+
+															hbox = {
+																button_tertiary = {
+																	text = "CONSTRUCT_BUILDINGS_DETAILS"
+
+																	onclick = "[GUIPotentialBuildingItem.ShowDetails]"
+																	tooltip = "CONSTRUCT_BUILDINGS_DETAILS_TT"
+																	using = tooltip_es
+																}
+
+																expand = {}
+															}
+														}
+
+														expand = {}
+
+														hbox = {
+															spacing = 5
+
+															hbox = {
+																margin = { 5 5 }
+																min_width = 120
+																spacing = 10
+
+																background = {
+																	using = Background_Area
+																	margin_bottom = 4
+																	margin_left = 6
+																}
+
+																text_single = {
+																	datacontext = "[GUIPotentialBuildingItem.GetGoldCost]"
+																	visible = "[GUIPotentialBuildingItem.HasGoldCost]"
+																	layoutpolicy_horizontal = expanding
+																	text = "[ValueBreakdown.GetValue]"
+																	tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+																	tooltipwidget = {
+																		widget_value_breakdown_tooltip = {}
+																	}
+
+																	background = {
+																		visible = "[LessThan_CFixedPoint(GetPlayer.GetGold, ValueBreakdown.GetFixedPointValue)]"
+																		using = Status_Bad
+																	}
+																}
+
+																text_single = {
+																	datacontext = "[GUIPotentialBuildingItem.GetPrestigeCost]"
+																	visible = "[GUIPotentialBuildingItem.HasPrestigeCost]"
+																	layoutpolicy_horizontal = expanding
+																	text = "[ValueBreakdown.GetValue]"
+																	tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+																	tooltipwidget = {
+																		widget_value_breakdown_tooltip = {}
+																	}
+
+																	background = {
+																		visible = "[LessThan_CFixedPoint(GetPlayer.GetPrestige, ValueBreakdown.GetFixedPointValue)]"
+																		using = Status_Bad
+																	}
+																}
+
+																text_single = {
+																	layoutpolicy_horizontal = expanding
+																	datacontext = "[GUIPotentialBuildingItem.GetPietyCost]"
+																	visible = "[GUIPotentialBuildingItem.HasPietyCost]"
+																	text = "[ValueBreakdown.GetValue]"
+																	tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+																	tooltipwidget = {
+																		widget_value_breakdown_tooltip = {}
+																	}
+
+																	background = {
+																		visible = "[LessThan_CFixedPoint(GetPlayer.GetPiety, ValueBreakdown.GetFixedPointValue)]"
+																		using = Status_Bad
+																	}
+																}
+
+																text_single = {
+																	layoutpolicy_horizontal = expanding
+																	datacontext = "[GUIPotentialBuildingItem.GetConstructionTime]"
+																	text = "[ValueBreakdown.GetValue]"
+																	tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+																	tooltipwidget = {
+																		widget_value_breakdown_tooltip = {}
+																	}
+																}
+
+																expand = {}
+															}
+
+															button_standard = {
+																layoutpolicy_horizontal = expanding
+																layoutpolicy_vertical = expanding
+																size = { 100 53 }
+																enabled = "[GUIPotentialBuildingItem.CanConstruct]"
+																tooltip = "[GUIPotentialBuildingItem.GetTooltip]"
+																onclick = "[GUIPotentialBuildingItem.Construct]"
+																text = "CONSTRUCT"
+																using = tooltip_es
+															}
+														}
+													}
+												}
+
+												hbox = {
+													name = "dynamic_content"
+													layoutpolicy_horizontal = expanding
+													margin = {5 5}
+
+													text_multi = {
+														layoutpolicy_horizontal = expanding
+														layoutpolicy_vertical = expanding
+														margin = {5 0}
+														text = "[GUIPotentialBuildingItem.GetBuilding.GetTypeDescription]"
+														default_format = "#F"
+														autoresize = yes
+														max_width = 280
+														min_width = 280
+													}
+
+													vbox = {
+														spacing = 8
+
+														hbox = {
+															layoutpolicy_horizontal = expanding
+															margin_left = 10
+
+															text_label_left = {
+																layoutpolicy_horizontal = expanding
+																datacontext = "[GUIPotentialBuildingItem.GetBuilding]"
+																text = CV_BUILDING_LEVEL_AND_NAME
+																autoresize = no
+															}
+														}
+
+														text_multi = {
+															layoutpolicy_horizontal = expanding
+															layoutpolicy_vertical = expanding
+															autoresize = yes
+															max_width = 355
+															min_width = 355
+															text = "[GUIPotentialBuildingItem.GetBuilding.GetEffectDescriptionAtProvince( Character.Self, Province.Self, Culture.Self )]"
+															margin = { 15 10 }
+
+															background = {
+																using = Background_Frame
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+
+						vbox = {
+							vbox = {
+								visible = "[HoldingView.IsSelectingBuildingToConstruct]"
+								layoutpolicy_horizontal = expanding
+								alwaystransparent = no
+
+								## Upgrade Building
+								vbox = {
+									name = "upgrade"
+									datacontext = "[HoldingView.GetTrack]"
+									layoutpolicy_horizontal = expanding
+									#minimumsize = { 0 700 }
+									using = Window_Background_Subwindow
+									margin_bottom = 10
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										margin = { 15 10 }
+										spacing = 10
+
+										background = {
+											using = Background_Area
+										}
+
+										icon_building = {
+											name = "building_icon"
+											texture = "[GUITrackItem.GetSelectedBuilding.GetTypeIcon]"
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+
+											text_single = {
+												layoutpolicy_horizontal = expanding
+												text = "[GUITrackItem.GetSelectedBuilding.GetTypeName]"
+												using = Font_Size_Big
+												default_format = "#high"
+											}
+
+											text_single = {
+												layoutpolicy_horizontal = expanding
+												text = "[GUITrackItem.GetBuildingTypeText]"
+											}
+
+											building_in_vassal_warning_hbox = {
+											}
+										}
+
+										buttons_window_control = {
+											blockoverride "button_close"
+											{
+												onclick = "[HoldingView.CloseSubwindows]"
+											}
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										layoutpolicy_vertical = expanding
+										margin = { 15 5 }
+
+										hbox = {
+											layoutpolicy_horizontal = expanding
+											margin = { 5 10 }
+
+											### PREVIOUS BUILDINGS
+											hbox = {
+												name = "level_track_previous"
+												datamodel = "[GUITrackItem.GetPreLevelItems]"
+
+												item = {
+													hbox = {
+														button_icon = {
+															name = "track_icon"
+															onclick = "[BuildingLevelItem.OnClick]"
+															down = "[BuildingLevelItem.IsSelected]"
+															alwaystransparent = "[BuildingLevelItem.IsSelected]"
+
+															size = { 60 60 }
+															texture = "gfx/interface/buttons/button_round_big.dds"
+
+															tooltip = "[BuildingLevelItem.GetTooltip]"
+															using = tooltip_ne
+															tooltip_offset = { 40 0 }
+
+															background = {
+																texture = "gfx/interface/window_county/building_status_circle.dds"
+																framesize = { 120 120 }
+																using = Master_Button_Modify_Texture
+
+																blockoverride "master_color_frame" {
+																	frame = 3
+																}
+															}
+
+															button_icon_highlight = {
+																name = "level_icon"
+																parentanchor = center
+																size = { 41 24 }
+																down = "[BuildingLevelItem.IsSelected]"
+																texture = "[BuildingLevelItem.GetIcon]"
+															}
+
+															icon = {
+																visible = "[BuildingLevelItem.IsSelected]"
+																parentanchor = bottom|hcenter
+																position = { 0 8 }
+																texture = "gfx/interface/window_county/building_selected_arrow.dds"
+																size = { 18 12 }
+																using = Master_Button_Modify_Texture
+
+																blockoverride "master_color_frame" {
+																	frame = 2
+																}
+															}
+														}
+
+														widget = {
+															visible = "[GUITrackItem.HasCurrentBuilding]"
+															layoutpolicy_horizontal = expanding
+															size = { 5 6 }
+
+															background = {
+																texture = "gfx/interface/icons/building_types/building_buttons_connector.dds"
+																margin = { 2 0 }
+
+																using = Master_Button_Modify_Texture
+
+																blockoverride "master_color_frame" {
+																	frame = 1
+																}
+															}
+														}
+													}
+												}
+											}
+
+											### CURRENT BUILDING
+											button_icon = {
+												name = "current_building"
+												visible = "[GUITrackItem.HasCurrentBuilding]"
+												onclick = "[GUITrackItem.OnCurrentBuildingClick]"
+												down = "[GUITrackItem.IsCurrentBuildingSelected]"
+												alwaystransparent = "[GUITrackItem.IsCurrentBuildingSelected]"
+												tooltip = "[GUITrackItem.GetCurrentBuildingTooltip]"
+												using = tooltip_ws
+												size = { 60 60 }
+												texture = "gfx/interface/buttons/button_round_big.dds"
+												using = tooltip_ne
+												tooltip_offset = { 40 0 }
+
+												background = {
+													texture = "gfx/interface/window_county/building_status_circle.dds"
+													framesize = { 120 120 }
+													using = Master_Button_Modify_Texture
+
+													blockoverride "master_color_frame" {
+														frame = 3
+													}
+												}
+
+												button_icon_highlight = {
+													name = "level_icon"
+													parentanchor = center
+													size = { 41 24 }
+													down = "[GUITrackItem.IsCurrentBuildingSelected]"
+													texture = "[GUITrackItem.GetCurrentLevelIcon]"
+												}
+
+												icon = {
+													visible = "[GUITrackItem.IsCurrentBuildingSelected]"
+													parentanchor = bottom|hcenter
+													position = { 0 8 }
+													texture = "gfx/interface/window_county/building_selected_arrow.dds"
+													size = { 18 12 }
+													using = Master_Button_Modify_Texture
+
+													blockoverride "master_color_frame" {
+														frame = 2
+													}
+												}
+											}
+
+											expand = {
+												visible = "[Not(And(GUITrackItem.HasCurrentBuilding, GUITrackItem.HasNextBuilding))]"
+											}
+
+											widget = {
+												visible = "[And(GUITrackItem.HasCurrentBuilding, GUITrackItem.HasNextBuilding)]"
+												layoutpolicy_horizontal = expanding
+												size = { 5 6 }
+
+												background = {
+													texture = "gfx/interface/icons/building_types/building_buttons_connector.dds"
+													margin = { 2 0 }
+													using = Master_Button_Modify_Texture
+
+													blockoverride "master_color_frame" {
+														frame = 1
+													}
+												}
+											}
+
+											### NEXT BUILDING
+											button_icon = {
+												name = "next_building"
+												visible = "[GUITrackItem.HasNextBuilding]"
+												down = "[GUITrackItem.IsNextBuildingSelected]"
+												alwaystransparent = "[GUITrackItem.IsNextBuildingSelected]"
+												size = { 60 60 }
+												texture = "gfx/interface/buttons/button_round_big.dds"
+												onclick = "[GUITrackItem.OnNextBuildingClick]"
+												tooltip = "[GUITrackItem.GetNextBuildingTooltip]"
+												using = tooltip_ne
+												tooltip_offset = { 40 0 }
+
+												background = {
+													visible = "[GUITrackItem.IsConstructing]"
+													texture = "gfx/interface/window_county/building_status_circle.dds"
+													framesize = { 120 120 }
+													frame = 2
+													alpha = 0.5
+													using = Master_Button_Modify_Texture
+
+													blockoverride "master_color_frame" {
+														frame = 4
+													}
+												}
+
+												button_icon_highlight = {
+													name = "level_icon"
+													parentanchor = center
+													size = { 41 24 }
+													down = "[GUITrackItem.IsNextBuildingSelected]"
+													alwaystransparent = yes
+													texture = "[GUITrackItem.GetNextLevelIcon]"
+													#frame = "[GUITrackItem.GetNextLevelIconFrame]"
+												}
+
+												icon = {
+													visible = "[GUITrackItem.IsNextBuildingSelected]"
+													parentanchor = bottom|hcenter
+													position = { 0 8 }
+													texture = "gfx/interface/window_county/building_selected_arrow.dds"
+													size = { 18 12 }
+													using = Master_Button_Modify_Texture
+
+													blockoverride "master_color_frame" {
+														frame = 2
+													}
+												}
+											}
+
+											widget = {
+												visible = "[Not(IsDataModelEmpty( GUITrackItem.GetPostLevelItems ))]"
+												layoutpolicy_horizontal = expanding
+												size = { 5 6 }
+
+												background = {
+													texture = "gfx/interface/icons/building_types/building_buttons_connector.dds"
+													margin = { 2 0 }
+													using = Master_Button_Modify_Texture
+
+													blockoverride "master_color_frame" {
+														frame = 1
+													}
+												}
+											}
+
+											#Post Track
+											### LEVEL TRACK
+											hbox = {
+												name = "level_track_next"
+												datamodel = "[GUITrackItem.GetPostLevelItems]"
+
+												item = {
+													hbox = {
+														widget = {
+															layoutpolicy_horizontal = expanding
+															size = { 5 6 }
+
+															background = {
+																texture = "gfx/interface/icons/building_types/building_buttons_connector.dds"
+																margin = { 2 0 }
+																using = Master_Button_Modify_Texture
+
+																blockoverride "master_color_frame" {
+																	frame = 1
+																}
+															}
+														}
+
+														button_icon = {
+															down = "[BuildingLevelItem.IsSelected]"
+															alwaystransparent = "[BuildingLevelItem.IsSelected]"
+															size = { 60 60 }
+															texture = "gfx/interface/buttons/button_round_big.dds"
+															onclick = "[BuildingLevelItem.OnClick]"
+															tooltip = "[BuildingLevelItem.GetTooltip]"
+															using = tooltip_ne
+															tooltip_offset = { 40 0 }
+
+															button_icon_highlight = {
+																name = "level_icon"
+																parentanchor = center
+																size = { 41 24 }
+																down = "[BuildingLevelItem.IsSelected]"
+																texture = "[BuildingLevelItem.GetIcon]"
+																# frame = 2
+															}
+
+															icon = {
+																visible = "[BuildingLevelItem.IsSelected]"
+																parentanchor = bottom|hcenter
+																position = { 0 8 }
+																texture = "gfx/interface/window_county/building_selected_arrow.dds"
+																size = { 18 12 }
+																using = Master_Button_Modify_Texture
+
+																blockoverride "master_color_frame" {
+																	frame = 2
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+
+										spacer = {
+											size = { 10 10 }
+										}
+
+										# Buliding info
+										vbox = {
+											layoutpolicy_horizontal = expanding
+
+											background = {
+												using = Background_Frame
+											}
+
+											hbox = {
+												layoutpolicy_horizontal = expanding
+												margin_top = 5
+												margin_left = 15
+
+												text_label_left = {
+													layoutpolicy_horizontal = expanding
+													text = "[GUITrackItem.GetSelectedBuilding.GetNameNoTooltip]"
+													default_format = "#high"
+													using = Font_Size_Medium
+												}
+											}
+
+											hbox = {
+												name = "flavor_and_effect"
+												layoutpolicy_horizontal = expanding
+												layoutpolicy_vertical = expanding
+												margin = { 5 5 }
+
+												vbox = {
+													layoutpolicy_horizontal = expanding
+													layoutpolicy_vertical = expanding
+
+													text_multi = {
+														layoutpolicy_horizontal = expanding
+														layoutpolicy_vertical = expanding
+														margin = { 10 5 }
+														autoresize = yes
+														max_width = 330
+														min_width = 330
+														text = "[GUITrackItem.GetSelectedBuilding.GetDescription]"
+													}
+
+													hbox = {
+														visible = "[And(And(GUITrackItem.CanReplaceOrCancel, GUITrackItem.IsCurrentBuildingSelected), Not(GUITrackItem.IsConstructing))]"
+														spacing = 10
+														margin_bottom = 5
+
+														text_single = {
+															text = "CURRENT_BUILDING"
+															default_format = "#weak"
+															align = nobaseline
+														}
+													}
+
+													vbox = {
+														visible = "[And(And(GreaterThan_int32(GUITrackItem.GetSelectedBuilding.GetLevel,GUITrackItem.GetCurrentBuilding.GetLevel),GreaterThan_int32(GUITrackItem.GetSelectedBuilding.GetLevel,'(int32)1')), Not(GUITrackItem.IsNextBuildingSelected))]"
+														layoutpolicy_horizontal = expanding
+														margin_left = 10
+														margin_bottom = 5
+														spacing = 5
+
+														text_label_left = {
+															layoutpolicy_horizontal = expanding
+															text = "UPGRADE_COST"
+														}
+
+														hbox = {
+															layoutpolicy_horizontal = expanding
+															spacing = 10
+															margin = { 10 10 }
+
+															hbox = {
+																spacing = 10
+
+																text_single = {
+																	datacontext = "[GUITrackItem.GetSelectedGoldCost]"
+																	visible = "[GUITrackItem.HasSelectedGoldCost]"
+																	text = "[ValueBreakdown.GetValue]"
+																	align = nobaseline
+																	tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+																	tooltipwidget = {
+																		widget_value_breakdown_tooltip = {}
+																	}
+
+																	background = {
+																		visible = "[LessThan_CFixedPoint(GetPlayer.GetGold, ValueBreakdown.GetFixedPointValue)]"
+																		using = Status_Bad
+																	}
+																}
+
+																text_single = {
+																	datacontext = "[GUITrackItem.GetSelectedPrestigeCost]"
+																	visible = "[GUITrackItem.HasSelectedPrestigeCost]"
+																	text = "[ValueBreakdown.GetValue]"
+																	align = nobaseline
+																	tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+																	tooltipwidget = {
+																		widget_value_breakdown_tooltip = {}
+																	}
+																}
+
+																text_single = {
+																	datacontext = "[GUITrackItem.GetSelectedPietyCost]"
+																	visible = "[GUITrackItem.HasSelectedPietyCost]"
+																	text = "[ValueBreakdown.GetValue]"
+																	align = nobaseline
+																	tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+																	tooltipwidget = {
+																		widget_value_breakdown_tooltip = {}
+																	}
+																}
+
+																text_single = {
+																	datacontext = "[GUITrackItem.GetSelectedConstructionTime]"
+																	text = "[ValueBreakdown.GetValue]"
+																	align = nobaseline
+																	tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+																	tooltipwidget = {
+																		widget_value_breakdown_tooltip = {}
+																	}
+																}
+															}
+
+															warning_icon = {
+																name = "cant_construct"
+																size = { 30 30 }
+																tooltip = "[GUITrackItem.GetSelectedBuildingBlockReasons]"
+																visible = "[Not(GUITrackItem.CanConstructSelectedBuilding)]"
+															}
+
+															expand = {}
+														}
+													}
+
+												}
+
+												divider_light = {
+													layoutpolicy_vertical = expanding
+												}
+
+												text_multi = {
+													datacontext = "[HoldingView.GetProvince.GetCounty.GetCulture]"
+													layoutpolicy_horizontal = expanding
+													layoutpolicy_vertical = expanding
+													autoresize = yes
+													max_width = 355
+													min_width = 355
+													text = "[GUITrackItem.GetSelectedBuilding.GetEffectDescriptionAtProvince( Character.Self, HoldingView.GetProvince, Culture.Self)]"
+													margin = { 15 10 }
+												}
+											}
+										}
+
+										vbox = {
+											visible = "[GUITrackItem.IsConstructing]"
+											layoutpolicy_horizontal = expanding
+											margin = { 0 15 }
+											spacing = 10
+
+											text_single = {
+												text = "HOLDING_VIEW_IN_PROGRESS"
+												margin = { 0 5 }
+											}
+
+											hbox = {
+												spacing = 10
+
+												hbox = {
+													widget = {
+														size = { 20 20 }
+
+														button_round  = {
+															name = "abort_button"
+															parentanchor = center
+															visible = "[GUITrackItem.CanShowReplaceOrCancel]"
+															enabled = "[GUITrackItem.CanReplaceOrCancel]"
+															onclick = "[GUITrackItem.ReplaceOrCancel]"
+															tooltip = "[GUITrackItem.GetReplaceOrCancelTooltip]"
+
+															button_cancel = {
+																parentanchor = center
+																alwaystransparent = yes
+															}
+														}
+													}
+												}
+
+												progressbar_standard = {
+													name = "construct_progressbar"
+													layoutpolicy_horizontal = expanding
+													layoutstretchfactor_horizontal = 1
+													size = { 300 25 }
+													alwaystransparent = yes
+													value = "[GUITrackItem.GetConstructionProgress]"
+
+													text_single = {
+														parentanchor = center
+														text = "[GUITrackItem.GetConstructTimeLeft]"
+														default_format = "#high"
+														align = nobaseline
+													}
+												}
+											}
+										}
+
+										spacing = 5
+
+										hbox = {
+											visible = "[Not(GUITrackItem.IsConstructing)]"
+											spacing = 10
+											# layoutpolicy_horizontal = expanding
+											margin = { 10 10 }
+
+											vbox = {
+												layoutpolicy_vertical = expanding
+
+												expand = {}
+
+												button_standard_back = {
+													name = "back_button"
+													text = "BACK_LABEL"
+													visible = "[And(EqualTo_int32(GUITrackItem.GetNextBuilding.GetLevel,'(int32)1'), Not(GUITrackItem.IsConstructing))]"
+													onclick = "[GUITrackItem.GoBack]"
+													oversound = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
+													clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_close"
+												}
+
+												button_round = {
+													name = "replace_button"
+													onclick = "[GUITrackItem.ReplaceOrCancel]"
+													tooltip = "[GUITrackItem.GetReplaceOrCancelTooltip]"
+													visible = "[And(GUITrackItem.IsCurrentBuildingSelected, GUITrackItem.CanReplaceOrCancel)]"
+
+													button_change = {
+														alwaystransparent = yes
+														parentanchor = center
+													}
+												}
+											}
+											vbox = {
+												spacing = 10
+
+												hbox = {
+													visible = "[GUITrackItem.HasNextBuilding]"
+													layoutpolicy_horizontal = expanding
+
+													hbox = {
+														margin = { 10 5 }
+														margin_right = 15
+														spacing = 10
+
+														background = {
+															using = Background_Area
+															margin_bottom = 4
+															margin_left = 6
+														}
+
+														text_single = {
+															datacontext = "[GUITrackItem.GetNextGoldCost]"
+															visible = "[GUITrackItem.HasNextGoldCost]"
+															text = "[ValueBreakdown.GetValue]"
+															tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+															tooltipwidget = {
+																widget_value_breakdown_tooltip = {}
+															}
+
+															background = {
+																visible = "[LessThan_CFixedPoint(GetPlayer.GetGold, ValueBreakdown.GetFixedPointValue)]"
+																using = Status_Bad
+															}
+														}
+
+														text_single = {
+															datacontext = "[GUITrackItem.GetNextPrestigeCost]"
+															visible = "[GUITrackItem.HasNextPrestigeCost]"
+															text = "[ValueBreakdown.GetValue]"
+															tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+															tooltipwidget = {
+																widget_value_breakdown_tooltip = {}
+															}
+
+															background = {
+																visible = "[LessThan_CFixedPoint(GetPlayer.GetPrestige, ValueBreakdown.GetFixedPointValue)]"
+																using = Status_Bad
+															}
+														}
+
+
+														hbox = {
+															layoutpolicy_horizontal = expanding
+															datacontext = "[GUITrackItem.GetNextPietyCost]"
+															visible = "[GUITrackItem.HasNextPietyCost]"
+
+															text_single = {
+																text = "[ValueBreakdown.GetValue]"
+																tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+																tooltipwidget = {
+																	widget_value_breakdown_tooltip = {}
+																}
+															}
+
+															text_single = {
+																visible = "[LessThan_CFixedPoint(GetPlayer.GetPiety, ValueBreakdown.GetFixedPointValue)]"
+																raw_text = "@warning_icon!"
+															}
+
+															expand = {}
+														}
+
+														text_single = {
+															layoutpolicy_horizontal = expanding
+															datacontext = "[GUITrackItem.GetNextConstructionTime]"
+															text = "[ValueBreakdown.GetValue]"
+															tooltip_enabled = "[ValueBreakdown.HasTooltip]"
+
+															tooltipwidget = {
+																widget_value_breakdown_tooltip = {}
+															}
+														}
+													}
+												}
+
+												button_primary = {
+													#	layoutpolicy_vertical = expanding
+													#	layoutpolicy_horizontal = expanding
+													#	size = { 250 53 }
+													onclick = "[GUITrackItem.OnClick]"
+													tooltip = "[GUITrackItem.GetNextBuildingTooltip]"
+													enabled = "[GUITrackItem.CanConstructNextBuilding]"
+													visible = "[GUITrackItem.HasNextBuilding]"
+													text = "[SelectLocalization(EqualTo_int32(GUITrackItem.GetNextBuilding.GetLevel, '(int32)1'),'CONSTRUCT','UPGRADE')]"
+													#	using = Font_Size_Medium
+												}
+
+											}
+										}
+									}
+								}
+							}
+
+							expand = {}
+						}
+
+						expand = {}
+					}
+				}
+			}
+
+			expand = {}
+		}
+	}
+
+	######################################################
+	############ HOLDING TYPE SELECTION VIEW #############
+	######################################################
+
+	type holding_type_selection_view_old = window {
+		# name = "holding_type_selection_view"
+		movable = yes
+		layer = windows_layer
+		parentanchor = bottom|hcenter
+		position = { 40 -50 }
+		using = Animation_ShowHide_Quick
+		using = vanilla
+
+		using = Window_Background_Subwindow
+
+		vbox = {
+			set_parent_size_to_minimum = yes
+			margin = { 4 4 }
+			margin_bottom = 15
+			spacing = 15
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "CREATE_NEW_HOLDING_HEADING"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[HoldingView.CloseHoldingConstruction]"
+				}
+			}
+
+			building_in_vassal_warning_hbox = {}
+
+			hbox = {
+				name = "holding_types"
+				datamodel = "[HoldingView.GetHoldingTypeItems]"
+				layoutpolicy_horizontal = expanding
+				spacing = 10
+				margin = { 10 10 }
+
+				item = {
+					vbox = {
+						spacing = 5
+
+						button_standard = {
+							size = { 250 148 }
+							enabled = "[HoldingTypeItem.CanConstructBuilding]"
+							onclick = "[HoldingTypeItem.OnClick]"
+							tooltip = "[HoldingTypeItem.GetTooltip]"
+							datacontext = "[HoldingTypeItem.GetProvince]"
+
+							widget = {
+								scissor = yes
+								size = { 247 146 }
+
+								icon = {
+									visible = "[HoldingTypeItem.CanConstructBuilding]"
+									size = { 320 146 }
+									texture = "[HoldingTypeItem.GetBuilding.GetIllustration(Province.Self)]"
+									using = Mask_Rough_Edges
+									alpha = 0.7
+								}
+
+								highlight_icon = {
+									visible = "[Not(HoldingTypeItem.CanConstructBuilding)]"
+									size = { 320 146 }
+									texture = "[HoldingTypeItem.GetBuilding.GetIllustration(Province.Self)]"
+									effectname = "GreyedOut"
+									tintcolor = { 0.6 0.6 0.6 1 }
+									using = Mask_Rough_Edges
+								}
+							}
+
+							flowcontainer = {
+								parentanchor = bottom|right
+								ignoreinvisible = yes
+								margin = { 5 5 }
+
+								warning_icon = {
+									name = "wrong_type"
+									visible = "[Not(HoldingTypeItem.IsValidForPlayer)]"
+									size = { 35 35 }
+									tooltip = HOLDING_SELECTION_VIEW_WRONG_HOLDING_TYPE
+								}
+							}
+						}
+
+						text_label_center = {
+							layoutpolicy_horizontal = expanding
+							text = "[HoldingTypeItem.GetHoldingType.GetName]"
+						}
+					}
+				}
 			}
 		}
 	}
