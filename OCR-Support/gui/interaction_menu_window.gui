@@ -20,6 +20,7 @@ window = {
 	state = {
 		name = _show
 		on_start = "[CloseGameView(AddTextIf(GetScriptedGui('close_interactions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ), 'character'))]"
+		# on_finish = "[Clear('action_category')]"
 	}
 
 	using = Animation_ShowHide_Quick
@@ -68,130 +69,167 @@ window = {
 			datacontext = "[CharacterInteractionMenuWindow.GetCharacter]"
 
 			flowcontainer = {
-		    ignoreinvisible = yes
+				ignoreinvisible = yes
+				visible = "[Or(Not(CharacterInteractionMenuWindow.AreMoreInteractionsVisisble), Is('action_category'))]"
 				direction = vertical
-				visible = "[Not(GetVariableSystem.Exists('action_category'))]"
 
-				widget = {
-					datacontext = "[CharacterInteractionMenuWindow.GetCharacter]"
-					size = { 100% 25 }
-					name = "character_info"
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+					visible = "[Not(GetVariableSystem.Exists('action_category'))]"
 
-					button_text = {
-						using = char_click
-						layoutpolicy_horizontal = expanding
-						blockoverride "extra" {
-							spacing = 3
-							text_single = {
-								raw_text = "Interact with"
-							}
-							text_single = {
-								visible = "[Not(Character.IsLocalPlayer)]"
-								raw_text = "[Character.GetUINameNoTooltip]."
-							}
+					widget = {
+						datacontext = "[CharacterInteractionMenuWindow.GetCharacter]"
+						size = { 100% 25 }
+						name = "character_info"
 
-							text_single = {
-								visible = "[Character.IsLocalPlayer]"
-								raw_text = "yourself."
+						button_text = {
+							using = char_click
+							layoutpolicy_horizontal = expanding
+							blockoverride "extra" {
+								spacing = 3
+								text_single = {
+									raw_text = "Interact with"
+								}
+								text_single = {
+									visible = "[And(Not(Character.IsLocalPlayer), Is('ocr'))]"
+									raw_text = "[Character.GetFirstNameNoTooltip]"
+								}
+								text_single = {
+									visible = "[And(Not(Character.IsLocalPlayer), Isnt('ocr'))]"
+									raw_text = "[Character.GetUINameNoTooltip]."
+								}
+
+								text_single = {
+									visible = "[Character.IsLocalPlayer]"
+									raw_text = "yourself."
+								}
 							}
 						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+
+						button_text = {
+							blockoverride "text" {
+								raw_text = "[AddTextIf(Character.IsPinned, 'Un')]pin [Select_CString(Character.IsPinned, 'from', 'to')] outliner, hotkey O."
+							}
+							shortcut = mapmode_empires_secondary
+							name = "button_pin"
+							# visible = "[Not(Character.IsPinned)]"
+							onclick = "[Character.ToggleCharacterPinned]"
+
+							# tooltip = "PIN_TT"
+							using = tooltip_se
+						}
+
+
+						widget = {
+							size = { 500 23 }
+							scissor = yes
+							raw_tooltip = "[Character.GetDebugTooltip]"
+
+							text_single = {
+								margin_left = 5
+								raw_text = "[Character.GetDebugTooltip]."
+								position = { 0 -21 }
+							}
+
+							visible = "[And(InDebugMode, ReleaseMode)]"
+						}
+
+						button_text = {
+							blockoverride "text" {
+								raw_text = "Rename."
+							}
+							name = "button_rename"
+							datacontext = "[GetScriptedGui( 'rename_character_after_birth' )]"
+							visible = "[Character.CanCharacterBeRenamed]"
+							onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'child', Character.MakeScope ).End  )]"
+							onclick = "[CharacterInteractionMenuWindow.Close]"
+							onclick = "[CloseGameView('character')]"
+
+							# tooltip = "RENAME_CHARACTER"
+							using = tooltip_ne
+						}
+					}
+
+					text_single = {
+						visible = "[CharacterInteractionMenuWindow.OutsideDiplomaticRange]"
+						tooltip = OUT_OF_DIPLOMACY_RANGE_TOOLTIP
+						name = "label"
+						text = OUT_OF_DIPLOMACY_RANGE
 					}
 				}
 
 				flowcontainer = {
 					ignoreinvisible = yes
 					direction = vertical
+					using = ocr
 
-					button_text = {
-						blockoverride "text" {
-							raw_text = "[AddTextIf(Character.IsPinned, 'Un')]pin [Select_CString(Character.IsPinned, 'from', 'to')] outliner, hotkey O."
-						}
-						shortcut = mapmode_empires_secondary
-						name = "button_pin"
-						# visible = "[Not(Character.IsPinned)]"
-						onclick = "[Character.ToggleCharacterPinned]"
-
-						# tooltip = "PIN_TT"
-						using = tooltip_se
+					# to prevent accidental clcks
+					button = {
+						shortcut = go_back
+						visible = "[Not(GetVariableSystem.Exists('action_category'))]"
+						clicksound =""
 					}
 
-
-					widget = {
-						size = { 500 23 }
-						scissor = yes
-						raw_tooltip = "[Character.GetDebugTooltip]"
-
-						text_single = {
-							margin_left = 5
-							raw_text = "[Character.GetDebugTooltip]."
-							position = { 0 -21 }
-						}
-
-						visible = "[And(InDebugMode, ReleaseMode)]"
+					button = {
+						visible = "[GetVariableSystem.Exists('action_category')]"
+						clicksound =""
+						shortcut = army_split_half
 					}
 
 					button_text = {
+						visible = "[Not(GetVariableSystem.Exists('action_category'))]"
+						onclick = "[GetVariableSystem.Set('action_category', 'yes')]"
+						shortcut = army_split_half
 						blockoverride "text" {
-							raw_text = "Rename."
+							raw_text = "Filter by category, F."
 						}
-						name = "button_rename"
-						datacontext = "[GetScriptedGui( 'rename_character_after_birth' )]"
-						visible = "[Character.CanCharacterBeRenamed]"
-						onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'child', Character.MakeScope ).End  )]"
-						onclick = "[CharacterInteractionMenuWindow.Close]"
-						onclick = "[CloseGameView('character')]"
+					}
 
-						# tooltip = "RENAME_CHARACTER"
-						using = tooltip_ne
+					button_text = {
+						visible = "[GetVariableSystem.Exists('action_category')]"
+						onclick = "[GetVariableSystem.Clear('action_category')]"
+						shortcut = go_back
+						blockoverride "text" {
+							raw_text = "Filtered, [GetVariableSystem.Get('action_category')]. Go back, B."
+						}
 					}
 				}
 
-				text_single = {
-					visible = "[CharacterInteractionMenuWindow.OutsideDiplomaticRange]"
-					tooltip = OUT_OF_DIPLOMACY_RANGE_TOOLTIP
-					name = "label"
-					text = OUT_OF_DIPLOMACY_RANGE
-				}
-			}
-
-			flowcontainer = {
-				ignoreinvisible = yes
-				direction = vertical
-				using = ocr
-
-				# to prevent accidental clcks
-				button = {
-					shortcut = go_back
-					visible = "[Not(GetVariableSystem.Exists('action_category'))]"
-					clicksound =""
-				}
-
-				button = {
-					visible = "[GetVariableSystem.Exists('action_category')]"
-					clicksound =""
-					shortcut = army_split_half
-				}
-
-				button_text = {
-					visible = "[Not(GetVariableSystem.Exists('action_category'))]"
-					onclick = "[GetVariableSystem.Set('action_category', 'yes')]"
-					shortcut = army_split_half
-				    blockoverride "text" {
-				        raw_text = "Filter by category, F."
-				    }
-				}
-
-				button_text = {
-					visible = "[GetVariableSystem.Exists('action_category')]"
-					onclick = "[GetVariableSystem.Clear('action_category')]"
-					shortcut = go_back
-			    blockoverride "text" {
-						raw_text = "Filtered, [GetVariableSystem.Get('action_category')]. Go back, B."
-			    }
-				}
 			}
 
 			### MORE INTERACTIONS
+			text_single = {
+				margin_left = 3
+				layoutpolicy_horizontal = expanding
+				raw_text = "[PdxGuiWidget.FindChild('items').GetChildrenCount] [Get('more_category')] Extras, [CountItems] enabled:"
+				visible = "[And(CharacterInteractionMenuWindow.AreMoreInteractionsVisisble, Isnt('ocr'))]"
+
+				hbox = {
+					datamodel = "[CharacterInteractionMenuWindow.GetMoreInteractions]"
+					name = "items"
+					item = {
+						hbox = {
+							visible = "[InteractionItem.IsValid]"
+						}
+					}
+				}
+
+				hbox = {
+					datamodel = "[CharacterInteractionMenuWindow.GetMoreInteractions]"
+					name = "all_items"
+					item = {
+						hbox = {
+							visible = "[InteractionItem.IsValid]"
+						}
+					}
+				}
+			}
 
 			container = {
 				name = "more_interactions_container"
@@ -204,7 +242,9 @@ window = {
 					spriteType = Corneredtiled
 					spriteborder = { 11 11 }
 					spriteborder_top = 49
-					margin = { 20 14 }
+					margin = { 15 12 }
+					margin_bottom = 8
+					margin_right = 5
 
 					modify_texture = {
 						name = "overlay"
@@ -212,14 +252,7 @@ window = {
 						blend_mode = overlay
 					}
 				}
-
-				dynamicgridbox_interaction_list = {
-					using = vanilla
-					datamodel = "[CharacterInteractionMenuWindow.GetMoreInteractions]"
-				}
-
 				dynamicgridbox_interaction_list_ocr = {
-					using = ocr
 					datamodel = "[CharacterInteractionMenuWindow.GetMoreInteractions]"
 				}
 			}
@@ -227,21 +260,10 @@ window = {
 			dynamicgridbox = {
 				name = "category_interaction_list"
 				datamodel = "[CharacterInteractionMenuWindow.GetCategoryItems]"
+					# visible = "[Or(Not(GetVariableSystem.Exists('action_category')), GetVariableSystem.HasValue('action_category', InteractionCategoryItem.GetName))]"
 
 				item = {
-					container = {
-						ignoreinvisible = yes
-						container = {
-							ignoreinvisible = yes
-							using = vanilla
-							flowcontainer_category_group = {}
-						}
-						container = {
-							ignoreinvisible = yes
-							using = ocr
-							flowcontainer_category_group_ocr = {}
-						}
-					}
+					flowcontainer_category_group_ocr = {}
 				}
 			}
 
@@ -276,19 +298,6 @@ window = {
 					margin_left = 3
 					using = ocr
 				}
-
-				# button_text = {
-				# 	blockoverride "text" {
-				# 		raw_text = "Show available interactions first."
-				# 	}
-				# 	blockoverride "pre" {
-				# 		spacing = 3
-				# 		text_single = {
-				# 			raw_text = "[Select_CString(GetVariableSystem.Exists('enabled_x'), 'Checked', 'Unchecked')],"
-				# 		}
-				# 	}
-				# 	onclick = "[GetVariableSystem.Toggle('enabled_x')]"
-				# }
 
 				button_text = {
 					visible = "[And(GetPlayer.IsValid, Isnt('ocr'))]"

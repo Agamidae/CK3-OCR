@@ -667,7 +667,7 @@ window = {
 											layoutpolicy_horizontal = expanding
 
 											item = {
-												button_mercenary_list_item = {
+												button_mercenary_list_item_ocr = {
 													blockoverride "your" { }
 													datacontext = "[HiredTroopItem.GetMercenaryCompany]"
 													layoutpolicy_horizontal = expanding
@@ -909,7 +909,7 @@ window = {
 								vbox = {
 									layoutpolicy_horizontal = expanding
 
-									button_mercenary_list_item = {
+									button_mercenary_list_item_ocr = {
 										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
 										visible = "[MercenaryCompany.IsHired]"
 										layoutpolicy_horizontal = expanding
@@ -921,7 +921,7 @@ window = {
 										}
 									}
 
-									button_mercenary_list_item = {
+									button_mercenary_list_item_ocr = {
 										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
 										visible = "[Not(MercenaryCompany.IsHired)]"
 										layoutpolicy_horizontal = expanding
@@ -944,7 +944,7 @@ window = {
 								vbox = {
 									layoutpolicy_horizontal = expanding
 
-									button_mercenary_list_item = {
+									button_mercenary_list_item_ocr = {
 										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
 										visible = "[MercenaryCompany.IsHired]"
 										layoutpolicy_horizontal = expanding
@@ -956,7 +956,7 @@ window = {
 										}
 									}
 
-									button_mercenary_list_item = {
+									button_mercenary_list_item_ocr = {
 										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
 										visible = "[Not(MercenaryCompany.IsHired)]"
 										layoutpolicy_horizontal = expanding
@@ -1531,9 +1531,9 @@ types MilitaryView
 	}
 }
 
-types HiredTroops
-{
-	type button_mercenary_list_item = button {
+types OCR {
+
+	type button_mercenary_list_item_ocr = button {
 		size = { 430 110 }
 
 		background = {
@@ -1683,6 +1683,185 @@ types HiredTroops
 			}
 
 			expand = { }
+		}
+	}
+}
+
+types HiredTroops
+{
+	type button_mercenary_list_item = button_standard_clean {
+		size = { 430 110 }
+
+		background = {
+			using = Background_Area
+		}
+
+		tooltip = "HIRED_TROOPS_VIEW_LIST_MC_BUTTON_TOOLTIP"
+		tooltip_enabled = "[Or(Not(MercenaryCompany.IsHired), MercenaryCompany.IsHiredByLocalPlayer)]"
+
+		down = "[IsMercenaryCompanyDetailViewShown(MercenaryCompany.Self)]"
+
+		button_standard_clean = {
+			visible = "[Or( IsMercenaryCompanyDetailViewShown(MercenaryCompany.Self), Not(GetVariableSystem.Exists( 'hired_troop_detail_view_open' )))]"
+			size = { 100% 100% }
+			enabled = "[Or(Not(MercenaryCompany.IsHired), MercenaryCompany.IsHiredByLocalPlayer)]"
+			onclick = "[ToggleMercenaryCompanyDetailView(MercenaryCompany.Self)]"
+		}
+
+		button_normal = {
+			visible = "[And( GetVariableSystem.Exists( 'hired_troop_detail_view_open' ), Not( IsMercenaryCompanyDetailViewShown(MercenaryCompany.Self) ) )]"
+			size = { 100% 100% }
+			onclick = "[PdxGuiTriggerAllAnimations('mercenary_details_refresh')]"
+
+			state = {
+				name = _mouse_click
+				delay = 0.2
+				on_finish = "[ToggleMercenaryCompanyDetailView(MercenaryCompany.Self)]"
+			}
+		}
+
+		hbox = {
+
+			vbox = {
+				layoutpolicy_vertical = expanding
+				margin = { 5 10 }
+				margin_left = 10
+
+				coa_realm_small = {
+					datacontext = "[MercenaryCompany.GetTitle.GetHolder]"
+				}
+
+				expand = {}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				margin = { 5 0 }
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					minimumsize = { 80 0 }
+					allow_outside = yes
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						margin_top = 10
+						ignoreinvisible = yes
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							text = "[MercenaryCompany.GetName]"
+							default_format = "#high"
+							using = Font_Size_Medium
+							autoresize = no
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[MercenaryCompany.IsHired]"
+							ignoreinvisible = no
+
+							text_single = {
+								name = "hired_by_label"
+								align = left|bottom
+								text = "[SelectLocalization( MercenaryCompany.IsHiredByLocalPlayer, 'HIRED_TROOPS_VIEW_HIRED_BY_ME_LEFT', 'HIRED_TROOPS_VIEW_NOT_AVAILABLE' )]"
+							}
+
+							text_single = {
+								name = "hired_info_time_left"
+								visible = "[MercenaryCompany.IsHiredByLocalPlayer]"
+								align = left|bottom
+								text = "HIRED_TROOPS_VIEW_MC_HIRED_TIME_LEFT"
+							}
+
+							expand = {}
+						}
+
+						expand = {}
+
+					}
+
+					expand = {}
+
+					soldiers_and_quality_small = {
+						datacontext = "[MercenaryCompany.GetComposition]"
+						blockoverride "background" {
+							background = {
+								using = Background_Area
+								margin = { 3 0 }
+							}
+						}
+					}
+				}
+
+				expand = {}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					margin = { 5 5 }
+					spacing = 5
+
+					overlappingitembox = {
+						name = "regiment_types"
+						layoutpolicy_horizontal = expanding
+						size = { -1 35 }
+
+						background = {
+							using = Background_Area
+							margin = { 10 2 }
+						}
+
+						block "HiredTroopMenAtArmsTypesDataModel" {}
+
+						item = {
+							icon = {
+								name = "men_at_arms_icon"
+								size = { 35 35 }
+								texture = "[Regiment.GetMAAType.GetIcon]"
+								tooltipwidget = regiment_container_tooltip
+								using = tooltip_se
+
+							}
+						}
+					}
+
+					expand = {}
+
+					highlight_icon = {
+						name = "bankrupcy"
+						visible = "[MercenaryCompany.WillGoInBankruptcy(GetPlayer.Self)]"
+						size = { 30 30 }
+						texture = "gfx/interface/icons/symbols/icon_warning.dds"
+						tooltip = "[SelectLocalization(MercenaryCompany.IsHiredByLocalPlayer, 'MERCENARY_COMPANY_COST_BANKRUPTCY_HIRED', 'MERCENARY_COMPANY_COST_BANKRUPTCY')]"
+						using = tooltip_se
+					}
+
+					highlight_icon = {
+						name = "debt"
+						visible = "[MercenaryCompany.WillGoInDebt(GetPlayer.Self)]"
+						size = { 30 30 }
+						texture = "gfx/interface/icons/symbols/icon_alert.dds"
+						tooltip = "[SelectLocalization(MercenaryCompany.IsHiredByLocalPlayer, 'MERCENARY_COMPANY_COST_DEBT_HIRED', 'MERCENARY_COMPANY_COST_DEBT')]"
+						using = tooltip_se
+					}
+
+					hbox = {
+						text_single = {
+							name = "cost_label"
+							text = "[MercenaryCompany.GetCostDesc]"
+							align = right
+							alwaystransparent = yes
+
+							background = {
+								visible = "[Or(MercenaryCompany.WillGoInDebt(GetPlayer.Self), MercenaryCompany.WillGoInBankruptcy(GetPlayer.Self))]"
+								using = Status_Bad
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 
