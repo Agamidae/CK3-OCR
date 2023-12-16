@@ -4,16 +4,15 @@
 window = {
 	name = "grant_titles_interaction_window"
 	datacontext = "[GrantTitlesInteractionWindow.GetCharacterInteractionConfirmationWindow]"
-	size = { 600 100% }
-	movable = no
+	using = base_ocr_window
 	layer = top
-
-	using = Window_Background_Subwindow
 
 	state = {
 		name = _show
 		using = Animation_FadeIn_Quick
 		using = Sound_WindowShow_Standard
+		on_finish = "[Clear('hide_grant_titles')]"
+		on_finish = "[Clear('grant_titles_list')]"
 	}
 
 	state = {
@@ -23,145 +22,222 @@ window = {
 		on_start = "[SetMapMode('realms')]"
 	}
 
-	vbox = {
-		using = Window_Margins
-		margin_top = 15
-		margin_bottom = 15
-		button = {
-			onclick = "[GrantTitlesInteractionWindow.Close]"
-			shortcut = "close_window"
+	window_ocr = {
+		blockoverride "show_window" {
+			visible = "[And(Isnt('ocr'), Isnt('hide_grant_titles'))]"
 		}
-
-		text_single = {
-			raw_text = "[GrantTitlesInteractionWindow.GetGrantTitleDescription]."
-		}
-
-		hbox = {
-			layoutpolicy_horizontal = expanding
-			spacing = 5
-
-			### Filter Recent Titles
-
-			button_checked_text = {
-				onclick = "[GrantTitlesInteractionWindow.OnTimedFilter]"
-				# tooltip = "[GrantTitlesInteractionWindow.GetTimedFilterTooltip]"
-				blockoverride "visible"
-				{
-					visible = "[Not(GrantTitlesInteractionWindow.HasTimedFilter)]"
-				}
-
-				blockoverride "text"
-				{
-					text = "GRANT_REVOKE_TITLES_FILTER_LABEL"
-					max_width = 180
-				}
-				blockoverride "dot" { }
+		blockoverride "ocr_header" {
+			button = {
+				onclick = "[GrantTitlesInteractionWindow.Close]"
+				shortcut = "close_window"
 			}
 
-			hbox = {
-				tooltip = "[GrantTitlesInteractionWindow.GetDomainLimitTooltip]"
-				using = tooltip_se
-
-				# background = {
-				# 	margin = { 5 0 }
-				# 	visible = "[GreaterThan_int32(GrantTitlesInteractionWindow.GetResultingDomainSize,CharacterInteractionConfirmationWindow.GetActor.GetDomainLimit)]"
-				# 	using = Status_Bad
-				# }
-
-				spacing = 3
-
-
-				### Effects on Domain Limit
-				text_single = {
-					align = left
-					name = "domain_limit_label"
-					text = "GRANT_REVOKE_TITLES_NEW_DOMAIN_LABEL"
-					max_width = 160
-				}
-
-				text_single = {
-					align = left
-					name = "domain_limit_result"
-					raw_text = "[GrantTitlesInteractionWindow.GetResultingDomainSize]/[CharacterInteractionConfirmationWindow.GetActor.GetDomainLimit]."
-					tooltip = "[GrantTitlesInteractionWindow.GetDomainLimitTooltip]"
-				}
-			}
-
-			expand = { }
-		}
-
-		text_single = {
-			raw_text = "Control click to also select all lower titles. Right-click to pan camera." #TODO open county view
-			layoutpolicy_horizontal = expanding
-			margin_bottom = 5
-		}
-
-		### Titles list
-		scrollbox = {
-			name = "titles_list"
-			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
-
-			blockoverride "scrollbox_empty"
-			{
-				visible = "[Not(GrantTitlesInteractionWindow.HasTitles)]"
-				text = "GRANT_TITLES_NO_TITLES"
-			}
-
-			blockoverride "scrollbox_content"
-			{
-				vbox_list_interaction_title_selection = {
-					layoutpolicy_horizontal = expanding
-				}
-			}
-		}
-
-		### Other Effects
-		vbox = {
-			name = "other_effects_list"
-			layoutpolicy_horizontal = expanding
-			# margin_bottom = 15
-			# spacing = 10
-
-			### label
-			text_label_center = {
-				text = "GRANT_REVOKE_TITLES_OTHER_EFFECT_LABEL"
-			}
-
-			### List
-			vbox_character_interaction_effects_simple = {
-				datacontext = "[CharacterInteractionConfirmationWindow.GetEffectsDescription]"
+			vbox = {
 				layoutpolicy_horizontal = expanding
+				margin_left = 10
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 3
 
-				blockoverride "extra_content"
-				{
-					text_multi = {
-						visible = "[InteractionEffectsDescription.IsShowingOnAcceptEffects]"
-						name = "extra_accept_effects_info"
+					text_single = {
+						raw_text = "[GrantTitlesInteractionWindow.GetGrantTitleDescription],"
+					}
+
+					expand = {}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					button_text = {
+						onclick = "[Toggle('grant_titles_list')]"
+						shortcut = map_mode_1
+
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[GetDataModelSize(CharacterInteractionConfirmationWindow.GetTitles)] titles,"
+							}
+
+							text_single = {
+								raw_text = "[CountItems] selected,"
+								hbox = {
+									datamodel = "[CharacterInteractionConfirmationWindow.GetTitles]"
+									name = "items"
+									item = {
+										hbox = {
+											visible = "[InteractionTitleItem.IsSelected]"
+										}
+									}
+								}
+							}
+
+							text_single = {
+								raw_text = "list [Collapse('grant_titles_list')] E."
+							}
+						}
+					}
+
+
+					# hbox = {
+					# 	datamodel = "[DataModelFirst(CharacterInteractionConfirmationWindow.GetTitles, '(int32)3')]"
+					# 	spacing = 3
+					# 	item = {
+					# 		text_single = {
+					# 			raw_text = "[InteractionTitleItem.GetTitle.GetNameNoTierNoTooltip],"
+					# 			visible = "[InteractionTitleItem.IsSelected]"
+					# 		}
+					# 	}
+					# }
+
+					expand = {}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+					button_primary_text = {
+						name = "send_offer_button"
+						blockoverride "text" {
+							raw_text = "[CharacterInteractionConfirmationWindow.GetSendName]"
+						}
+						blockoverride "disabled" {
+							visible = "[Not(GrantTitlesInteractionWindow.CanSendOffer)]"
+							tooltip = "[GrantTitlesInteractionWindow.GetSendOfferTooltip]"
+						}
+						enabled = "[GrantTitlesInteractionWindow.CanSendOffer]"
+						onclick = "[GrantTitlesInteractionWindow.Send]"
+					}
+
+					hbox = {
+						tooltip = "[GrantTitlesInteractionWindow.GetDomainLimitTooltip]"
+						using = tooltip_se
+						spacing = 3
+
+						### Effects on Domain Limit
+						text_single = {
+							name = "domain_limit_label"
+							text = "GRANT_REVOKE_TITLES_NEW_DOMAIN_LABEL"
+							max_width = 160
+						}
+
+						text_single = {
+							name = "domain_limit_result"
+							raw_text = "[GrantTitlesInteractionWindow.GetResultingDomainSize] out of [CharacterInteractionConfirmationWindow.GetActor.GetDomainLimit]."
+							tooltip = "[GrantTitlesInteractionWindow.GetDomainLimitTooltip]"
+						}
+					}
+
+
+					expand = {}
+				}
+			}
+		}
+
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					visible = "[Isnt('grant_titles_list')]"
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 5
+
+						### Filter Recent Titles
+
+						button_checked_text = {
+							onclick = "[GrantTitlesInteractionWindow.OnTimedFilter]"
+							# tooltip = "[GrantTitlesInteractionWindow.GetTimedFilterTooltip]"
+							blockoverride "visible"
+							{
+								visible = "[Not(GrantTitlesInteractionWindow.HasTimedFilter)]"
+							}
+
+							blockoverride "text"
+							{
+								text = "GRANT_REVOKE_TITLES_FILTER_LABEL"
+								max_width = 180
+							}
+							blockoverride "dot" { }
+						}
+
+						expand = { }
+					}
+
+					text_single = {
+						raw_text = "Click with control F to also select all lower titles. Right-click to open county view."
+						layoutpolicy_horizontal = expanding
+						margin_bottom = 5
+					}
+
+					### Titles list
+					scrollbox = {
+						name = "titles_list"
 						layoutpolicy_horizontal = expanding
 						layoutpolicy_vertical = expanding
-						autoresize = yes
-						max_width = 435
-						margin = { 5 0 }
-						text = "[GrantTitlesInteractionWindow.GetExtraAcceptEffectDescription]"
+
+						blockoverride "scrollbox_empty"
+						{
+							visible = "[Not(GrantTitlesInteractionWindow.HasTitles)]"
+							text = "GRANT_TITLES_NO_TITLES"
+						}
+
+						blockoverride "scrollbox_content"
+						{
+							vbox_list_interaction_title_selection = {
+								layoutpolicy_horizontal = expanding
+							}
+						}
 					}
 				}
-			}
 
-			### SEND OFFER BUTTON
-			button_text = {
-				name = "send_offer_button"
-				blockoverride "text" {
-					raw_text = "[CharacterInteractionConfirmationWindow.GetSendName], hotkey Enter."
+				### Other Effects
+				vbox = {
+					name = "other_effects_list"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = growing
+
+					### label
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						text = "GRANT_REVOKE_TITLES_OTHER_EFFECT_LABEL"
+					}
+
+					### List
+					vbox_character_interaction_effects_simple = {
+						layoutpolicy_vertical = growing
+						blockoverride "width" {
+							max_width = 700
+						}
+						datacontext = "[CharacterInteractionConfirmationWindow.GetEffectsDescription]"
+						layoutpolicy_horizontal = expanding
+
+						blockoverride "extra_content"
+						{
+							text_multi = {
+								visible = "[InteractionEffectsDescription.IsShowingOnAcceptEffects]"
+								name = "extra_accept_effects_info"
+								layoutpolicy_horizontal = expanding
+								autoresize = yes
+								max_width = 700
+								margin = { 5 0 }
+								text = "[GrantTitlesInteractionWindow.GetExtraAcceptEffectDescription]"
+							}
+						}
+					}
 				}
-				blockoverride "disabled" {
-					visible = "[Not(GrantTitlesInteractionWindow.CanSendOffer)]"
-					tooltip = "[GrantTitlesInteractionWindow.GetSendOfferTooltip]"
-				}
-				enabled = "[GrantTitlesInteractionWindow.CanSendOffer]"
-				onclick = "[GrantTitlesInteractionWindow.Send]"
-				shortcut = "confirm"
+
+				# expand = {}
 			}
 		}
+	}
+
+	grant_titles_interaction_window_old = {
+		using = vanilla
 	}
 }

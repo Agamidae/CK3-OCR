@@ -406,10 +406,13 @@ types CharacterInteraction
 					datacontext = "[InteractionTitleItem.GetTitle]"
 					# size = "[InteractionTitleItem.GetSize]"
 					onclick = "[InteractionTitleItem.OnClick]"
-					onrightclick = "[InteractionTitleItem.OnRightClick]"
+					# onrightclick = "[InteractionTitleItem.OnRightClick]"
 					button_ignore = none
 					down = "[InteractionTitleItem.IsSelected]"
 					enabled = "[InteractionTitleItem.IsSelectable]"
+					onrightclick = "[OpenGameViewData('holding_view', Title.GetProvince.Self)]"
+					onrightclick = "[Set('hide_grant_titles', 'yes')]"
+					onrightclick = "[Clear('county_tabs')]"
 
 					using = tooltip_es
 					# parentanchor = right
@@ -441,7 +444,18 @@ types CharacterInteraction
 						text_single = {
 							name = "text"
 							# layoutpolicy_horizontal = expanding
-							raw_text = "[InteractionTitleItem.GetTitle.GetNameNoTooltip]."
+							raw_text = "[InteractionTitleItem.GetTitle.GetNameNoTooltip],"
+						}
+
+						text_single = {
+							# layoutpolicy_horizontal = expanding
+							raw_text = "in [InteractionTitleItem.GetTitle.GetDeJureLiege.GetNameNoTierNoTooltip]."
+						}
+
+						text_single = {
+							datacontext = "[InteractionTitleItem.GetTitle.GetProvince]"
+							visible = "[Not(ObjectsEqual( Province.Self, MyCapital.Self))]"
+							raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
 						}
 
 						text_single = {
@@ -1214,7 +1228,6 @@ types CharacterInteraction
 					visible = "[InteractionEffectsDescription.IsShowingOnAcceptEffects]"
 					name = "accept_effects_info"
 					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
 					autoresize = yes
 					block "width" {
 						max_width = 450
@@ -1225,7 +1238,6 @@ types CharacterInteraction
 				text_multi = {
 					visible = "[Not(InteractionEffectsDescription.IsShowingIntermediaryDeclineEffect)]"
 					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
 					autoresize = yes
 					block "width" {
 						max_width = 450
@@ -1236,7 +1248,6 @@ types CharacterInteraction
 				text_multi = {
 					visible = "[Not(InteractionEffectsDescription.IsShowingRecipientDeclineEffect)]"
 					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
 					autoresize = yes
 					block "width" {
 						max_width = 450
@@ -1809,7 +1820,7 @@ types CharacterInteraction
 						blockoverride "pre" {
 							text_single = {
 								raw_text = "Can't pick,"
-								visible = "[Not(And(OptionItem.IsValid, And(OptionItem.CanBeChanged, Not(OptionItem.HasOption))))]"
+								visible = "[Not(And(OptionItem.IsValid, OptionItem.CanBeChanged))]"
 							}
 							text_single = {
 								raw_text = "[Select_CString(OptionItem.HasOption, 'Checked', 'Unchecked')],"
@@ -1821,7 +1832,8 @@ types CharacterInteraction
 						}
 						onclick = "[OptionItem.OnClick]"
 						# enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
-						enabled = "[And(OptionItem.IsValid, And(OptionItem.CanBeChanged, Not(OptionItem.HasOption)))]"
+						# enabled = "[And(OptionItem.IsValid, And(OptionItem.CanBeChanged, Not(OptionItem.HasOption)))]"
+						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
 						tooltip = "[OptionItem.GetTooltip]"
 					}
 
@@ -2641,7 +2653,7 @@ types VANILLA {
 		}
 	}
 
-	type vbox_arrangement_interaction_send_offer_old = 	vbox {
+	type vbox_arrangement_interaction_send_offer_old = vbox {
 		name = "send_offer_window"
 
 		vbox_interaction_options = {
@@ -2665,6 +2677,80 @@ types VANILLA {
 			enabled = "[CharacterInteractionConfirmationWindow.CanSend]"
 			tooltip = "[CharacterInteractionConfirmationWindow.GetCanSendDescription]"
 			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+		}
+	}
+
+	type vbox_list_interaction_title_selection_old = vbox {
+		# name = "titles_grid"
+		datamodel = "[CharacterInteractionConfirmationWindow.GetTitles]"
+		layoutpolicy_horizontal = expanding
+		spacing = 3
+
+		item = {
+			widget = {
+				name = "title_list_item"
+				layoutpolicy_horizontal = expanding
+				size = { 0 45 }
+
+				button_standard = {
+					name = "title_button"
+					datacontext = "[InteractionTitleItem.GetTitle]"
+					size = "[InteractionTitleItem.GetSize]"
+					onclick = "[InteractionTitleItem.OnClick]"
+					onrightclick = "[InteractionTitleItem.OnRightClick]"
+					button_ignore = none
+					down = "[InteractionTitleItem.IsSelected]"
+					enabled = "[InteractionTitleItem.IsSelectable]"
+					tooltip = "[InteractionTitleItem.GetTooltip]"
+					using = tooltip_es
+					parentanchor = right
+
+					block "button_toggles" {
+						enabled = "[InteractionTitleItem.IsSelectable]"
+					}
+
+					coa_title_tiny_crown = {
+						position = { 0 -8 }
+					}
+
+					hbox = {
+						margin_left = 45
+						margin_right = 5
+
+						text_single = {
+							name = "text"
+							layoutpolicy_horizontal = expanding
+							text = "[InteractionTitleItem.GetTitle.GetNameNoTooltip]"
+						}
+
+						icon = {
+							name = "pressed_claim"
+							visible = "[GetPlayer.HasPressedClaimOnTitle( Title.Self )]"
+							size = { 24 24 }
+							texture = "gfx/interface/icons/title_status/icon_claim_pressed.dds"
+							tooltip = "REVOKE_TITLE_PRESSED_CLAIM"
+						}
+
+						icon = {
+							name = "unpressed_claim"
+							visible = "[And(GetPlayer.HasClaimOnTitle( Title.Self ), Not(GetPlayer.HasPressedClaimOnTitle( Title.Self )))]"
+							size = { 24 24 }
+							texture = "gfx/interface/icons/title_status/icon_claim_unpressed.dds"
+							tooltip = "REVOKE_TITLE_UNPRESSED_CLAIM"
+						}
+
+						icon = {
+							name = "leased_out"
+							visible = "[Title.HasLeasedOutVassal]"
+							size = { 36 39 }
+							texture = "gfx/interface/icons/icon_holding_church.dds"
+							tooltip = "GRANT_TITLE_LEASED_OUT_VASSAL"
+						}
+
+						block "extra_title_items" {}
+					}
+				}
+			}
 		}
 	}
 }
