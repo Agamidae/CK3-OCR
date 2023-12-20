@@ -10,9 +10,10 @@
 		clear_variable_list = allied_units
 		clear_variable_list = battles
 		clear_variable_list = battles_allies
-        clear_variable_list = all_enemies
+    clear_variable_list = all_enemies
 		clear_variable_list = all_allies
 		remove_variable = closest_enemy
+		remove_variable = closest_ally
 		remove_variable = enemy_capital
 		save_scope_as = player
 
@@ -35,6 +36,8 @@
 		scope:location = {
 			save_scope_as = second
 		}
+
+		#TODO rework fog of war checks to use any_neighboring_province
 
 		# we go through all armies, remove any variables from them, add them to lists
 		# every army is also added to a variable list armies_here in the province, so we can get them from county view and in the forts list
@@ -63,14 +66,14 @@
 			# LIEGE WARS
 			every_liege_or_above = {
 				every_war_enemy = {
-                    limit = {
-                        NOR = {
-                            this = root
-                            is_allied_in_war = root
-                        }
-                    }
+					limit = {
+						NOR = {
+							this = root
+							is_allied_in_war = root
+						}
+					}
 					every_army = {
-                        remove_army_variables = yes
+						remove_army_variables = yes
 						add_to_list = all_enemies
 					}
 				}
@@ -87,6 +90,27 @@
 							name = all_allies
 							target = prev
 						}
+					}
+				}
+			}
+
+			# closest ally
+			ordered_in_list = {
+				list = all_allies
+				limit = {
+					NOT = {
+						location = scope:location
+					}
+				}
+				order_by = {
+					value = location.squared_province_distance
+					multiply = -1
+				}
+				max = 1
+				root = {
+					set_variable = {
+						name = closest_ally
+						value = prev
 					}
 				}
 			}
@@ -260,14 +284,14 @@
 					add_to_list = all_enemies
 				}
 				#TODO do we have to?
-                # exclude yourself
+				# exclude yourself
 				every_vassal_or_below = {
-                    limit = {
-                        NOR = {
-                            is_allied_in_war = root
-                            this = root
-                        }
-                    }
+					limit = {
+						NOR = {
+							is_allied_in_war = root
+							this = root
+						}
+					}
 					every_army = {
 						limit = {
 							NOT = { is_in_list = all_enemies }
@@ -325,15 +349,15 @@
 				}
 			}
 
-            every_in_list = {
-                list = all_enemies
-                root = {
-                    add_to_variable_list = {
-                        name = all_enemies
-                        target = prev
-                    }
-                }
-            }
+			every_in_list = {
+				list = all_enemies
+				root = {
+					add_to_variable_list = {
+						name = all_enemies
+						target = prev
+					}
+				}
+			}
 
 			# group enemies together
 			# split them into different lists
@@ -410,6 +434,7 @@
 								trigger_if = {
 									limit = {
 										is_sea_province = no
+										is_river_province = no
 										exists = county
 									}
 
@@ -444,6 +469,7 @@
 													trigger_if = {
 														limit = {
 															is_sea_province = no
+															is_river_province = no
 														}
 														county = {
 															OR = {
@@ -455,7 +481,10 @@
 														}
 													}
 													trigger_else = {
-														squared_province_distance < 500
+														any_neighboring_province = {
+															county ?= scope:enemy_location.county
+														}
+														# squared_province_distance < 500
 													}
 												}
 											}
@@ -467,6 +496,7 @@
 												trigger_if = {
 													limit = {
 														is_sea_province = no
+														is_river_province = no
 													}
 													county = {
 														OR = {
@@ -478,7 +508,9 @@
 													}
 												}
 												trigger_else = {
-													squared_province_distance < 500
+													any_neighboring_province = {
+														county ?= scope:enemy_location.county
+													}
 												}
 											}
 										}
@@ -525,6 +557,43 @@
 										}
 									}
 								}
+
+								# rework
+								# trigger_if = {
+								# 	limit = {
+								# 		exists = county
+								# 	}
+								# 	county = {
+								# 		OR = {
+								# 			county_controller = {
+								# 				OR = {
+								# 					is_county_friendly = yes
+								# 					# turns out, lieges of your allies extend vision to you
+								# 					any_liege_or_above = {
+								# 						is_county_safe = yes
+								# 						any_vassal_or_below = {
+								# 							is_allied_in_war = root
+								# 						}
+								# 					}
+								# 				}
+								# 			}
+								# 		}
+								# 		any_neighboring_county = {
+								# 			county_controller = {
+								# 				OR = {
+								# 					is_county_friendly = yes
+								# 					# turns out, lieges of your allies extend vision to you
+								# 					any_liege_or_above = {
+								# 						is_county_safe = yes
+								# 						any_vassal_or_below = {
+								# 							is_allied_in_war = root
+								# 						}
+								# 					}
+								# 				}
+								# 			}
+								# 		}
+								# 	}
+								# }
 							}
 						}
 						add_to_list = hostiles_outside
@@ -1132,6 +1201,7 @@ retreat_options = {
 				is_army_in_combat = no
 				location = {
 					is_sea_province = no
+					is_river_province = no
 				}
 			}
 
@@ -1157,6 +1227,7 @@ army_holdings = {
 	is_valid = {
 		location = {
 			is_sea_province = no
+			is_river_province = no
 		}
 	}
 	effect = {

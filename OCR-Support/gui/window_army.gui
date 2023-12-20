@@ -128,38 +128,143 @@ window = {
 						layoutpolicy_horizontal = expanding
 						layoutpolicy_vertical = expanding
 
-						hbox = {
+						vbox = {
 							layoutpolicy_horizontal = expanding
-							background = { using = Background_Area_Border_Solid }
 							visible = "[GetVariableSystem.Exists('hide_army_info')]"
-							spacing = 5
+							background = { using = Background_Area_Border_Solid }
+							margin_left = 10
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
 
-							text_single = {
-								margin_left = 10
-								datacontext = "[Army.GetComposition]"
-								raw_text = "[ArmyComposition.GetSoldierCountString]"
+								text_single = {
+									datacontext = "[Army.GetComposition]"
+									raw_text = "[ArmyComposition.GetSoldierCountString]"
+								}
+
+								text_single = {
+									visible = "[Not(Army.IsRaidArmy)]"
+									raw_text = "men,"
+								}
+
+								text_single = {
+									visible = [Army.IsRaidArmy]
+									raw_text = "raiders,"
+								}
+
+								army_location = {}
+
+								expand = { }
 							}
 
-							text_single = {
-								visible = "[Not(Army.IsRaidArmy)]"
-								raw_text = "men,"
-							}
+							hbox = {
+								spacing = 3
+								layoutpolicy_horizontal = expanding
 
-							text_single = {
-								visible = [Army.IsRaidArmy]
-								raw_text = "raiders,"
-							}
+								# text_single = {
+								# 	visible = "[ArmyWindow.GetUnitItem.IsMovementLocked]"
+								# 	raw_text = "[movement_locked|E]"
+								# }
 
-							error_button = {
-								shortcut = map_mode_6
-							}
+								text_single = {
+									visible = "[And(Not(Or(Army.IsGathering, Army.IsRetreating)), Not(Army.IsEmbarked))]"
+									name = "status_text"
+									raw_text = "[ArmyWindow.GetUnitItem.GetStatusDescription],"
+								}
 
-							expand = { }
+								text_single = {
+									visible = "[Army.IsTakingRaidAction]"
+									raw_text = "Cannot leave until done."
+								}
+
+								text_single = {
+									visible = "[And(Army.IsMoving, Army.IsGathering)]"
+									raw_text = "Will move to"
+								}
+
+								container = {
+									ignoreinvisible = yes
+									visible = "[Not(GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End ))]"
+									text_single = {
+										raw_text = "Retreating to"
+										visible = "[And(Army.IsRetreating, Not(Army.IsEmbarked))]"
+									}
+								}
+
+								text_single = {
+									raw_text = "Sailing to"
+									visible = "[And(Army.IsEmbarked, Army.IsMoving)]"
+								}
+
+
+								text_single = {
+									visible = "[And(Army.IsMoving, Not(GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End )))]"
+									raw_text = "to [Army.GetMovementInfoForTooltip]."
+								}
+
+								container = {
+									name = "open_raid_button"
+									visible = "[Army.IsTakingRaidAction]"
+									datacontext = "[Army.GetRaid]"
+									using = raid_goto_template
+									blockoverride "key" {
+										shortcut = confirm
+									}
+									blockoverride "margins" {
+										margin_left = -3
+									}
+									blockoverride "extra" {
+										text_single = {
+											raw_text = " hotkey Enter."
+										}
+									}
+								}
+
+								vbox = {
+									name = "open_siege_button"
+									visible = "[Army.IsSieging]"
+									datacontext = "[Army.GetLocation.GetSiege]"
+									using = siege_goto_template
+									blockoverride "key" {
+										shortcut = confirm
+									}
+									blockoverride "extra" {
+										text_single = {
+											raw_text = " hotkey Enter"
+										}
+									}
+								}
+
+
+								button_text = {
+									visible = "[ArmyWindow.IsAttachedToAnyUnit]"
+									datacontext = "[ArmyWindow.GetAttachedToArmy]"
+									name = "detach_from_unit_button"
+									enabled = "[ArmyWindow.CanDetachFromUnit]"
+									tooltip_enabled = "[Not(ArmyWindow.CanDetachFromUnit)]"
+									tooltip = "[ArmyWindow.BuildDetachFromUnitTooltip]"
+									onclick = "[ArmyWindow.DetachFromUnit]"
+									shortcut = map_mode_2
+									blockoverride "pre" {
+										text_single = {
+											margin_left = -3
+											raw_text = "Following [Army.GetOwner.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+										}
+									}
+									blockoverride "disabled" {
+										visible = "[Not(ArmyWindow.CanDetachFromUnit)]"
+									}
+									blockoverride "text" {
+										raw_text = "Detach, T."
+									}
+								}
+
+								expand = { }
+							}
 						}
 
 						# header
 						vbox = {
-
 							alwaystransparent = no
 							margin_left = 10
 							layoutpolicy_horizontal = expanding
@@ -302,15 +407,9 @@ window = {
 
 									hbox = {
 										visible = "[Not(GetVariableSystem.Exists('army_details'))]"
+										spacing = 3
 
-										text_single = {
-											visible = "[Army.GetLocation.GetTitle.IsValid]"
-											raw_text = "In [Army.GetLocation.GetCounty.GetTitle.GetNameNoTierNoTooltip], [Army.GetLocation.GetTerrain.GetName] of"
-										}
-
-										text_single = {
-											raw_text = " [Army.GetLocation.GetNameNoTooltip]."
-										}
+										army_location = {}
 									}
 
 
@@ -480,14 +579,14 @@ window = {
 									spacing = 3
 
 									hbox = {
-									    layoutpolicy_horizontal = expanding
+										layoutpolicy_horizontal = expanding
 
 										visible = "[Army.IsRecentlyDisembarked]"
-									    text_single = {
-									    	text = "[Army.GetEmbarkInfoForTooltip]"
-									    }
+										text_single = {
+											text = "[Army.GetEmbarkInfoForTooltip]"
+										}
 
-									    expand = { }
+										expand = { }
 									}
 
 									hbox = {
@@ -666,19 +765,6 @@ window = {
 										}
 										blockoverride "dot" { }
 									}
-								}
-
-								text_single = {
-									state = {
-										name = _show
-										start_sound = {
-											soundeffect = "event:/SFX/UI/Unit/Army/sfx_ui_unit_army_attach"
-										}
-										on_start = "[PdxGuiTriggerAllAnimations('pan_to_army')]"
-									}
-									layoutpolicy_horizontal = expanding
-									raw_text = "Army moved!"
-									visible = "[ObjectsEqual( GetPlayer.MakeScope.Var('army_moved').Army, Army.Self)]"
 								}
 
 								vbox = {
@@ -895,19 +981,7 @@ window = {
 											visible = "[Not(ObjectsEqual(Army.GetLocation.GetID, GetPlayer.GetCapitalLocation.GetID))]"
 											spacing = 3
 
-											text_single = {
-												visible = "[Army.GetLocation.GetCounty.GetTitle.IsValid]"
-												raw_text = "In [Army.GetLocation.GetCounty.GetTitle.GetNameNoTierNoTooltip],"
-											}
-
-											text_single = {
-												visible = "[Not(Army.IsEmbarked)]"
-												raw_text = "[Army.GetLocation.GetTerrain.GetName] of"
-											}
-
-											text_single = {
-												raw_text = "[Army.GetLocation.GetNameNoTooltip],"
-											}
+											army_location = {}
 
 											text_single = {
 												visible = "[Not(Army.IsEmbarked)]"
@@ -946,6 +1020,21 @@ window = {
 									}
 								}
 							}
+						}
+
+						text_single = {
+							background = { using = Background_Area_Border_Solid }
+							margin_left = 10
+							state = {
+								name = _show
+								start_sound = {
+									soundeffect = "event:/SFX/UI/Unit/Army/sfx_ui_unit_army_attach"
+								}
+								on_start = "[PdxGuiTriggerAllAnimations('pan_to_army')]"
+							}
+							layoutpolicy_horizontal = expanding
+							raw_text = "Army moved!"
+							visible = "[ObjectsEqual( GetPlayer.MakeScope.Var('army_moved').Army, Army.Self)]"
 						}
 
 						vbox = {
@@ -1026,7 +1115,7 @@ window = {
 							}
 
 							button_text = {
-								visible = "[Not(GetVariableSystem.Exists('army_tabs'))]"
+								visible = "[And(Not(GetVariableSystem.Exists('army_tabs')), Isnt('hide_army_info'))]"
 								layoutpolicy_horizontal = expanding
 								onclick = "[GetVariableSystem.Set('army_tabs', 'info')]"
 								onclick = "[GetScriptedGui('find_resupply_place').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', Army.MakeScope ).End )]"
@@ -1034,6 +1123,13 @@ window = {
 								blockoverride "text" {
 									raw_text = "All army info, hotkey 1."
 								}
+							}
+
+							button_text = {
+								visible = "[And(Not(GetVariableSystem.Exists('army_tabs')), Is('hide_army_info'))]"
+								onclick = "[GetVariableSystem.Set('army_tabs', 'info')]"
+								onclick = "[GetScriptedGui('find_resupply_place').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('army', Army.MakeScope ).End )]"
+								shortcut = speed_1
 							}
 
 							# text_single = {
@@ -1052,11 +1148,6 @@ window = {
 								margin = { 0 20 }
 
 								spacing = 10
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									raw_text = "Overview."
-								}
 
 								vbox = {
 									layoutpolicy_horizontal = expanding
@@ -1085,22 +1176,58 @@ window = {
 										expand = { }
 									}
 
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										spacing = 3
+										visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Army.GetLocation.MakeScope ).AddScope( 'army', Army.MakeScope ).ScriptValue('allies_in_the_province_not_me'), '(CFixedPoint)0')]"
+
+										text_single = {
+											raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Army.GetLocation.MakeScope ).AddScope( 'army', Army.MakeScope ).ScriptValue('allies_in_the_province_not_me')] allies here,"
+										}
+
+										text_single = {
+											raw_text = "[GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'province', Army.GetLocation.MakeScope).ScriptValue('allies_in_the_province')] with you."
+											visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'province', Army.GetLocation.MakeScope).ScriptValue('allies_in_the_province'), '(CFixedPoint)0')]"
+										}
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											shortcut = map_mode_2
+											blockoverride "text" {
+												margin_left = -3
+												raw_text = "Attach, T."
+											}
+											blockoverride "disabled" {
+												visible = "[Not(ArmyWindow.CanAttachToAnyLocalUnit)]"
+											}
+
+											visible = "[And( Not( ArmyWindow.CanAttachToMultipleLocalUnits ), Not( ArmyWindow.IsAttachedToAnyUnit ) )]"
+											enabled = "[ArmyWindow.CanAttachToAnyLocalUnit]"
+											tooltip = "[ArmyWindow.BuildAttachToUnitTooltip]"
+											tooltip_enabled = "[Not(ArmyWindow.CanAttachToAnyLocalUnit)]"
+											onclick = "[ArmyWindow.AttachToLocalUnit]"
+										}
+
+										expand = {}
+									}
+
+
 									# allies
 									hbox = {
-									    layoutpolicy_horizontal = expanding
+								    layoutpolicy_horizontal = expanding
 										visible = "[Not(Army.IsEmbarked)]"
 
 										text_single = {
 											layoutpolicy_horizontal = expanding
-											raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'county', Army.GetLocation.GetCounty.GetTitle.MakeScope ).AddScope( 'army', Army.MakeScope ).ScriptValue('allies_total_nearby')] allies nearby."
-											visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'county', Army.GetLocation.GetCounty.GetTitle.MakeScope ).AddScope( 'army', Army.MakeScope ).ScriptValue('allies_total_nearby'), '(CFixedPoint)0')]"
+											raw_text = "[GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Army.GetLocation.MakeScope ).AddScope( 'army', Army.MakeScope ).ScriptValue('allies_total_nearby_combat')] allies nearby."
+											visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(GetPlayer.MakeScope).AddScope( 'province', Army.GetLocation.MakeScope ).AddScope( 'army', Army.MakeScope ).ScriptValue('allies_total_nearby_combat'), '(CFixedPoint)0')]"
 										}
 
-									    expand = { }
+								    expand = { }
 									}
 
 									hbox = {
-									    layoutpolicy_horizontal = expanding
+								    layoutpolicy_horizontal = expanding
 										visible = "[Army.IsEmbarked]"
 
 										text_single = {
@@ -1190,18 +1317,14 @@ window = {
 												flowcontainer = {
 													ignoreinvisible = yes
 													visible = "[Not(GetScriptedGui('is_army_in_the_fog').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'army', Army.MakeScope ).End ))]"
-													spacing = 3
 													text_single = {
 														raw_text = "in"
 													}
+													spacing = 3
+													flowcontainer = {
+														ignoreinvisible = yes
 
-													text_single = {
-														visible = "[Not(Army.IsEmbarked)]"
-														raw_text = "[Army.GetLocation.GetTerrain.GetName] of"
-													}
-
-													text_single = {
-														raw_text = "[Army.GetLocation.GetNameNoTooltip]."
+														army_location = {}
 													}
 												}
 											}
@@ -1236,6 +1359,11 @@ window = {
 													}
 
 													text_single = {
+														raw_text = "Sieging, [Army.GetLocation.GetSiege.GetProgress|0]%[AddTextIf(Army.GetLocation.GetSiege.IsAssaultInProgress, ', Assaulting')]."
+														visible = "[And(Army.IsSieging, Not(Army.IsMoving))]"
+													}
+
+													text_single = {
 														raw_text = "Sailing to"
 														visible = "[And(Army.IsEmbarked, Army.IsMoving)]"
 													}
@@ -1258,34 +1386,140 @@ window = {
 										}
 									}
 
-									# [GetDataModelSize(GetPlayer.MakeScope.GetList('all_enemies'))]
-									#TODO hide the number if less than 2
-									#TODO hide in the fog of war
-									# army_button_o = {
-									# 	datacontext = "[GetPlayer.MakeScope.Var('closest_enemy').Army]"
-									# 	blockoverride "hide_at_capital" {
-									# 	}
-									# 	blockoverride "army_window_show" {
-									# 	}
-									# 	blockoverride "fog" {
-									# 		visible = no
-									# 	}
-									# 	blockoverride "distance" {
-									# 		datacontext = "[ArmyWindow.GetArmy.GetLocation]"
-									# 		text_single = {
-									# 			raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('saved_distance', MakeScopeValue(GuiScope.SetRoot(Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).ScriptValue('province_distance'))).Custom('ProvinceDistance')]"
-									# 		}
-									#
-									# 		text_single = {
-									# 			raw_text = " [GuiScope.SetRoot( Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')],"
-									# 		}
-									# 	}
-									# }
 
 									text_single = {
 										layoutpolicy_horizontal = expanding
 										visible = "[GreaterThan_CFixedPoint(GetPlayer.MakeScope.ScriptValue('enemies_total'), '(CFixedPoint)0')]"
 										raw_text = "Total enemies, [GetPlayer.MakeScope.ScriptValue('enemies_total')]."
+									}
+
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										visible = "[GetPlayer.MakeScope.Var('closest_ally').IsSet]"
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											raw_text = "Closest ally,"
+										}
+
+										# army itself
+										button_text = {
+											datacontext = "[GetPlayer.MakeScope.Var('closest_ally').Army]"
+											datacontext = "[Army.GetLocation]"
+
+											layoutpolicy_horizontal = expanding
+											using = send_army_click
+
+											blockoverride "text" {
+												raw_text = "led by [Army.GetOwner.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+											}
+											blockoverride "pre" {
+												flowcontainer = {
+													datacontext = "[ArmyWindow.GetArmy.GetLocation]"
+													spacing = 3
+													ignoreinvisible = yes
+
+													flowcontainer = {
+														ignoreinvisible = yes
+														spacing = 3
+														visible = "[Not(ObjectsEqual(Army.GetLocation.GetID, Province.GetID))]"
+
+														text_single = {
+															raw_text = "[DistanceTo(Army.GetLocation, Province)|0] [DaysTo(Army.GetLocation, Province)] [Direction(Army.GetLocation, Province)]."
+														}
+													}
+
+													text_single = {
+														raw_text = "Here."
+														visible = "[ObjectsEqual(Army.GetLocation.GetID, Province.GetID)]"
+													}
+
+													text_single = {
+														raw_text = "[GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'province', Army.GetLocation.MakeScope).ScriptValue('allies_in_the_province')]"
+													}
+
+													text_single = {
+														raw_text = "men,"
+														visible = "[Not(Army.IsRaidArmy)]"
+													}
+
+													text_single = {
+														raw_text = "Raiders,"
+														visible = "[Army.IsRaidArmy]"
+													}
+												}
+											}
+
+											blockoverride "extra" {
+												flowcontainer = {
+													ignoreinvisible = yes
+													text_single = {
+														raw_text = "in"
+													}
+													spacing = 3
+													flowcontainer = {
+														ignoreinvisible = yes
+
+														army_location = {}
+													}
+												}
+											}
+										}
+
+										# orders
+										button_text = {
+											datacontext = "[GetPlayer.MakeScope.Var('closest_ally').Army]"
+											datacontext = "[Army.GetLocation]"
+
+											layoutpolicy_horizontal = expanding
+											using = send_army_click
+
+
+											blockoverride "extra" {
+												flowcontainer = {
+													ignoreinvisible = yes
+													spacing = 3
+
+													text_single = {
+														raw_text = "Moving to"
+														visible = "[And(And(And(Army.IsMoving, Not(Army.IsEmbarked)), Not(GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End ))), Not(Army.IsRetreating))]"
+													}
+
+													container = {
+														ignoreinvisible = yes
+														visible = "[Not(GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End ))]"
+														text_single = {
+															raw_text = "Retreating to"
+															visible = "[And(Army.IsRetreating, Not(Army.IsEmbarked))]"
+														}
+													}
+
+													text_single = {
+														raw_text = "Sailing to"
+														visible = "[And(Army.IsEmbarked, Army.IsMoving)]"
+													}
+
+													text_single = {
+														raw_text = "[Army.GetMovementInfoForTooltip]."
+														visible = "[And(Army.IsMoving, Not(GetScriptedGui('is_army_in_combat').IsShown( GuiScope.SetRoot( Army.MakeScope ).End )))]"
+														max_width = 480
+														fontsize_min = 14
+													}
+												}
+											}
+
+											text_single = {
+												raw_text = "[Army.GetMovementInfoForTooltip]"
+												alpha = 0
+												alwaystransparent = yes
+											}
+										}
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											raw_text = "Total allies, [Val('allies_total')]. "
+										}
 									}
 
 									text_single = {
@@ -2026,15 +2260,13 @@ window = {
 
 													button_text = {
 														layoutpolicy_horizontal = expanding
+														shortcut = map_mode_2
 														blockoverride "text" {
-															raw_text = "Attach to army"
-															align = left
+															raw_text = "Attach to allies to follow them, T."
 														}
 														blockoverride "disabled" {
 															visible = "[Not(ArmyWindow.CanAttachToAnyLocalUnit)]"
-															align = left
 														}
-														blockoverride "dot" { }
 
 														visible = "[And( Not( ArmyWindow.CanAttachToMultipleLocalUnits ), Not( ArmyWindow.IsAttachedToAnyUnit ) )]"
 														enabled = "[ArmyWindow.CanAttachToAnyLocalUnit]"
@@ -2375,6 +2607,9 @@ window = {
 																raw_text = " [GuiScope.SetRoot( Province.MakeScope).AddScope('second', Army.GetLocation.MakeScope).Custom('province_direction')],"
 															}
 														}
+														blockoverride "direction" {
+															datacontext = "[ArmyWindow.GetArmy.GetLocation]"
+														}
 													}
 												}
 											}
@@ -2406,6 +2641,10 @@ window = {
 												# }
 
 
+											}
+
+											blockoverride "direction" {
+												datacontext = "[ArmyWindow.GetArmy.GetLocation]"
 											}
 										}
 									}
@@ -3052,6 +3291,7 @@ window = {
 										layoutpolicy_horizontal = expanding
 										background = { using = Background_Area_Border_Solid margin = { 20 20 } }
 
+
 										vbox = {
 											layoutpolicy_horizontal = expanding
 											visible = "[Or(DataModelHasItems( Army.GetLocation.MakeScope.GetList('adjacent_seas') ), DataModelHasItems( Army.GetLocation.MakeScope.GetList('adjacent_rivers') ))]"
@@ -3059,33 +3299,27 @@ window = {
 											vbox = {
 												layoutpolicy_horizontal = expanding
 												visible = "[Or(Isnt('army_adjacencies'), Or(Has('army_adjacencies', 'seas'), Has('army_adjacencies', 'rivers')))]"
+												raw_tooltip = "Sailing may be unlocked with cultural traditions, innovations and some modifiers."
+
 												vbox = {
 													layoutpolicy_horizontal = expanding
 													visible = "[Not(Army.IsEmbarked)]"
-													vbox = {
-														layoutpolicy_horizontal = expanding
-														visible = "[Not(Show('can_raid_across_water'))]"
-														text_single = {
-															layoutpolicy_horizontal = expanding
-															raw_text = "You cannot raid over seas or rivers."
-														}
-													}
 
+													text_single = {
+														visible = "[And(Not(Show('can_raid_across_water')), Army.IsRaidArmy)]"
+														layoutpolicy_horizontal = expanding
+														raw_text = "You cannot raid over seas or rivers."
+													}
 												}
 
 												vbox = {
 													layoutpolicy_horizontal = expanding
-													visible = "[And(Not(Show('can_traverse_river')), Show('can_raid_across_water'))]"
+													# visible = "[And(), Show('can_raid_across_water'))]"
+													visible = "[And(Not(Show('can_traverse_river')), Not(Army.IsRaidArmy))]"
 													text_single = {
 														layoutpolicy_horizontal = expanding
 														raw_text = "You cannot sail across rivers."
 													}
-												}
-
-												text_single = {
-													layoutpolicy_horizontal = expanding
-													visible = "[Or(Not(Show('can_raid_across_water')), Not(Show('can_traverse_river')))]"
-													raw_text = "Traditions, innovations and modifiers may unlock this ability."
 												}
 											}
 
@@ -3891,12 +4125,15 @@ types FortTypes {
 			}
 
 			text_single = {
-				raw_text = "[Province.GetTerrain.GetName],"
+				raw_text = "[Province.GetTerrain.GetName]"
 			}
+			# comma = {
+			# 	visible = "[EqualTo_CFixedPoint( Province.GetCounty.GetTitle.MakeScope.ScriptValue('num_of_forts_in_county'), '(CFixedPoint)1')]"
+			# }
 
 			text_single = {
-				visible = "[GreaterThan_CFixedPoint( Province.GetCounty.GetTitle.MakeScope.ScriptValue('num_of_forts_in_county'), '(CFixedPoint)1')]"
-				raw_text = "[Province.GetNameNoTooltip]."
+				# visible = "[GreaterThan_CFixedPoint( Province.GetCounty.GetTitle.MakeScope.ScriptValue('num_of_forts_in_county'), '(CFixedPoint)1')]"
+				raw_text = "of [Province.GetTitle.GetNameNoTierNoTooltip]."
 			}
 
 			# text_single = {
@@ -4805,6 +5042,26 @@ template reorg_regiment_tooltips {
 
 types ArmyWindow
 {
+	type army_location = hbox {
+		hbox = {
+			visible = "[Not(Army.IsEmbarked)]"
+			spacing = 3
+			text_single = {
+				raw_text = "[Army.GetLocation.GetCounty.GetTitle.GetNameNoTierNoTooltip]."
+			}
+			text_single = {
+				raw_text = "[Army.GetLocation.GetTerrain.GetName] of"
+			}
+			text_single = {
+				raw_text = "[Army.GetLocation.GetTitle.GetNameNoTierNoTooltip],"
+			}
+		}
+
+		text_single = {
+			visible = "[Army.IsEmbarked]"
+			raw_text = "[Army.GetLocation.GetNameNoTooltip]."
+		}
+	}
 	type button_holding_army = button_text {
 		layoutpolicy_horizontal = expanding
 		datacontext = "[Scope.GetProvince]"
