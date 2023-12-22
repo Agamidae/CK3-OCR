@@ -1,10 +1,214 @@
 types TutorialWindow {
 	type tutorial_window = window {
 		alwaystransparent = no
-		resizable = no
 		parentanchor = center
-		size = { 100% 100% }
-		using = Window_Background_No_Edge
+		allow_outside = yes
+		size = { 100% 100%}
+
+		window = {
+			parentanchor = center
+			resizable = no
+			alwaystransparent = no
+			using = vanilla
+			using = Window_Movable
+			# using = Window_Background_No_Edge
+
+			icon = {
+				parentanchor = center
+				size = { 180% 180% }
+				alwaystransparent = yes
+				texture = "gfx/interface/component_masks/mask_fade_circle.dds"
+				color = { 0.1 0.1 0.1 1 }
+				alpha = 0.6
+			}
+
+			icon = {
+				parentanchor = center
+				size = { 160% 160% }
+				alwaystransparent = yes
+
+				texture = "gfx/interface/component_masks/mask_fade_circle.dds"
+				using = Color_Orange
+
+				state = {
+					trigger_on_create = yes
+					name = a
+					next = b
+
+					using = Animation_Curve_Default
+					duration = 1
+					alpha = 0.7
+				}
+
+				state = {
+					name = b
+					next = a
+
+					using = Animation_Curve_Default
+					duration = 2
+					alpha = 0
+				}
+			}
+
+			icon = {
+				size = { 100% 100% }
+
+				using = Window_Background
+			}
+
+			vbox = {
+				margin = { 35 35 }
+				margin_top = 30
+				set_parent_size_to_minimum = yes
+
+				header_pattern = {
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						margin = { 15 0 }
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							layoutstretchfactor_horizontal = 1
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							layoutstretchfactor_horizontal = 1
+							text = "[Tutorial.GetStepName]"
+							max_width = 420
+							align = nobaseline|center
+
+							using = Font_Type_Flavor
+							using = Font_Size_Big
+						}
+
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							layoutstretchfactor_horizontal = 1
+							margin_right = 20
+
+							expand = {
+								visible = "[Not( Tutorial.HasTransition( 'read_later' ) )]"
+							}
+
+
+							text_single = {
+								visible = "[Not( StringIsEmpty( Tutorial.GetStepHeaderInfo ) )]"
+								margin = { 15 0 }
+								raw_text = "([Tutorial.GetStepHeaderInfo])"
+								default_format = "#weak"
+								using = Font_Size_Medium
+								align = nobaseline
+							}
+
+							expand = {
+								visible = "[Tutorial.HasTransition( 'read_later' )]"
+							}
+						}
+					}
+
+					blockoverride "header_text"
+					{
+						text = ""
+					}
+
+					blockoverride "button_back"
+					{
+						visible = no
+					}
+
+					blockoverride "button_close"
+					{
+						visible = "[Tutorial.HasTransition('read_later')]"
+						enabled = "[Tutorial.IsTransitionEnabled('read_later')]"
+						tooltip = "tutorial_lesson_button_read_later"
+						onclick = "[Tutorial.OnClickTransition('read_later')]"
+					}
+				}
+
+				spacer = {
+					size = { 5 5 }
+				}
+
+				scrollbox = {
+					autoresizescrollarea = yes
+
+					blockoverride "scrollbox_content"
+					{
+						text_multi = {
+							max_width = 490
+							min_width = 490
+							autoresize = yes
+							text = "[Tutorial.GetStepText]"
+							using = Font_Size_Medium
+						}
+
+						vbox = {
+							visible = "[Tutorial.HasStepInstructions]"
+							layoutpolicy_vertical = expanding
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								margin_top = 20
+								margin_bottom = 5
+								text = "TUTORIAL_STEP_INSTRUCTIONS"
+								using = Font_Size_Medium
+							}
+							text_multi = {
+								max_width = 430
+								min_width = 430
+								autoresize = yes
+								text = "[Tutorial.GetStepInstructions]"
+								using = Font_Size_Medium
+							}
+							expand = {}
+						}
+					}
+					blockoverride "scrollbox_expand"
+					{
+						expand = {}
+					}
+				}
+
+				hbox = {
+					margin = { 10 10 }
+					spacing = 5
+					ignoreinvisible = no
+
+					button_tertiary = {
+						size = { 120 33 }
+						visible = "[Tutorial.HasTransition('back')]"
+						enabled = "[Tutorial.IsTransitionEnabled('back')]"
+						text = "[Tutorial.GetTransitionText('back')]"
+						onclick = "[Tutorial.OnClickTransition('back')]"
+					}
+					button_standard = {
+						size = { 120 33 }
+						visible = "[Tutorial.HasTransition('repeat')]"
+						enabled = "[Tutorial.IsTransitionEnabled('repeat')]"
+						text = "[Tutorial.GetTransitionText('repeat')]"
+						onclick = "[Tutorial.OnClickTransition('repeat')]"
+					}
+					button_tertiary = {
+						size = { 120 33 }
+						visible = "[Tutorial.HasTransition('skip')]"
+						enabled = "[Tutorial.IsTransitionEnabled('skip')]"
+						text = "[Tutorial.GetTransitionText('skip')]"
+						onclick = "[Tutorial.OnClickTransition('skip')]"
+					}
+					button_primary = {
+						name = "tutorial_highlight_next_button"
+						size = { 120 33 }
+						visible = "[Tutorial.HasTransition('next')]"
+						enabled = "[Tutorial.IsTransitionEnabled('next')]"
+						text = "[Tutorial.GetTransitionText('next')]"
+						onclick = "[Tutorial.OnClickTransition('next')]"
+					}
+				}
+			}
+		}
 
 		state = {
 			name = _show
@@ -18,170 +222,303 @@ types TutorialWindow {
 			using = Sound_WindowHide_Standard
 		}
 
-		vbox = {
-			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
-			using = ocr_margins
-
-			header_pattern = {
-				size = { 0 30 }
-				layoutpolicy_horizontal = expanding
-
-				hbox = {
-					spacing = 3
-					text_single = {
-						raw_text = "Tutorial, [Tutorial.GetStepName]."
-					}
-					text_single = {
-						visible = "[Not( StringIsEmpty( Tutorial.GetStepHeaderInfo ) )]"
-						raw_text = "([Tutorial.GetStepHeaderInfo])."
-					}
-
-					expand = { }
-				}
-
-				blockoverride "header_text"
-				{
-					text = ""
-				}
-
-				blockoverride "button_back"
-				{
-					visible = no
-				}
-
-				blockoverride "button_close"
-				{
-					visible = "[Tutorial.HasTransition('read_later')]"
-					enabled = "[Tutorial.IsTransitionEnabled('read_later')]"
-					tooltip = "tutorial_lesson_button_read_later"
-					onclick = "[Tutorial.OnClickTransition('read_later')]"
-				}
-			}
-			#
-			# spacer = {
-			# 	size = { 5 5 }
-			# }
-
-			scrollbox = {
-				layoutpolicy_vertical = expanding
-				layoutpolicy_horizontal = expanding
-
-				blockoverride "scrollbox_content"
-				{
-
-					hbox = {
-						margin_top = 10
-						layoutpolicy_horizontal = expanding
-						layoutpolicy_vertical = expanding
-
-						vbox = {
-							layoutpolicy_vertical = expanding
-
-							text_multi = {
-								layoutpolicy_horizontal = expanding
-								max_width = 900
-								min_width = 900
-								autoresize = yes
-								text = "[Tutorial.GetStepText]"
-							}
-
-							vbox = {
-								visible = "[Tutorial.HasStepInstructions]"
-								layoutpolicy_vertical = expanding
-								spacing = 3
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									text = "TUTORIAL_STEP_INSTRUCTIONS"
-								}
-								text_multi = {
-									layoutpolicy_horizontal = expanding
-									max_width = 900
-									min_width = 900
-									autoresize = yes
-									text = "[Tutorial.GetStepInstructions]"
-								}
-							}
-
-							expand = { }
-						}
-						expand = { }
-					}
-				}
-			}
+		window = {
+			resizable = no
+			size = { 100% 100% }
+			using = ocr
+			using = Window_Background_No_Edge
 
 			vbox = {
 				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				# using = ocr_margins
+				margin = { 10 5 }
 
-				button_text = {
+				header_pattern = {
+					size = { 0 30 }
 					layoutpolicy_horizontal = expanding
-					shortcut = go_back
-				    blockoverride "text" {
-						raw_text = "[Tutorial.GetTransitionText('back')], B."
-				    }
-					blockoverride "disabled" {
-						visible = "[Not(Tutorial.IsTransitionEnabled('back'))]"
-					}
-					visible = "[Tutorial.HasTransition('back')]"
-					enabled = "[Tutorial.IsTransitionEnabled('back')]"
-					onclick = "[Tutorial.OnClickTransition('back')]"
-				}
 
-				button_text = {
-					layoutpolicy_horizontal = expanding
-				    blockoverride "text" {
-						text = "[Tutorial.GetTransitionText('repeat')]"
-				    }
-					blockoverride "disabled" {
-						visible = "[Not(Tutorial.IsTransitionEnabled('repeat'))]"
-					}
-					visible = "[Tutorial.HasTransition('repeat')]"
-					enabled = "[Tutorial.IsTransitionEnabled('repeat')]"
-					onclick = "[Tutorial.OnClickTransition('repeat')]"
-				}
-
-				button_text = {
-					layoutpolicy_horizontal = expanding
-				    blockoverride "text" {
-						text = "[Tutorial.GetTransitionText('skip')]"
-				    }
-					blockoverride "disabled" {
-						visible = "[Not(Tutorial.IsTransitionEnabled('skip'))]"
-					}
-					visible = "[Tutorial.HasTransition('skip')]"
-					enabled = "[Tutorial.IsTransitionEnabled('skip')]"
-					onclick = "[Tutorial.OnClickTransition('skip')]"
-				}
-
-				button_primary_text = {
-					layoutpolicy_horizontal = expanding
-					name = "tutorial_highlight_next_button"
-					visible = "[Tutorial.HasTransition('next')]"
-					blockoverride "text" {
-						text = "[Tutorial.GetTransitionText('next')]"
-					}
-					blockoverride "extra" {
+					hbox = {
 						spacing = 3
 						text_single = {
-							raw_text = "Disabled."
-							visible = "[Not(Tutorial.IsTransitionEnabled('next'))]"
+							raw_text = "Tutorial, [Tutorial.GetStepName],"
+						}
+						text_single = {
+							visible = "[Not( StringIsEmpty( Tutorial.GetStepHeaderInfo ) )]"
+							raw_text = "[Tutorial.GetStepHeaderInfo]."
+						}
+
+						expand = { }
+					}
+
+					blockoverride "header_text"
+					{
+						text = ""
+					}
+
+					blockoverride "button_back"
+					{
+						visible = no
+					}
+
+					blockoverride "button_close"
+					{
+						visible = "[Tutorial.HasTransition('read_later')]"
+						enabled = "[Tutorial.IsTransitionEnabled('read_later')]"
+						tooltip = "tutorial_lesson_button_read_later"
+						onclick = "[Tutorial.OnClickTransition('read_later')]"
+					}
+				}
+				#
+				# spacer = {
+				# 	size = { 5 5 }
+				# }
+
+
+				scrollbox = {
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+
+					blockoverride "scrollbox_content"
+					{
+
+						hbox = {
+							margin_top = 10
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+							vbox = {
+								layoutpolicy_vertical = expanding
+
+								text_multi_wide = {
+									layoutpolicy_horizontal = expanding
+									max_width = 750
+									min_width = 750
+									text = "[Tutorial.GetStepText]"
+								}
+
+								vbox = {
+									visible = "[Tutorial.HasStepInstructions]"
+									spacing = 3
+									margin_top = 10
+									layoutpolicy_horizontal = expanding
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										text = "TUTORIAL_STEP_INSTRUCTIONS"
+									}
+									hbox = {
+										layoutpolicy_horizontal = expanding
+
+										text_multi_wide = {
+											layoutpolicy_horizontal = expanding
+											text = "[Tutorial.GetStepInstructions]"
+										}
+
+										expand = {}
+									}
+								}
+
+								expand = { }
+							}
+							expand = { }
 						}
 					}
-					blockoverride "hotkey" {
-						visible = "[Tutorial.IsTransitionEnabled('next')]"
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = go_back
+					    blockoverride "text" {
+							raw_text = "[Tutorial.GetTransitionText('back')], B."
+					    }
+						blockoverride "disabled" {
+							visible = "[Not(Tutorial.IsTransitionEnabled('back'))]"
+						}
+						visible = "[Tutorial.HasTransition('back')]"
+						enabled = "[Tutorial.IsTransitionEnabled('back')]"
+						onclick = "[Tutorial.OnClickTransition('back')]"
 					}
-					enabled = "[Tutorial.IsTransitionEnabled('next')]"
-					onclick = "[Tutorial.OnClickTransition('next')]"
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+							text = "[Tutorial.GetTransitionText('repeat')]"
+					    }
+						blockoverride "disabled" {
+							visible = "[Not(Tutorial.IsTransitionEnabled('repeat'))]"
+						}
+						visible = "[Tutorial.HasTransition('repeat')]"
+						enabled = "[Tutorial.IsTransitionEnabled('repeat')]"
+						onclick = "[Tutorial.OnClickTransition('repeat')]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+					    blockoverride "text" {
+							text = "[Tutorial.GetTransitionText('skip')]"
+					    }
+						blockoverride "disabled" {
+							visible = "[Not(Tutorial.IsTransitionEnabled('skip'))]"
+						}
+						visible = "[Tutorial.HasTransition('skip')]"
+						enabled = "[Tutorial.IsTransitionEnabled('skip')]"
+						onclick = "[Tutorial.OnClickTransition('skip')]"
+					}
+
+					button_primary_text = {
+						layoutpolicy_horizontal = expanding
+						name = "tutorial_highlight_next_button"
+						visible = "[Tutorial.HasTransition('next')]"
+						blockoverride "text" {
+							text = "[Tutorial.GetTransitionText('next')]"
+						}
+						blockoverride "extra" {
+							spacing = 3
+							text_single = {
+								margin_left = -3
+								raw_text = ", Disabled"
+								visible = "[Not(Tutorial.IsTransitionEnabled('next'))]"
+							}
+						}
+						blockoverride "hotkey" {
+							visible = "[Tutorial.IsTransitionEnabled('next')]"
+						}
+						enabled = "[Tutorial.IsTransitionEnabled('next')]"
+						onclick = "[Tutorial.OnClickTransition('next')]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[GetVariableSystem.Toggle('hide_tutorial')]"
+						shortcut = "go_to_capital"
+						shortcut = close_window
+					    blockoverride "text" {
+					        raw_text = "Minimize tutorial, Escape or Home."
+					    }
+					}
+				}
+			}
+
+			container = {
+				ignoreinvisible = yes
+
+				container = {
+					visible = "[And(Not(IsGameViewOpen('ruler_designer')), Isnt('tour_filters'))]"
+					button = {
+						visible = "[And(GetPlayer.IsAdult, Not(IsGameViewOpen('lifestyle')))]"
+						shortcut = map_mode_15
+						onclick = "[OpenGameViewData( 'lifestyle', GetPlayer.GetID )]"
+						onclick = "[Set('hide_tutorial', 'yes')]"
+					}
+					button = {
+						visible = "[And(Not(GetPlayer.IsAdult), Not(IsGameViewOpen('character_focus')))]"
+						shortcut = map_mode_15
+						onclick = "[ToggleGameViewData( 'character_focus', GetPlayer.GetID )]"
+						onclick = "[Set('hide_tutorial', 'yes')]"
+					}
+				}
+
+				button = {
+					onclick = "[ToggleGameView('outliner')]"
+					onclick = "[CloseGameView('my_realm')]"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+					shortcut = "mapmode_empires_secondary"
+				}
+
+				button = {
+					onclick = "[OpenGameViewData('holding_view', GetPlayer.GetCapitalLocation.Self)]"
+					onclick = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetTitle.GetID)]"
+					shortcut = "mapmode_culture_secondary"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+
+				button = {
+					onclick = "[OpenGameViewData( 'character', GetPlayer.GetID )]"
+					shortcut = "character_window"
+					onclick = "[Set('hide_tutorial', 'yes')]"
 				}
 
 				button_text = {
-					layoutpolicy_horizontal = expanding
-					onclick = "[GetVariableSystem.Toggle('hide_tutorial')]"
-					shortcut = close_window
-				    blockoverride "text" {
-				        raw_text = "Minimize tutorial, Escape."
-				    }
+					onclick = "[GetVariableSystem.Set('resources', 'yes')]"
+					shortcut = map_mode_3
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+
+				button = {
+					shortcut = map_mode_5
+					visible = "[GetPlayer.HasRoyalCourt]"
+					onclick = "[GetPlayer.OpenRoyalCourtView( 'characters' )]"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+
+				button = {
+					onclick = "[OpenGameViewData( 'inventory', GetPlayer.GetID )]"
+					shortcut = "mapmode_kingdoms_secondary"
+					visible = "[Not(IsGameViewOpen('character'))]"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+
+				button = {
+					onclick = "[OpenGameView('my_realm')]"
+					shortcut = "my_realm_window"
+					onclick = "[CloseGameView('character')]"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+				button = {
+					onclick = "[OpenGameViewData('military', GetPlayer.GetID)]"
+					shortcut = "military_window"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+				button = {
+					onclick = "[OpenGameViewData('council_window', GetPlayer.GetID)]"
+					shortcut = "council_window"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+				button = {
+					onclick = "[OpenGameViewData( 'court_window', GetPlayer.GetID )]"
+					shortcut = "court_window"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+				button = {
+					onclick = "[OpenGameViewData('intrigue_window', GetPlayer.GetID)]"
+					shortcut = "intrigue_window"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+				button = {
+					onclick = "[OpenGameView('factions_window')]"
+					shortcut = "factions_window"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+				button = {
+					visible = "[And( Character.IsAtWar, Not(Character.HasRaisedRegiments))]"
+					shortcut = confirm
+					onclick = "[Tutorial.OnClickTransition('next')]"
+				}
+				button = {
+					onclick = "[ToggleEncyclopedia]"
+					shortcut = "encyclopedia"
+					onclick = "[Tutorial.OnClickTransition('next')]"
+				}
+				button = {
+					onclick = "[OpenGameView('decisions')]"
+					shortcut = "decision_window"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+				button = {
+					onclick = "[OpenGameView('activity_list_window')]"
+					shortcut = "activity_list_window"
+					onclick = "[Set('hide_tutorial', 'yes')]"
+				}
+				button = {
+					onclick = "[OpenGameViewData('manage_tax_slots', GetPlayer.GetID)]"
+					enabled = "[Character.HasTaxSlots]"
+					visible = "[GetPlayer.GetGovernment.IsType( 'clan_government' )]"
+					shortcut = map_mode_11
+					onclick = "[Set('hide_tutorial', 'yes')]"
 				}
 			}
 		}

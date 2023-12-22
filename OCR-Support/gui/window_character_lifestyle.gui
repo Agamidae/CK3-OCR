@@ -4,25 +4,16 @@
 
 window = {
 	name = "character_lifestyle_window"
-	size = { 100% 100% }
-	parentanchor = center|hcenter
-	#	position = { 80 20 }
 	movable = no
 	filter_mouse = all
+	using = base_ocr_window
 	layer = middle
 
 	datacontext = "[CharacterLifestyleWindow.GetCharacter]"
 	datacontext = "[CharacterLifestyleWindow.GetSelectedLifestyle]"
 
-	using = Window_Background_No_Edge
+	background = { using = Background_Area_Border_Solid }
 
-	background = {
-		texture = "gfx/interface/component_masks/mask_fade_corner.dds"
-		color = { 0.12 0.12 0.12 1 }
-		mirror = horizontal
-		margin_right = -1200
-		alpha = 0.6
-	}
 
 	state = {
 		name = _show
@@ -31,6 +22,9 @@ window = {
 		using = Sound_Window_AmbienceMute_Snapshot
 
 		on_start = "[GetVariableSystem.Set( 'lifestyle_open', 'true' )]"
+		on_finish = "[Clear('change_lifestyle')]"
+		on_finish = "[Clear('focused_perk_tree')]"
+		on_finish = "[Clear('focus_on_perks')]"
 	}
 
 	state = {
@@ -41,28 +35,15 @@ window = {
 		on_start = "[GetVariableSystem.Clear( 'lifestyle_open' )]"
 	}
 
-	widget = {
-		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
-		size  = { 100% 100% }
-
-		### Select Focus start screen
-		vbox = {
-			name = "lifestyle_selection"
-			visible = "[Not( Lifestyle.IsValid )]"
-
-			using = ocr_margins
-
-			state = {
-				name = _show
-				using = Animation_FadeIn_Quick
-			}
-
-			state = {
-				name = _hide
-				using = Animation_FadeOut_Quick
-			}
-
+	window_ocr = {
+		button = {
+			shortcut = close_window
+			onclick = "[CharacterLifestyleWindow.Close]"
+			visible = "[Isnt('focused_perk_tree')]"
+		}
+		blockoverride "ocr_header" {
 			header_standard = {
+				visible = "[Or(Not( Lifestyle.IsValid ), Is('change_lifestyle'))]"
 				layoutpolicy_horizontal = expanding
 
 				blockoverride "header_text"
@@ -76,234 +57,55 @@ window = {
 				}
 			}
 
-			background = {
-				using = Background_Bottom_Fade
-			}
-
-			background = {
-				using = Background_Area_Dark
-				margin = { 0 -100 }
-				alpha = 0.3
-			}
-
 			vbox = {
 				layoutpolicy_horizontal = expanding
-				datamodel = "[CharacterLifestyleWindow.GetLifestyles]"
+				visible = "[And(And(Lifestyle.IsValid, Isnt('change_lifestyle')), Isnt('focused_perk_tree'))]"
 
-				item = {
-					vbox = {
-						layoutpolicy_horizontal = expanding
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+					text_single = {
+						text = "LIFESTYLE_WINDOW_TITLE"
+					}
 
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							onclick = "[CharacterLifestyleWindow.OpenLifestyle( Lifestyle.Self )]"
-							onclick = "[PlaySfxEvent( Concatenate( 'event:/SFX/UI/Character/Lifestyle/sfx_ui_character_lifestyle_', Lifestyle.GetKey ) )]"
+					comma = {}
 
-							shortcuts_list = {
-								blockoverride "click" {
-									onclick = "[CharacterLifestyleWindow.OpenLifestyle( Lifestyle.Self )]"
-									onclick = "[PlaySfxEvent( Concatenate( 'event:/SFX/UI/Character/Lifestyle/sfx_ui_character_lifestyle_', Lifestyle.GetKey ) )]"
-								}
-							}
-							blockoverride "pre" {
-								text_single = {
-									raw_text = "[IndexNumber],"
-								}
-							}
-							blockoverride "extra" {
-								text_single = {
-									raw_text = "[Lifestyle.GetNameNoTooltip]."
-								}
-							}
-						}
+					text_single = {
+						visible = "[Is('hide_foci')]"
+						raw_text = "Perks."
+					}
 
-						hbox = {
-						    layoutpolicy_horizontal = expanding
-
-							text_multi_wide = {
-								text = "[Lifestyle.GetDescription]"
-							}
-
-						    expand = { }
-						}
-
-						hbox = {
-						    layoutpolicy_horizontal = expanding
-							spacing = 3
-							visible = "[GreaterThan_int32( Character.GetPerkPointsUsed( Lifestyle.Self ), '(int32)0' )]"
-
+					hbox = {
+						datamodel = "[CharacterLifestyleWindow.GetFocuses]"
+						item = {
 							text_single = {
-								raw_text = "[Character.GetPerkPointsUsed( Lifestyle.Self )] out of [Lifestyle.GetPerksInLifestyle] [perks|E]."
+								visible = "[EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )]"
+								raw_text = "[FocusType.GetName]."
 							}
-							text_single = {
-								text = "LIFESTYLE_POINTS_TO_USE_TEXT"
-							}
-
-							dot_l = { }
-
-						    expand = { }
 						}
 					}
+
+					expand = {}
 				}
-			}
 
-			expand = { }
-		}
-
-		hbox = {
-			visible = "[Lifestyle.IsValid]"
-
-			state = {
-				name = "lifestyle_tabs_refresh"
-				next = a
-				alpha = 0.5
-			}
-
-			state = {
-				name = "a"
-				alpha = 1
-				duration = 0.5
-				using = Animation_Curve_Default
-			}
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-				layoutstretchfactor_horizontal = 3
-
-				background = {
-					texture = "[Lifestyle.GetBackground]"
-					alpha = 0.3
-
-					modify_texture = {
-						texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
-						blend_mode = alphamultiply
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					shortcut = army_merge
+					onclick = "[Toggle('change_lifestyle')]"
+					blockoverride "text" {
+						raw_text = "Change lifestyle, G."
 					}
 				}
-			}
 
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-				layoutstretchfactor_horizontal = 7
-			}
-		}
-
-		widget = {
-			parentanchor = bottom|left
-			size = { 270 560 }
-			allow_outside = no
-
-			portrait_lifestyles = {
-				parentanchor = bottom|left
-				position = { -110 0 }
-				visible = no
-			}
-		}
-
-		### Focus View
-		vbox = {
-			name = "focus_view"
-			visible = "[Lifestyle.IsValid]"
-			alwaystransparent = no
-
-			using = ocr_margins
-
-			state = {
-				name = _show
-				using = Animation_FadeIn_Quick
-			}
-
-			state = {
-				name = _hide
-				using = Animation_FadeOut_Quick
-			}
-
-			state = {
-				name = show_all_perks
-				trigger_when = "[Not(GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' ))]"
-				on_start = "[GetVariableSystem.Clear('focus_on_perks')]"
-			}
-
-			background = {
-				texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
-				margin_top = -500
-				color = { 0 0 0 0.7 }
-				alpha = 0.7
-				mirror = vertical
-			}
-
-			### HEADER
-			widget = {
-				name = "header_bar"
-				layoutpolicy_horizontal = expanding
-				size = { 0 85 }
-				allow_outside = yes
-				alwaystransparent = no
-
-				background = {
-					texture = "gfx/interface/component_tiles/tile_background_window_header.dds"
-					spriteType = Corneredtiled
-					spriteborder = { 20 20 }
-					margin = { 12 0 }
-				}
-
-				text_single = {
-					# parentanchor = vcenter
-					position = { 0 5 }
-					margin_left = 5
-					text = "LIFESTYLE_WINDOW_TITLE"
-					using = Font_Type_Flavor
-					# fontsize = 35
-
-					state = {
-						name = "lifestyle_tabs_refresh"
-						next = a
-						alpha = 0.5
-					}
-
-					state = {
-						name = "a"
-						alpha = 1
-						duration = 0.5
-						using = Animation_Curve_Default
-					}
-				}
 
 				flowcontainer = {
-					position = { 5 25 }
-					spacing = 5
-					# layoutpolicy_horizontal = expanding
-					visible = "[Not(GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' ))]"
-
-					container = {
-						visible = "[Not(GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' ))]"
-						ignoreinvisible = yes
-
-						button_text = {
-							blockoverride "text" {
-								raw_text = "Show all."
-								align = left
-							}
-							onclick = "[GetVariableSystem.Clear('focus_on_perks')]"
-							visible = "[GetVariableSystem.Exists('focus_on_perks')]"
-						}
-					}
-					text_single = {
-						text = "UNLOCKED_PERKS"
-					}
-					text_single = {
-						text = "EXPERIENCE"
-					}
-				}
-
-				flowcontainer = {
+					layoutpolicy_horizontal = expanding
 					allow_outside = yes
 					visible = "[GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' )]"
 					ignoreinvisible = yes
-					position = { 5 25 }
 
 					button_text = {
+						shortcut = mapmode_duchies_secondary
 						blockoverride "pre" {
 							text_single = {
 								text = "LIFESTYLE_POINTS_TO_USE_TEXT"
@@ -311,12 +113,9 @@ window = {
 							text_single = {
 								raw_text = "."
 							}
-							text_single = {
-								raw_text = " "
-							}
 						}
 						blockoverride "text" {
-							raw_text = "Show only unlockable perks."
+							raw_text = "Show only unlockable perks, U."
 						}
 						blockoverride "extra" {
 
@@ -331,484 +130,794 @@ window = {
 					}
 
 					button_text = {
+						shortcut = mapmode_duchies_secondary
 						blockoverride "text" {
-							raw_text = "Show all."
-							align = left
+							raw_text = "Show all perks, U."
 						}
 						onclick = "[GetVariableSystem.Clear('focus_on_perks')]"
 						visible = "[GetVariableSystem.Exists('focus_on_perks')]"
 					}
 				}
 
-
 				flowcontainer = {
-					visible = "[Not(GetVariableSystem.Exists('focus_on_perks'))]"
-					name = "lifestyles"
-					datamodel = "[CharacterLifestyleWindow.GetLifestyles]"
-					ignoreinvisible = yes
-					position = { 5 50 }
+					layoutpolicy_horizontal = expanding
+					# visible = "[Not(GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' ))]"
+					spacing = 3
 
-					text_single = {
-						raw_text = "Change lifestyle:"
-						align = left
+					container = {
+						visible = "[Not(GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' ))]"
+						ignoreinvisible = yes
+
+						button_text = {
+							blockoverride "text" {
+								raw_text = "Show all perks."
+							}
+							onclick = "[GetVariableSystem.Clear('focus_on_perks')]"
+							visible = "[GetVariableSystem.Exists('focus_on_perks')]"
+						}
 					}
 
+					text_single = {
+						text = "UNLOCKED_PERKS"
+					}
+					text_single = {
+						text = "EXPERIENCE"
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					shortcut = army_split_half
+
+					blockoverride "text" {
+						raw_text = "[Select_CString(GetVariableSystem.Exists('hide_foci'), 'Show', 'Hide')] focuses and [Select_CString(GetVariableSystem.Exists('hide_foci'), 'hide', 'show')] perks, F."
+					}
+					onclick = "[GetVariableSystem.Toggle('hide_foci')]"
+				}
+			}
+		}
+
+		blockoverride "ocr_content" {
+			### Select Focus start screen
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				name = "lifestyle_selection"
+				visible = "[Or(Not( Lifestyle.IsValid ), Is('change_lifestyle'))]"
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					datamodel = "[CharacterLifestyleWindow.GetLifestyles]"
+
 					item = {
-						button_text = {
-							visible = "[Not(EqualTo_string( Lifestyle.GetKey, CharacterLifestyleWindow.GetSelectedLifestyle.GetKey ))]"
-							blockoverride "text" {
-								raw_text = "[Lifestyle.GetNameNoTooltip],"
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								onclick = "[CharacterLifestyleWindow.OpenLifestyle( Lifestyle.Self )]"
+								onclick = "[PlaySfxEvent( Concatenate( 'event:/SFX/UI/Character/Lifestyle/sfx_ui_character_lifestyle_', Lifestyle.GetKey ) )]"
+								onclick = "[Clear('change_lifestyle')]"
+
+								shortcuts_list = {
+									blockoverride "click" {
+										onclick = "[Clear('change_lifestyle')]"
+										onclick = "[CharacterLifestyleWindow.OpenLifestyle( Lifestyle.Self )]"
+										onclick = "[PlaySfxEvent( Concatenate( 'event:/SFX/UI/Character/Lifestyle/sfx_ui_character_lifestyle_', Lifestyle.GetKey ) )]"
+									}
+								}
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "[IndexNumber],"
+									}
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = "[Lifestyle.GetNameNoTooltip]."
+									}
+									text_single = {
+										visible = "[Lifestyle.IsHighlightedForCharacter( Character.Self )]"
+										raw_text = "[Lifestyle.GetHighlightDescription]"
+									}
+								}
 							}
-							onclick = "[CharacterLifestyleWindow.OpenLifestyle( Lifestyle.Self )]"
-							onclick = "[PdxGuiTriggerAllAnimations('lifestyle_tabs_refresh')]"
-							blockoverride "extra" {
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_multi_wide = {
+									text = "[Lifestyle.GetDescription]"
+								}
+
+								expand = { }
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+								visible = "[GreaterThan_int32( Character.GetPerkPointsUsed( Lifestyle.Self ), '(int32)0' )]"
+
 								text_single = {
-									raw_text = " Perk points: [Character.GetPerkPoints( Lifestyle.Self )]."
-									max_width = 180
-									align = left
-									visible = "[And(GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' ), Character.IsLocalPlayer)]"
+									raw_text = "[Character.GetPerkPointsUsed( Lifestyle.Self )] out of [Lifestyle.GetPerksInLifestyle] [perks|E]."
+								}
+								text_single = {
+									text = "LIFESTYLE_POINTS_TO_USE_TEXT"
+								}
+
+								dot_l = { }
+
+								expand = { }
+							}
+						}
+					}
+				}
+
+				expand = { }
+			}
+
+			### Focus View
+			vbox = {
+				name = "focus_view"
+				visible = "[And(Lifestyle.IsValid, Isnt('change_lifestyle'))]"
+				layoutpolicy_horizontal = expanding
+
+				state = {
+					name = show_all_perks
+					trigger_when = "[Not(GreaterThan_int32( Character.GetPerkPoints( Lifestyle.Self ), '(int32)0' ))]"
+					on_start = "[GetVariableSystem.Clear('focus_on_perks')]"
+				}
+
+				### MAIN BODY
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					margin_top = 10
+
+					## LEFT BAR
+					vbox = {
+						visible = "[Not(GetVariableSystem.Exists('focus_on_perks'))]"
+						layoutpolicy_horizontal = expanding
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							visible = "[Isnt('hide_foci')]"
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Not( GetPlayer.GetLifestyle.IsValid )]"
+								text_single = {
+									text = "FOCUS_CANCHANGE_NO_FOCUS"
+								}
+								dot = { }
+
+								expand = { }
+							}
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_multi_wide = {
+									raw_text = "[GetLifestyleTooltipWarnings( GetPlayer )]."
+									visible = "[GetPlayer.GetLifestyle.IsValid]"
+								}
+
+								expand = { }
+							}
+							vbox = {
+								visible = "[Character.IsLocalPlayer]"
+
+								text_multi_wide = {
+									layoutpolicy_horizontal = expanding
+									visible = "[Lifestyle.IsHighlightedForCharacter( Character.Self )]"
+									text = "[Lifestyle.GetHighlightDescription]"
 								}
 							}
 						}
-					}
-				}
 
-				flowcontainer = {
-					parentanchor = right|vcenter
-					position = { -10 0 }
+						hbox = {
+							layoutpolicy_horizontal = expanding
 
-					button_text = {
-						onclick = "[CharacterLifestyleWindow.OpenRefundPerks]"
-						visible = "[And(CharacterLifestyleWindow.CanRefundPerks, Character.IsLocalPlayer)]" #TODO enabled
-					    blockoverride "text" {
-					        raw_text = "REFUND_PERKS"
-					    }
-					}
-
-					dot = { }
-
-					buttons_window_control = {
-						blockoverride "button_close"
-						{
-							size = { 0 0 }
-							onclick = "[CharacterLifestyleWindow.Close]"
-						}
-					}
-				}
-			}
-
-			### MAIN BODY
-			hbox = {
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-				spacing = 100
-				margin_top = 10
-
-				## LEFT BAR
-				vbox = {
-					visible = "[Not(GetVariableSystem.Exists('focus_on_perks'))]"
-					layoutpolicy_vertical = expanding
-					minimumsize = { 270 0 }
-
-					vbox = {
-						# minimumsize = { 0 100 }
-						spacing = 10
-
-						state = {
-							name = "lifestyle_tabs_refresh"
-							next = a
-							alpha = 0.5
-						}
-
-						state = {
-							name = "a"
-							alpha = 1
-							duration = 0.5
-							using = Animation_Curve_Default
-						}
-
-						vbox = {
-							spacing = 10
-							visible = "[Character.IsLocalPlayer]"
-
-							text_multi = {
+							vbox = {
 								layoutpolicy_horizontal = expanding
-								visible = "[Lifestyle.IsHighlightedForCharacter( Character.Self )]"
-								text = "[Lifestyle.GetHighlightDescription]"
-								default_format = "#high;italic"
-								autoresize = yes
-								max_width = 300
+								name = "focus_area"
+								datamodel = "[CharacterLifestyleWindow.GetFocuses]"
+								margin_top = 5
 
+								item = {
+									hbox = {
+										layoutpolicy_horizontal = expanding
+
+										button = {
+											visible = "[Not(GetVariableSystem.Exists('hide_foci'))]"
+											background = { using = Background_Area_Dark }
+
+											enabled = "[Or(CharacterLifestyleWindow.CanSelectFocus( FocusType.Self ), EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey ))]"
+											down = "[EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )]"
+											onclick = "[CharacterLifestyleWindow.SelectFocus( FocusType.Self )]"
+											alwaystransparent = "[EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )]"
+
+
+											blockoverride "disabled" {}
+
+											shortcuts_list = {
+												blockoverride "click" {
+													onclick = "[CharacterLifestyleWindow.SelectFocus( FocusType.Self )]"
+												}
+											}
+
+											vbox = {
+												margin = { 10 5 }
+												margin_bottom = 10
+												resizeparent = yes
+												# spacing = 10
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													margin_top = 3
+													spacing = 3
+
+													text_single = {
+														raw_text = "[IndexNumber],"
+													}
+
+													text_single = {
+														raw_text = "[FocusType.GetNameNoTooltip]."
+														alwaystransparent = yes
+													}
+
+													text_single = {
+														visible = "[EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )]"
+														text = "CURRENT_FOCUS"
+														margin_right = 5
+													}
+
+													text_single = {
+														margin_right = 5
+														raw_text = "Disabled."
+														visible = "[Not(Or(CharacterLifestyleWindow.CanSelectFocus( FocusType.Self ), EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )))]"
+													}
+
+													expand = { }
+												}
+
+												hbox = {
+													layoutpolicy_horizontal = expanding
+
+													text_multi_wide = {
+														alwaystransparent = yes
+														text = "LONG_FOCUS_TEXT"
+													}
+
+													expand = {}
+												}
+											}
+										}
+
+										expand = {}
+									}
+								}
 							}
 						}
 
 						expand = {}
 					}
 
-					hbox = {
+					## Trees
+					vbox = {
+						datamodel = "[CharacterLifestyleWindow.GetPerkTrees]"
 						layoutpolicy_horizontal = expanding
+						visible = "[Or(Is('hide_foci'), Is('focus_on_perks'))]"
 
-						vbox = {
+						flowcontainer = {
 							layoutpolicy_horizontal = expanding
-							name = "focus_area"
-							datamodel = "[CharacterLifestyleWindow.GetFocuses]"
+							ignoreinvisible = yes
+							direction = vertical
+							visible = "[Is('focus_on_perks')]"
 
+							button_checked_text = {
+								shortcut = map_mode_2
+								onclick = "[Toggle('perk_connections')]"
+								blockoverride "visible" {
+									visible = "[Isnt('perk_connections')]"
+								}
+								blockoverride "text" {
+									raw_text = "show paths, T."
+								}
+							}
+
+							button_checked_text = {
+								shortcut = map_mode_1
+								onclick = "[Toggle('lifestyle_perk_desc')]"
+								blockoverride "visible" {
+									visible = "[Isnt('lifestyle_perk_desc')]"
+								}
+								blockoverride "text" {
+									raw_text = "show effects, E."
+								}
+							}
+
+						}
+
+						item = {
 							vbox = {
 								layoutpolicy_horizontal = expanding
+								visible = "[Or(Isnt('focused_perk_tree'), Has('focused_perk_tree', PerkGuiTree.GetName))]"
 
-								visible = "[Isnt('hide_foci')]"
-
-								hbox = {
-									layoutpolicy_horizontal = expanding
-									text_single = {
-										text = "LIFESTYLE_FOCUS_HEADER"
-									}
-									dot = { }
-
-									expand = { }
+								button = {
+									shortcut = close_window
+									onclick = "[Clear('focused_perk_tree')]"
+									visible = "[Is('focused_perk_tree')]"
 								}
 
-								hbox = {
-									visible = "[GetPlayer.GetLifestyle.IsValid]"
+								button_text = {
 									layoutpolicy_horizontal = expanding
-									text_single = {
-										text = "FOCUS_CANCHANGE"
-									}
-									dot = { }
-									expand = { }
-								}
-
-
-								hbox = {
-									layoutpolicy_horizontal = expanding
-									visible = "[Not( GetPlayer.GetLifestyle.IsValid )]"
-									text_single = {
-										text = "FOCUS_CANCHANGE_NO_FOCUS"
-									}
-									dot = { }
-
-									expand = { }
-								}
-							}
-
-							hbox = {
-							    layoutpolicy_horizontal = expanding
-
-								text_multi = {
-									margin_top = 5
-									raw_text = "[GetLifestyleTooltipWarnings( GetPlayer )]."
-									visible = "[GetPlayer.GetLifestyle.IsValid]"
-									max_width = 300
-									autoresize = yes
-								}
-
-							    expand = { }
-							}
-
-							button_text = {
-								layoutpolicy_horizontal = expanding
-								shortcut = army_split_half
-
-							    blockoverride "text" {
-							        raw_text = "[Select_CString(GetVariableSystem.Exists('hide_foci'), 'Show focuses', 'Hide focuses')], F."
-							    }
-								onclick = "[GetVariableSystem.Toggle('hide_foci')]"
-							}
-
-							widget = {
-								size = { 0 5 }
-							}
-
-
-							item = {
-								button_standard_clean = {
-									visible = "[Not(GetVariableSystem.Exists('hide_foci'))]"
-									layoutpolicy_horizontal = expanding
-									size = { 300 100 }
-									background = { using = Background_Area_Dark }
-
-									enabled = "[Or(CharacterLifestyleWindow.CanSelectFocus( FocusType.Self ), EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey ))]"
-									down = "[EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )]"
-									onclick = "[CharacterLifestyleWindow.SelectFocus( FocusType.Self )]"
-									alwaystransparent = "[EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )]"
-
-
-									blockoverride "disabled" {}
-
+									onclick = "[Set('focused_perk_tree', PerkGuiTree.GetName)]"
 									shortcuts_list = {
 										blockoverride "click" {
-											onclick = "[CharacterLifestyleWindow.SelectFocus( FocusType.Self )]"
+											onclick = "[Set('focused_perk_tree', PerkGuiTree.GetName)]"
 										}
 									}
-
-
-									vbox = {
-										margin = { 10 5 }
-										margin_bottom = 10
-										resizeparent = yes
-										# spacing = 10
-
+									blockoverride "num" {
+										visible = "[Isnt('focused_perk_tree')]"
+									}
+									blockoverride "text" {
+										raw_text = "[PerkGuiTree.GetName], [GetDataModelSize(PerkGuiTree.GetItems)] perks, [CountItems] unlocked."
 										hbox = {
-											layoutpolicy_horizontal = expanding
-											margin_top = 3
-											spacing = 3
-
-											text_single = {
-												raw_text = "[IndexNumber],"
+											datamodel = "[PerkGuiTree.GetItems]"
+											name = "items"
+											item = {
+												hbox = {
+													datacontext = "[PerkLineItem.GetItem]"
+													visible = "[Character.HasPerk( Perk.Self )]"
+												}
 											}
-
-											text_single = {
-												raw_text = "[FocusType.GetNameNoTooltip]."
-												# layoutpolicy_horizontal = expanding
-												default_format = "#high"
-												using = Font_Size_Medium
-												align = left
-												# autoresize = no
-											}
-
-											text_single = {
-												visible = "[EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )]"
-												align = left
-												text = "CURRENT_FOCUS"
-												default_format = "#low;italic"
-												margin_right = 5
-											}
-
-											text_single = {
-												margin_right = 5
-												align = left
-												raw_text = "Disabled."
-												visible = "[Not(Or(CharacterLifestyleWindow.CanSelectFocus( FocusType.Self ), EqualTo_string( FocusType.GetKey, Character.GetFocus.GetKey )))]"
-											}
-
-											expand = { }
 										}
+									}
+								}
 
-										text_multi = {
-											autoresize = yes
-											max_width = 350
-											layoutpolicy_horizontal = expanding
-											layoutpolicy_vertical = expanding
-											alwaystransparent = yes
-											text = "LONG_FOCUS_TEXT"
-											align = left
+								flowcontainer = {
+									ignoreinvisible = yes
+									visible = "[Is('focused_perk_tree')]"
+									direction = vertical
+									layoutpolicy_horizontal = expanding
+
+									text_multi_wide = {
+										raw_text = "Note that perk trees are not linear, see the structure below."
+										# visible = "[Isnt('showed_perk_tree_tip')]"
+									}
+
+									button_checked_text = {
+										onclick = "[Set('showed_perk_tree_tip', 'yes')]"
+										shortcut = map_mode_2
+										onclick = "[Toggle('perk_connections')]"
+										blockoverride "visible" {
+											visible = "[Isnt('perk_connections')]"
+										}
+										blockoverride "text" {
+											raw_text = "show paths, T."
 										}
 									}
 
-								}
-							}
-						}
-					}
-
-					expand = {}
-				}
-
-				## CENTER AREA
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						layoutpolicy_vertical = expanding
-						margin = { 20 0 }
-						# margin_top = 15
-
-						background = {
-							#using = Background_Area_Dark
-							texture = "gfx/interface/window_lifestyles/lifestyles_tree_area_bg.dds"
-							margin = { 5 5 }
-							spriteType = Corneredtiled
-							spriteborder = { 200 200 }
-							#	alpha = 0.8
-
-							# modify_texture = {
-							# 	texture = "gfx/interface/window_lifestyles/lifestyles_dark_bg_mask.dds"
-							# 	blend_mode = alphamultiply
-							# }
-						}
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-
-							background = {
-								using = Background_Frame
-								margin_top = -5
-								alpha = 0.5
-							}
-
-							hbox = {
-								visible = "[Character.IsLocalPlayer]"
-								margin = { 10 0 }
-								layoutpolicy_horizontal = expanding
-
-								state = {
-									name = "lifestyle_tabs_refresh"
-									next = a
-									alpha = 0.5
-								}
-
-								state = {
-									name = "a"
-									alpha = 1
-									duration = 0.5
-									using = Animation_Curve_Default
-								}
-
-								expand = { }
-							}
-						}
-
-						## Trees
-						hbox = {
-							datamodel = "[CharacterLifestyleWindow.GetPerkTrees]"
-							layoutpolicy_horizontal = expanding
-							layoutpolicy_vertical = expanding
-							margin_bottom = 20
-							margin_top = 20
-							# spacing = 10
-							# margin_right = 400
-
-							state = {
-								name = "lifestyle_tabs_refresh"
-								next = a
-								alpha = 0.5
-							}
-
-							state = {
-								name = "a"
-								alpha = 1
-								duration = 0.5
-								using = Animation_Curve_Default
-							}
-
-							item = {
-								vbox = {
-									layoutpolicy_horizontal = expanding
-									max_width = 400
-									layoutpolicy_vertical = expanding
-
-									vbox = {
-										layoutpolicy_horizontal = expanding
-										layoutpolicy_vertical = expanding
-
-										background = {
-											visible = "[Not(PerkGuiTree.IsCompleted)]"
-											texture = "[PerkGuiTree.GetBackground]"
-											alpha = 0.15
-
-											modify_texture = {
-												texture = "gfx/interface/window_lifestyles/lifestyles_perk_tree_bg.dds"
-												spriteType = Corneredtiled
-												spriteborder = { 200 200 }
-												blend_mode = alphamultiply
-											}
+									button_checked_text = {
+										shortcut = map_mode_1
+										onclick = "[Toggle('lifestyle_perk_desc')]"
+										blockoverride "visible" {
+											visible = "[Isnt('lifestyle_perk_desc')]"
 										}
+										blockoverride "text" {
+											raw_text = "show effects, E."
+										}
+									}
+								}
 
-										container = {
-											text_label_center = {
-												parentanchor = top|hcenter
-												position = { 0 25 }
-												raw_text = "[PerkGuiTree.GetName] perks."
-												default_format = "#low"
-												using = Font_Size_Medium
-											}
+								flowcontainer = {
+									layoutpolicy_horizontal = expanding
+									name = "perk_tree_item_line_area" # Name used in code do not change
+									direction = vertical
+									ignoreinvisible = yes
+									visible = "[Or(Is('focus_on_perks'), Is('focused_perk_tree'))]"
+
+									datamodel = "[PerkGuiTree.GetItems]"
+
+									item = {
+										flowcontainer = {
 											ignoreinvisible = yes
+											datacontext = "[PerkLineItem.GetItem]"
+											direction = vertical
 
-											divider_light = {
-												position = { 0 65 }
-												size = { 100% 3 }
-												alpha = 0.25
-											}
-
-											flowcontainer = {
-												name = "perk_tree_item_line_area" # Name used in code do not change
-												parentanchor = hcenter
-												direction = vertical
-												position = { 0 50 }
+											container = {
 												ignoreinvisible = yes
+												visible = "[Not(GetVariableSystem.Exists('focus_on_perks'))]"
 
-												datamodel = "[PerkGuiTree.GetItems]"
+												button_text = {
+													onclick = "[CharacterLifestyleWindow.SelectPerk( Perk.Self )]"
+													shortcuts_list = {
+														blockoverride "click" {
+															onclick = "[CharacterLifestyleWindow.SelectPerk( Perk.Self )]"
+														}
+													}
+													tooltipwidget = {
+														using = perk_tooltip_contents
+													}
+													enabled = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
+													blockoverride "num" {
 
-												item = {
-													container = {
-														ignoreinvisible = yes
-														datacontext = "[PerkLineItem.GetItem]"
-														# position = "[PerkGuiTree.GetItemPosition( Perk.Self )]"
+													}
+													blockoverride "pre" {
+														spacing = 4
+														text_single = {
+															raw_text = "Unlock"
+															visible = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
+														}
+														text_single = {
+															raw_text = "Trait"
+															visible = "[Perk.IsFinisher]"
+														}
+													}
+													blockoverride "text" {
+														raw_text = "[Perk.GetNameNoTooltip( Character.Self )]."
+														align = left
+													}
+													blockoverride "extra" {
+														text_single = {
+															raw_text = "Unlocked."
+															visible = "[Character.HasPerk( Perk.Self )]"
+														}
 
-														container = {
+														flowcontainer = {
 															ignoreinvisible = yes
-															visible = "[Not(GetVariableSystem.Exists('focus_on_perks'))]"
+															visible = "[Is('perk_connections')]"
+															spacing = 3
 
-															button_text = {
-																onclick = "[CharacterLifestyleWindow.SelectPerk( Perk.Self )]"
-																tooltipwidget = {
-												                    using = perk_tooltip_contents
-												                }
-																enabled = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
-																blockoverride "pre" {
-																	spacing = 4
-																	text_single = {
-																		raw_text = "Unlock"
-																		visible = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
-																	}
-																	text_single = {
-																		raw_text = "Trait"
-																		visible = "[Perk.IsFinisher]"
-																	}
+															flowcontainer = {
+																ignoreinvisible = yes
+																spacing = 3
+																visible = "[GreaterThan_int32(PdxGuiWidget.AccessParent.FindChild('items').CountVisibleChildren, '(int32)0')]"
+
+																text_single = {
+																	raw_text = "leads to"
 																}
-															    blockoverride "text" {
-															        raw_text = "[Perk.GetNameNoTooltip( Character.Self )]."
-																	align = left
-															    }
-																blockoverride "extra" {
-																	text_single = {
-																		raw_text = "Unlocked."
-																		visible = "[Character.HasPerk( Perk.Self )]"
+
+																text_single = {
+																	visible = "[GreaterThan_int32(PdxGuiWidget.AccessParent.AccessParent.FindChild('items').CountVisibleChildren, '(int32)1')]"
+																	raw_text = "[PdxGuiWidget.AccessParent.AccessParent.FindChild('items').CountVisibleChildren]:"
+																}
+															}
+
+															flowcontainer = {
+																datamodel = "[PerkGuiTree.GetConnections]"
+																name = "items"
+																spacing = 3
+																ignoreinvisible = yes
+																item = {
+																	flowcontainer = {
+																		ignoreinvisible = yes
+																		spacing = 3
+																		visible = "[ObjectsEqual(PerkLineConnection.GetParent.GetItem, Perk.Self)]"
+																		# text_single = {
+																		# 	raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)2')],"
+																		# }
+																		text_single = {
+																			raw_text = "[PerkLineConnection.GetChild.GetItem.GetName(Character.Self)],"
+																		}
 																	}
-																	# text_single = {
-																	# 	raw_text = "Can't unlock."
-																	# 	visible = "[And(Not(Character.HasPerk( Perk.Self )), Not(CharacterLifestyleWindow.CanSelectPerk( Perk.Self )))]"
-																	# }
 																}
 															}
 														}
 
-														container = {
-															ignoreinvisible = yes
-															visible = "[GetVariableSystem.Exists('focus_on_perks')]"
+														text_single = {
+															visible = "[Perk.IsFinisher]"
+															raw_text = "Finisher."
+														}
 
-															button_text = {
-																onclick = "[CharacterLifestyleWindow.SelectPerk( Perk.Self )]"
-																tooltipwidget = {
-												                    using = perk_tooltip_contents
-												                }
-																visible = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
-																enabled = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
-																blockoverride "pre" {
-																	spacing = 4
-																	text_single = {
-																		raw_text = "Unlock"
-																		visible = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
-																	}
-																	text_single = {
-																		raw_text = "trait"
-																		visible = "[Perk.IsFinisher]"
+														# text_single = {
+														# 	raw_text = "Can't unlock."
+														# 	visible = "[And(Not(Character.HasPerk( Perk.Self )), Not(CharacterLifestyleWindow.CanSelectPerk( Perk.Self )))]"
+														# }
+													}
+												}
+											}
+
+											container = {
+												ignoreinvisible = yes
+												visible = "[GetVariableSystem.Exists('focus_on_perks')]"
+
+												button_text = {
+													onclick = "[CharacterLifestyleWindow.SelectPerk( Perk.Self )]"
+													tooltipwidget = {
+														using = perk_tooltip_contents
+													}
+													shortcuts_list = {
+														blockoverride "click" {
+															onclick = "[CharacterLifestyleWindow.SelectPerk( Perk.Self )]"
+														}
+													}
+													visible = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
+													enabled = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
+													blockoverride "pre" {
+														spacing = 4
+														text_single = {
+															raw_text = "Unlock"
+															visible = "[And(CharacterLifestyleWindow.CanSelectPerk( Perk.Self ), Character.GetLifestyle.IsValid)]"
+														}
+														text_single = {
+															raw_text = "trait"
+															visible = "[Perk.IsFinisher]"
+														}
+													}
+													blockoverride "text" {
+														raw_text = "[Perk.GetNameNoTooltip( Character.Self )]."
+														align = left
+													}
+													blockoverride "extra" {
+														text_single = {
+															raw_text = "Unlocked."
+															visible = "[Character.HasPerk( Perk.Self )]"
+														}
+
+														flowcontainer = {
+															ignoreinvisible = yes
+															visible = "[Is('perk_connections')]"
+															spacing = 3
+
+															flowcontainer = {
+																ignoreinvisible = yes
+																spacing = 3
+																visible = "[GreaterThan_int32(PdxGuiWidget.AccessParent.FindChild('items').CountVisibleChildren, '(int32)0')]"
+
+																text_single = {
+																	raw_text = "leads to"
+																}
+
+																text_single = {
+																	visible = "[GreaterThan_int32(PdxGuiWidget.AccessParent.AccessParent.FindChild('items').CountVisibleChildren, '(int32)1')]"
+																	raw_text = "[PdxGuiWidget.AccessParent.AccessParent.FindChild('items').CountVisibleChildren]:"
+																}
+															}
+
+															text_single = {
+																visible = "[EqualTo_int32(PdxGuiWidget.AccessParent.FindChild('items').CountVisibleChildren, '(int32)0')]"
+																raw_text = "Finisher."
+															}
+
+															flowcontainer = {
+																datamodel = "[PerkGuiTree.GetConnections]"
+																name = "items"
+																spacing = 3
+																ignoreinvisible = yes
+																item = {
+																	flowcontainer = {
+																		ignoreinvisible = yes
+																		spacing = 3
+																		visible = "[ObjectsEqual(PerkLineConnection.GetParent.GetItem, Perk.Self)]"
+																		# text_single = {
+																		# 	raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)2')],"
+																		# }
+																		text_single = {
+																			raw_text = "[PerkLineConnection.GetChild.GetItem.GetName(Character.Self)],"
+																		}
 																	}
 																}
-															    blockoverride "text" {
-															        raw_text = "[Perk.GetNameNoTooltip( Character.Self )]."
-																	align = left
-															    }
-																blockoverride "extra" {
-																	text_single = {
-																		raw_text = "Unlocked."
-																		visible = "[Character.HasPerk( Perk.Self )]"
+															}
+														}
+														# text_single = {
+														# 	raw_text = "Can't unlock."
+														# 	visible = "[And(Not(Character.HasPerk( Perk.Self )), Not(CharacterLifestyleWindow.CanSelectPerk( Perk.Self )))]"
+														# }
+													}
+												}
+											}
+
+											text_multi_wide = {
+												visible = "[And(Is('lifestyle_perk_desc'), Or(Isnt('focus_on_perks'), CharacterLifestyleWindow.CanSelectPerk( Perk.Self )))]"
+												raw_text = "[Perk.GetEffectDescription( GetPlayer )]"
+											}
+										}
+									}
+								}
+
+								flowcontainer = {
+									layoutpolicy_horizontal = expanding
+									ignoreinvisible = yes
+									direction = vertical
+									visible = "[And(Has('focused_perk_tree', PerkGuiTree.GetName), Isnt('focus_on_perks'))]"
+									margin_top = 5
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "Tree structure:"
+									}
+
+									flowcontainer = {
+										ignoreinvisible = yes
+										direction = vertical
+										datamodel = "[PerkGuiTree.GetItems]"
+										layoutpolicy_horizontal = expanding
+
+										item = {
+											flowcontainer = {
+												ignoreinvisible = yes
+												direction = vertical
+												datacontext = "[PerkLineItem.GetItem]"
+
+												text_single = {
+													visible = "[EqualTo_int32(PdxGuiWidget.AccessParent.FindChild('items').CountVisibleChildren, '(int32)0')]"
+													raw_text = "Starts with [Perk.GetName( Character.Self )]."
+												}
+
+												flowcontainer = {
+													ignoreinvisible = yes
+													datamodel = "[PerkGuiTree.GetConnections]"
+													direction = vertical
+													layoutpolicy_horizontal = expanding
+													name = "items"
+
+													item = {
+														flowcontainer = {
+															visible = "[ObjectsEqual(PerkLineConnection.GetChild.GetItem, Perk.Self)]"
+															ignoreinvisible = yes
+															direction = vertical
+
+															container = {}
+														}
+													}
+												}
+											}
+										}
+									}
+
+									flowcontainer = {
+										ignoreinvisible = yes
+										direction = vertical
+										datamodel = "[PerkGuiTree.GetItems]"
+										layoutpolicy_horizontal = expanding
+
+										item = {
+											flowcontainer = {
+												ignoreinvisible = yes
+												direction = vertical
+												datacontext = "[PerkLineItem.GetItem]"
+
+												text_single = {
+													visible = "[GreaterThan_int32(PdxGuiWidget.AccessParent.FindChild('items').CountVisibleChildren, '(int32)1')]"
+													raw_text = "Splits into [PdxGuiWidget.AccessParent.FindChild('items').CountVisibleChildren] paths after [Perk.GetName( Character.Self )]."
+												}
+
+												flowcontainer = {
+													ignoreinvisible = yes
+													datamodel = "[PerkGuiTree.GetConnections]"
+													direction = vertical
+													layoutpolicy_horizontal = expanding
+													name = "items"
+
+													item = {
+														flowcontainer = {
+															visible = "[ObjectsEqual(PerkLineConnection.GetParent.GetItem, Perk.Self)]"
+															ignoreinvisible = yes
+															direction = vertical
+
+															container = {}
+														}
+													}
+												}
+											}
+										}
+									}
+
+									flowcontainer = {
+										ignoreinvisible = yes
+										direction = vertical
+										datamodel = "[PerkGuiTree.GetItems]"
+										layoutpolicy_horizontal = expanding
+
+										item = {
+											flowcontainer = {
+												ignoreinvisible = yes
+												direction = vertical
+												datacontext = "[PerkLineItem.GetItem]"
+
+												text_single = {
+													visible = "[GreaterThan_int32(PdxGuiWidget.AccessParent.FindChild('items').CountVisibleChildren, '(int32)1')]"
+													raw_text = "The [PdxGuiWidget.AccessParent.FindChild('items').CountVisibleChildren] paths merge into [Perk.GetName( Character.Self )]."
+												}
+
+												flowcontainer = {
+													ignoreinvisible = yes
+													datamodel = "[PerkGuiTree.GetConnections]"
+													direction = vertical
+													layoutpolicy_horizontal = expanding
+													name = "items"
+
+													item = {
+														flowcontainer = {
+															visible = "[ObjectsEqual(PerkLineConnection.GetChild.GetItem, Perk.Self)]"
+															ignoreinvisible = yes
+															direction = vertical
+
+															container = {}
+														}
+													}
+												}
+											}
+										}
+									}
+
+									flowcontainer = {
+										ignoreinvisible = yes
+										direction = vertical
+										datamodel = "[PerkGuiTree.GetItems]"
+										layoutpolicy_horizontal = expanding
+
+										item = {
+											flowcontainer = {
+												ignoreinvisible = yes
+												direction = vertical
+												datacontext = "[PerkLineItem.GetItem]"
+												visible = "[Perk.IsFinisher]"
+
+												text_single = {
+													raw_text = "Ends with [Perk.GetName( Character.Self )]."
+												}
+											}
+										}
+									}
+
+								}
+
+								# a cursed attempt to show the structure
+								# only works properly if there's only one starting perk
+								flowcontainer = {
+									ignoreinvisible = yes
+									datamodel = "[PerkGuiTree.GetConnections]"
+									direction = vertical
+									layoutpolicy_horizontal = expanding
+									visible = no
+
+									item = {
+										flowcontainer = {
+											ignoreinvisible = yes
+											visible = "[IsIndexFirst]"
+											datacontext = "[PerkLineConnection.GetParent.GetItem]"
+											direction = vertical
+
+											perk_level = {
+												blockoverride "level" {
+													raw_text = "1,"
+												}
+											}
+											perk_below = {
+												blockoverride "level" {
+													raw_text = "2,"
+												}
+												blockoverride "next" {
+													perk_below = {
+														blockoverride "level" {
+															raw_text = "3,"
+														}
+														blockoverride "next" {
+															perk_below = {
+																blockoverride "level" {
+																	raw_text = "4,"
+																}
+																blockoverride "next" {
+																	perk_below = {
+																		blockoverride "level" {
+																			raw_text = "5,"
+																		}
+																		blockoverride "next" {
+																			perk_below = {
+																				blockoverride "level" {
+																					raw_text = "6,"
+																				}
+																				blockoverride "next" {
+																					perk_below = {
+																						blockoverride "level" {
+																							raw_text = "7,"
+																						}
+																					}
+																				}
+																			}
+																		}
 																	}
-																	# text_single = {
-																	# 	raw_text = "Can't unlock."
-																	# 	visible = "[And(Not(Character.HasPerk( Perk.Self )), Not(CharacterLifestyleWindow.CanSelectPerk( Perk.Self )))]"
-																	# }
 																}
 															}
 														}
@@ -816,48 +925,36 @@ window = {
 												}
 											}
 										}
-
-										expand = { }
 									}
 								}
+
+
+								expand = { }
 							}
 						}
 					}
+
+					flowcontainer = {
+						layoutpolicy_horizontal = expanding
+						direction = vertical
+						ignoreinvisible = yes
+						visible = "[Or(Is('hide_foci'), Is('focus_on_perks'))]"
+
+						button_text = {
+							onclick = "[CharacterLifestyleWindow.OpenRefundPerks]"
+							visible = "[And(And(And(CharacterLifestyleWindow.CanRefundPerks, Character.IsLocalPlayer), Isnt('focused_perk_tree')), Isnt('focus_on_perks'))]" #TODO enabled
+							blockoverride "text" {
+								raw_text = "REFUND_PERKS"
+							}
+							blockoverride "dot" {
+							}
+						}
+					}
+
+
+					expand = {}
 				}
 			}
-		}
-
-		flowcontainer = {
-			parentanchor = bottom|left
-			position = { 20 -10 }
-			spacing = 10
-			direction = vertical
-
-			background = {
-				using = Background_Area_Dark
-				margin_top = 150
-				margin_bottom = 20
-				margin_right = 280
-				margin_left = 20
-				mirror = horizontal
-				 modify_texture = {
-				 	texture = "gfx/interface/component_masks/mask_fade_corner.dds"
-				 	blend_mode = alphamultiply
-				}
-			}
-
-			# background = {
-			# 	texture = "gfx/interface/window_character/characterlist_skills_bg.dds"
-			# 	spriteType = Corneredstretched
-			# 	spriteborder = { 10 10 }
-			# 	margin = { 15 5 }
-			# }
-
-			# background = {
-			# 	using = Background_Area_Dark
-			# 	margin = { 10 5 }
-			# }
-
 		}
 	}
 
@@ -865,6 +962,60 @@ window = {
 		size  = { 100% 100% }
 		visible = "[GetVariableSystem.Exists('ocr')]"
 		window_lifestyle_old = {
+		}
+	}
+}
+
+
+types OCR {
+	type perk_level = flowcontainer {
+		ignoreinvisible = yes
+		spacing = 3
+
+		text_single = {
+			block "level" {
+				raw_text = "3,"
+			}
+		}
+
+		text_single = {
+			raw_text = "[Perk.GetName(Character.Self)],"
+		}
+
+		text_single = {
+			raw_text = "[CountItems] children."
+			flowcontainer = {
+				datamodel = "[PerkGuiTree.GetConnections]"
+				name = "items"
+				item = {
+					container = {
+						visible = "[ObjectsEqual(PerkLineConnection.GetParent.GetItem, Perk.Self)]"
+					}
+				}
+			}
+		}
+	}
+
+	type perk_below =  flowcontainer {
+		datamodel = "[PerkGuiTree.GetConnections]"
+		direction = vertical
+
+		item = {
+			flowcontainer = {
+				visible = "[ObjectsEqual(PerkLineConnection.GetParent.GetItem, Perk.Self)]"
+				spacing = 3
+				ignoreinvisible = yes
+
+				flowcontainer = {
+					datacontext = "[PerkLineConnection.GetChild.GetItem]"
+					ignoreinvisible = yes
+					direction = vertical
+
+					perk_level = {
+					}
+					block "next" {}
+				}
+			}
 		}
 	}
 }

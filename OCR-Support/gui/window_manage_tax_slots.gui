@@ -1,0 +1,534 @@
+window = {
+	name = "window_manage_tax_slots"
+	using = base_ocr_window
+	allow_outside = yes
+	movable = no
+	layer = windows_layer
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+		using = Window_Position_MainTab
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+		using = Window_Position_MainTab_Hide
+		on_finish = "[Clear('focused_taxslot')]"
+		on_finish = "[Set('tip_manage_slots', 'yes')]"
+	}
+
+	state = {
+		name = dismiss
+		next = _hide
+
+		trigger_when = "[GetVariableSystem.Exists( 'hide_right_windows' )]"
+	}
+
+	window_ocr = {
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				datacontext = "[ManageTaxSlotsWindow.GetLiege]"
+
+				###HEADERBOX WITH INFORMATION
+				header_text = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "header_text"
+					{
+						text = "TAX_SLOT_OVERVIEW_WINDOW_HEADER"
+					}
+
+					blockoverride "button_close"
+					{
+						onclick = "[ManageTaxSlotsWindow.Close]"
+					}
+				}
+
+				vbox = {
+					name = tax_collection_top_view # Used for reactive advice
+					layoutpolicy_horizontal = expanding
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[ManageTaxSlotsWindow.GetTotalTaxSlotsBreakdown]"
+						text = "TAX_SLOT_OVERVIEW_WINDOW_ASSIGNED_TAX_SLOTS"
+						tooltipwidget = { widget_value_breakdown_tooltip = {} }
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 5
+
+							text_single = {
+								raw_text = "Total"
+							}
+
+							text_single = {
+								datacontext = "[ManageTaxSlotsWindow.GetTotalTaxBreakdown]"
+								raw_text = "Taxes: [ValueBreakdown.GetValue],"
+
+								tooltipwidget = {
+									tax_contribution_tooltip = {
+										blockoverride "descriptive_text"
+										{
+											text = "TAX_SLOT_VASSAL_WINDOW_TOTAL_TAX_DESC"
+										}
+
+										blockoverride "sub_header"
+										{
+											text = "TAX_SLOT_OVERVIEW_WINDOW_TOTAL_SUB_HEADER"
+										}
+
+										blockoverride "no_sub_values"
+										{
+											text = "TAX_SLOT_VASSAL_WINDOW_NO_TAX_SLOTS"
+										}
+									}
+								}
+								using = tooltip_ws
+							}
+
+							text_single = {
+								datacontext = "[ManageTaxSlotsWindow.GetTotalLevyBreakdown]"
+								raw_text = "levies: [ValueBreakdown.GetValue]."
+
+								tooltipwidget = {
+									tax_contribution_tooltip = {
+										blockoverride "descriptive_text"
+										{
+											text = "TAX_SLOT_VASSAL_WINDOW_TOTAL_LEVIES_DESC"
+										}
+
+										blockoverride "sub_header"
+										{
+											text = "TAX_SLOT_OVERVIEW_WINDOW_TOTAL_SUB_HEADER"
+										}
+
+										blockoverride "contribution_icon"
+										{
+											texture = "gfx/interface/icons/icon_soldier.dds"
+										}
+
+										blockoverride "no_sub_values"
+										{
+											text = "TAX_SLOT_VASSAL_WINDOW_NO_TAX_SLOTS"
+										}
+									}
+								}
+								using = tooltip_ws
+							}
+							expand = {}
+						}
+						expand = {}
+					}
+
+					hbox = {
+						visible = "[GreaterThan_int32( Character.GetUnassignedVassalsCount, '(int32)0' )]"
+						layoutpolicy_horizontal = expanding
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[GreaterThan_int32( Character.GetUnassignedVassalsCount, '(int32)0' )]"
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_single = {
+									visible = "[GreaterThan_int32( Character.GetTaxSlotsWithoutTaxCollectorCount, '(int32)0' )]"
+									layoutpolicy_horizontal = expanding
+									text = "TAX_SLOT_OVERVIEW_WINDOW_TAX_SLOTS_WARNING"
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									text = "TAX_SLOT_OVERVIEW_WINDOW_UNASSIGNED_VASSALS_WARNING"
+								}
+							}
+						}
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Isnt('tip_manage_slots')]"
+					raw_text = "Tip: Select a jurisdiction to focus on it and use hotkeys. Numbers work here."
+				}
+
+				### TAX JURISDICTION LIST
+				scrollbox = {
+					name = "tax_jurisdiction_list" # Used for reactive advice
+
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					blockoverride "scrollbox_margins" {
+						margin_top = 20
+					}
+
+					blockoverride "scrollbox_content"
+					{
+						tax_slot_list_ocr = {}
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						button_checked_text = {
+							onclick = "[ManageTaxSlotsWindow.ToggleAutoAssign]"
+							blockoverride "visible" {
+
+								visible = "[Not(ManageTaxSlotsWindow.ShouldAutoAssign)]"
+							}
+							blockoverride "text"
+							{
+								text = "TAX_SLOT_OVERVIEW_AUTO_ASSIGN_BUTTON"
+							}
+						}
+						expand = {}
+					}
+
+					button_decision_entry_text = {
+						name = "search_for_tax_collector_decision"
+						layoutpolicy_horizontal = expanding
+						datacontext = "[GetDecisionWithKey('unity_search_for_administrators_decision')]"
+						visible = "[Decision.IsShownForPlayer]"
+						onclick = "[OpenGameViewData( 'decision_detail', Decision.Self )]"
+					}
+				}
+			}
+		}
+	}
+
+	window_manage_tax_slots_old = {}
+}
+
+types OCR
+{
+	### Tax Collector Portrait and Banner
+	type tax_collector_slot_item_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+
+
+		datacontext = "[TaxSlotItem.GetTaxSlot]"
+		datacontext = "[TaxSlotItem.GetTaxCollector]"
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Is('focused_taxslot')]"
+
+			char_name = {
+				visible = "[Character.IsValid]"
+				shortcut = character_finder
+				layoutpolicy_horizontal = expanding
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "Select"
+					}
+				}
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "C."
+					}
+				}
+			}
+
+			button_text = {
+				shortcut = decrease_speed_2
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					raw_text = "[Select_CString(TaxSlotItem.HasTaxCollector, 'Change', 'Appoint a')] tax collector, Z."
+				}
+				onclick = "[ToggleGameViewData( 'tax_slot_appoint_tax_collector', TaxSlotItem.GetTaxSlot.GetID )]"
+				onclick = "[Clear('focused_taxslot')]"
+			}
+
+			button_text = {
+				shortcut = increase_speed_2
+				visible = "[TaxSlotItem.HasTaxCollector]"
+				layoutpolicy_horizontal = expanding
+				onclick = "[ManageTaxSlotsWindow.RemoveTaxCollector( TaxSlotItem.AccessSelf )]"
+				onclick = "[Clear('focused_taxslot')]"
+				blockoverride "text" {
+					raw_text = "Fire [Character.GetFirstNameNoTooltip], X."
+				}
+			}
+		}
+		expand = {}
+	}
+
+	type tax_slot_list_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+		button = {
+			shortcut = close_window
+			visible = "[Is('focused_taxslot')]"
+			onclick = "[Clear('focused_taxslot')]"
+		}
+
+		vbox = {
+			name = "tax_slot_list"
+			datamodel = "[ManageTaxSlotsWindow.GetTaxSlotItems]"
+			layoutpolicy_horizontal = expanding
+			spacing = 5
+
+			### SWITCHING TYPES
+			item = {
+				tax_slot_item_ocr = {}
+			}
+		}
+	}
+
+	type tax_slot_item_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+
+		datacontext = "[TaxSlotItem.GetTaxSlot]"
+		datacontext = "[TaxSlotItem.GetTaxCollector]"
+		visible = "[Or(Isnt('focused_taxslot'), Has('focused_taxslot', TaxSlot.GetName))]"
+		###Tax Slot Information
+		tax_slot_info_ocr = {}
+		###Tax Collector Portrait
+		tax_collector_slot_item_ocr = {}
+	}
+
+	type tax_slot_info_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+
+		##TAX COLLECTOR SLOT INFO, SKILLS, APTITUDE
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			button_text = {
+				datacontext = "[TaxSlotItem.GetTaxCollector]"
+				layoutpolicy_horizontal = expanding
+				block "name" {
+					visible = "[TaxSlotItem.HasTaxCollector]"
+				}
+				block "tax_click" {
+					onclick = "[SetOrToggle('focused_taxslot', TaxSlot.GetName)]"
+					onclick  = "[Set('tip_manage_slots', 'yes')]"
+				}
+				shortcuts_list = {
+					blockoverride "click" {
+						block "tax_click" {
+							onclick = "[SetOrToggle('focused_taxslot', TaxSlot.GetName)]"
+							onclick  = "[Set('tip_manage_slots', 'yes')]"
+						}
+					}
+				}
+				# using = char_click
+				blockoverride "num" {
+
+				}
+				blockoverride "pre" {
+
+					block "tax_select" {}
+				}
+				blockoverride "text" {
+					raw_text = "[TaxSlot.GetName]."
+				}
+			}
+		}
+
+		block "appoint" {
+			button_text = {
+				datacontext = "[TaxSlotItem.GetTaxCollector]"
+				layoutpolicy_horizontal = expanding
+				visible = "[Not(TaxSlotItem.HasTaxCollector)]"
+				onclick = "[ToggleGameViewData( 'tax_slot_appoint_tax_collector', TaxSlotItem.GetTaxSlot.GetID )]"
+				shortcuts_list = {
+					blockoverride "click" {
+						onclick = "[ToggleGameViewData( 'tax_slot_appoint_tax_collector', TaxSlotItem.GetTaxSlot.GetID )]"
+					}
+				}
+				using = char_click
+				blockoverride "num" {
+				}
+				blockoverride "text" {
+					raw_text = "[TaxSlot.GetName], appoint."
+				}
+			}
+		}
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 3
+
+			hbox = {
+				spacing = 3
+
+				text_single = {
+					datacontext = "[TaxSlotItem.GetTaxBreakdown]"
+					raw_text = "Taxes: [ValueBreakdown.GetValue],"
+
+					tooltipwidget = {
+						tax_contribution_tooltip = {}
+					}
+					using = tooltip_ws
+				}
+
+				text_single = {
+					datacontext = "[TaxSlotItem.GetLevyBreakdown]"
+					raw_text = "levies: [ValueBreakdown.GetValue]."
+
+					tooltipwidget = {
+						tax_contribution_tooltip = {
+							blockoverride "descriptive_text"
+							{
+								text = "TAX_SLOT_VASSAL_WINDOW_TAX_SLOT_LEVIES_DESC"
+							}
+
+							blockoverride "contribution_icon"
+							{
+								texture = "gfx/interface/icons/icon_soldier.dds"
+							}
+						}
+					}
+					using = tooltip_ws
+				}
+
+				expand = {}
+			}
+
+			hbox = {
+				visible = "[TaxSlotItem.HasTaxCollector]"
+
+				tax_collector_aptitude_text = {}
+				dot = {}
+
+				text_single = {
+					tooltip = "[Character.GetOpinionBreakdownText( GetPlayer )]"
+					raw_text = "[Character.GetOpinionOf( GetPlayer )|=] opinion."
+				}
+			}
+
+			expand = { }
+		}
+		block "taxpayers" {
+			hbox = {
+				name = "taxpayer_box"
+				layoutpolicy_horizontal = expanding
+
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					##VASSALS GOVERNED BUTTON
+					tax_slot_interaction_button_ocr = {
+						visible = "[Isnt('focused_taxslot')]"
+						tooltip = "TAX_SLOT_MANAGE_TAX_PAYERS_BUTTON"
+
+						blockoverride "tax_slot_button_text" {
+							text = "TAX_COLLECTOR_TAXED_VASSALS_COUNT"
+						}
+
+						blockoverride "tax_slot_button_click" {
+							onclick = "[ToggleGameViewData( 'tax_slot_vassals', TaxSlotItem.GetTaxSlot.GetID )]"
+						}
+					}
+
+					tax_slot_interaction_button_ocr = {
+						shortcut = map_mode_2
+						visible = "[Is('focused_taxslot')]"
+						tooltip = "TAX_SLOT_MANAGE_TAX_PAYERS_BUTTON"
+
+						blockoverride "tax_slot_button_text" {
+							text = "TAX_COLLECTOR_TAXED_VASSALS_COUNT"
+						}
+						blockoverride "extra" {
+							comma ={}
+							text_single = {
+								raw_text = "T"
+							}
+						}
+
+						blockoverride "tax_slot_button_click" {
+							onclick = "[ToggleGameViewData( 'tax_slot_vassals', TaxSlotItem.GetTaxSlot.GetID )]"
+						}
+					}
+
+					dot = {}
+
+					expand = {}
+
+				}
+			}
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					tax_slot_interaction_button_ocr = {
+						visible = "[Isnt('focused_taxslot')]"
+						tooltip = "TAX_SLOT_CHANGE_COLLECTION_OPTION_BUTTON"
+
+						blockoverride "tax_slot_button_text" {
+							text = "TAX_COLLECTOR_SLOT_OPEN_OBLIGATION_BUTTON"
+						}
+					}
+
+					tax_slot_interaction_button_ocr = {
+						shortcut = mapmode_house_secondary
+						visible = "[Is('focused_taxslot')]"
+						tooltip = "TAX_SLOT_CHANGE_COLLECTION_OPTION_BUTTON"
+
+						blockoverride "tax_slot_button_text" {
+							text = "TAX_COLLECTOR_SLOT_OPEN_OBLIGATION_BUTTON"
+						}
+						blockoverride "extra" {
+							comma = {}
+							text_single = {
+								raw_text = "Shift D"
+							}
+						}
+					}
+
+					dot_l = { }
+
+					text_single = {
+						raw_text = "Can't change yet."
+						visible = "[Not(TaxSlotItem.GetTaxSlot.CheckObligationCooldown)]"
+						tooltip = "[TaxSlotItem.GetTaxSlot.GetObligationCooldownDesc]"
+					}
+
+					expand = {}
+				}
+			}
+		}
+
+
+		##VASSALS GOVERNED AND INCOME
+
+		expand = {}
+	}
+
+	type tax_slot_interaction_button_ocr = button_text {
+
+		block "tax_slot_button_click"
+		{
+			onclick = "[ToggleGameViewData( 'tax_slot_obligations', TaxSlotItem.GetTaxSlot.GetID )]"
+		}
+		blockoverride "text" {
+			alwaystransparent = yes
+			block "tax_slot_button_text"
+			{
+				raw_text = ""
+			}
+		}
+	}
+}

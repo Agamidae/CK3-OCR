@@ -72,37 +72,45 @@ types CharacterInteraction
 		}
 	}
 
-	type vbox_arrangement_interaction_send_offer = 	vbox {
+	type vbox_arrangement_interaction_send_offer = vbox {
 		name = "send_offer_window"
 		margin = { 0 10 }
 
-		hbox_character_interaction_acceptance = {
+		vbox = {
 			layoutpolicy_horizontal = expanding
-		}
-
-		button_primary_text = {
-			layoutpolicy_horizontal = expanding
-			blockoverride "disabled" {
-				visible = "[Not(CharacterInteractionConfirmationWindow.CanSend)]"
+			using = ocr
+			hbox_character_interaction_acceptance = {
+				layoutpolicy_horizontal = expanding
 			}
-			blockoverride "text" {
-				block "button_content" { }
+
+			button_primary_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "disabled" {
+					visible = "[Not(CharacterInteractionConfirmationWindow.CanSend)]"
+				}
+				blockoverride "text" {
+					block "button_content" { }
+				}
+				onclick = "[MatchmakerInteractionWindow.Send]"
+				enabled = "[CharacterInteractionConfirmationWindow.CanSend]"
+				tooltip = "[CharacterInteractionConfirmationWindow.GetCanSendDescription]"
+				clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
 			}
-			onclick = "[MatchmakerInteractionWindow.Send]"
-			enabled = "[CharacterInteractionConfirmationWindow.CanSend]"
-			tooltip = "[CharacterInteractionConfirmationWindow.GetCanSendDescription]"
-			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+
+			widget = {
+				size = { 0 5 }
+			}
+
+			vbox_interaction_options = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			text_multi_on_decline_summary = { }
 		}
 
-		widget = {
-			size = { 0 5 }
+		vbox_arrangement_interaction_send_offer_old = {
+			using = vanilla
 		}
-
-		vbox_interaction_options = {
-			layoutpolicy_horizontal = expanding
-		}
-
-		text_multi_on_decline_summary = { }
 	}
 
 	type vbox_marriage_interaction_marriage_details = vbox {
@@ -398,10 +406,13 @@ types CharacterInteraction
 					datacontext = "[InteractionTitleItem.GetTitle]"
 					# size = "[InteractionTitleItem.GetSize]"
 					onclick = "[InteractionTitleItem.OnClick]"
-					onrightclick = "[InteractionTitleItem.OnRightClick]"
+					# onrightclick = "[InteractionTitleItem.OnRightClick]"
 					button_ignore = none
 					down = "[InteractionTitleItem.IsSelected]"
 					enabled = "[InteractionTitleItem.IsSelectable]"
+					onrightclick = "[OpenGameViewData('holding_view', Title.GetProvince.Self)]"
+					onrightclick = "[Set('hide_grant_titles', 'yes')]"
+					onrightclick = "[Clear('county_tabs')]"
 
 					using = tooltip_es
 					# parentanchor = right
@@ -433,7 +444,18 @@ types CharacterInteraction
 						text_single = {
 							name = "text"
 							# layoutpolicy_horizontal = expanding
-							raw_text = "[InteractionTitleItem.GetTitle.GetNameNoTooltip]."
+							raw_text = "[InteractionTitleItem.GetTitle.GetNameNoTooltip],"
+						}
+
+						text_single = {
+							# layoutpolicy_horizontal = expanding
+							raw_text = "in [InteractionTitleItem.GetTitle.GetDeJureLiege.GetNameNoTierNoTooltip]."
+						}
+
+						text_single = {
+							datacontext = "[InteractionTitleItem.GetTitle.GetProvince]"
+							visible = "[Not(ObjectsEqual( Province.Self, MyCapital.Self))]"
+							raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
 						}
 
 						text_single = {
@@ -586,7 +608,7 @@ types CharacterInteraction
 		}
 
 		vbox = {
-			visible = "[GetVariableSystem.Exists('hide_x_participants')]"
+			# visible = "[GetVariableSystem.Exists('hide_x_participants')]"
 			layoutpolicy_horizontal = expanding
 			allow_outside = yes
 
@@ -663,6 +685,7 @@ types CharacterInteraction
 
 	type widget_character_interaction_four_characters = container {
 		layoutpolicy_horizontal = expanding
+		ignoreinvisible = yes
 		# size = { 0 90 }
 
 		block "bg_illustration_datacontext" { }
@@ -681,6 +704,7 @@ types CharacterInteraction
 		}
 
 		flowcontainer = {
+			using = ocr
 			direction = vertical
 			position = { 10 0 }
 			margin_bottom = 5
@@ -724,6 +748,7 @@ types CharacterInteraction
 								raw_text = "[Localize('INTERACTION_SENDER')],"
 							}
 						}
+						blockoverride "relation" {}
 						blockoverride "align" {
 							align = left
 						}
@@ -744,6 +769,12 @@ types CharacterInteraction
 								}
 							}
 						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Character.GetAge]."
+							}
+						}
+						blockoverride "relation" {}
 						blockoverride "align" {
 							align = left
 						}
@@ -830,6 +861,7 @@ types CharacterInteraction
 							align = left
 							raw_text = "CHANGE_CHARACTER"
 						}
+						blockoverride "relation" {}
 
 						blockoverride "extra" {
 							dot = { }
@@ -879,6 +911,12 @@ types CharacterInteraction
 								raw_text = "[Localize('INTERACTION_RECIPIENT')],"
 							}
 						}
+						blockoverride "relation" {}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Character.GetAge]."
+							}
+						}
 						blockoverride "align" {
 							align = left
 						}
@@ -886,24 +924,28 @@ types CharacterInteraction
 
 				}
 
-				button_text = {
-					block "button_clear" {
-						visible = "[CharacterInteractionConfirmationWindow.CanChangeActorCharacter]"
-						enabled = "[CharacterInteractionConfirmationWindow.CanClear]"
-						onclick = "[CharacterInteractionConfirmationWindow.OnClear]"
-						shortcut = "go_back"
-					}
-					blockoverride "text" {
-						raw_text = "CLEAR_MARRIED_CHARACTER"
-					}
-					blockoverride "extra" {
-						dot = { align = left }
-					}
+			}
+			button_text = {
+				block "button_clear" {
+					visible = "[CharacterInteractionConfirmationWindow.CanChangeActorCharacter]"
+					enabled = "[CharacterInteractionConfirmationWindow.CanClear]"
+					onclick = "[CharacterInteractionConfirmationWindow.OnClear]"
+					shortcut = "go_back"
+				}
+				blockoverride "text" {
+					raw_text = "CLEAR_MARRIED_CHARACTER"
+				}
+				blockoverride "extra" {
+					dot = { align = left }
 				}
 			}
 
 			block "interaction_extra" {}
 		}
+
+		# widget_character_interaction_four_characters_old = {
+		# 	using = vanilla
+		# }
 	}
 
 	type vbox_character_interaction_effects_contents = vbox {
@@ -1200,7 +1242,6 @@ types CharacterInteraction
 					visible = "[InteractionEffectsDescription.IsShowingOnAcceptEffects]"
 					name = "accept_effects_info"
 					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
 					autoresize = yes
 					block "width" {
 						max_width = 450
@@ -1211,7 +1252,6 @@ types CharacterInteraction
 				text_multi = {
 					visible = "[Not(InteractionEffectsDescription.IsShowingIntermediaryDeclineEffect)]"
 					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
 					autoresize = yes
 					block "width" {
 						max_width = 450
@@ -1222,7 +1262,6 @@ types CharacterInteraction
 				text_multi = {
 					visible = "[Not(InteractionEffectsDescription.IsShowingRecipientDeclineEffect)]"
 					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
 					autoresize = yes
 					block "width" {
 						max_width = 450
@@ -1394,170 +1433,6 @@ types CharacterInteraction
 		max_width = 500
 		visible = "[CharacterInteractionConfirmationWindow.HasOnDeclineSummary]"
 		text = "[CharacterInteractionConfirmationWindow.GetOnDeclineSummary]"
-	}
-
-	type hbox_interaction_option_levels = hbox
-	{
-		datamodel = "[RepeatedItem( Add_int32( OptionItem.GetNumLevels, '(int32)1' ) )]"
-
-		# text_single = {
-		# 	layoutpolicy_horizontal = expanding
-		# 	raw_text = "Options:"
-		# }
-
-		item = {
-			button_text = {
-				layoutpolicy_horizontal = expanding
-				blockoverride "pre" {
-					text_single = {
-						raw_text = "Can't pick,"
-						visible = "[Not(And( OptionItem.IsValid, And( OptionItem.CanBeChanged, OptionItem.CanSetLevel( int32.GetInt ) ) ))]"
-					}
-					text_single = {
-						raw_text = "Selected,"
-						visible = "[EqualTo_int32( OptionItem.GetCurrentLevel, int32.GetInt)]" #TODO
-					}
-				}
-				blockoverride "text" {
-					raw_text = "[OptionItem.GetName]."
-				}
-				onclick = "[OptionItem.SetLevel( int32.GetInt )]"
-				enabled = "[And( OptionItem.IsValid, And( OptionItem.CanBeChanged, OptionItem.CanSetLevel( int32.GetInt ) ) )]"
-				tooltip = "[OptionItem.GetLevelTooltip( int32.GetInt )]"
-
-				block "level_button"
-				{
-				}
-			}
-		}
-	}
-
-	# Options to consider before accepting and interaction
-	type vbox_interaction_options = vbox {
-		name = "options_grid"
-		visible = "[CharacterInteractionConfirmationWindow.HasOptions]"
-
-		block "margin"
-		{
-
-		}
-
-		text_single = {
-			visible = "[Not( StringIsEmpty(CharacterInteractionConfirmationWindow.GetOptionsHeading) )]"
-			layoutpolicy_horizontal = expanding
-			raw_text = "[CharacterInteractionConfirmationWindow.GetOptionsHeading]."
-		}
-
-		vbox = {
-			name = "multiple_selection_options"
-			visible = "[Not( CharacterInteractionConfirmationWindow.HasExclusiveOptions )]"
-			layoutpolicy_horizontal = expanding
-			datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
-
-			item = {
-				vbox = {
-					tooltip = "[OptionItem.GetTooltip]"
-					using = tooltip_below
-					layoutpolicy_horizontal = expanding
-					visible = "[OptionItem.IsShown]"
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-						visible = "[EqualTo_int32( OptionItem.GetNumLevels, '(int32)0' )]"
-						blockoverride "pre" {
-							text_single = {
-								raw_text = "Can't pick,"
-								visible = "[Not( And(OptionItem.IsValid, OptionItem.CanBeChanged) )]"
-							}
-							text_single = {
-								raw_text = "[Select_CString(OptionItem.HasOption, 'Checked', 'Unchecked')],"
-								# visible = "[OptionItem.HasOption]" #TODO
-							}
-						}
-						blockoverride "text" {
-							raw_text = "[OptionItem.GetName]."
-						}
-						onclick = "[OptionItem.OnClick]"
-						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
-						tooltip = "[OptionItem.GetTooltip]"
-					}
-
-					hbox_interaction_option_levels = {
-						layoutpolicy_horizontal = expanding
-						visible = "[GreaterThan_int32( OptionItem.GetNumLevels, '(int32)1' )]"
-					}
-				}
-			}
-		}
-
-		vbox = {
-			name = "exclusive_options"
-			visible = "[CharacterInteractionConfirmationWindow.HasExclusiveOptions]"
-			layoutpolicy_horizontal = expanding
-
-			hbox = {
-				name = "single_option"
-				layoutpolicy_horizontal = expanding
-				margin = { 10 0 }
-				visible = "[EqualTo_int32( CharacterInteractionConfirmationWindow.GetVisibleOptionsCount, '(int32)1' )]"
-
-				datacontext_from_model = {
-					datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
-				}
-
-				tooltip = "[OptionItem.GetTooltip]"
-				using = tooltip_below
-
-				text_single = {
-					text = "[OptionItem.GetName]"
-				}
-			}
-
-			vbox = {
-				name = "multiple_options"
-				layoutpolicy_horizontal = expanding
-				datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
-
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					raw_text = "[GetDataModelSize(CharacterInteractionConfirmationWindow.GetOptionItems)] Options:"
-				}
-
-
-				item = {
-					button_text = {
-						layoutpolicy_horizontal = expanding
-						visible = "[OptionItem.IsShown]"
-						shortcuts_list = {
-							blockoverride "click" {
-								onclick = "[OptionItem.OnClick]"
-								enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
-							}
-						}
-						blockoverride "pre" {
-							text_single = {
-								raw_text = "Can't pick,"
-								visible = "[Not( And(OptionItem.IsValid, OptionItem.CanBeChanged) )]"
-							}
-							text_single = {
-								raw_text = "Selected,"
-								visible = "[OptionItem.HasOption]" #TODO
-							}
-
-							text_single = {
-								raw_text = "[IndexNumber],"
-							}
-						}
-						blockoverride "text" {
-							raw_text = "[OptionItem.GetName]."
-						}
-						onclick = "[OptionItem.OnClick]"
-						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
-						tooltip = "[OptionItem.GetTooltip]"
-					}
-				}
-			}
-		}
 	}
 
 	type vbox_scheme_info = vbox {
@@ -1842,247 +1717,6 @@ types CharacterInteraction
 		}
 	}
 
-	type dynamicgridbox_interaction_list_enabled = dynamicgridbox {
-		name = "interaction_list"
-		datamodel_wrap = 15
-
-		item = {
-			container = {
-				name = "interaction_widget"
-				ignoreinvisible = yes
-
-				button_text = {
-					visible = "[And(Not(InteractionItem.IsMarriageSetting), InteractionItem.IsValid)]"
-					tooltip = "[InteractionItem.GetTooltip]"
-					enabled = "[InteractionItem.IsValid]"
-					onclick = "[InteractionItem.OnClick]"
-				    blockoverride "text" {
-				        raw_text = "[InteractionItem.GetName]"
-						align = left
-				    }
-				    blockoverride "disabled" {
-						visible = "[Not(InteractionItem.IsValid)]"
-						align = left
-				    }
-					blockoverride "dot" { }
-
-					blockoverride "extra" {
-
-						text_single = {
-							raw_text = ", Will not accept"
-							visible = "[And(Not(InteractionItem.IsMore),Not(InteractionItem.IsPotentialAccept))]"
-						}
-
-						text_single = {
-							raw_text = "Warning, see tooltip."
-							visible = "[InteractionItem.HasWarningIcon]"
-							tooltip = "[InteractionItem.GetWarningTooltipDesc]"
-						}
-
-						margin_right = 10
-					}
-				}
-
-				button_checked_text = {
-					visible = "[And(InteractionItem.IsMarriageSetting, InteractionItem.CheckboxEnabled)]"
-					onclick = "[InteractionItem.OnClickCheckbox]"
-					enabled = "[InteractionItem.CheckboxEnabled]"
-					blockoverride "text" {
-						text = "CHARACTER_INTERACTION_ALLOWED_TO_MARRY"
-					}
-
-					blockoverride "visible" {
-						visible = "[EqualTo_int32(InteractionItem.GetCheckboxFrame, '(int32)1')]"
-					}
-
-					blockoverride "extra" {
-						text_single = {
-							raw_text = ", Tooltip."
-							align = left
-							tooltip = "[InteractionItem.GetCheckboxTooltip]"
-						}
-					}
-				}
-			}
-		}
-	}
-
-	type dynamicgridbox_interaction_list_disabled = dynamicgridbox {
-		name = "interaction_list"
-		datamodel_wrap = 15
-
-		item = {
-			container = {
-				name = "interaction_widget"
-				ignoreinvisible = yes
-
-				button_text = {
-					visible = "[And(Not(InteractionItem.IsMarriageSetting), Not(InteractionItem.IsValid))]"
-					tooltip = "[InteractionItem.GetTooltip]"
-					enabled = "[InteractionItem.IsValid]"
-					onclick = "[InteractionItem.OnClick]"
-				    blockoverride "text" {
-				        raw_text = "[InteractionItem.GetName]"
-						align = left
-				    }
-				    blockoverride "disabled" {
-						visible = "[Not(InteractionItem.IsValid)]"
-						align = left
-				    }
-					blockoverride "dot" { }
-
-					blockoverride "extra" {
-
-						text_single = {
-							raw_text = ", Will not accept"
-							visible = "[And(Not(InteractionItem.IsMore),Not(InteractionItem.IsPotentialAccept))]"
-						}
-
-						text_single = {
-							raw_text = "Warning, see tooltip."
-							visible = "[InteractionItem.HasWarningIcon]"
-							tooltip = "[InteractionItem.GetWarningTooltipDesc]"
-						}
-
-						margin_right = 10
-					}
-				}
-
-				button_checked_text = {
-					visible = "[And(InteractionItem.IsMarriageSetting, Not(InteractionItem.CheckboxEnabled))]"
-					onclick = "[InteractionItem.OnClickCheckbox]"
-					enabled = "[InteractionItem.CheckboxEnabled]"
-					blockoverride "text" {
-						text = "CHARACTER_INTERACTION_ALLOWED_TO_MARRY"
-					}
-
-					blockoverride "visible" {
-						visible = "[EqualTo_int32(InteractionItem.GetCheckboxFrame, '(int32)1')]"
-					}
-
-					blockoverride "extra" {
-						text_single = {
-							raw_text = ", Tooltip."
-							align = left
-							tooltip = "[InteractionItem.GetCheckboxTooltip]"
-						}
-					}
-				}
-			}
-		}
-	}
-
-	type dynamicgridbox_interaction_list = dynamicgridbox {
-		name = "interaction_list"
-		datamodel_wrap = 15
-
-		item = {
-			container = {
-				name = "interaction_widget"
-				ignoreinvisible = yes
-
-				button_text = {
-					visible = "[And(Not(InteractionItem.IsMarriageSetting), Not( And(GetVariableSystem.Exists('action_category'), Not(InteractionItem.IsCharacterInteraction)) ))]"
-					tooltip = "[InteractionItem.GetTooltip]"
-					enabled = "[InteractionItem.IsValid]"
-					onclick = "[InteractionItem.OnClick]"
-
-					# widget = {
-					# 	visible = "[Not(InteractionItem.IsCharacterInteraction)]"
-					# 	state = {
-					# 		name = show_more
-					# 		on_finish = "[]"
-					# 	}
-					# }
-					# tooltip_enabled = "[Not(InteractionItem.IsValid)]"
-				    blockoverride "text" {
-				        raw_text = "[InteractionItem.GetName]"
-						alwaystransparent = yes
-				    }
-				    blockoverride "disabled" {
-						visible = "[Not(InteractionItem.IsValid)]"
-				    }
-					blockoverride "dot" { }
-
-					blockoverride "extra" {
-
-						text_single = {
-							raw_text = ", Will not accept"
-							visible = "[And(Not(InteractionItem.IsMore),Not(InteractionItem.IsPotentialAccept))]"
-						}
-
-						text_single = {
-							raw_text = "Warning, see tooltip."
-							visible = "[InteractionItem.HasWarningIcon]"
-							tooltip = "[InteractionItem.GetWarningTooltipDesc]"
-						}
-
-						margin_right = 10
-					}
-				}
-
-				button_checked_text = {
-					visible = "[InteractionItem.IsMarriageSetting]"
-					onclick = "[InteractionItem.OnClickCheckbox]"
-					enabled = "[InteractionItem.CheckboxEnabled]"
-					blockoverride "text" {
-						text = "CHARACTER_INTERACTION_ALLOWED_TO_MARRY"
-					}
-
-					blockoverride "visible" {
-						visible = "[EqualTo_int32(InteractionItem.GetCheckboxFrame, '(int32)1')]"
-					}
-
-					blockoverride "extra" {
-						text_single = {
-							raw_text = ", Tooltip."
-							align = left
-							tooltip = "[InteractionItem.GetCheckboxTooltip]"
-						}
-					}
-				}
-			}
-		}
-	}
-
-	type flowcontainer_category_group = flowcontainer {
-		visible = "[InteractionCategoryItem.IsVisible]"
-		direction = vertical
-
-		button_text = {
-			onclick = "[GetVariableSystem.Set('action_category', InteractionCategoryItem.GetName)]"
-			onclick = "[InteractionCategoryItem.ShowMoreInteractions]"
-			visible = "[Or(Not(GetVariableSystem.Exists('action_category')), GetVariableSystem.HasValue('action_category', 'yes'))]"
-			blockoverride "text" {
-				raw_text = "[GetDataModelSize(InteractionCategoryItem.GetInteractions)] [InteractionCategoryItem.GetName] actions."
-			}
-		}
-
-		flowcontainer = {
-			direction = vertical
-			visible = "[Or(Not(GetVariableSystem.Exists('action_category')), GetVariableSystem.HasValue('action_category', InteractionCategoryItem.GetName))]"
-			# visible = "[GetVariableSystem.HasValue('action_category', InteractionCategoryItem.GetName)]"
-
-			# sorted
-			# flowcontainer = {
-			# 	direction = vertical
-			# 	visible = "[GetVariableSystem.Exists('enabled_x')]"
-			# 	dynamicgridbox_interaction_list_enabled = {
-			# 		datamodel = "[InteractionCategoryItem.GetInteractions]"
-			# 	}
-			# 	dynamicgridbox_interaction_list_disabled = {
-			# 		datamodel = "[InteractionCategoryItem.GetInteractions]"
-			# 	}
-			# }
-
-			container = {
-				visible = "[Not(GetVariableSystem.Exists('enabled_x'))]"
-				dynamicgridbox_interaction_list = {
-					datamodel = "[InteractionCategoryItem.GetInteractions]"
-				}
-			}
-		}
-	}
 
 	## banner for character name and portrait
 	type banner_with_portrait = vbox {
@@ -2127,6 +1761,181 @@ types CharacterInteraction
 		# 	layoutpolicy_horizontal = growing
 		# 	alpha = 0.5
 		# }
+	}
+
+	type hbox_interaction_option_levels = hbox
+	{
+		datamodel = "[RepeatedItem( Add_int32( OptionItem.GetNumLevels, '(int32)1' ) )]"
+
+		# text_single = {
+		# 	layoutpolicy_horizontal = expanding
+		# 	raw_text = "Options:"
+		# }
+
+		item = {
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "Can't pick,"
+						visible = "[Not(And( OptionItem.IsValid, And( OptionItem.CanBeChanged, OptionItem.CanSetLevel( int32.GetInt ) ) ))]"
+					}
+					text_single = {
+						raw_text = "Selected,"
+						visible = "[EqualTo_int32( OptionItem.GetCurrentLevel, int32.GetInt)]" #TODO
+					}
+				}
+				blockoverride "text" {
+					raw_text = "[OptionItem.GetName]."
+				}
+				onclick = "[OptionItem.SetLevel( int32.GetInt )]"
+				enabled = "[And( OptionItem.IsValid, And( OptionItem.CanBeChanged, OptionItem.CanSetLevel( int32.GetInt ) ) )]"
+				tooltip = "[OptionItem.GetLevelTooltip( int32.GetInt )]"
+
+				block "level_button"
+				{
+				}
+			}
+		}
+	}
+
+	# Options to consider before accepting and interaction
+	type vbox_interaction_options = vbox {
+		name = "options_grid"
+		visible = "[CharacterInteractionConfirmationWindow.HasOptions]"
+
+		block "margin"
+		{
+
+		}
+
+		text_single = {
+			visible = "[Not( StringIsEmpty(CharacterInteractionConfirmationWindow.GetOptionsHeading) )]"
+			layoutpolicy_horizontal = expanding
+			raw_text = "[CharacterInteractionConfirmationWindow.GetOptionsHeading]."
+		}
+
+		vbox = {
+			name = "multiple_selection_options"
+			visible = "[Not( CharacterInteractionConfirmationWindow.HasExclusiveOptions )]"
+			layoutpolicy_horizontal = expanding
+			datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
+
+			item = {
+				vbox = {
+					tooltip = "[OptionItem.GetTooltip]"
+					using = tooltip_below
+					layoutpolicy_horizontal = expanding
+					visible = "[OptionItem.IsShown]"
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						visible = "[EqualTo_int32( OptionItem.GetNumLevels, '(int32)0' )]"
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "Can't pick,"
+								visible = "[Not(And(OptionItem.IsValid, OptionItem.CanBeChanged))]"
+							}
+							text_single = {
+								raw_text = "[Select_CString(OptionItem.HasOption, 'Checked', 'Unchecked')],"
+								# visible = "[OptionItem.HasOption]" #TODO
+							}
+						}
+						blockoverride "text" {
+							raw_text = "[OptionItem.GetName]."
+						}
+						onclick = "[OptionItem.OnClick]"
+						# enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
+						# enabled = "[And(OptionItem.IsValid, And(OptionItem.CanBeChanged, Not(OptionItem.HasOption)))]"
+						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
+						tooltip = "[OptionItem.GetTooltip]"
+					}
+
+					hbox_interaction_option_levels = {
+						layoutpolicy_horizontal = expanding
+						visible = "[GreaterThan_int32( OptionItem.GetNumLevels, '(int32)1' )]"
+					}
+				}
+			}
+		}
+
+		vbox = {
+			name = "exclusive_options"
+			visible = "[CharacterInteractionConfirmationWindow.HasExclusiveOptions]"
+			layoutpolicy_horizontal = expanding
+
+			hbox = {
+				name = "single_option"
+				layoutpolicy_horizontal = expanding
+				margin = { 10 0 }
+				visible = "[EqualTo_int32( CharacterInteractionConfirmationWindow.GetVisibleOptionsCount, '(int32)1' )]"
+
+				datacontext_from_model = {
+					datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
+				}
+
+				tooltip = "[OptionItem.GetTooltip]"
+				using = tooltip_below
+
+				text_single = {
+					text = "[OptionItem.GetName]"
+				}
+			}
+
+			vbox = {
+				name = "multiple_options"
+				layoutpolicy_horizontal = expanding
+				datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "[CountItems] Options:"
+
+					hbox = {
+						datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
+						name = "items"
+						item = {
+							hbox = {
+								visible = "[OptionItem.IsShown]"
+							}
+						}
+					}
+				}
+
+				item = {
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						visible = "[OptionItem.IsShown]"
+						shortcuts_list = {
+							blockoverride "click" {
+								onclick = "[OptionItem.OnClick]"
+								enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
+							}
+						}
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "Can't pick,"
+								visible = "[Not( And(OptionItem.IsValid, OptionItem.CanBeChanged) )]"
+							}
+							text_single = {
+								raw_text = "Selected,"
+								visible = "[OptionItem.HasOption]" #TODO
+							}
+
+							text_single = {
+								raw_text = "[IndexNumber],"
+							}
+						}
+						blockoverride "text" {
+							raw_text = "[OptionItem.GetName]."
+						}
+						onclick = "[OptionItem.OnClick]"
+						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
+						tooltip = "[OptionItem.GetTooltip]"
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -2179,15 +1988,780 @@ types InteractionCharacterList
 						raw_text = "Accepts, [CharacterInteractionConfirmationWindow.GetAcceptanceValue( CharacterListItem.Self )]"
 						# value = "[CharacterInteractionConfirmationWindow.GetAnswerScore]"
 						tooltip = "[CharacterInteractionConfirmationWindow.GetAcceptanceBreakdown( CharacterListItem.Self )]"
+						alwaystransparent = yes
 					}
 
 
 					### Will Not Accept ###
 					text_single = {
+						alwaystransparent = yes
 						visible = "[LessThanOrEqualTo_CFixedPoint( CharacterInteractionConfirmationWindow.GetAcceptanceValue( CharacterListItem.Self ), '(CFixedPoint)0' )]"
 						raw_text = "Refuses, [CharacterInteractionConfirmationWindow.GetAcceptanceValue( CharacterListItem.Self )]"
 						# value = "[CharacterInteractionConfirmationWindow.GetAnswerScore]"
 						tooltip = "[CharacterInteractionConfirmationWindow.GetAcceptanceBreakdown( CharacterListItem.Self )]"
+					}
+				}
+			}
+		}
+	}
+}
+
+types OCR {
+	type dynamicgridbox_interaction_list_ocr = dynamicgridbox {
+		name = "interaction_list"
+		datamodel_wrap = 15
+
+		item = {
+			container = {
+				name = "interaction_widget"
+				ignoreinvisible = yes
+
+				container = {
+					using = ocr
+					ignoreinvisible = yes
+
+					button_text = {
+						visible = "[And(Not(InteractionItem.IsMarriageSetting), Not( And(GetVariableSystem.Exists('action_category'), Not(InteractionItem.IsCharacterInteraction)) ))]"
+						tooltip = "[InteractionItem.GetTooltip]"
+						enabled = "[InteractionItem.IsValid]"
+						onclick = "[InteractionItem.OnClick]"
+						onclick = "[GetVariableSystem.Set('more_category', InteractionCategoryItem.GetName)]"
+
+						# widget = {
+						# 	visible = "[Not(InteractionItem.IsCharacterInteraction)]"
+						# 	state = {
+						# 		name = show_more
+						# 		on_finish = "[]"
+						# 	}
+						# }
+						# tooltip_enabled = "[Not(InteractionItem.IsValid)]"
+						blockoverride "text" {
+							raw_text = "[InteractionItem.GetName]"
+							alwaystransparent = yes
+						}
+						blockoverride "disabled" {
+							visible = "[Not(InteractionItem.IsValid)]"
+						}
+						blockoverride "dot" { }
+
+						blockoverride "extra" {
+
+							text_single = {
+								raw_text = ", Will not accept"
+								visible = "[And(Not(InteractionItem.IsMore),Not(InteractionItem.IsPotentialAccept))]"
+							}
+
+							text_single = {
+								raw_text = "Warning, see tooltip."
+								visible = "[InteractionItem.HasWarningIcon]"
+								tooltip = "[InteractionItem.GetWarningTooltipDesc]"
+							}
+
+							margin_right = 10
+						}
+					}
+
+					button_checked_text = {
+						visible = "[InteractionItem.IsMarriageSetting]"
+						onclick = "[InteractionItem.OnClickCheckbox]"
+						enabled = "[InteractionItem.CheckboxEnabled]"
+						blockoverride "text" {
+							text = "CHARACTER_INTERACTION_ALLOWED_TO_MARRY"
+						}
+
+						blockoverride "visible" {
+							visible = "[EqualTo_int32(InteractionItem.GetCheckboxFrame, '(int32)1')]"
+						}
+
+						blockoverride "extra" {
+							text_single = {
+								raw_text = ", Tooltip."
+								align = left
+								tooltip = "[InteractionItem.GetCheckboxTooltip]"
+							}
+						}
+					}
+				}
+
+				container = {
+					name = "interaction_widget"
+					using = vanilla
+					ignoreinvisible = yes
+
+					button_standard_hover = {
+						name = "interaction_button"
+						visible = "[Not(InteractionItem.IsMarriageSetting)]"
+						enabled = "[InteractionItem.IsValid]"
+						onclick = "[InteractionItem.OnClick]"
+
+						disableframe = 8
+						blockoverride "disabled" {}
+						size = { 317 30 }
+
+						tooltip = "[InteractionItem.GetTooltip]"
+						using = tooltip_es
+
+						hbox = {
+							margin = { 10 0 }
+							spacing = 5
+
+							background = {
+								name = "interaction_glow"
+								visible = "[InteractionItem.IsHighlighted]"
+								texture = "gfx/interface/component_tiles/tile_selected.dds"
+								spriteType = corneredtiled
+								spriteborder = { 25 25 }
+							}
+
+							icon = {
+								visible = "[InteractionItem.IsCharacterInteraction]"
+								name = "interaction_icon"
+								size = { 30 30 }
+								texture = "[InteractionItem.GetCharacterInteraction.GetIcon]"
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								alwaystransparent = yes
+								raw_text = "[Select_CString( InteractionItem.IsValid, '#clickable', '#weak' )] [InteractionItem.GetName]#!"
+								align = nobaseline
+								autoresize = no
+							}
+
+							hbox = {
+								icon = {
+									size = { 30 30 }
+									name = "extra_icon"
+									texture = "[InteractionItem.GetExtraIcon]"
+									visible = "[InteractionItem.ShouldUseExtraIcon]"
+								}
+
+								icon = {
+									name = "dont_accept"
+									visible = "[And(Not(InteractionItem.IsMore),Not(InteractionItem.IsPotentialAccept))]"
+									size = { 30 30 }
+									texture = "gfx/interface/icons/symbols/icon_cross.dds"
+								}
+
+								warning_icon = {
+									name = "warning_icon"
+									size = { 25 25 }
+									visible = "[InteractionItem.HasWarningIcon]"
+									tooltip = "[InteractionItem.GetWarningTooltipDesc]"
+								}
+							}
+						}
+					}
+
+					button_standard_hover = {
+						visible = "[InteractionItem.IsMarriageSetting]"
+						tooltip = "[InteractionItem.GetCheckboxTooltip]"
+						onclick = "[InteractionItem.OnClickCheckbox]"
+						size = { 317 30 }
+
+						hbox = {
+							margin_left = 10
+
+							button_checkbox_label = {
+								alwaystransparent = yes
+								name = "button"
+								size = { 30 30 }
+								enabled = "[InteractionItem.CheckboxEnabled]"
+								blockoverride "checkbox"
+								{
+									alwaystransparent = yes
+									checked = "[EqualTo_int32(InteractionItem.GetCheckboxFrame, '(int32)2')]"
+								}
+								blockoverride "text"
+								{
+									text = "CHARACTER_INTERACTION_ALLOWED_TO_MARRY"
+								}
+							}
+							expand = {}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	type flowcontainer_category_group_ocr = flowcontainer {
+		visible = "[InteractionCategoryItem.IsVisible]"
+		direction = vertical
+
+		button_text = {
+			onclick = "[GetVariableSystem.Set('action_category', InteractionCategoryItem.GetName)]"
+			onclick = "[GetVariableSystem.Set('more_category', InteractionCategoryItem.GetName)]"
+			onclick = "[InteractionCategoryItem.ShowMoreInteractions]"
+			visible = "[Or(Not(GetVariableSystem.Exists('action_category')), GetVariableSystem.HasValue('action_category', 'yes'))]"
+			blockoverride "text" {
+				raw_text = "[GetDataModelSize(InteractionCategoryItem.GetInteractions)] [InteractionCategoryItem.GetName] actions."
+			}
+			enabled = "[Isnt('ocr')]"
+		}
+
+		flowcontainer = {
+			direction = vertical
+			visible = "[Or(Not(GetVariableSystem.Exists('action_category')), GetVariableSystem.HasValue('action_category', InteractionCategoryItem.GetName))]"
+			# visible = "[GetVariableSystem.HasValue('action_category', InteractionCategoryItem.GetName)]"
+
+			dynamicgridbox_interaction_list_ocr = {
+				datamodel = "[InteractionCategoryItem.GetInteractions]"
+			}
+		}
+	}
+}
+
+types VANILLA {
+	type vbox_character_interaction_three_characters_old = vbox {
+		margin = { 10 10 }
+
+		background = {
+			texture = "gfx/interface/illustrations/event_scenes/study.dds"
+			alpha = 0.5
+			fittype = centercrop
+			using = Mask_Rough_Edges
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			### Left
+			portrait_shoulders = {
+				name = "left_background_portrait"
+				datacontext = "[CharacterInteractionConfirmationWindow.GetActor]"
+				visible = "[Character.IsValid]"
+			}
+
+			vbox = {
+				visible = "[CharacterInteractionConfirmationWindow.ShouldPickSecondaryActor]"
+				layoutpolicy_vertical = expanding
+				margin = { 10 10 }
+
+				expand = {}
+
+				portrait_head = {
+					datacontext = "[CharacterInteractionConfirmationWindow.GetSecondaryActor]"
+				}
+			}
+
+			### Right
+			vbox = {
+				visible = "[CharacterInteractionConfirmationWindow.ShouldShowSecondaryRecipient]"
+				layoutpolicy_vertical = expanding
+				margin = { 10 10 }
+
+				expand = {}
+
+				portrait_head = {
+					datacontext = "[CharacterInteractionConfirmationWindow.GetSecondaryRecipient]"
+				}
+			}
+
+			portrait_shoulders = {
+				name = "right_background_portrait"
+				datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+				visible = "[And( Character.IsValid, Not( ObjectsEqual( CharacterInteractionConfirmationWindow.GetActor, CharacterInteractionConfirmationWindow.GetRecipient ) ) )]"
+
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 10
+			allow_outside = yes
+
+			text_label_center = {
+				text = "INTERACTION_SENDER"
+				min_width = 100
+			}
+
+			text_label_center = {
+				visible = "[CharacterInteractionConfirmationWindow.ShouldPickSecondaryActor]"
+				text = "[CharacterInteractionConfirmationWindow.GetActorSecondaryLabel]"
+				min_width = 100
+				allow_outside = yes
+
+				change_revert_buttons = {
+					parentanchor = vcenter
+					position = { 60 -1 }
+
+					blockoverride "ReplaceClick"
+					{
+						onclick = "[CharacterInteractionConfirmationWindow.OnChangeOrRevertActorCharacter]"
+					}
+					blockoverride "ReplaceVisible"
+					{
+						visible = "[CharacterInteractionConfirmationWindow.CanChangeActorCharacter]"
+					}
+					blockoverride "RevertClick"
+					{
+						onclick = "[CharacterInteractionConfirmationWindow.OnChangeOrRevertActorCharacter]"
+					}
+					blockoverride "RevertVisible"
+					{
+						visible = "[CharacterInteractionConfirmationWindow.CanRevertActorCharacter]"
+					}
+				}
+			}
+
+			text_label_center = {
+				visible = "[CharacterInteractionConfirmationWindow.ShouldShowSecondaryRecipient]"
+				text = "[CharacterInteractionConfirmationWindow.GetRecipientSecondaryLabel]"
+				min_width = 100
+				allow_outside = yes
+
+				change_revert_buttons = {
+					parentanchor = vcenter
+					position = { 60 0 }
+
+					blockoverride "ReplaceClick"
+					{
+						onclick = [CharacterInteractionConfirmationWindow.OnChangeOrRevertRecipientCharacter]
+					}
+					blockoverride "ReplaceVisible"
+					{
+						visible = [CharacterInteractionConfirmationWindow.CanChangeRecipientCharacter]
+					}
+					blockoverride "RevertClick"
+					{
+						onclick = [CharacterInteractionConfirmationWindow.OnChangeOrRevertRecipientCharacter]
+					}
+					blockoverride "RevertVisible"
+					{
+						visible = [CharacterInteractionConfirmationWindow.CanRevertRecipientCharacter]
+					}
+				}
+			}
+
+			text_label_center = {
+				visible = "[Not( ObjectsEqual( CharacterInteractionConfirmationWindow.GetActor, CharacterInteractionConfirmationWindow.GetRecipient ) )]"
+				text = "INTERACTION_RECIPIENT"
+				min_width = 100
+			}
+
+		}
+	}
+
+	type widget_character_interaction_four_characters_old = widget {
+		layoutpolicy_horizontal = expanding
+		size = { 0 330 }
+
+		block "bg_illustration_datacontext" {}
+
+		# Temp background
+		background = {
+			alpha = 0.7
+			fittype = centercrop
+
+			using = Mask_Rough_Edges
+
+			block "bg_illustration"
+			{
+				texture = "gfx/interface/illustrations/event_scenes/sittingroom.dds"
+			}
+		}
+
+		### LEFT
+		flowcontainer = {
+			parentanchor = top|left
+			position = { 20 20 }
+			direction = vertical
+
+			block "left_small_portrait"
+			{
+				datacontext = "[CharacterInteractionConfirmationWindow.GetActor]"
+				visible = "[Character.IsValid]"
+			}
+
+			portrait_head = {
+				name = "left_background_portrait"
+				tooltip_enabled = "[Character.IsValid]"
+			}
+
+			text_label_center = {
+				parentanchor = hcenter
+				text = "INTERACTION_SENDER"
+			}
+		}
+
+		widget = {
+			position = { -110 0 }
+			parentanchor = bottom|hcenter
+
+			portrait_body = {
+				name = "left_main_portrait"
+				resizeparent = yes
+
+				block "left_portrait"
+				{
+					datacontext = "[CharacterInteractionConfirmationWindow.GetSecondaryActor]"
+				}
+
+				tooltip_enabled = "[Character.IsValid]"
+
+				blockoverride "status_icons" {}
+
+				blockoverride "coa"
+				{
+					coa_realm_small_crown = {
+						position = { -14 -40 }
+						visible = "[Character.HasLandedTitles]"
+						parentanchor = bottom
+					}
+				}
+
+				blockoverride "portrait_button"
+				{
+					portrait_texture = "[Character.GetAnimatedPortrait('environment_body', 'camera_body', 'idle', PdxGetWidgetScreenSize(PdxGuiWidget.Self))]"
+					mask = "gfx/portraits/portrait_mask_council.dds"
+				}
+
+				blockoverride "position_portrait_opinion_body" {
+					position = { 0 -40 }
+				}
+
+				blockoverride "portrait_glow" {}
+
+				background = {
+					using = Background_Portrait_Glow
+					color = { 0.8 0.7 0.5 0.6 }
+
+					block "left_interaction_portrait_glow"
+					{
+						visible = "[CharacterInteractionConfirmationWindow.IsPickingSecondaryActor]"
+					}
+				}
+			}
+
+			text_label_center = {
+				parentanchor = bottom|hcenter
+				position = { 0 -13 }
+				allow_outside = yes
+
+				block "left_character_label"
+				{
+					text = "[CharacterInteractionConfirmationWindow.GetActorSecondaryLabel]"
+				}
+
+				container = {
+					name = "tutorial_highlight_change_left_character"
+					parentanchor = vcenter
+					position = { -50 0 }
+
+					button_round = {
+						name = "tutorial_highlight_change_left_character"
+						alwaystransparent = no
+						tooltip = "CHANGE_CHARACTER"
+						using = tooltip_below
+
+						using = Animation_ShowHide_Quick
+
+
+						block "button_left_change"
+						{
+							visible = "[CharacterInteractionConfirmationWindow.CanChangeActorCharacter]"
+							onclick = "[CharacterInteractionConfirmationWindow.OnChangeOrRevertActorCharacter]"
+						}
+
+						button_replace = {
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+
+					button_round = {
+						name = "revert_left_character"
+						alwaystransparent = no
+						tooltip = "CANCEL"
+						using = tooltip_below
+
+						using = Animation_ShowHide_Quick
+
+
+						block "button_left_revert"
+						{
+							visible = "[CharacterInteractionConfirmationWindow.CanRevertActorCharacter]"
+							onclick = "[CharacterInteractionConfirmationWindow.OnChangeOrRevertActorCharacter]"
+						}
+
+						button_cancel = {
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+				}
+			}
+		}
+
+		### RIGHT
+		flowcontainer = {
+			parentanchor = top|right
+			position = { -20 20 }
+			direction = vertical
+
+			block "right_small_portrait"
+			{
+				datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+				visible = "[Character.IsValid]"
+			}
+
+			portrait_head = {
+				name = "right_background_portrait"
+				tooltip_enabled = "[Character.IsValid]"
+
+				blockoverride "portrait_transformation"
+				{
+					portrait_scale = { -1 1 }
+					portrait_offset = { 1 0 }
+				}
+
+				blockoverride "status_icons" {}
+			}
+
+			text_label_center = {
+				parentanchor = hcenter
+				text = "INTERACTION_RECIPIENT"
+			}
+		}
+
+		widget = {
+			position = { 110 0 }
+			parentanchor = bottom|hcenter
+
+			portrait_body = {
+				name = "right_main_portrait"
+				tooltip_enabled = "[Character.IsValid]"
+				resizeparent = yes
+
+				block "right_portrait"
+				{
+					datacontext = "[CharacterInteractionConfirmationWindow.GetSecondaryRecipient]"
+				}
+
+				blockoverride "portrait_transformation"
+				{
+					portrait_scale = { -1 1 }
+					portrait_offset = { 1 0 }
+				}
+
+				blockoverride "status_icons" {}
+
+				blockoverride "coa" {
+					coa_realm_small_crown = {
+						position = { 14 -40 }
+						visible = "[Character.HasLandedTitles]"
+						parentanchor = bottom|right
+					}
+				}
+
+				blockoverride "portrait_button"
+				{
+					portrait_texture = "[Character.GetAnimatedPortrait('environment_body', 'camera_body', 'idle', PdxGetWidgetScreenSize(PdxGuiWidget.Self))]"
+					mask = "gfx/portraits/portrait_mask_council.dds"
+				}
+
+				blockoverride "position_portrait_opinion_body" {
+					position = { 0 -40 }
+				}
+
+				blockoverride "portrait_glow" {}
+
+				background = {
+					using = Background_Portrait_Glow
+					color = { 0.8 0.7 0.5 0.6 }
+
+					block "right_interaction_portrait_glow"
+					{
+						visible = "[CharacterInteractionConfirmationWindow.IsPickingSecondaryRecipient]"
+					}
+				}
+
+				blockoverride "glow_flip" {
+					mirror = horizontal
+				}
+			}
+
+			text_label_center = {
+				parentanchor = bottom|hcenter
+				position = { 0 -13 }
+				allow_outside = yes
+
+				block "right_character_label"
+				{
+					text = "INTERACTION_RECIPIENT"
+				}
+
+				container = {
+					name = "tutorial_highlight_change_right_character"
+					parentanchor = right|vcenter
+					position = { 50 0 }
+
+					button_round = {
+						name = "change_right_character"
+						alwaystransparent = no
+						tooltip = "CHANGE_CHARACTER"
+						using = tooltip_below
+
+						using = Animation_ShowHide_Quick
+
+						block "button_right_change"
+						{
+							visible = "[CharacterInteractionConfirmationWindow.CanChangeRecipientCharacter]"
+							onclick = "[CharacterInteractionConfirmationWindow.OnChangeOrRevertRecipientCharacter]"
+						}
+
+						button_replace = {
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+
+					button_round = {
+						name = "revert_right_character"
+						alwaystransparent = no
+						tooltip = "CANCEL"
+						using = tooltip_below
+
+						using = Animation_ShowHide_Quick
+
+
+						block "button_right_revert"
+						{
+							visible = "[CharacterInteractionConfirmationWindow.CanRevertActorCharacter]"
+							onclick = "[CharacterInteractionConfirmationWindow.OnChangeOrRevertActorCharacter]"
+						}
+
+						button_cancel = {
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+				}
+			}
+		}
+
+		### CLEAR BUTTON
+		container = {
+			position = { 0 -6 }
+			parentanchor = bottom|hcenter
+
+			button_round = {
+				name = "clear_marry_off_character"
+				alwaystransparent = no
+				tooltip = "CLEAR_MARRIED_CHARACTER"
+				using = tooltip_below
+
+				block "button_clear"
+				{
+					visible = "[CharacterInteractionConfirmationWindow.CanChangeActorCharacter]"
+					enabled = "[CharacterInteractionConfirmationWindow.CanClear]"
+					onclick = "[CharacterInteractionConfirmationWindow.OnClear]"
+				}
+
+				button_clear = {
+					alwaystransparent = yes
+					parentanchor = center
+				}
+			}
+		}
+	}
+
+	type vbox_arrangement_interaction_send_offer_old = vbox {
+		name = "send_offer_window"
+
+		vbox_interaction_options = {
+			blockoverride "margin"
+			{
+				margin_top = 4
+			}
+			layoutpolicy_horizontal = expanding
+		}
+
+		hbox_character_interaction_acceptance = {
+			layoutpolicy_horizontal = expanding
+		}
+
+		text_multi_on_decline_summary = {}
+
+		button_primary = {
+			size = { 400 42 }
+			block "button_content" {}
+			onclick = "[MatchmakerInteractionWindow.Send]"
+			enabled = "[CharacterInteractionConfirmationWindow.CanSend]"
+			tooltip = "[CharacterInteractionConfirmationWindow.GetCanSendDescription]"
+			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+		}
+	}
+
+	type vbox_list_interaction_title_selection_old = vbox {
+		# name = "titles_grid"
+		datamodel = "[CharacterInteractionConfirmationWindow.GetTitles]"
+		layoutpolicy_horizontal = expanding
+		spacing = 3
+
+		item = {
+			widget = {
+				name = "title_list_item"
+				layoutpolicy_horizontal = expanding
+				size = { 0 45 }
+
+				button_standard = {
+					name = "title_button"
+					datacontext = "[InteractionTitleItem.GetTitle]"
+					size = "[InteractionTitleItem.GetSize]"
+					onclick = "[InteractionTitleItem.OnClick]"
+					onrightclick = "[InteractionTitleItem.OnRightClick]"
+					button_ignore = none
+					down = "[InteractionTitleItem.IsSelected]"
+					enabled = "[InteractionTitleItem.IsSelectable]"
+					tooltip = "[InteractionTitleItem.GetTooltip]"
+					using = tooltip_es
+					parentanchor = right
+
+					block "button_toggles" {
+						enabled = "[InteractionTitleItem.IsSelectable]"
+					}
+
+					coa_title_tiny_crown = {
+						position = { 0 -8 }
+					}
+
+					hbox = {
+						margin_left = 45
+						margin_right = 5
+
+						text_single = {
+							name = "text"
+							layoutpolicy_horizontal = expanding
+							text = "[InteractionTitleItem.GetTitle.GetNameNoTooltip]"
+						}
+
+						icon = {
+							name = "pressed_claim"
+							visible = "[GetPlayer.HasPressedClaimOnTitle( Title.Self )]"
+							size = { 24 24 }
+							texture = "gfx/interface/icons/title_status/icon_claim_pressed.dds"
+							tooltip = "REVOKE_TITLE_PRESSED_CLAIM"
+						}
+
+						icon = {
+							name = "unpressed_claim"
+							visible = "[And(GetPlayer.HasClaimOnTitle( Title.Self ), Not(GetPlayer.HasPressedClaimOnTitle( Title.Self )))]"
+							size = { 24 24 }
+							texture = "gfx/interface/icons/title_status/icon_claim_unpressed.dds"
+							tooltip = "REVOKE_TITLE_UNPRESSED_CLAIM"
+						}
+
+						icon = {
+							name = "leased_out"
+							visible = "[Title.HasLeasedOutVassal]"
+							size = { 36 39 }
+							texture = "gfx/interface/icons/icon_holding_church.dds"
+							tooltip = "GRANT_TITLE_LEASED_OUT_VASSAL"
+						}
+
+						block "extra_title_items" {}
 					}
 				}
 			}

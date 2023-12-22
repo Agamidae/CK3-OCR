@@ -8,6 +8,8 @@ window = {
 		name = _show
 		trigger_on_create = yes
 		on_finish = "[Set('event_active', 'yes')]"
+		on_finish = "[OnPause]"
+		on_finish = "[SetGameSpeed(Select_int32(Show('slow_events'),'(int32)2'),  GetCurrentGameSpeed)]"
 
 		start_sound = {
 			soundeffect = "event:/SFX/Events/Panels/sfx_event_panel_large"
@@ -20,10 +22,17 @@ window = {
 	}
 
 	state = {
+		name = "clear"
+		trigger_when = "[Is('forced_ocr')]"
+		on_finish = "[Clear('ocr')]"
+	}
+
+	state = {
 		name = _hide
 		on_finish = "[Clear('event_active')]"
 		on_finish = "[Clear('hide_event')]"
 		on_finish = "[Clear('hide_activity')]"
+		on_finish = "[Clear('forced_ocr')]"
 
 		start_sound = {
 			soundeffect = "event:/MUSIC/Cues/Events/kill_mx_cue"
@@ -33,6 +42,7 @@ window = {
 	window = {
 		using = ocr_window_bg
 		size = { 930 100% }
+		visible_at_creation = no
 
 		visible = "[And(Not(GetVariableSystem.Exists('hide_event')), Isnt('ocr'))]"
 
@@ -41,9 +51,11 @@ window = {
 			using = Sound_WindowShow_Standard
 		}
 
+
 		vbox = {
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
+
 
 			####
 			base_event_ocr = { }
@@ -155,6 +167,13 @@ types OCR {
 						layoutpolicy_horizontal = expanding
 						ignoreinvisible = yes
 
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "Apologies, custom widgets like these can only exist in one window."
+							visible = "[Is('forced_ocr')]"
+							margin_bottom = 10
+						}
+
 						hbox = {
 							spacing = 5
 							layoutpolicy_horizontal = expanding
@@ -195,6 +214,7 @@ types OCR {
 										onclick = "[GetVariableSystem.Clear('event_options')]"
 										onclick = "[GetVariableSystem.Clear('event_desc')]"
 										onclick = "[GetVariableSystem.Clear('hide_event')]"
+										onclick = "[GetVariableSystem.Toggle(AddTextIf(Is('forced_ocr'), 'ocr'))]"
 										clicksound = "[EventOption.GetClickSound]"
 
 										text_multi = {
@@ -322,9 +342,10 @@ types OCR {
 
 								using = Animation_Curve_Default
 								alpha = 1
+								# on_finish = "[Set(Select_CString(Is('ocr'), 'forced_ocr', 'ignore'), 'yes')]"
+								# on_finish = "[Clear('ocr')]"
 							}
 						}
-
 
 						vbox = {
 							layoutpolicy_horizontal = expanding
@@ -442,7 +463,7 @@ types OCR {
 		parentanchor = center
 		widgetanchor = center
 		size = { 1120 580 }
-		alpha = 0
+		alpha = 1
 		using = Event_Window_Debug_OptionTooltips
 
 		widget = {
@@ -502,7 +523,7 @@ types OCR {
 
 		state = {
 			name = _hide
-			using = Animation_FadeOut_Standard
+			# using = Animation_FadeOut_Standard
 
 			start_sound = {
 				soundeffect = "event:/MUSIC/Cues/Events/kill_mx_cue"
@@ -1268,13 +1289,22 @@ types OCR {
 									hbox = {
 										name = "dynamic_birth_name"
 										margin = { 5 0 }
+
+										# text_single = {
+										# 	layoutpolicy_horizontal = expanding
+										# 	raw_text = "[PdxGuiWidget.AccessParent.GetChildrenCount] rename boxes"
+										# }
 									}
 								}
-
-
 								vbox = {
 									name = "custom_widgets_container"
 									layoutpolicy_horizontal = expanding
+
+
+									# text_single = {
+									# 	layoutpolicy_horizontal = expanding
+									# 	raw_text = "[PdxGuiWidget.AccessParent.GetChildrenCount] custom widgets"
+									# }
 
 									state = {
 										trigger_on_create = yes
@@ -1283,6 +1313,7 @@ types OCR {
 										using = Animation_Curve_Default
 										alpha = 1
 										duration = 0.6
+										# on_finish = "[Set(Select_CString(Is('ocr'), 'forced_ocr', 'ignore'), 'yes')]"
 									}
 								}
 
@@ -1468,6 +1499,7 @@ types OCR {
 		onclick = "[GetVariableSystem.Clear('event_desc')]"
 		onclick = "[GetVariableSystem.Clear('event_options')]"
 		onclick = "[GetVariableSystem.Clear('hide_event')]"
+		onclick = "[GetVariableSystem.Toggle(AddTextIf(Is('forced_ocr'), 'ocr'))]"
 		clicksound = "[EventOption.GetClickSound]"
 
 		block "onmousehierarchy_callbacks" {
@@ -1605,6 +1637,7 @@ types OCR {
 					onclick = "[GetVariableSystem.Clear('event_desc')]"
 					onclick = "[GetVariableSystem.Clear('event_options')]"
 					onclick = "[GetVariableSystem.Clear('hide_event')]"
+					onclick = "[GetVariableSystem.Toggle(AddTextIf(Is('forced_ocr'), 'ocr'))]"
 					clicksound = "[EventOption.GetClickSound]"
 				}
 				blockoverride "confirm shortcut" {
@@ -2143,7 +2176,7 @@ template artifact_event_flowcontainer_ocr {
 		onclick = "[ToggleGameViewData( 'artifact_details', Artifact.GetID )]"
 		onclick = "[Set('hide_event', 'yes')]"
     blockoverride "text" {
-				text = "[Artifact.GetNameNoTooltip],"
+				raw_text = "[Artifact.GetNameNoTooltip],"
     }
 		blockoverride "extra" {
 			text_single = {

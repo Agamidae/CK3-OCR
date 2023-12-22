@@ -24,6 +24,7 @@ types OCRTypes {
 		using = vanilla
 
 		vbox = {
+			name = "main_content"
 			using = Window_Margins_Sidebar
 
 			###############
@@ -660,6 +661,45 @@ types OCRTypes {
 
 						highlight_icon_lifestyle_focus = {
 							size = { 100% 100% }
+							visible = "[And(GreaterThan_int32( Character.GetTotalPerkPoints, '(int32)0' ), Character.IsLocalPlayer)]"
+							texture = "[CharacterWindow.GetCharacter.GetFocus.GetIcon]"
+
+							modify_texture = {
+								texture = "gfx/interface/icons/focuses/hud_icon_mask.dds"
+								blend_mode = alphamultiply
+							}
+
+							state = {
+								name = a
+								next = b
+								alpha = 0
+								trigger_on_create = yes
+								duration = 1.2
+								using = Animation_Curve_Default
+							}
+
+							state = {
+								name = b
+								next = a
+								alpha = 0.5
+								duration = 0.6
+								using = Animation_Curve_Default
+							}
+
+							glow = {
+								glow_radius = 2
+								glow_generation_rules= {
+									glow_alpha_mask = 0
+									glow_blur_passes = 2
+									glow_texture_downscale = 2.5f
+									glow_ignore_inside_pixels = yes
+								}
+								using = Color_Orange
+							}
+						}
+
+						highlight_icon_lifestyle_focus = {
+							size = { 100% 100% }
 							texture = "[CharacterWindow.GetCharacter.GetFocus.GetIcon]"
 							onclick = "[CharacterWindow.OnClickFocusButton]"
 							enabled = "[CharacterWindow.CanClickFocusButton]"
@@ -678,7 +718,6 @@ types OCRTypes {
 						size = { 35 35 }
 					}
 				}
-
 
 				button_normal = {
 					name = "open_royal_court"
@@ -750,7 +789,7 @@ types OCRTypes {
 									name = "character_name"
 									raw_text = "[Character.GetUINameNotMeNoTooltip], "
 									margin_left = 2
-									max_width = 400
+									max_width = 398
 									fontsize = 20
 									fontsize_min = 14
 									align = nobaseline
@@ -939,24 +978,56 @@ types OCRTypes {
 
 						vbox = {
 							layoutpolicy_vertical = expanding
-							margin = { 0 2 }
+							margin = { 0 0 }
 
 							using = Animation_Character_Window_Refresh
 
-							fixedgridbox = {
-								name = "modifiers_grid"
-								datamodel = "[CharacterWindow.GetTimedModifiers]"
-								addcolumn = 25
-								addrow = 23
-								datamodel_wrap = 2
-								maxhorizontalslots = 5
+							button_group = {
+								onclick = "[CharacterWindow.ToggleExpandedModifiers]"
+								visible = "[DataModelHasItems( CharacterWindow.GetTimedModifiers )]"
+								tooltip = "CHARACTER_WINDOW_MODIFIERS"
 
-								item = {
-									icon = {
-										size = { 22 22 }
-										alwaystransparent = no
-										texture = "[ModifierItem.GetIcon]"
-										tooltip = "[ModifierItem.GetTooltip]"
+								# Button here purely to give mouse hover visual effect
+								button_standard_hover = {
+									size = { 100% 100% }
+								}
+
+								hbox = {
+									margin_top = 2
+									margin_bottom = 1
+									margin_left = 2
+									set_parent_size_to_minimum = yes
+
+									fixedgridbox = {
+										name = "modifiers_grid"
+										datamodel = "[CharacterWindow.GetTimedModifiers]"
+										addcolumn = 25
+										addrow = 23
+										datamodel_wrap = 2
+										maxhorizontalslots = 4
+										maxverticalslots =2
+
+										layoutpolicy_vertical = expanding
+
+										using = Animation_Character_Window_Refresh
+
+										item = {
+											modifier_item_icon = {
+												size = { 22 22 }
+
+												blockoverride "input_info_text" {
+													text = "CHARACTER_WINDOW_MODIFIERS"
+												}
+											}
+										}
+									}
+
+									text_single = {
+										visible = "[CharacterWindow.IsExtraModifiersNumberShown]"
+										min_width = 22
+										margin_bottom = 10
+										text = "CHARACTER_WINDOW_EXTRA_MODIFIERS"
+										default_format = "#low"
 									}
 								}
 							}
@@ -2800,11 +2871,8 @@ types OCRTypes {
 							flipdirection = yes
 
 							item = {
-								icon = {
+								modifier_item_icon = {
 									size = { 35 35 }
-									alwaystransparent = no
-									texture = "[ModifierItem.GetIcon]"
-									tooltip = "[ModifierItem.GetTooltip]"
 								}
 							}
 						}
@@ -3087,26 +3155,7 @@ types OCRTypes {
 												using = tooltip_es
 												tooltip_offset = { 0 22 }
 
-												icon = {
-													name = "involved_banner"
-													visible = "[Struggle.IsInvolvedCharacter(Character.Self)]"
-													size = { 70 90 }
-													texture = "gfx/interface/icons/struggle_banners/involved_banner.dds"
-												}
-
-												icon = {
-													name = "interloper_banner"
-													visible = "[Struggle.IsInterloperCharacter(Character.Self)]"
-													size = { 70 90 }
-													texture = "gfx/interface/icons/struggle_banners/interloper_banner.dds"
-												}
-
-												icon = {
-													parentanchor = center
-													position = { 0 -7 }
-													texture = "[Struggle.GetCurrentPhase.GetIcon]"
-													size = { 40 40 }
-												}
+												widget_struggle_icon = {}
 											}
 										}
 
@@ -3148,926 +3197,1078 @@ types OCRTypes {
 					}
 				}
 			}
-		}
-	}
-}
 
-
-types CharacterWindow
-{
-	type skill_icon_label_vertical = widget {
-		size = { 40 60 }
-
-		icon = {
-			name = "skill_icon"
-			texture = "gfx/interface/icons/icon_skills.dds"
-			size = { 24 24 }
-			framesize = { 60 60 }
-			position = { -10 17 }
-
-			block "icon"
-			{
-				frame = "[SkillItem.GetFrame]"
-			}
-		}
-
-		block "tooltip"
-		{
-			tooltip = "SKILL_ITEM_TOOLTIP"
-			using = tooltip_ne
-		}
-
-		text_single = {
-			name = "skill_value"
-			parentanchor = top|hcenter
-			position = { 5 17 }
-			align = center
-
-			block "value"
-			{
-				text = "[SkillItem.GetValue]"
-			}
-		}
-	}
-
-	type hbox_character_relation_and_ai = hbox
-	{
-		layoutpolicy_horizontal = expanding
-		spacing = 2
-
-		hbox = {
-			maximumsize = { 430 -1 }
-
-			text_single = {
-				maximumsize = { 281 -1 }
-				name = "character_relation_to_you"
-				text = "[Character.GetRelationToString( GetPlayer )]"
-				tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-				using = tooltip_se
-
-				fontsize_min = 13
-				align = nobaseline
-			}
-
-			text_single = {
-				maximumsize = { 149 -1 }
-				name = "other_player_name"
-				visible = "[And( Character.IsPlayer, Not( Character.IsLocalPlayer ) )]"
-
-				raw_text = " • #L [Character.GetHumanName]#!"
-				tooltip = "AI_PERSONALITY_IS_PLAYER_TOOLTIP"
-				using = tooltip_se
-
-				fontsize_min = 13
-				align = nobaseline
-			}
-
-			text_single = {
-				maximumsize = { 149 -1 }
-				name = "ai_personality"
-				visible = "[Not( Character.IsPlayer )]"
-
-				raw_text = " • #L [Character.GetAIPersonalityNoTooltip]#!"
-				tooltip = "AI_PERSONALITY_TT"
-				using = tooltip_se
-
-				fontsize_min = 13
-				align = nobaseline
-			}
-		}
-
-		icon = {
-			visible = "[Not(Character.IsFemale)]"
-			size = { 20 20 }
-			framesize = { 40 40 }
-			frame = "[Character.GetSexualityFrame]"
-			texture = "gfx/interface/icons/character_status/sexuality_icons_male.dds"
-			tooltip = "SEXUALITY_TT"
-		}
-
-		icon = {
-			visible = "[Character.IsFemale]"
-			size = { 20 20 }
-			framesize = { 40 40 }
-			frame = "[Character.GetSexualityFrame]"
-			texture = "gfx/interface/icons/character_status/sexuality_icons_female.dds"
-			tooltip = "SEXUALITY_TT"
-		}
-
-		expand = {}
-	}
-
-	type icon_row_header_background = icon
-	{
-		size = { 100% 25 }
-
-		texture = "gfx/interface/component_tiles/tile_title_bg_01.dds"
-		spritetype = corneredtiled
-		spriteborder = { 20 0 }
-		texture_density = 2
-		alpha = 0.5
-	}
-
-	type widget_family_row_item = widget
-	{
-		layoutpolicy_horizontal = expanding
-		layoutpolicy_vertical = expanding
-		maximumsize = { -1 110 }
-		scissor = yes
-
-		icon_row_header_background = {}
-
-		hbox = {
-
-			block "item_list"
-			{
-			}
-
-			expand = {}
-		}
-	}
-
-	type vbox_character_row_item = vbox {
-		spacing = -3
-
-		widget = {
-			layoutpolicy_horizontal = expanding
-			size = { 0 25 }
-			min_width = 110
-
-			block "expand_button" {
-				button_standard_hover = {
-					size = { 100% 100% }
-
-					block "expand_button_inside" {}
-				}
-			}
-
-			hbox = {
-				margin = { 10 0 }
-
-				background = {
-					using = Text_Label_Background
-					alpha = 0.5
-					margin = { 0 -2 }
-				}
-
-				text_single = {
-					align = nobaseline
-					fontsize = 14
-
-					block "header_text"
-					{
-						raw_text = "#D NEEDS TEXT#!"
-					}
-				}
-
-				expand = {}
-
-				text_single = {
-					align = nobaseline
-					default_format = "#weak"
-
-					block "remaining_items" {
-						visible = no
-					}
-				}
-			}
-		}
-
-		hbox = {
-			layoutpolicy_horizontal = expanding
-
-			using = Animation_Character_Window_Refresh
-
-			block "gridbox" {
-				fixedgridbox = {
-					flipdirection = yes
-					addcolumn = 85
-					addrow = 90
-					datamodel_wrap = 7
-
-					block "gridbox_slots"
-					{
-						maxverticalslots = 1
-					}
-
-					block "portrait_datamodel" {
-						datamodel = "[CharacterWindow.GetParents]"
-					}
-
-					item = {
-						portrait_head_small = {
-							blockoverride "portrait_button"
-							{
-								using = tooltip_ne
-							}
-							blockoverride "glow_visible"
-							{
-								visible = no
-							}
-						}
-					}
-				}
-			}
-
-			block "find_partner" {}
-
-			expand = {}
-		}
-
-		expand = {}
-	}
-
-	### Modified character row for relationship tab
-	type vbox_character_row_relationship_item = vbox {
-		spacing = -3
-
-		widget = {
-			layoutpolicy_horizontal = expanding
-			size = { 0 25 }
-			min_width = 110
-
-			block "expand_button" {
-				button_standard_hover = {
-					size = { 100% 100% }
-
-					block "expand_button_inside" {}
-				}
-			}
-
-			hbox = {
-				margin = { 10 0 }
-
-				background = {
-					using = Text_Label_Background
-					alpha = 0.5
-					margin = { 0 -2 }
-				}
-
-				text_single = {
-					align = nobaseline
-					fontsize = 14
-
-					block "header_text"
-					{
-						raw_text = "#D NEEDS TEXT#!"
-					}
-				}
-
-				expand = {}
-
-				text_single = {
-					align = nobaseline
-					default_format = "#weak"
-
-					block "remaining_items" {
-						visible = no
-					}
-				}
-			}
-		}
-
-		hbox = {
-			layoutpolicy_horizontal = expanding
-
-			using = Animation_Character_Window_Refresh
-
-			block "gridbox" {
-				fixedgridbox = {
-					flipdirection = yes
-					addcolumn = 85
-					addrow = 90
-					datamodel_wrap = 7
-
-					block "gridbox_slots"
-					{
-						maxverticalslots = 1
-					}
-
-					block "portrait_datamodel" {
-						datamodel = "[CharacterWindow.GetParents]"
-					}
-
-					item = {
-						portrait_head_small_relationship = {
-							blockoverride "portrait_button"
-							{
-								using = tooltip_ne
-							}
-							blockoverride "glow_visible"
-							{
-								visible = no
-							}
-						}
-					}
-				}
-			}
-
-			block "find_partner" {}
-
-			expand = {}
-		}
-
-		expand = {}
-	}
-
-	type vbox_titles_claims_box = vbox {
-
-		## Titles
-		vbox = {
-			name = "titles"
-			visible = "[Not( IsDataModelEmpty( CharacterWindow.GetTitles ) )]"
-			layoutpolicy_horizontal = expanding
-
-			button_standard_hover = {
-				layoutpolicy_horizontal = expanding
-				size = { 0 25 }
-				onclick = "[CharacterWindow.ToggleExpandedTitles]"
-				down = "[CharacterWindow.AreTitlesExpanded]"
-				tooltip = "[SelectLocalization( CharacterWindow.AreTitlesExpanded, 'CV_TITLES_HIDE_TT', 'CV_TITLES_SHOW_TT' )]"
-
-				hbox = {
-					margin = { 5 0 }
-					margin_bottom = 3
-					margin_right = 10
-
-					text_label_left = {
-						visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetTitles), '(int32)1' )]"
-						text = "CV_TITLES"
-					}
-
-					text_label_left = {
-						visible = "[Not(GreaterThan_int32( GetDataModelSize(CharacterWindow.GetTitles), '(int32)1' ))]"
-						text = "CV_TITLES_SINGULAR"
-					}
-
-					expand = {}
-
-					text_single = {
-						block "titles_extra_items"
-						{
-							visible = "[GreaterThan_int32(GetDataModelSize(CharacterWindow.GetTitles), '(int32)8' )]"
-							text = "[GetNumberAbove_int32( GetDataModelSize(CharacterWindow.GetTitles), '(int32)8' )|=]"
-						}
-						default_format = "#weak"
-					}
-				}
-			}
-
-			hbox = {
+			# Modifiers expanded
+			scrollbox = {
+				name = "modifiers_expanded"
+				visible = "[CharacterWindow.AreModifiersExpanded]"
+				layoutpolicy_vertical = expanding
 				layoutpolicy_horizontal = expanding
 
-				hbox = {
-					layoutpolicy_horizontal = expanding
+				using = Animation_Tab_Switch
 
-					fixedgridbox = {
-						datamodel = "[CharacterWindow.GetTitles]"
-						flipdirection = yes
-						addrow = 60
-						addcolumn = 38
-						maxverticalslots = 1
+				blockoverride "scrollbox_content"
+				{
+					spacing = 15
 
-						block "titles_max_slots" {
-							datamodel_wrap = 2
-						}
+					text_label_center = {
+						text = "MODIFIERS"
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						datamodel = "[CharacterWindow.GetTimedModifiers]"
+						spacing = 2
 
 						item = {
-							coa_title_tiny_crown = {
-								datacontext = "[TitleItem.GetTitle]"
-								#	visible = "[GreaterThan_int32( Title.GetTierFrame, '(int32)3' )]"
-								using = tooltip_ne
+							vbox = {
+								layoutpolicy_horizontal = expanding
 
-								icon = {
-									name = "has_laws"
-									visible = "[TitleItem.GetTitle.HasLaws]"
-									parentanchor = bottom|right
-									size = { 25 25 }
-									position = { 5 0 }
-									texture = "gfx/interface/icons/title_status/icon_title_law.dds"
+								hbox = {
+									layoutpolicy_horizontal = expanding
+
+									hbox = {
+										margin_right = 10
+										margin_top = 8
+										margin_left = -4
+
+										icon = {
+											size = { 32 32 }
+											texture = "[ModifierItem.GetIcon]"
+										}
+									}
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										text = "[ModifierItem.GetStaticModifier.GetName]"
+									}
+								}
+
+								textbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[ModifierItem.HasTooltipDataByTag('single_modifier')]"
+									datacontext = "[ModifierItem.GetSingleModifierTooltipData]"
+									max_width = 500
+									using = DefaultTooltipText
+									multiline = yes
+									text = "[TimedModifierSingleItem.GetDesc]"
+									alwaystransparent = no
+								}
+
+								vbox = {
+									visible = "[ModifierItem.HasTooltipDataByTag('preview_list')]"
+									datacontext = "[ModifierItem.GetPreviewList]"
+									layoutpolicy_horizontal = expanding
+
+									textbox = {
+										layoutpolicy_horizontal = expanding
+										max_width = 500
+										using = DefaultTooltipText
+										multiline = yes
+										text = "[TimedModifierPreviewList.GetScaledDesc]"
+										alwaystransparent = no
+									}
+
+									vbox = {
+										datamodel = "[TimedModifierPreviewList.GetItems]"
+										layoutpolicy_horizontal = expanding
+										max_width = 500
+
+										item = {
+											vbox = {
+												layoutpolicy_horizontal = expanding
+
+												text_single = {
+													layoutpolicy_horizontal = expanding
+													text = "[TimedModifierPreviewItem.GetTitle]"
+												}
+
+												text_single = {
+													layoutpolicy_horizontal = expanding
+													text = "[TimedModifierPreviewItem.GetExpirationDate]"
+												}
+
+												expand = {}
+											}
+										}
+									}
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[ModifierItem.HasTooltipDataByTag('scaled_single_modifier')]"
+									datacontext = "[ModifierItem.GetScaledSingleModifierTooltipData]"
+
+									textbox = {
+										layoutpolicy_horizontal = expanding
+										max_width = 500
+										using = DefaultTooltipText
+										multiline = yes
+										text = "[TimedModifierScaledSingleItem.GetDesc]"
+										alwaystransparent = no
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										datamodel = "[TimedModifierScaledSingleItem.GetEffectItems]"
+
+										item = {
+											textbox = {
+												layoutpolicy_horizontal = expanding
+												max_width = 500
+												margin_top = 5
+												margin_left = 10
+												margin_right = 5
+												margin_bottom = 10
+												using = DefaultTooltipText
+												using = Background_Area
+												text = "[CString.GetString]"
+												alwaystransparent = no
+											}
+										}
+									}
+
+									text_single = {
+										layoutpolicy_horizontal = growing
+										max_width = 500
+										text = "[TimedModifierScaledSingleItem.GetExpirationDate]"
+									}
+								}
+
+								spacer = {
+									size = { 2 10 }
+								}
+
+								divider_light = {
+									layoutpolicy_horizontal = expanding
+									# Don't show divider after the last item in the datamodel
+									visible = "[Not( EqualTo_int32( PdxGuiWidget.GetIndexInDataModel, Subtract_int32( GetDataModelSize( CharacterWindow.GetTimedModifiers ), '(int32)1' ) ) )]"
 								}
 							}
 						}
 					}
-
-					expand = {}
 				}
-			}
-		}
-
-		## Claims
-		vbox = {
-			name = "claims"
-			visible = "[Not(IsDataModelEmpty(CharacterWindow.GetClaims))]"
-			layoutpolicy_horizontal = expanding
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-
-				button_standard_hover = {
-					layoutpolicy_horizontal = expanding
-					margin_left = 5
-					size = { 0 25 }
-					onclick = "[CharacterWindow.ToggleExpandedClaims]"
-					down = "[CharacterWindow.AreClaimsExpanded]"
-					tooltip = "[SelectLocalization( CharacterWindow.AreClaimsExpanded, 'CV_CLAIMS_HIDE_TT', 'CV_CLAIMS_SHOW_TT' )]"
-
-					hbox = {
-						margin = { 5 0 }
-						margin_bottom = 3
-						margin_right = 10
-
-						text_label_left = {
-							visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetClaims), '(int32)1' )]"
-							text = "CV_CLAIMS"
-						}
-
-						text_label_left = {
-							visible = "[Not(GreaterThan_int32( GetDataModelSize(CharacterWindow.GetClaims), '(int32)1' ))]"
-							text = "CV_CLAIMS_SINGULAR"
-						}
-
-						expand = {}
-
-						text_single = {
-							block "claims_extra_items"
-							{
-								visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetClaims), '(int32)10' )]"
-								text = "[GetNumberAbove_int32(GetDataModelSize(CharacterWindow.GetClaims), '(int32)10' )|=]"
-							}
-							default_format = "#weak"
-						}
-					}
-				}
-
-				expand = {}
-			}
-
-			hbox = {
-				layoutpolicy_horizontal = expanding
-
-				fixedgridbox = {
-					name = "claims_box"
-					datamodel = "[CharacterWindow.GetClaims]"
-					flipdirection = yes
-					addrow = 60
-					addcolumn = 38
-					maxverticalslots = 1
-
-					block "claims_max_slots" {
-						datamodel_wrap = 8
-					}
-
-					item = {
-						container = {
-							datacontext = "[Claim.GetTitle]"
-							using = tooltip_ne
-							tooltip = "CHARACTER_WINDOW_CLAIM_TOOLTIP"
-
-							coa_title_tiny_crown = {
-								name = "claim"
-								tooltip_enabled = no
-
-
-								highlight_icon = {
-									name = "pressed_claim"
-									visible = "[And(Claim.IsPressed, Not(Claim.IsImplicit))]"
-									texture = "gfx/interface/icons/title_status/icon_claim_pressed.dds"
-									size = { 24 24 }
-									parentanchor = bottom|right
-								}
-
-								highlight_icon = {
-									name = "unpressed_claim"
-									visible = "[And(Not(Claim.IsPressed), Not(Claim.IsImplicit))]"
-									texture = "gfx/interface/icons/title_status/icon_claim_unpressed.dds"
-									size = { 24 24 }
-									parentanchor = bottom|right
-								}
-
-								highlight_icon = {
-									name = "implicit_claim"
-									visible = "[Claim.IsImplicit]"
-									texture = "gfx/interface/icons/title_status/icon_claim_implicit.dds"
-									size = { 24 24 }
-									parentanchor = bottom|right
-								}
-							}
-						}
-					}
-				}
-
-				expand = {}
-			}
-		}
-
-		expand = {}
-	}
-
-	type vbox_diplomacy_box = vbox {
-		name = "diplomacy"
-
-		button_standard_hover = {
-			layoutpolicy_horizontal = expanding
-			size = { 0 25 }
-			onclick = "[CharacterWindow.ToggleExpandedDiplomacy]"
-			down = "[CharacterWindow.AreDiplomacyExpanded]"
-			tooltip = "[SelectLocalization( CharacterWindow.AreDiplomacyExpanded, 'CV_DIPLOMACY_HIDE_TT', 'CV_DIPLOMACY_SHOW_TT' )]"
-
-			hbox = {
-				margin = { 5 0 }
-				margin_left = 10
-				margin_bottom = 3
-
-				text_label_left = {
-					layoutpolicy_horizontal = expanding
-					text = "CV_DIPLOMACY"
-					autoresize = no
-					margin_right = 0
-				}
-			}
-
-			hbox = {
-				margin = { 10 0 }
-				margin_bottom = 3
-
-				expand = {}
-
-				text_single = {
-					default_format = "#weak"
-
-					block "diplomacy_extra_items"
-					{
-						visible = no
-					}
-				}
-			}
-		}
-
-		vbox = {
-			margin_top = 20
-			min_width = 100
-
-			fixedgridbox = {
-				name = "diplomacy_items"
-				datamodel = "[CharacterWindow.GetDiplomacyItems]"
-				flipdirection = yes
-				addrow = 65
-				addcolumn = 50
-
-				block "diplomacy_slots"
-				{
-					maxverticalslots = 2
-					maxhorizontalslots = 2
-					datamodel_wrap = 2
-				}
-
-				item = {
-					container = {
-						onmousehierarchyenter = "[DiplomacyItem.MouseEnter]"
-						onmousehierarchyleave = "[DiplomacyItem.MouseLeave]"
-
-						button = {
-							visible = "[Not(DiplomacyItem.IsStruggle)]"
-							parentanchor = top|hcenter
-							position = { 0 -22 }
-							texture = "gfx/interface/icons/diplomatic_icons.dds"
-							frame = "[DiplomacyItem.GetDiplomacyFrame]"
-							framesize = { 120 120 }
-							size = { 50 50 }
-							tooltip_enabled = no
-
-							text_single = {
-								name = "warscore"
-								visible = "[DiplomacyItem.HasWarScore]"
-								parentanchor = top|hcenter
-								position = { 0 10 }
-								text = "[DiplomacyItem.GetWarScoreFraction|0%=+]"
-								fontsize = 13
-							}
-						}
-
-						coa_realm_small = {
-							visible = "[Not(DiplomacyItem.IsStruggle)]"
-							datacontext = "[DiplomacyItem.GetTargetCharacter]"
-							tooltip = "[DiplomacyItem.GetTooltip]"
-							using = tooltip_es
-							tooltip_offset = { 0 22 }
-							onrightclick = "[DefaultOnRealmFlagClick(Character.GetID)]"
-
-							state = {
-								name = _mouse_hierarchy_enter
-								start_sound = {
-									soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
-								}
-							}
-
-							blockoverride "coa_button"
-							{
-								onclick = "[DiplomacyItem.OnClick]"
-								button_ignore = none
-							}
-						}
-
-						button = {
-							datacontext = "[DiplomacyItem.GetStruggle]"
-							visible = "[DiplomacyItem.IsStruggle]"
-							position = { 0 -3 }
-							size = { 50 60 }
-							onclick = "[DiplomacyItem.OnClick]"
-
-							datacontext = "[DiplomacyItem.GetTargetCharacter]"
-							tooltipwidget = struggle_tooltip;
-							using = tooltip_es
-							tooltip_offset = { 0 22 }
-
-							icon = {
-								name = "involved_banner"
-								visible = "[Struggle.IsInvolvedCharacter(Character.Self)]"
-								size = { 50 65 }
-								texture = "gfx/interface/icons/struggle_banners/involved_banner_tiny.dds"
-							}
-
-							icon = {
-								visible = "[Struggle.IsInvolvedCharacter(Character.Self)]"
-								parentanchor = center
-								position = { 0 2 }
-								size = { 34 34 }
-								texture = "gfx/interface/icons/struggle_banners/icon_background_02.dds"
-							}
-
-							icon = {
-								name = "interloper_banner"
-								visible = "[Struggle.IsInterloperCharacter(Character.Self)]"
-								size = { 50 65 }
-								texture = "gfx/interface/icons/struggle_banners/interloper_banner_tiny.dds"
-							}
-
-							icon = {
-								visible = "[Struggle.IsInterloperCharacter(Character.Self)]"
-								parentanchor = center
-								position = { 0 2 }
-								size = { 34 34 }
-								texture = "gfx/interface/icons/struggle_banners/icon_background_01.dds"
-							}
-
-							icon = {
-								parentanchor = center
-								position = { 0 2 }
-								size = { 30 30 }
-								texture = "[Struggle.GetCurrentPhase.GetIcon]"
-							}
-						}
-					}
-				}
-			}
-		}
-
-		expand = {}
-	}
-
-	type realm_name_and_type_vbox = vbox {
-		layoutpolicy_horizontal = expanding
-
-		hbox = {
-			layoutpolicy_horizontal = expanding
-
-			text_single = {
-				name = "character_title"
-				layoutpolicy_horizontal = expanding
-				text = "[Title.GetNameNoTooltip|U]"
-				default_format = "#medium"
-				using = Font_Size_Medium
-				max_width = 300
-			}
-
-			expand = {}
-		}
-
-		text_single = {
-			name = "faction"
-			visible = "[Title.HasFaction]"
-			layoutpolicy_horizontal = expanding
-			autoresize = no
-			text = "CV_CIVIL_WAR_FACTION"
-			default_format = "#low"
-			align = nobaseline
-			fontsize_min = 14
-		}
-
-		text_single = {
-			name = "government_type"
-			visible = "[Not( Title.HasFaction )]"
-			layoutpolicy_horizontal = expanding
-			autoresize = no
-			text = "CV_REALM_TYPE"
-			default_format = "#low"
-			align = nobaseline
-			fontsize_min = 14
-		}
-	}
-
-	type button_marry_off = button {
-		name = "marry_off_button"
-		onclick = "[Character.OpenPlayerInteraction( 'marry_off_interaction' )]"
-		enabled = "[Character.IsPlayerInteractionValid( 'marry_off_interaction' )]"
-
-		gfxtype = framedbuttongfx
-		effectname = "NoHighlight"
-		texture = "gfx/portraits/unknown_portraits/unknown_spouse.dds"
-		size = { 195 282 }
-		framesize = { 554 780 }
-		upframe = 1
-		overframe = 2
-		alpha = 0.8
-
-		button_icon = {
-			parentanchor = center
-			alwaystransparent = yes
-			size = { 50 50 }
-			position = { 0 45 }
-			texture = "gfx/interface/icons/faith_doctrine_groups/doctrine_marriage_type.dds"
-		}
-	}
-
-	type container_secondary = container {
-		parentanchor = bottom|hcenter
-		position = { 15 0 }
-		datacontext = "[CharacterWindow.GetSecondaryCharater]"
-
-		using = Animation_Character_Window_Refresh_Short
-
-		# We only have invalid secondary character here if player can marry them off
-		container = {
-			visible = "[Not( Character.IsValid )]"
-			position = { 0 35 }
-			parentanchor = center
-
-			button_marry_off = {
-				datacontext = "[CharacterWindow.GetCharacter]"
-				visible = "[And( Not( ObjectsEqual( GetPlayer, Character.Self ) ), Not( Character.IsConcubine ) )]"
-				tooltip = "CHARACTER_WINDOW_FIND_SPOUSE"
-			}
-
-			button_marry_off = {
-				datacontext = "[CharacterWindow.GetCharacter]"
-				visible = "[ObjectsEqual( GetPlayer, Character.Self )]"
-				tooltip = "CHARACTER_WINDOW_FIND_SPOUSE_SELF"
-			}
-		}
-
-		portrait_character_view_spouse = {
-			visible = "[Character.IsValid]"
-
-			state = {
-				name = cw_spouse_cycle
-				using = Animation_Refresh_FadeOut
-			}
-
-			state = {
-				using = Animation_Refresh_FadeIn
-			}
-		}
-
-		widget = {
-			parentanchor = bottom
-			allow_outside = yes
-			position = { 93 0 }
-			size = { 182 60 }
-
-			flowcontainer = {
-				parentanchor = bottom
-				widgetanchor = bottom|left
-				position = { 33 -3 }
-				ignoreinvisible = yes
-
-				flowcontainer = {
-					direction = vertical
-					parentanchor = bottom
-
-					portrait_opinion = {
-						block "portrait_opinion" {}
-					}
-
-					flowcontainer = {
-						ignoreinvisible = yes
-
-						text_label_center = {
-							text = "[CharacterWindow.GetSecondaryText]"
-							max_width = 120
-							align = nobaseline
-						}
-
-						flowcontainer = {
-							visible = "[Or( CharacterWindow.HasPreviousSecondary, CharacterWindow.HasNextSecondary )]"
-							margin_bottom = 4
-							spacing = -5
-							parentanchor = bottom
-
-							using = Animation_ShowHide_Standard
-
-							button_expand = {
-								enabled = "[CharacterWindow.HasPreviousSecondary]"
-								onclick = "[CharacterWindow.PreviousSecondary]"
-								onclick = "[PdxGuiTriggerAllAnimations( 'cw_spouse_cycle' )]"
-								tooltip = "[CharacterWindow.GetPreviousSecondaryTooltip]"
-								mirror = horizontal
-							}
-
-							button_expand = {
-								enabled = "[CharacterWindow.HasNextSecondary]"
-								onclick = "[CharacterWindow.NextSecondary]"
-								onclick = "[PdxGuiTriggerAllAnimations( 'cw_spouse_cycle' )]"
-								tooltip = "[CharacterWindow.GetNextSecondaryTooltip]"
-							}
-						}
-					}
-				}
-
-				flowcontainer = {
-					parentanchor = vcenter
-
-					coa_realm_small = {
-						visible = "[Character.HasLandedTitles]"
-						using = Animation_ShowHide_Standard
-						parentanchor = bottom
-					}
-
-					portrait_status_icons = {
-						parentanchor = bottom
-						margin_bottom = 2
-					}
-				}
-			}
-
-			icon = {
-				name = "diarchy_active_icon"
-				visible = "[And(CharacterWindow.GetCharacter.HasActiveDiarchy, Not(CharacterWindow.ShowMarriageIcon))]"
-				parentanchor = bottom
-				position = { 0 -3 }
-				size = { 30 30 }
-				texture = "gfx/interface/icons/scale_of_power.dds"
-				tooltip = IN_ACTIVE_DIARCHY
-				using = tooltip_below
-			}
-
-			icon = {
-				name = "marriage_type_icon"
-				visible = "[CharacterWindow.ShowMarriageIcon]"
-				parentanchor = bottom
-				position = { 0 -3 }
-				size = { 30 30 }
-				framesize = { 60 60 }
-				texture = "gfx/interface/icons/marriage_types.dds"
-				frame = "[CharacterWindow.GetMarriageIcon]"
-				tooltip = "[CharacterWindow.GetMarriageIconTooltip]"
-				using = tooltip_below
 			}
 		}
 	}
 }
 
-template Animation_Character_Window_Refresh
-{
-	state = {
-		name = character_window_refresh
-		using = Animation_Refresh_FadeOut
-		alpha = 0.65
-	}
-
-	state = {
-		using = Animation_Refresh_FadeIn
-	}
-}
-
-template Animation_Character_Window_Refresh_Short
-{
-	state = {
-		name = character_window_refresh
-		using = Animation_Refresh_FadeOut
-		alpha = 0.8
-	}
-
-	state = {
-		using = Animation_Refresh_FadeIn
-		duration = 0.25
-	}
-}
-
-template Character_Window_Relation_Icon
-{
-	size = { 24 24 }
-	framesize = { 40 40 }
-
-	visible = "[ScriptedRelation.HasRelationBetween( CharacterWindow.GetCharacter, Character.Self )]"
-
-	tooltipwidget = {
-		scripted_relation_tooltip = {
-			blockoverride "description_text"
-			{
-				text = "[GetScriptedRelationTooltip( ScriptedRelation, CharacterWindow.GetCharacter, Character )]"
-			}
-		}
-	}
-}
-
+#
+# types CharacterWindow
+# {
+# 	type skill_icon_label_vertical = widget {
+# 		size = { 40 60 }
+#
+# 		icon = {
+# 			name = "skill_icon"
+# 			texture = "gfx/interface/icons/icon_skills.dds"
+# 			size = { 24 24 }
+# 			framesize = { 60 60 }
+# 			position = { -10 17 }
+#
+# 			block "icon"
+# 			{
+# 				frame = "[SkillItem.GetFrame]"
+# 			}
+# 		}
+#
+# 		block "tooltip"
+# 		{
+# 			tooltip = "SKILL_ITEM_TOOLTIP"
+# 			using = tooltip_ne
+# 		}
+#
+# 		text_single = {
+# 			name = "skill_value"
+# 			parentanchor = top|hcenter
+# 			position = { 5 17 }
+# 			align = center
+#
+# 			block "value"
+# 			{
+# 				text = "[SkillItem.GetValue]"
+# 			}
+# 		}
+# 	}
+#
+# 	type hbox_character_relation_and_ai = hbox
+# 	{
+# 		layoutpolicy_horizontal = expanding
+# 		spacing = 2
+#
+# 		hbox = {
+# 			maximumsize = { 430 -1 }
+#
+# 			text_single = {
+# 				maximumsize = { 281 -1 }
+# 				name = "character_relation_to_you"
+# 				text = "[Character.GetRelationToString( GetPlayer )]"
+# 				tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+# 				using = tooltip_se
+#
+# 				fontsize_min = 13
+# 				align = nobaseline
+# 			}
+#
+# 			text_single = {
+# 				maximumsize = { 149 -1 }
+# 				name = "other_player_name"
+# 				visible = "[And( Character.IsPlayer, Not( Character.IsLocalPlayer ) )]"
+#
+# 				raw_text = " • #L [Character.GetHumanName]#!"
+# 				tooltip = "AI_PERSONALITY_IS_PLAYER_TOOLTIP"
+# 				using = tooltip_se
+#
+# 				fontsize_min = 13
+# 				align = nobaseline
+# 			}
+#
+# 			text_single = {
+# 				maximumsize = { 149 -1 }
+# 				name = "ai_personality"
+# 				visible = "[Not( Character.IsPlayer )]"
+#
+# 				raw_text = " • #L [Character.GetAIPersonalityNoTooltip]#!"
+# 				tooltip = "AI_PERSONALITY_TT"
+# 				using = tooltip_se
+#
+# 				fontsize_min = 13
+# 				align = nobaseline
+# 			}
+# 		}
+#
+# 		icon = {
+# 			visible = "[Not(Character.IsFemale)]"
+# 			size = { 20 20 }
+# 			framesize = { 40 40 }
+# 			frame = "[Character.GetSexualityFrame]"
+# 			texture = "gfx/interface/icons/character_status/sexuality_icons_male.dds"
+# 			tooltip = "SEXUALITY_TT"
+# 		}
+#
+# 		icon = {
+# 			visible = "[Character.IsFemale]"
+# 			size = { 20 20 }
+# 			framesize = { 40 40 }
+# 			frame = "[Character.GetSexualityFrame]"
+# 			texture = "gfx/interface/icons/character_status/sexuality_icons_female.dds"
+# 			tooltip = "SEXUALITY_TT"
+# 		}
+#
+# 		expand = {}
+# 	}
+#
+# 	type icon_row_header_background = icon
+# 	{
+# 		size = { 100% 25 }
+#
+# 		texture = "gfx/interface/component_tiles/tile_title_bg_01.dds"
+# 		spritetype = corneredtiled
+# 		spriteborder = { 20 0 }
+# 		texture_density = 2
+# 		alpha = 0.5
+# 	}
+#
+# 	type widget_family_row_item = widget
+# 	{
+# 		layoutpolicy_horizontal = expanding
+# 		layoutpolicy_vertical = expanding
+# 		maximumsize = { -1 110 }
+# 		scissor = yes
+#
+# 		icon_row_header_background = {}
+#
+# 		hbox = {
+#
+# 			block "item_list"
+# 			{
+# 			}
+#
+# 			expand = {}
+# 		}
+# 	}
+#
+# 	type vbox_character_row_item = vbox {
+# 		spacing = -3
+#
+# 		widget = {
+# 			layoutpolicy_horizontal = expanding
+# 			size = { 0 25 }
+# 			min_width = 110
+#
+# 			block "expand_button" {
+# 				button_standard_hover = {
+# 					size = { 100% 100% }
+#
+# 					block "expand_button_inside" {}
+# 				}
+# 			}
+#
+# 			hbox = {
+# 				margin = { 10 0 }
+#
+# 				background = {
+# 					using = Text_Label_Background
+# 					alpha = 0.5
+# 					margin = { 0 -2 }
+# 				}
+#
+# 				text_single = {
+# 					align = nobaseline
+# 					fontsize = 14
+#
+# 					block "header_text"
+# 					{
+# 						raw_text = "#D NEEDS TEXT#!"
+# 					}
+# 				}
+#
+# 				expand = {}
+#
+# 				text_single = {
+# 					align = nobaseline
+# 					default_format = "#weak"
+#
+# 					block "remaining_items" {
+# 						visible = no
+# 					}
+# 				}
+# 			}
+# 		}
+#
+# 		hbox = {
+# 			layoutpolicy_horizontal = expanding
+#
+# 			using = Animation_Character_Window_Refresh
+#
+# 			block "gridbox" {
+# 				fixedgridbox = {
+# 					flipdirection = yes
+# 					addcolumn = 85
+# 					addrow = 90
+# 					datamodel_wrap = 7
+#
+# 					block "gridbox_slots"
+# 					{
+# 						maxverticalslots = 1
+# 					}
+#
+# 					block "portrait_datamodel" {
+# 						datamodel = "[CharacterWindow.GetParents]"
+# 					}
+#
+# 					item = {
+# 						portrait_head_small = {
+# 							blockoverride "portrait_button"
+# 							{
+# 								using = tooltip_ne
+# 							}
+# 							blockoverride "glow_visible"
+# 							{
+# 								visible = no
+# 							}
+# 						}
+# 					}
+# 				}
+# 			}
+#
+# 			block "find_partner" {}
+#
+# 			expand = {}
+# 		}
+#
+# 		expand = {}
+# 	}
+#
+# 	### Modified character row for relationship tab
+# 	type vbox_character_row_relationship_item = vbox {
+# 		spacing = -3
+#
+# 		widget = {
+# 			layoutpolicy_horizontal = expanding
+# 			size = { 0 25 }
+# 			min_width = 110
+#
+# 			block "expand_button" {
+# 				button_standard_hover = {
+# 					size = { 100% 100% }
+#
+# 					block "expand_button_inside" {}
+# 				}
+# 			}
+#
+# 			hbox = {
+# 				margin = { 10 0 }
+#
+# 				background = {
+# 					using = Text_Label_Background
+# 					alpha = 0.5
+# 					margin = { 0 -2 }
+# 				}
+#
+# 				text_single = {
+# 					align = nobaseline
+# 					fontsize = 14
+#
+# 					block "header_text"
+# 					{
+# 						raw_text = "#D NEEDS TEXT#!"
+# 					}
+# 				}
+#
+# 				expand = {}
+#
+# 				text_single = {
+# 					align = nobaseline
+# 					default_format = "#weak"
+#
+# 					block "remaining_items" {
+# 						visible = no
+# 					}
+# 				}
+# 			}
+# 		}
+#
+# 		hbox = {
+# 			layoutpolicy_horizontal = expanding
+#
+# 			using = Animation_Character_Window_Refresh
+#
+# 			block "gridbox" {
+# 				fixedgridbox = {
+# 					flipdirection = yes
+# 					addcolumn = 85
+# 					addrow = 90
+# 					datamodel_wrap = 7
+#
+# 					block "gridbox_slots"
+# 					{
+# 						maxverticalslots = 1
+# 					}
+#
+# 					block "portrait_datamodel" {
+# 						datamodel = "[CharacterWindow.GetParents]"
+# 					}
+#
+# 					item = {
+# 						portrait_head_small_relationship = {
+# 							blockoverride "portrait_button"
+# 							{
+# 								using = tooltip_ne
+# 							}
+# 							blockoverride "glow_visible"
+# 							{
+# 								visible = no
+# 							}
+# 						}
+# 					}
+# 				}
+# 			}
+#
+# 			block "find_partner" {}
+#
+# 			expand = {}
+# 		}
+#
+# 		expand = {}
+# 	}
+#
+# 	type vbox_titles_claims_box = vbox {
+#
+# 		## Titles
+# 		vbox = {
+# 			name = "titles"
+# 			visible = "[Not( IsDataModelEmpty( CharacterWindow.GetTitles ) )]"
+# 			layoutpolicy_horizontal = expanding
+#
+# 			button_standard_hover = {
+# 				layoutpolicy_horizontal = expanding
+# 				size = { 0 25 }
+# 				onclick = "[CharacterWindow.ToggleExpandedTitles]"
+# 				down = "[CharacterWindow.AreTitlesExpanded]"
+# 				tooltip = "[SelectLocalization( CharacterWindow.AreTitlesExpanded, 'CV_TITLES_HIDE_TT', 'CV_TITLES_SHOW_TT' )]"
+#
+# 				hbox = {
+# 					margin = { 5 0 }
+# 					margin_bottom = 3
+# 					margin_right = 10
+#
+# 					text_label_left = {
+# 						visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetTitles), '(int32)1' )]"
+# 						text = "CV_TITLES"
+# 					}
+#
+# 					text_label_left = {
+# 						visible = "[Not(GreaterThan_int32( GetDataModelSize(CharacterWindow.GetTitles), '(int32)1' ))]"
+# 						text = "CV_TITLES_SINGULAR"
+# 					}
+#
+# 					expand = {}
+#
+# 					text_single = {
+# 						block "titles_extra_items"
+# 						{
+# 							visible = "[GreaterThan_int32(GetDataModelSize(CharacterWindow.GetTitles), '(int32)8' )]"
+# 							text = "[GetNumberAbove_int32( GetDataModelSize(CharacterWindow.GetTitles), '(int32)8' )|=]"
+# 						}
+# 						default_format = "#weak"
+# 					}
+# 				}
+# 			}
+#
+# 			hbox = {
+# 				layoutpolicy_horizontal = expanding
+#
+# 				hbox = {
+# 					layoutpolicy_horizontal = expanding
+#
+# 					fixedgridbox = {
+# 						datamodel = "[CharacterWindow.GetTitles]"
+# 						flipdirection = yes
+# 						addrow = 60
+# 						addcolumn = 38
+# 						maxverticalslots = 1
+#
+# 						block "titles_max_slots" {
+# 							datamodel_wrap = 2
+# 						}
+#
+# 						item = {
+# 							coa_title_tiny_crown = {
+# 								datacontext = "[TitleItem.GetTitle]"
+# 								#	visible = "[GreaterThan_int32( Title.GetTierFrame, '(int32)3' )]"
+# 								using = tooltip_ne
+#
+# 								icon = {
+# 									name = "has_laws"
+# 									visible = "[TitleItem.GetTitle.HasLaws]"
+# 									parentanchor = bottom|right
+# 									size = { 25 25 }
+# 									position = { 5 0 }
+# 									texture = "gfx/interface/icons/title_status/icon_title_law.dds"
+# 								}
+# 							}
+# 						}
+# 					}
+#
+# 					expand = {}
+# 				}
+# 			}
+# 		}
+#
+# 		## Claims
+# 		vbox = {
+# 			name = "claims"
+# 			visible = "[Not(IsDataModelEmpty(CharacterWindow.GetClaims))]"
+# 			layoutpolicy_horizontal = expanding
+#
+# 			vbox = {
+# 				layoutpolicy_horizontal = expanding
+#
+# 				button_standard_hover = {
+# 					layoutpolicy_horizontal = expanding
+# 					margin_left = 5
+# 					size = { 0 25 }
+# 					onclick = "[CharacterWindow.ToggleExpandedClaims]"
+# 					down = "[CharacterWindow.AreClaimsExpanded]"
+# 					tooltip = "[SelectLocalization( CharacterWindow.AreClaimsExpanded, 'CV_CLAIMS_HIDE_TT', 'CV_CLAIMS_SHOW_TT' )]"
+#
+# 					hbox = {
+# 						margin = { 5 0 }
+# 						margin_bottom = 3
+# 						margin_right = 10
+#
+# 						text_label_left = {
+# 							visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetClaims), '(int32)1' )]"
+# 							text = "CV_CLAIMS"
+# 						}
+#
+# 						text_label_left = {
+# 							visible = "[Not(GreaterThan_int32( GetDataModelSize(CharacterWindow.GetClaims), '(int32)1' ))]"
+# 							text = "CV_CLAIMS_SINGULAR"
+# 						}
+#
+# 						expand = {}
+#
+# 						text_single = {
+# 							block "claims_extra_items"
+# 							{
+# 								visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetClaims), '(int32)10' )]"
+# 								text = "[GetNumberAbove_int32(GetDataModelSize(CharacterWindow.GetClaims), '(int32)10' )|=]"
+# 							}
+# 							default_format = "#weak"
+# 						}
+# 					}
+# 				}
+#
+# 				expand = {}
+# 			}
+#
+# 			hbox = {
+# 				layoutpolicy_horizontal = expanding
+#
+# 				fixedgridbox = {
+# 					name = "claims_box"
+# 					datamodel = "[CharacterWindow.GetClaims]"
+# 					flipdirection = yes
+# 					addrow = 60
+# 					addcolumn = 38
+# 					maxverticalslots = 1
+#
+# 					block "claims_max_slots" {
+# 						datamodel_wrap = 8
+# 					}
+#
+# 					item = {
+# 						container = {
+# 							datacontext = "[Claim.GetTitle]"
+# 							using = tooltip_ne
+# 							tooltip = "CHARACTER_WINDOW_CLAIM_TOOLTIP"
+#
+# 							coa_title_tiny_crown = {
+# 								name = "claim"
+# 								tooltip_enabled = no
+#
+#
+# 								highlight_icon = {
+# 									name = "pressed_claim"
+# 									visible = "[And(Claim.IsPressed, Not(Claim.IsImplicit))]"
+# 									texture = "gfx/interface/icons/title_status/icon_claim_pressed.dds"
+# 									size = { 24 24 }
+# 									parentanchor = bottom|right
+# 								}
+#
+# 								highlight_icon = {
+# 									name = "unpressed_claim"
+# 									visible = "[And(Not(Claim.IsPressed), Not(Claim.IsImplicit))]"
+# 									texture = "gfx/interface/icons/title_status/icon_claim_unpressed.dds"
+# 									size = { 24 24 }
+# 									parentanchor = bottom|right
+# 								}
+#
+# 								highlight_icon = {
+# 									name = "implicit_claim"
+# 									visible = "[Claim.IsImplicit]"
+# 									texture = "gfx/interface/icons/title_status/icon_claim_implicit.dds"
+# 									size = { 24 24 }
+# 									parentanchor = bottom|right
+# 								}
+# 							}
+# 						}
+# 					}
+# 				}
+#
+# 				expand = {}
+# 			}
+# 		}
+#
+# 		expand = {}
+# 	}
+#
+# 	type vbox_diplomacy_box = vbox {
+# 		name = "diplomacy"
+#
+# 		button_standard_hover = {
+# 			layoutpolicy_horizontal = expanding
+# 			size = { 0 25 }
+# 			onclick = "[CharacterWindow.ToggleExpandedDiplomacy]"
+# 			down = "[CharacterWindow.AreDiplomacyExpanded]"
+# 			tooltip = "[SelectLocalization( CharacterWindow.AreDiplomacyExpanded, 'CV_DIPLOMACY_HIDE_TT', 'CV_DIPLOMACY_SHOW_TT' )]"
+#
+# 			hbox = {
+# 				margin = { 5 0 }
+# 				margin_left = 10
+# 				margin_bottom = 3
+#
+# 				text_label_left = {
+# 					layoutpolicy_horizontal = expanding
+# 					text = "CV_DIPLOMACY"
+# 					autoresize = no
+# 					margin_right = 0
+# 				}
+# 			}
+#
+# 			hbox = {
+# 				margin = { 10 0 }
+# 				margin_bottom = 3
+#
+# 				expand = {}
+#
+# 				text_single = {
+# 					default_format = "#weak"
+#
+# 					block "diplomacy_extra_items"
+# 					{
+# 						visible = no
+# 					}
+# 				}
+# 			}
+# 		}
+#
+# 		vbox = {
+# 			margin_top = 20
+# 			min_width = 100
+#
+# 			fixedgridbox = {
+# 				name = "diplomacy_items"
+# 				datamodel = "[CharacterWindow.GetDiplomacyItems]"
+# 				flipdirection = yes
+# 				addrow = 65
+# 				addcolumn = 50
+#
+# 				block "diplomacy_slots"
+# 				{
+# 					maxverticalslots = 2
+# 					maxhorizontalslots = 2
+# 					datamodel_wrap = 2
+# 				}
+#
+# 				item = {
+# 					container = {
+# 						onmousehierarchyenter = "[DiplomacyItem.MouseEnter]"
+# 						onmousehierarchyleave = "[DiplomacyItem.MouseLeave]"
+#
+# 						button = {
+# 							visible = "[Not(DiplomacyItem.IsStruggle)]"
+# 							parentanchor = top|hcenter
+# 							position = { 0 -22 }
+# 							texture = "gfx/interface/icons/diplomatic_icons.dds"
+# 							frame = "[DiplomacyItem.GetDiplomacyFrame]"
+# 							framesize = { 120 120 }
+# 							size = { 50 50 }
+# 							tooltip_enabled = no
+#
+# 							text_single = {
+# 								name = "warscore"
+# 								visible = "[DiplomacyItem.HasWarScore]"
+# 								parentanchor = top|hcenter
+# 								position = { 0 10 }
+# 								text = "[DiplomacyItem.GetWarScoreFraction|0%=+]"
+# 								fontsize = 13
+# 							}
+# 						}
+#
+# 						coa_realm_small = {
+# 							visible = "[Not(DiplomacyItem.IsStruggle)]"
+# 							datacontext = "[DiplomacyItem.GetTargetCharacter]"
+# 							tooltip = "[DiplomacyItem.GetTooltip]"
+# 							using = tooltip_es
+# 							tooltip_offset = { 0 22 }
+# 							onrightclick = "[DefaultOnRealmFlagClick(Character.GetID)]"
+#
+# 							state = {
+# 								name = _mouse_hierarchy_enter
+# 								start_sound = {
+# 									soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_icon_pointer_over"
+# 								}
+# 							}
+#
+# 							blockoverride "coa_button"
+# 							{
+# 								onclick = "[DiplomacyItem.OnClick]"
+# 								button_ignore = none
+# 							}
+# 						}
+#
+# 						button = {
+# 							datacontext = "[DiplomacyItem.GetStruggle]"
+# 							visible = "[DiplomacyItem.IsStruggle]"
+# 							position = { 0 -3 }
+# 							size = { 50 60 }
+# 							onclick = "[DiplomacyItem.OnClick]"
+#
+# 							datacontext = "[DiplomacyItem.GetTargetCharacter]"
+# 							tooltipwidget = struggle_tooltip;
+# 							using = tooltip_es
+# 							tooltip_offset = { 0 22 }
+#
+# 							icon = {
+# 								name = "involved_banner"
+# 								visible = "[Struggle.IsInvolvedCharacter(Character.Self)]"
+# 								size = { 50 65 }
+# 								texture = "gfx/interface/icons/struggle_banners/involved_banner_tiny.dds"
+# 							}
+#
+# 							icon = {
+# 								visible = "[Struggle.IsInvolvedCharacter(Character.Self)]"
+# 								parentanchor = center
+# 								position = { 0 2 }
+# 								size = { 34 34 }
+# 								texture = "gfx/interface/icons/struggle_banners/icon_background_02.dds"
+# 							}
+#
+# 							icon = {
+# 								name = "interloper_banner"
+# 								visible = "[Struggle.IsInterloperCharacter(Character.Self)]"
+# 								size = { 50 65 }
+# 								texture = "gfx/interface/icons/struggle_banners/interloper_banner_tiny.dds"
+# 							}
+#
+# 							icon = {
+# 								visible = "[Struggle.IsInterloperCharacter(Character.Self)]"
+# 								parentanchor = center
+# 								position = { 0 2 }
+# 								size = { 34 34 }
+# 								texture = "gfx/interface/icons/struggle_banners/icon_background_01.dds"
+# 							}
+#
+# 							icon = {
+# 								parentanchor = center
+# 								position = { 0 2 }
+# 								size = { 30 30 }
+# 								texture = "[Struggle.GetCurrentPhase.GetIcon]"
+# 							}
+# 						}
+# 					}
+# 				}
+# 			}
+# 		}
+#
+# 		expand = {}
+# 	}
+#
+# 	type realm_name_and_type_vbox = vbox {
+# 		layoutpolicy_horizontal = expanding
+#
+# 		hbox = {
+# 			layoutpolicy_horizontal = expanding
+#
+# 			text_single = {
+# 				name = "character_title"
+# 				layoutpolicy_horizontal = expanding
+# 				text = "[Title.GetNameNoTooltip|U]"
+# 				default_format = "#medium"
+# 				using = Font_Size_Medium
+# 				max_width = 300
+# 			}
+#
+# 			expand = {}
+# 		}
+#
+# 		text_single = {
+# 			name = "faction"
+# 			visible = "[Title.HasFaction]"
+# 			layoutpolicy_horizontal = expanding
+# 			autoresize = no
+# 			text = "CV_CIVIL_WAR_FACTION"
+# 			default_format = "#low"
+# 			align = nobaseline
+# 			fontsize_min = 14
+# 		}
+#
+# 		text_single = {
+# 			name = "government_type"
+# 			visible = "[Not( Title.HasFaction )]"
+# 			layoutpolicy_horizontal = expanding
+# 			autoresize = no
+# 			text = "CV_REALM_TYPE"
+# 			default_format = "#low"
+# 			align = nobaseline
+# 			fontsize_min = 14
+# 		}
+# 	}
+#
+# 	type button_marry_off = button {
+# 		name = "marry_off_button"
+# 		onclick = "[Character.OpenPlayerInteraction( 'marry_off_interaction' )]"
+# 		enabled = "[Character.IsPlayerInteractionValid( 'marry_off_interaction' )]"
+#
+# 		gfxtype = framedbuttongfx
+# 		effectname = "NoHighlight"
+# 		texture = "gfx/portraits/unknown_portraits/unknown_spouse.dds"
+# 		size = { 195 282 }
+# 		framesize = { 554 780 }
+# 		upframe = 1
+# 		overframe = 2
+# 		alpha = 0.8
+#
+# 		button_icon = {
+# 			parentanchor = center
+# 			alwaystransparent = yes
+# 			size = { 50 50 }
+# 			position = { 0 45 }
+# 			texture = "gfx/interface/icons/faith_doctrine_groups/doctrine_marriage_type.dds"
+# 		}
+# 	}
+#
+# 	type container_secondary = container {
+# 		parentanchor = bottom|hcenter
+# 		position = { 15 0 }
+# 		datacontext = "[CharacterWindow.GetSecondaryCharater]"
+#
+# 		using = Animation_Character_Window_Refresh_Short
+#
+# 		# We only have invalid secondary character here if player can marry them off
+# 		container = {
+# 			visible = "[Not( Character.IsValid )]"
+# 			position = { 0 35 }
+# 			parentanchor = center
+#
+# 			button_marry_off = {
+# 				datacontext = "[CharacterWindow.GetCharacter]"
+# 				visible = "[And( Not( ObjectsEqual( GetPlayer, Character.Self ) ), Not( Character.IsConcubine ) )]"
+# 				tooltip = "CHARACTER_WINDOW_FIND_SPOUSE"
+# 			}
+#
+# 			button_marry_off = {
+# 				datacontext = "[CharacterWindow.GetCharacter]"
+# 				visible = "[ObjectsEqual( GetPlayer, Character.Self )]"
+# 				tooltip = "CHARACTER_WINDOW_FIND_SPOUSE_SELF"
+# 			}
+# 		}
+#
+# 		portrait_character_view_spouse = {
+# 			visible = "[Character.IsValid]"
+#
+# 			state = {
+# 				name = cw_spouse_cycle
+# 				using = Animation_Refresh_FadeOut
+# 			}
+#
+# 			state = {
+# 				using = Animation_Refresh_FadeIn
+# 			}
+# 		}
+#
+# 		widget = {
+# 			parentanchor = bottom
+# 			allow_outside = yes
+# 			position = { 93 0 }
+# 			size = { 182 60 }
+#
+# 			flowcontainer = {
+# 				parentanchor = bottom
+# 				widgetanchor = bottom|left
+# 				position = { 33 -3 }
+# 				ignoreinvisible = yes
+#
+# 				flowcontainer = {
+# 					direction = vertical
+# 					parentanchor = bottom
+#
+# 					portrait_opinion = {
+# 						block "portrait_opinion" {}
+# 					}
+#
+# 					flowcontainer = {
+# 						ignoreinvisible = yes
+#
+# 						text_label_center = {
+# 							text = "[CharacterWindow.GetSecondaryText]"
+# 							max_width = 120
+# 							align = nobaseline
+# 						}
+#
+# 						flowcontainer = {
+# 							visible = "[Or( CharacterWindow.HasPreviousSecondary, CharacterWindow.HasNextSecondary )]"
+# 							margin_bottom = 4
+# 							spacing = -5
+# 							parentanchor = bottom
+#
+# 							using = Animation_ShowHide_Standard
+#
+# 							button_expand = {
+# 								enabled = "[CharacterWindow.HasPreviousSecondary]"
+# 								onclick = "[CharacterWindow.PreviousSecondary]"
+# 								onclick = "[PdxGuiTriggerAllAnimations( 'cw_spouse_cycle' )]"
+# 								tooltip = "[CharacterWindow.GetPreviousSecondaryTooltip]"
+# 								mirror = horizontal
+# 							}
+#
+# 							button_expand = {
+# 								enabled = "[CharacterWindow.HasNextSecondary]"
+# 								onclick = "[CharacterWindow.NextSecondary]"
+# 								onclick = "[PdxGuiTriggerAllAnimations( 'cw_spouse_cycle' )]"
+# 								tooltip = "[CharacterWindow.GetNextSecondaryTooltip]"
+# 							}
+# 						}
+# 					}
+# 				}
+#
+# 				flowcontainer = {
+# 					parentanchor = vcenter
+#
+# 					coa_realm_small = {
+# 						visible = "[Character.HasLandedTitles]"
+# 						using = Animation_ShowHide_Standard
+# 						parentanchor = bottom
+# 					}
+#
+# 					portrait_status_icons = {
+# 						parentanchor = bottom
+# 						margin_bottom = 2
+# 					}
+# 				}
+# 			}
+#
+# 			icon = {
+# 				name = "diarchy_active_icon"
+# 				visible = "[And(CharacterWindow.GetCharacter.HasActiveDiarchy, Not(CharacterWindow.ShowMarriageIcon))]"
+# 				parentanchor = bottom
+# 				position = { 0 -3 }
+# 				size = { 30 30 }
+# 				texture = "gfx/interface/icons/scale_of_power.dds"
+# 				tooltip = IN_ACTIVE_DIARCHY
+# 				using = tooltip_below
+# 			}
+#
+# 			icon = {
+# 				name = "marriage_type_icon"
+# 				visible = "[CharacterWindow.ShowMarriageIcon]"
+# 				parentanchor = bottom
+# 				position = { 0 -3 }
+# 				size = { 30 30 }
+# 				framesize = { 60 60 }
+# 				texture = "gfx/interface/icons/marriage_types.dds"
+# 				frame = "[CharacterWindow.GetMarriageIcon]"
+# 				tooltip = "[CharacterWindow.GetMarriageIconTooltip]"
+# 				using = tooltip_below
+# 			}
+# 		}
+# 	}
+# }
+#
+# template Animation_Character_Window_Refresh
+# {
+# 	state = {
+# 		name = character_window_refresh
+# 		using = Animation_Refresh_FadeOut
+# 		alpha = 0.65
+# 	}
+#
+# 	state = {
+# 		using = Animation_Refresh_FadeIn
+# 	}
+# }
+#
+# template Animation_Character_Window_Refresh_Short
+# {
+# 	state = {
+# 		name = character_window_refresh
+# 		using = Animation_Refresh_FadeOut
+# 		alpha = 0.8
+# 	}
+#
+# 	state = {
+# 		using = Animation_Refresh_FadeIn
+# 		duration = 0.25
+# 	}
+# }
+#
+# template Character_Window_Relation_Icon
+# {
+# 	size = { 24 24 }
+# 	framesize = { 40 40 }
+#
+# 	visible = "[ScriptedRelation.HasRelationBetween( CharacterWindow.GetCharacter, Character.Self )]"
+#
+# 	tooltipwidget = {
+# 		scripted_relation_tooltip = {
+# 			blockoverride "description_text"
+# 			{
+# 				text = "[GetScriptedRelationTooltip( ScriptedRelation, CharacterWindow.GetCharacter, Character )]"
+# 			}
+# 		}
+# 	}
+# }
+#

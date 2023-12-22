@@ -19,6 +19,9 @@ window = {
 
 	state = {
 		name = _show
+		on_finish = "[Clear('unlock_legacy')]"
+		on_finish = "[Clear('focused_legacy')]"
+		on_finish = "[Clear('legacy_desc')]"
 
 		using = Animation_FadeIn_Standard
 	}
@@ -30,6 +33,7 @@ window = {
 	}
 
 	vbox = {
+		using = ocr
 		using = ocr_margins
 		header_standard = {
 			layoutpolicy_horizontal = expanding
@@ -68,8 +72,42 @@ window = {
 
 		}
 
-		hbox = {
+		vbox = {
 			layoutpolicy_horizontal = expanding
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = mapmode_duchies_secondary
+				visible = "[Or(GetVariableSystem.Exists('unlock_legacy'), Dynasty.CanUnlockRelevantPerk)]"
+				blockoverride "text" {
+					raw_text = "[AddTextIf(GetVariableSystem.Exists('unlock_legacy'), 'Don\'t ')]Show only unlockable perks, hotkey U."
+				}
+				onclick = "[GetVariableSystem.Toggle('unlock_legacy')]"
+			}
+
+			button_checked_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = map_mode_1
+				visible = "[Or(Is('unlock_legacy'), Is('focused_legacy'))]"
+				blockoverride "visible" {
+					visible = "[Is('legacy_desc')]"
+				}
+				blockoverride "text" {
+					raw_text = "Show effects, E."
+				}
+				blockoverride "extra" {
+					text_single = {
+						margin_left = 3
+						visible = "[Is('legacy_desc')]"
+						raw_text = "See tooltips."
+					}
+				}
+				onclick = "[Toggle('legacy_desc')]"
+			}
 
 			vbox = {
 				layoutpolicy_horizontal = expanding
@@ -104,39 +142,19 @@ window = {
 					}
 				}
 
-				button_text = {
+				text_single = {
+					visible = "[Isnt('unlock_legacy')]"
 					layoutpolicy_horizontal = expanding
-					shortcut = mapmode_duchies_secondary
-					visible = "[Or(GetVariableSystem.Exists('unlock_legacy'), Dynasty.CanUnlockRelevantPerk)]"
-				    blockoverride "text" {
-				        raw_text = "[AddTextIf(GetVariableSystem.Exists('unlock_legacy'), 'Don\'t ')]Show only unlockable perks, hotkey U."
-				    }
-					onclick = "[GetVariableSystem.Toggle('unlock_legacy')]"
+					raw_text = "Select a legacy to view its perks."
 				}
 
-				button_text = {
+				text_single = {
 					layoutpolicy_horizontal = expanding
-					onclick = "[GetVariableSystem.Toggle('hide_legacy_perks')]"
-					shortcut = army_create_new
-				    blockoverride "text" {
-				        raw_text = "[Select_CString(GetVariableSystem.Exists('hide_legacy_perks'), 'Show', 'Hide')] all perks, hotkey H."
-				    }
-				}
-
-				button_text = {
-					layoutpolicy_horizontal = expanding
-					onclick = "[GetVariableSystem.Toggle('legacy_desc')]"
-				    blockoverride "text" {
-				        raw_text = "[Select_CString(GetVariableSystem.Exists('legacy_desc'), 'Hide descriptions, Hotkey E.', 'Show descriptions, Hotkey E. Otherwise, see tooltips.')]"
-				    }
-					shortcut = map_mode_1
+					raw_text = "[GetDataModelSize(DynastyView.GetLegacies)] legacies:"
 				}
 			}
 		}
 
-		error_button = {
-			layoutpolicy_horizontal = expanding
-		}
 
 		vbox = {
 			layoutpolicy_horizontal = expanding
@@ -154,72 +172,92 @@ window = {
 
 					dynamicgridbox = {
 						datamodel = "[DynastyView.GetLegacies]"
+						visible = "[Isnt('focused_legacy')]"
 						layoutpolicy_horizontal = expanding
-						datamodel_wrap = 4
-						flipdirection = yes
-						visible = "[Not(GetVariableSystem.Exists('legacy_desc'))]"
+						# visible = "[Not(GetVariableSystem.Exists('legacy_desc'))]"
 
 						item = {
 							flowcontainer = {
 								visible = "[Or(Not(GetVariableSystem.Exists('focused_legacy')), GetVariableSystem.HasValue('focused_legacy', DynastyLegacy.GetName))]"
-								margin_right = 50
-								margin_bottom = 30
 								direction = vertical
 
 								button_text = {
+									visible = "[Isnt('unlock_legacy')]"
 									onclick = "[GetVariableSystem.Set('focused_legacy', DynastyLegacy.GetName)]"
 									onclick = "[GetVariableSystem.Clear('unlock_legacy')]"
-									onclick = "[GetVariableSystem.Clear('hide_legacy_perks')]"
-									blockoverride "pre" {
-										spacing = 3
-										text_single = {
-											visible = "[GetVariableSystem.HasValue('focused_legacy', DynastyLegacy.GetName)]"
-											raw_text = "Focused on"
+									shortcuts_list = {
+										blockoverride "click" {
+											onclick = "[GetVariableSystem.Set('focused_legacy', DynastyLegacy.GetName)]"
+											onclick = "[GetVariableSystem.Clear('unlock_legacy')]"
 										}
 									}
+									blockoverride "num" {
+										visible = "[Isnt('focused_legacy')]"
+									}
 									blockoverride "text" {
-										raw_text = "[DynastyLegacy.GetName] legacy."
+										raw_text = "[DynastyLegacy.GetName]"
 									}
 									blockoverride "extra" {
+										comma = {}
 										text_single = {
-											visible = "[Not(GetVariableSystem.HasValue('focused_legacy', DynastyLegacy.GetName))]"
-											raw_text = "Focus."
+											raw_text = "[CountItems] unlocked."
+											hbox = {
+												name = "items"
+												datamodel = "[DynastyLegacy.GetPerks]"
+												item = {
+													hbox = {
+														visible = "[Dynasty.HasPerk( DynastyPerk.Self )]"
+													}
+												}
+											}
 										}
 									}
 								}
 
 								flowcontainer = {
 									ignoreinvisible = yes
-									visible = "[Not(GetVariableSystem.Exists('hide_legacy_perks'))]"
+									visible = "[Is('unlock_legacy')]"
 
 									direction = vertical
 									datamodel = "[DynastyLegacy.GetPerks]"
 
 									item = {
-										button_text = {
-											visible = "[Or(Not(GetVariableSystem.Exists('unlock_legacy')), And(GetVariableSystem.Exists('unlock_legacy'), DynastyView.CanSelectPerk( DynastyPerk.Self )))]"
-											blockoverride "pre" {
-												text_single = {
-													raw_text = "Unlock"
-													align = left
-													visible = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+										flowcontainer = {
+											ignoreinvisible = yes
+											direction = vertical
+											visible = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+
+											button_text = {
+												blockoverride "pre" {
+													text_single = {
+														raw_text = "Unlock"
+														visible = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+													}
 												}
-												space = { visible = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]" }
-											}
-											blockoverride "text" {
-												raw_text = "[DynastyPerk.GetNameNoTooltip]."
-											}
-											blockoverride "extra" {
-												text_single = {
-													raw_text = " Unlocked."
-													visible = "[Dynasty.HasPerk( DynastyPerk.Self )]"
-													align = left
+												blockoverride "text" {
+													raw_text = "[DynastyPerk.GetNameNoTooltip]."
 												}
+												blockoverride "extra" {
+													text_single = {
+														raw_text = " Unlocked."
+														visible = "[Dynasty.HasPerk( DynastyPerk.Self )]"
+														align = left
+													}
+													text_single = {
+														visible = "[Is('unlock_legacy')]"
+														raw_text = "[DynastyLegacy.GetName] legacy."
+													}
+												}
+												enabled = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
+												onclick = "[DynastyView.SelectPerk( DynastyPerk.Self )]"
+												tooltip = "DYNASTY_PERK_TOOLTIP"
+												using = tooltip_se
 											}
-											enabled = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
-											onclick = "[DynastyView.SelectPerk( DynastyPerk.Self )]"
-											tooltip = "DYNASTY_PERK_TOOLTIP"
-											using = tooltip_se
+
+											text_multi_wide = {
+												visible = "[Isnt('legacy_desc')]"
+												raw_text = "[DynastyPerk.GetEffectDescription( Dynasty.GetDynast )]."
+											}
 										}
 									}
 								}
@@ -230,67 +268,91 @@ window = {
 					dynamicgridbox = {
 						datamodel = "[DynastyView.GetLegacies]"
 						layoutpolicy_horizontal = expanding
-						datamodel_wrap = 4
-						flipdirection = yes
-						visible = "[GetVariableSystem.Exists('legacy_desc')]"
+						visible = "[Is('focused_legacy')]"
+						# visible = "[GetVariableSystem.Exists('legacy_desc')]"
 
 						item = {
 							flowcontainer = {
-								visible = "[Or(Not(GetVariableSystem.Exists('focused_legacy')), GetVariableSystem.HasValue('focused_legacy', DynastyLegacy.GetName))]"
+								visible = "[GetVariableSystem.HasValue('focused_legacy', DynastyLegacy.GetName)]"
 								margin_right = 30
 								margin_bottom = 10
 								direction = vertical
 
-								button_text = {
-									onclick = "[GetVariableSystem.Set('focused_legacy', DynastyLegacy.GetName)]"
-									onclick = "[GetVariableSystem.Clear('unlock_legacy')]"
-									onclick = "[GetVariableSystem.Clear('hide_legacy_perks')]"
-									blockoverride "pre" {
-										spacing = 3
-										text_single = {
-											visible = "[GetVariableSystem.HasValue('focused_legacy', DynastyLegacy.GetName)]"
-											raw_text = "Focused on"
-										}
-									}
-									blockoverride "text" {
-										raw_text = "[DynastyLegacy.GetName] legacy."
-									}
-									blockoverride "extra" {
-										text_single = {
-											visible = "[Not(GetVariableSystem.HasValue('focused_legacy', DynastyLegacy.GetName))]"
-											raw_text = "Click to focus."
-										}
-									}
+								button = {
+									shortcut = close_window
+									onclick = "[Clear('focused_legacy')]"
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									raw_text = "[DynastyLegacy.GetName] legacy."
 								}
 
 								ignoreinvisible = yes
 
-								text_multi = {
+								text_multi_wide = {
 									raw_text = "[DynastyLegacy.GetDesc]."
-									autoresize = yes
-									max_width = 500
 									visible = "[Not(GetVariableSystem.Exists('unlock_legacy'))]"
 								}
 
 								flowcontainer = {
-								    ignoreinvisible = yes
-									visible = "[Not(GetVariableSystem.Exists('hide_legacy_perks'))]"
+							    ignoreinvisible = yes
 
-								    direction = vertical
+							    direction = vertical
 									datamodel = "[DynastyLegacy.GetPerks]"
+
+									text_single = {
+										visible = "[Isnt('unlock_legacy')]"
+										raw_text = "[GetDataModelSize(DynastyLegacy.GetPerks)] perks:"
+									}
+
+									# button_checked_text = {
+									# 	layoutpolicy_horizontal = expanding
+									# 	shortcut = map_mode_1
+									# 	blockoverride "visible" {
+									# 		visible = "[Is('legacy_desc')]"
+									# 	}
+									# 	blockoverride "text" {
+									# 		raw_text = "Show effects, E."
+									# 	}
+									# 	blockoverride "extra" {
+									# 		text_single = {
+									# 			margin_left = 3
+									# 			visible = "[Is('legacy_desc')]"
+									# 			raw_text = "See tooltips."
+									# 		}
+									# 	}
+									# 	onclick = "[Toggle('legacy_desc')]"
+									# }
 
 									item = {
 										button = {
 											visible = "[Or(Not(GetVariableSystem.Exists('unlock_legacy')), And(GetVariableSystem.Exists('unlock_legacy'), DynastyView.CanSelectPerk( DynastyPerk.Self )))]"
 											enabled = "[DynastyView.CanSelectPerk( DynastyPerk.Self )]"
 											onclick = "[DynastyView.SelectPerk( DynastyPerk.Self )]"
-											background = { using = Background_Area_Border_Solid }
-											text_multi = {
-												margin_left = 5
-												text = DYNASTY_PERK_TOOLTIP
-												autoresize = yes
-												max_width = 500
+											onclick = "[Clear('unlock_legacy')]"
+
+											shortcuts_list = {
+												blockoverride "click" {
+													onclick = "[Clear('unlock_legacy')]"
+													onclick = "[DynastyView.SelectPerk( DynastyPerk.Self )]"
+												}
+											}
+
+											flowcontainer = {
+												ignoreinvisible = yes
 												resizeparent = yes
+												direction = vertical
+												margin_left = 3
+												margin_top = 1
+												text_single = {
+													raw_text = "[IndexNumber], [AddTextIf(DynastyView.CanSelectPerk( DynastyPerk.Self ), 'Unlock ')][DynastyPerk.GetNameNoTooltip][AddTextIf(Dynasty.HasPerk( DynastyPerk.Self ), ', Unlocked')]."
+												}
+
+												text_multi_wide = {
+													visible = "[Isnt('legacy_desc')]"
+													raw_text = "[DynastyPerk.GetEffectDescription( Dynasty.GetDynast )]."
+												}
 											}
 										}
 									}
@@ -314,27 +376,10 @@ window = {
 			        raw_text = "Reset view, Escape."
 			    }
 			}
-
-			button_text = {
-				layoutpolicy_horizontal = expanding
-				shortcut = mapmode_duchies_secondary
-				visible = "[Or(GetVariableSystem.Exists('unlock_legacy'), Dynasty.CanUnlockRelevantPerk)]"
-				blockoverride "text" {
-					raw_text = "[AddTextIf(GetVariableSystem.Exists('unlock_legacy'), 'Don\'t ')]Show only unlockable perks, hotkey U."
-				}
-				onclick = "[GetVariableSystem.Toggle('unlock_legacy')]"
-			}
-
-			button_text = {
-				layoutpolicy_horizontal = expanding
-				onclick = "[GetVariableSystem.Toggle('legacy_desc')]"
-				blockoverride "text" {
-					raw_text = "[Select_CString(GetVariableSystem.Exists('legacy_desc'), 'Hide descriptions, Hotkey E.', 'Show descriptions, Hotkey E. Otherwise, see tooltips.')]"
-				}
-				shortcut = map_mode_1
-			}
 		}
 	}
+
+	dynasty_view_old = {}
 }
 
 base_dialog = {

@@ -7,17 +7,28 @@ window = {
 	name = "marriage_interaction_window"
 	datacontext = "[MarriageInteractionWindow.GetBaseWindow]"
 	datacontext = "[MatchmakerInteractionWindow.GetCharacterInteractionConfirmationWindow]"
-	position = { 0 0 }
 	allow_outside = yes
-	layer = top
+	using = base_ocr_window
+	layer = middle
 
-	using = Window_Size_CharacterList
-	using = Window_Background_No_Edge
+	state = {
+		name = ocr
+		position = { 0 0 }
+		trigger_when = "[Isnt('ocr')]"
+	}
+
+	state = {
+		name = vanilla
+		position = { 610 0 }
+		trigger_when = "[Is('ocr')]"
+	}
+
 
 	state = {
 		name = _show
 		using = Animation_FadeIn_Quick
 		using = Sound_WindowShow_Standard
+		on_finish = "[Clear('hide_interaction')]"
 	}
 
 	state = {
@@ -26,13 +37,11 @@ window = {
 		using = Sound_WindowHide_Standard
 	}
 
-	vbox = {
-		using = Window_Margins
-		margin_top = 10
-
-		hbox = {
-			layoutpolicy_horizontal = expanding
-
+	window_ocr = {
+		blockoverride "show_window" {
+			visible = "[Or(Isnt('hide_interaction'), And(Is('hide_interaction'), Not(IsGameViewOpen('character'))))]"
+		}
+		blockoverride "ocr_header" {
 			header_pattern_interaction = {
 				layoutpolicy_horizontal = expanding
 
@@ -61,371 +70,515 @@ window = {
 					raw_text = "[CharacterInteractionConfirmationWindow.GetSendName][AddTextIf(MarriageInfo.IsMatrilineal, ', Matrilineal')]."
 				}
 			}
+
 		}
-
-		vbox = {
-			visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
-			datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
-			layoutpolicy_horizontal = expanding
-
-			widget = {
-				size = { 0 5 }
-			}
-
-			text_multi = {
-				name = "marriage_info"
-				minimumsize = { 650 -1 }
-				maximumsize = { 650 -1 }
-				autoresize = yes
-				text = "MARRIAGE_INFO"
-			}
+		blockoverride "ocr_content" {
 
 			vbox = {
 				layoutpolicy_horizontal = expanding
-				datacontext = "[MarriageInfo.GetBaseOffer]"
-
-				visible = "[Not( MatchOffer.IsSameSex )]"
-
-				text_multi = {
-					name = "matrilineal_desc"
-					layoutpolicy_horizontal = expanding
-					max_width = 630
-					min_width = 630
-					autoresize = yes
-					text = "[MarriageInfo.GetMatrilinealDesc]"
-				}
-
-				text_single = {
-					name = "inbreeding_risk"
-					visible = "[MatchOffer.HasInbreedingRisk]"
-					max_width = 630
-					min_width = 630
-					text = "MATCH_OFFER_INBREEDING_WARNING"
-					default_format = "#low"
-				}
-			}
-
-		}
-
-		vbox = {
-			layoutpolicy_horizontal = expanding
-			visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
-
-			### Send offer info
-			vbox_arrangement_interaction_send_offer = {
-				layoutpolicy_horizontal = expanding
-
-				blockoverride "button_content" {
-					name = "tutorial_highlight_send_proposal_button"
-					text = "send_marriage_proposal_button_name"
-				}
-			}
-
-			vbox = {
-				visible = "[CharacterInteractionConfirmationWindow.HasCost]"
-				tooltip = "[CharacterInteractionConfirmationWindow.GetCostTooltip]"
-
-				text_single = {
-					margin_bottom = 10
-					text = "INTERACTION_COST_MARRIAGE"
-				}
-			}
-		}
-
-		widget_character_interaction_four_characters = {
-			layoutpolicy_horizontal = expanding
-
-			blockoverride "bg_illustration_datacontext"
-			{
-				datacontext = "[GetIllustration( 'religion_interior' )]"
-			}
-
-			blockoverride "bg_illustration"
-			{
-				texture = "[Illustration.GetTexture( CharacterInteractionConfirmationWindow.GetActor.MakeScope )]"
-				alpha = 0.1
-			}
-
-			blockoverride "left_small_portrait"
-			{
-				datacontext = "[CharacterInteractionConfirmationWindow.GetActor]"
-				visible = "[And( Character.IsValid, Not( ObjectsEqual( Character.Self, MatchmakerInteractionWindow.GetActorToMatch ) ) )]"
-			}
-
-			blockoverride "left_portrait"
-			{
-				datacontext = "[MatchmakerInteractionWindow.GetActorToMatch]"
-			}
-
-			blockoverride "left_interaction_portrait_glow"
-			{
-				visible = "[MatchmakerInteractionWindow.IsPickingSecondaryActor]"
-			}
-
-			blockoverride "right_small_portrait"
-			{
-				datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
-				visible = "[And( Character.IsValid, Not( ObjectsEqual( Character.Self, MatchmakerInteractionWindow.GetRecipientToMatch ) ) )]"
-			}
-
-			blockoverride "right_portrait"
-			{
-				datacontext = "[MatchmakerInteractionWindow.GetRecipientToMatch]"
-			}
-
-			blockoverride "right_character_label"
-			{
-				raw_text = "[Localize('INTERACTION_SPOUSE')],"
-			}
-
-			blockoverride "right_interaction_portrait_glow"
-			{
-				visible = "[MatchmakerInteractionWindow.IsPickingSecondaryRecipient]"
-			}
-
-			blockoverride "button_left_change"
-			{
-				visible = "[MatchmakerInteractionWindow.CanChangeActorCharacter]"
-				onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertActorCharacter]"
-			}
-
-			blockoverride "button_left_revert"
-			{
-				visible = "[MatchmakerInteractionWindow.CanRevertActorCharacter]"
-				onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertActorCharacter]"
-			}
-
-			blockoverride "button_right_change"
-			{
-				visible = "[MatchmakerInteractionWindow.CanChangeRecipientCharacter]"
-				onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertRecipientCharacter]"
-			}
-
-			blockoverride "button_right_revert"
-			{
-				visible = "[MatchmakerInteractionWindow.CanRevertRecipientCharacter]"
-				onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertRecipientCharacter]"
-			}
-
-			blockoverride "button_clear"
-			{
-				visible = "[MarriageInteractionWindow.CanClear]"
-				onclick = "[MatchmakerInteractionWindow.OnClear]"
-			}
-
-			blockoverride "interaction_extra" {
-
-				text_single = {
-					visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
-
-					datacontext = "[MarriageInteractionWindow.GetMarriageInfo.GetBaseOffer]"
-					datacontext = "[MatchmakerInteractionWindow.GetActorToMatch]"
-
-					raw_text = "[Character.GetFirstNamePossessiveNoTooltip] gains [MatchOffer.GetActorPrestige|+0] prestige." #TODO
-					tooltip = "MARRIAGE_PRESTIGE_TOOLTIP_OUR"
-				}
-
-				text_single = {
-					visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
-
-					datacontext = "[MarriageInteractionWindow.GetMarriageInfo.GetBaseOffer]"
-					datacontext = "[MatchmakerInteractionWindow.GetRecipientToMatch]"
-
-					raw_text = "[Character.GetFirstNamePossessiveNoTooltip] gains [MatchOffer.GetRecipientPrestige|+0] prestige." #TODO
-					tooltip = "MARRIAGE_PRESTIGE_TOOLTIP_THEIR"
-				}
-			}
-
-		}
-
-		vbox = {
-			name = "marriage_info_and_send_offer"
-			visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
-			layoutpolicy_vertical = expanding
-			layoutpolicy_horizontal = expanding
-
-			scrollbox = {
 				layoutpolicy_vertical = expanding
-				layoutpolicy_horizontal = expanding
 
-				blockoverride = "scrollbox_content"
-				{
-					## Info about marriage after picking characters
-					name = "info_about_marriage"
+				vbox = {
+					visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
+					datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
+					layoutpolicy_horizontal = expanding
+
+					widget = {
+						size = { 0 5 }
+					}
+
+					widget_character_interaction_four_characters_old = {
+						layoutpolicy_horizontal = expanding
+						using = vanilla
+
+						blockoverride "bg_illustration_datacontext"
+						{
+							datacontext = "[GetIllustration( 'religion_interior' )]"
+						}
+
+						blockoverride "bg_illustration"
+						{
+							texture = "[Illustration.GetTexture( CharacterInteractionConfirmationWindow.GetActor.MakeScope )]"
+						}
+
+						blockoverride "left_small_portrait"
+						{
+							datacontext = "[CharacterInteractionConfirmationWindow.GetActor]"
+							visible = "[And( Character.IsValid, Not( ObjectsEqual( Character.Self, MatchmakerInteractionWindow.GetActorToMatch ) ) )]"
+						}
+
+						blockoverride "left_portrait"
+						{
+							datacontext = "[MatchmakerInteractionWindow.GetActorToMatch]"
+						}
+
+						blockoverride "left_interaction_portrait_glow"
+						{
+							visible = "[MatchmakerInteractionWindow.IsPickingSecondaryActor]"
+						}
+
+						blockoverride "right_small_portrait"
+						{
+							datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+							visible = "[And( Character.IsValid, Not( ObjectsEqual( Character.Self, MatchmakerInteractionWindow.GetRecipientToMatch ) ) )]"
+						}
+
+						blockoverride "right_portrait"
+						{
+							datacontext = "[MatchmakerInteractionWindow.GetRecipientToMatch]"
+						}
+
+						blockoverride "right_character_label"
+						{
+							raw_text = "[Localize('INTERACTION_SPOUSE')],"
+						}
+
+						blockoverride "right_interaction_portrait_glow"
+						{
+							visible = "[MatchmakerInteractionWindow.IsPickingSecondaryRecipient]"
+						}
+
+						blockoverride "button_left_change"
+						{
+							visible = "[MatchmakerInteractionWindow.CanChangeActorCharacter]"
+							onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertActorCharacter]"
+						}
+
+						blockoverride "button_left_revert"
+						{
+							visible = "[MatchmakerInteractionWindow.CanRevertActorCharacter]"
+							onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertActorCharacter]"
+						}
+
+						blockoverride "button_right_change"
+						{
+							visible = "[MatchmakerInteractionWindow.CanChangeRecipientCharacter]"
+							onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertRecipientCharacter]"
+						}
+
+						blockoverride "button_right_revert"
+						{
+							visible = "[MatchmakerInteractionWindow.CanRevertRecipientCharacter]"
+							onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertRecipientCharacter]"
+						}
+
+						blockoverride "button_clear"
+						{
+							visible = "[MarriageInteractionWindow.CanClear]"
+							onclick = "[MatchmakerInteractionWindow.OnClear]"
+						}
+
+						blockoverride "interaction_extra" {
+
+							text_single = {
+								visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
+
+								datacontext = "[MarriageInteractionWindow.GetMarriageInfo.GetBaseOffer]"
+								datacontext = "[MatchmakerInteractionWindow.GetActorToMatch]"
+
+								raw_text = "[Character.GetFirstNamePossessiveNoTooltip] gains [MatchOffer.GetActorPrestige|+0] prestige." #TODO
+								tooltip = "MARRIAGE_PRESTIGE_TOOLTIP_OUR"
+							}
+
+							text_single = {
+								visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
+
+								datacontext = "[MarriageInteractionWindow.GetMarriageInfo.GetBaseOffer]"
+								datacontext = "[MatchmakerInteractionWindow.GetRecipientToMatch]"
+
+								raw_text = "[Character.GetFirstNamePossessiveNoTooltip] gains [MatchOffer.GetRecipientPrestige|+0] prestige." #TODO
+								tooltip = "MARRIAGE_PRESTIGE_TOOLTIP_THEIR"
+							}
+						}
+					}
+
+					text_multi = {
+						name = "marriage_info"
+						minimumsize = { 650 -1 }
+						maximumsize = { 650 -1 }
+						autoresize = yes
+						text = "MARRIAGE_INFO"
+					}
 
 					vbox = {
-						datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
 						layoutpolicy_horizontal = expanding
-						margin = { 10 10 }
-						spacing = 10
+						datacontext = "[MarriageInfo.GetBaseOffer]"
 
-						vbox_marriage_interaction_marriage_details = {
-							datacontext = "[MarriageInfo.GetBaseOffer]"
+						visible = "[Not( MatchOffer.IsSameSex )]"
+
+						text_multi = {
+							name = "matrilineal_desc"
 							layoutpolicy_horizontal = expanding
+							max_width = 630
+							min_width = 630
+							autoresize = yes
+							text = "[MarriageInfo.GetMatrilinealDesc]"
+						}
+
+						text_single = {
+							name = "inbreeding_risk"
+							visible = "[MatchOffer.HasInbreedingRisk]"
+							max_width = 630
+							min_width = 630
+							text = "MATCH_OFFER_INBREEDING_WARNING"
+							default_format = "#low"
+						}
+					}
+
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
+
+					### Send offer info
+					vbox_arrangement_interaction_send_offer = {
+						layoutpolicy_horizontal = expanding
+
+						blockoverride "button_content" {
+							name = "tutorial_highlight_send_proposal_button"
+							text = "send_marriage_proposal_button_name"
+						}
+					}
+
+					vbox = {
+						visible = "[CharacterInteractionConfirmationWindow.HasCost]"
+						tooltip = "[CharacterInteractionConfirmationWindow.GetCostTooltip]"
+
+						text_single = {
+							margin_bottom = 10
+							text = "INTERACTION_COST_MARRIAGE"
 						}
 					}
 				}
-			}
-		}
 
-		### Character List
-		vbox = {
-			name = "character_list"
-			visible = "[Not(MatchmakerInteractionWindow.HasPickedCharacters)]"
-			layoutpolicy_vertical = expanding
-			layoutpolicy_horizontal = expanding
-			spacing = 5
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-
-				button_checked_text = {
+				widget_character_interaction_four_characters = {
 					layoutpolicy_horizontal = expanding
-					datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
-					onclick = "[MarriageInfo.ToggleMatrilineal]"
-					tooltip = "MARRIAGE_MATRILINEAL_TOGGLE_TOOLTIP"
 
-					blockoverride "visible"
+					blockoverride "bg_illustration_datacontext"
 					{
-						visible = "[Not(MarriageInfo.IsMatrilineal)]"
+						datacontext = "[GetIllustration( 'religion_interior' )]"
 					}
 
-					blockoverride "text"
+					blockoverride "bg_illustration"
 					{
-						text = "MARRIAGE_MATRILINEAL_TOGGLE"
+						texture = "[Illustration.GetTexture( CharacterInteractionConfirmationWindow.GetActor.MakeScope )]"
+						alpha = 0.1
 					}
-					blockoverride "dot" {
-						
+
+					blockoverride "left_small_portrait"
+					{
+						datacontext = "[CharacterInteractionConfirmationWindow.GetActor]"
+						visible = "[And( Character.IsValid, Not( ObjectsEqual( Character.Self, MatchmakerInteractionWindow.GetActorToMatch ) ) )]"
+					}
+
+					blockoverride "left_portrait"
+					{
+						datacontext = "[MatchmakerInteractionWindow.GetActorToMatch]"
+					}
+
+					blockoverride "left_interaction_portrait_glow"
+					{
+						visible = "[MatchmakerInteractionWindow.IsPickingSecondaryActor]"
+					}
+
+					blockoverride "right_small_portrait"
+					{
+						datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+						visible = "[And( Character.IsValid, Not( ObjectsEqual( Character.Self, MatchmakerInteractionWindow.GetRecipientToMatch ) ) )]"
+					}
+
+					blockoverride "right_portrait"
+					{
+						datacontext = "[MatchmakerInteractionWindow.GetRecipientToMatch]"
+					}
+
+					blockoverride "right_character_label"
+					{
+						raw_text = "[Localize('INTERACTION_SPOUSE')],"
+					}
+
+					blockoverride "right_interaction_portrait_glow"
+					{
+						visible = "[MatchmakerInteractionWindow.IsPickingSecondaryRecipient]"
+					}
+
+					blockoverride "button_left_change"
+					{
+						visible = "[MatchmakerInteractionWindow.CanChangeActorCharacter]"
+						onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertActorCharacter]"
+					}
+
+					blockoverride "button_left_revert"
+					{
+						visible = "[MatchmakerInteractionWindow.CanRevertActorCharacter]"
+						onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertActorCharacter]"
+					}
+
+					blockoverride "button_right_change"
+					{
+						visible = "[MatchmakerInteractionWindow.CanChangeRecipientCharacter]"
+						onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertRecipientCharacter]"
+					}
+
+					blockoverride "button_right_revert"
+					{
+						visible = "[MatchmakerInteractionWindow.CanRevertRecipientCharacter]"
+						onclick = "[MatchmakerInteractionWindow.OnChangeOrRevertRecipientCharacter]"
+					}
+
+					blockoverride "button_clear"
+					{
+						visible = "[MarriageInteractionWindow.CanClear]"
+						onclick = "[MatchmakerInteractionWindow.OnClear]"
+					}
+
+					blockoverride "interaction_extra" {
+
+						text_single = {
+							visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
+
+							datacontext = "[MarriageInteractionWindow.GetMarriageInfo.GetBaseOffer]"
+							datacontext = "[MatchmakerInteractionWindow.GetActorToMatch]"
+
+							raw_text = "[Character.GetFirstNamePossessiveNoTooltip] gains [MatchOffer.GetActorPrestige|+0] prestige." #TODO
+							tooltip = "MARRIAGE_PRESTIGE_TOOLTIP_OUR"
+						}
+
+						text_single = {
+							visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
+
+							datacontext = "[MarriageInteractionWindow.GetMarriageInfo.GetBaseOffer]"
+							datacontext = "[MatchmakerInteractionWindow.GetRecipientToMatch]"
+
+							raw_text = "[Character.GetFirstNamePossessiveNoTooltip] gains [MatchOffer.GetRecipientPrestige|+0] prestige." #TODO
+							tooltip = "MARRIAGE_PRESTIGE_TOOLTIP_THEIR"
+						}
 					}
 				}
 
-				button_checked_text = {
+				vbox = {
+					name = "marriage_info_and_send_offer"
+					visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
+					layoutpolicy_vertical = expanding
 					layoutpolicy_horizontal = expanding
-					visible = "[And( HasDlcFeature( 'advanced_activities' ), HasDlcFeature( 'tours_and_tournaments' ) )]"
-					datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
 
-					enabled = "[MarriageInfo.IsGrandWeddingPromiseValid]"
-					onclick = "[MarriageInfo.ToggleGrandWeddingPromise]"
-					tooltip = "[MarriageInfo.GetGrandWeddingPromiseDesc]"
+					scrollbox = {
+						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
 
-					blockoverride "disabled" {
-						visible = "[Not(MarriageInfo.IsGrandWeddingPromiseValid)]"
-					}
+						blockoverride = "scrollbox_content"
+						{
+							## Info about marriage after picking characters
+							name = "info_about_marriage"
 
-					blockoverride "visible"
-					{
-						visible = "[Not(MarriageInfo.IsGrandWeddingPromise)]"
-					}
+							vbox = {
+								datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
+								layoutpolicy_horizontal = expanding
+								margin = { 10 10 }
+								spacing = 10
 
-					blockoverride "text"
-					{
-						text = "MARRIAGE_GRAND_WEDDING_TOGGLE"
-					}
-				}
-
-				# text_single = {
-				# 	visible = "[Or( MatchmakerInteractionWindow.GetCharacterList.HasItems, MatchmakerInteractionWindow.HasTopCharacterItem )]"
-				# 	layoutpolicy_horizontal = expanding
-				# 	text = "[MarriageInteractionWindow.GetPrompt]"
-				#
-				# 	align = center
-				# 	autoresize = no
-				# }
-			}
-
-			vbox_character_list = {
-				datacontext = "[MatchmakerInteractionWindow.GetCharacterList]"
-				datacontext = "[CharacterSelectionList.GetFilterWithDefault('fertility_filter', '(int32)1')]"
-				layoutpolicy_vertical = expanding
-				layoutpolicy_horizontal = expanding
-
-
-				blockoverride "container_implementation" {
-					fixedgridbox = {
-						addcolumn = 650
-						addrow = 65
-						name = "characters_grid"
-						datamodel_reuse_widgets = yes
-
-						datamodel = "[CharacterSelectionList.GetList]"
-						visible = "[Not(CharacterSelectionList.IsBuildingList)]"
-
-						item = {
-							widget_character_list_item_finder = {
-								size = { 650 70 }
-								blockoverride "small_traits" { }
-								blockoverride "click" {
-									onclick = "[CharacterListItem.OnClick('character')]"
-									onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
-									enabled = "[CharacterListItem.IsSelectable]"
+								vbox_marriage_interaction_marriage_details = {
+									datacontext = "[MarriageInfo.GetBaseOffer]"
+									layoutpolicy_horizontal = expanding
 								}
-								blockoverride "expand_traits" {
-									flowcontainer = {
-										spacing = 2
-										name = "traits_grid"
-										datamodel = "[CharacterListItem.GetTraits]"
-										ignoreinvisible = yes
-										righttoleft = yes
-										# layoutpolicy_horizontal = expanding
+							}
+						}
+					}
+				}
 
-										item = {
-											widget = {
-												tooltip = "trait_tooltip"
+				### Character List
+				vbox = {
+					name = "character_list"
+					visible = "[Not(MatchmakerInteractionWindow.HasPickedCharacters)]"
+					layoutpolicy_vertical = expanding
+					layoutpolicy_horizontal = expanding
+					spacing = 5
 
-												text_single = {
-													resizeparent = yes
-													margin_left = 3
-													margin_top = 1
-													visible = "[Trait.IsValid]"
-													datacontext = "[Character.GetFaith]"
-													raw_text = "[Trait.GetNameNoTooltip(Character.Self)][AddTextIf(Faith.IsTraitVirtue( Trait.Self ), ' (virtue)')][AddTextIf(Faith.IsTraitSin( Trait.Self ), ' (sin)')][AddTextIf(Trait.IsInheritable, ' (inheritable)')],"
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						button_checked_text = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
+							onclick = "[MarriageInfo.ToggleMatrilineal]"
+							tooltip = "MARRIAGE_MATRILINEAL_TOGGLE_TOOLTIP"
+
+							blockoverride "visible"
+							{
+								visible = "[Not(MarriageInfo.IsMatrilineal)]"
+							}
+
+							blockoverride "text"
+							{
+								text = "MARRIAGE_MATRILINEAL_TOGGLE"
+							}
+							blockoverride "dot" {
+
+							}
+						}
+
+						button_checked_text = {
+							layoutpolicy_horizontal = expanding
+							visible = "[And( HasDlcFeature( 'advanced_activities' ), HasDlcFeature( 'tours_and_tournaments' ) )]"
+							datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
+
+							enabled = "[MarriageInfo.IsGrandWeddingPromiseValid]"
+							onclick = "[MarriageInfo.ToggleGrandWeddingPromise]"
+							tooltip = "[MarriageInfo.GetGrandWeddingPromiseDesc]"
+
+							blockoverride "disabled" {
+								visible = "[Not(MarriageInfo.IsGrandWeddingPromiseValid)]"
+							}
+
+							blockoverride "visible"
+							{
+								visible = "[Not(MarriageInfo.IsGrandWeddingPromise)]"
+							}
+
+							blockoverride "text"
+							{
+								text = "MARRIAGE_GRAND_WEDDING_TOGGLE"
+							}
+						}
+					}
+
+					vbox_character_list = {
+						datacontext = "[MatchmakerInteractionWindow.GetCharacterList]"
+						datacontext = "[CharacterSelectionList.GetFilterWithDefault('fertility_filter', '(int32)1')]"
+						layoutpolicy_vertical = expanding
+						layoutpolicy_horizontal = expanding
+
+
+						blockoverride "container_implementation" {
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								fixedgridbox = {
+									addcolumn = 650
+									addrow = 66
+									# name = "characters_grid"
+									datamodel_reuse_widgets = yes
+									datamodel = "[CharacterSelectionList.GetList]"
+									visible = "[And(Not(CharacterSelectionList.IsBuildingList), Isnt('ocr'))]"
+
+									item = {
+										widget_marriage_list_item = {
+											size = { 650 70 }
+											blockoverride "small_traits" { }
+											blockoverride "click" {
+												onclick = "[CharacterListItem.OnClick('character')]"
+												onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+												onrightclick = "[Set('hide_interaction', 'yes')]"
+												enabled = "[CharacterListItem.IsSelectable]"
+											}
+											blockoverride "expand_traits" {
+												flowcontainer = {
+													# spacing = 2
+													name = "traits_grid"
+													datamodel = "[CharacterListItem.GetTraits]"
+													ignoreinvisible = yes
+													righttoleft = yes
+													# layoutpolicy_horizontal = expanding
+
+													item = {
+														widget = {
+															tooltip = "trait_tooltip"
+
+															text_single = {
+																resizeparent = yes
+																margin_left = 3
+																margin_top = 1
+																visible = "[Trait.IsValid]"
+																datacontext = "[Character.GetFaith]"
+																raw_text = "[Trait.GetNameNoTooltip(Character.Self)][AddTextIf(Faith.IsTraitVirtue( Trait.Self ), ' (virtue)')][AddTextIf(Faith.IsTraitSin( Trait.Self ), ' (sin)')][AddTextIf(Trait.IsInheritable, ' (inheritable)')],"
+															}
+														}
+													}
 												}
 											}
 										}
 									}
 								}
-							}
-						}
-					}
 
-					blockoverride "bottom_middle_box" {
-						hbox = {
-							name = "alliances_grid"
-							datamodel = "[CharacterListItem.GetOtherCharacterItems]"
-							margin_right = 3
+								fixedgridbox = {
+									addcolumn = 667
+									addrow = 100
+									name = "characters_grid"
+									datamodel_reuse_widgets = yes
+									visible = "[And(Not(CharacterSelectionList.IsBuildingList), Is('ocr'))]"
 
-							item = {
-								button_text = {
-									using = char_click
-								    blockoverride "text" {
-								        raw_text = "Alliance with [Character.GetPrimaryTitle.GetNameNoTierNoTooltip], [Character.GetMaxMilitaryStrength|0] men."
-								    }
+									datamodel = "[CharacterSelectionList.GetList]"
+									using = vanilla
+
+									item = {
+										widget_character_list_item = {
+											blockoverride "bottom_middle_box" {
+												hbox = {
+													layoutpolicy_horizontal = expanding
+													margin_bottom = 5
+
+													expand = {}
+
+													hbox = {
+														name = "alliances_grid"
+														datamodel = "[CharacterListItem.GetOtherCharacterItems]"
+
+														item = {
+															container = {
+																button = {
+																	parentanchor = center
+																	position = { 0 -20 }
+																	texture = "gfx/interface/icons/diplomatic_icons.dds"
+																	frame = 2
+																	framesize = { 120 120 }
+																	size = { 30 30 }
+																	tooltip_enabled = no
+																}
+
+																coa_realm_tiny_crown = {
+																	tooltip = "MATCHMAKER_INTERACTION_ALLIANCE"
+																}
+															}
+														}
+													}
+												}
+											}
+											size = { 630 110 }
+										}
+									}
 								}
 							}
 						}
-					}
-				}
 
-				blockoverride "scrollbox_empty_visibility"
-				{
-					layoutpolicy_vertical = expanding
-					visible = "[And( IsDataModelEmpty( CharacterSelectionList.GetList ), Not( MatchmakerInteractionWindow.HasTopCharacterItem ) )]"
-					text = "NO_CHARACTERS_TO_SELECT"
-				}
+						blockoverride "scrollbox_empty_visibility"
+						{
+							layoutpolicy_vertical = expanding
+							visible = "[And( IsDataModelEmpty( CharacterSelectionList.GetList ), Not( MatchmakerInteractionWindow.HasTopCharacterItem ) )]"
+							text = "NO_CHARACTERS_TO_SELECT"
+						}
 
-				blockoverride "special_character" {
-					vbox = {
-						datacontext = "[MatchmakerInteractionWindow.GetTopCharacterItem]"
-						visible = "[MatchmakerInteractionWindow.HasTopCharacterItem]"
-						layoutpolicy_horizontal = expanding
+						blockoverride "special_character" {
+							vbox = {
+								datacontext = "[MatchmakerInteractionWindow.GetTopCharacterItem]"
+								visible = "[MatchmakerInteractionWindow.HasTopCharacterItem]"
+								layoutpolicy_horizontal = expanding
 
-						widget_character_list_item_finder = {
-							layoutpolicy_horizontal = expanding
-							blockoverride "click" {
-								enabled = "[CharacterListItem.IsSelectable]"
-								onclick = "[CharacterListItem.OnClick('character')]"
-								onclick = "[GetVariableSystem.Clear('expand_view')]"
-								onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+								widget_character_list_item_finder = {
+									using = ocr
+									layoutpolicy_horizontal = expanding
+									blockoverride "click" {
+										enabled = "[CharacterListItem.IsSelectable]"
+										onclick = "[CharacterListItem.OnClick('character')]"
+										onclick = "[GetVariableSystem.Clear('expand_view')]"
+										onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+									}
+								}
+
+								widget_character_list_item = {
+									using = vanilla
+									layoutpolicy_horizontal = expanding
+								}
 							}
 						}
 					}
@@ -434,11 +587,13 @@ window = {
 		}
 	}
 
+	# marriage_interaction_window_old = {}
+
 	window_character_filter = {
 		layer = top
 		name = "filter_window"
 		datacontext = "[MatchmakerInteractionWindow.GetCharacterList]"
-		size = { 100% 100% }
+		using = Window_Size_CharacterList
 		blockoverride "addition_filter" {
 			vbox_filter_group = {
 				layoutpolicy_horizontal = expanding
@@ -526,3 +681,397 @@ window = {
 		}
 	}
 }
+
+
+types OCR {
+	type widget_marriage_list_item = widget {
+		datacontext = "[CharacterListItem.GetCharacter]"
+		size = { 200 70 }
+
+		background = { using = Background_Area }
+
+		block "divider" { }
+
+		block "widget" { }
+
+		hbox = {
+			button = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				block "click" {
+					onclick = "[CharacterListItem.OnClick('character')]"
+					onclick = "[GetVariableSystem.Clear('expand_view')]"
+					onrightclick = "[GetVariableSystem.Clear('expand_view')]"
+					onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+					# onrightclick = "[DefaultOnCharacterRightClick(CharacterListItem.GetCharacter.GetID)]"
+				}
+				block "extra_click" { }
+				block "button" { }
+				button_ignore = none
+				# enabled = "[CharacterListItem.IsSelectable]"
+				block "button_content"
+				{
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+							# Name and age
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+
+								background = {
+									using = Background_Area_Characterlist
+									alpha = 0.4
+								}
+
+								block "pre_name" { }
+
+								text_single = {
+									raw_text = "[Add_int32(CharacterListItem.GetOrderIndex, '(int32)1')]"
+									visible = "[GetVariableSystem.Exists('index')]"
+								}
+
+								# sorted skill
+								block "skills_pre" {
+
+									hbox = {
+										datacontext = "[CharacterListItem.GetCharacter]"
+										text_single = {
+											raw_text = "[Character.GetSkill('diplomacy')] diplo,"
+											align = left
+											visible = "[CharacterSelectionList.IsSortingBySkill('(int32)0')]"
+										}
+										text_single = {
+											raw_text = "[Character.GetSkill('martial')] martial,"
+											align = left
+											visible = "[CharacterSelectionList.IsSortingBySkill('(int32)1')]"
+										}
+										text_single = {
+											raw_text = "[Character.GetSkill('stewardship')] steward,"
+											align = left
+											visible = "[CharacterSelectionList.IsSortingBySkill('(int32)2')]"
+										}
+										text_single = {
+											raw_text = "[Character.GetSkill('intrigue')] intrigue,"
+											align = left
+											visible = "[CharacterSelectionList.IsSortingBySkill('(int32)3')]"
+										}
+										text_single = {
+											raw_text = "[Character.GetSkill('learning')] learning,"
+											align = left
+											visible = "[CharacterSelectionList.IsSortingBySkill('(int32)4')]"
+										}
+										text_single = {
+											raw_text = "[Character.GetSkill('prowess')] prowess,"
+											align = left
+											visible = "[CharacterSelectionList.IsSortingBySkill('(int32)5')]"
+										}
+									}
+								}
+
+								block "interaction_accept" { }
+
+								text_single = {
+									raw_text = "[Character.GetAge] years,"
+								}
+
+
+								text_single = {
+									# using = Font_Size_Medium
+									# layoutpolicy_horizontal = expanding
+									raw_text = "[Character.GetUINameNoTooltip],"
+									autoresize = yes
+									fontsize_min = 14
+									max_width = 430
+								}
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									visible = "[Not(ObjectsEqual(MyCapital.GetID, Province.GetID))]"
+
+									text_single = {
+										datacontext = "[Character.GetCapitalLocation]"
+										visible = "[Character.HasLandedTitles]"
+										raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+									}
+
+									button_text = {
+										visible = "[And(Not(Character.HasLandedTitles), Character.GetLiege.IsValid)]"
+										onclick = "[DefaultOnCharacterClick(Character.GetLiege.GetID)]"
+										onclick = "[Set('hide_interaction', 'yes')]"
+										blockoverride "text" {
+											margin_left = -3
+											raw_text = "from [Character.GetLiege.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+										}
+										blockoverride "extra" {
+											text_single = {
+												visible = "[Not(ObjectsEqual(MyCapital.GetID, Province.GetID))]"
+												datacontext = "[Character.GetLiege.GetCapitalLocation]"
+												raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+											}
+										}
+									}
+
+									text_single = {
+										datacontext = "[Character.GetCurrentLocation]"
+										visible = "[And(Not(Character.GetLiege.IsValid), Not(Character.HasLandedTitles))]"
+										raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+									}
+								}
+
+
+								# hbox = {
+								# 	name = "alliances_grid"
+								# 	datamodel = "[CharacterListItem.GetOtherCharacterItems]"
+								# 	margin_right = 3
+								#
+								# 	item = {
+								# 		button_text = {
+								# 			using = char_click
+								# 			blockoverride "text" {
+								# 				raw_text = "from [Character.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+								# 			}
+								# 			blockoverride "extra" {
+								# 				text_single = {
+								# 					datacontext = "[Character.GetCapitalLocation]"
+								# 					raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+								# 				}
+								# 			}
+								# 		}
+								# 	}
+								# }
+
+								# text_single = {
+								# 	visible = "[Character.GetHouse.IsValid]"
+								# 	raw_text = "House [Character.GetHouse.GetName]."
+								# }
+
+
+								block "top_bar" { }
+
+								expand = { }
+							}
+
+							block "middle" { }
+
+							block "character_description_extra" { }
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+
+								block "pre_relation" { }
+
+								block "bottom_middle_box" { }
+
+								hbox = {
+									name = "alliances_grid"
+									datamodel = "[CharacterListItem.GetOtherCharacterItems]"
+									margin_right = 3
+
+									item = {
+										button_text = {
+											using = char_click
+											blockoverride "text" {
+												raw_text = "[Character.GetMaxMilitaryStrength|0] men alliance."
+											}
+										}
+									}
+								}
+
+								text_single = {
+									block "show_opinion" {
+										visible = "[And(And(Not(Character.IsLocalPlayer), Character.IsAlive), GetPlayer.IsValid)]"
+									}
+									raw_text = "[Character.GetOpinionOf(GetPlayer)|=] opinion."
+									margin_left = -3
+									margin_right = 3
+									tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+								}
+
+								block "skills" {
+
+									# Skills
+									hbox_skills_grid_character_named = { }
+								}
+
+								block "extra_skills" { }
+
+								expand = { }
+							}
+
+							### BOTTOM ROW ###
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								block "bottom_row" {}
+
+								block "additional_info_kill_list" { }
+
+								hbox = {
+									spacing = 3
+									block "bottom_pre" { }
+									layoutpolicy_horizontal = expanding
+									block "expand_traits" { }
+
+									block "small_traits" {
+										flowcontainer = {
+										    ignoreinvisible = yes
+
+											tooltipwidget = {
+												widget = {
+													using = DefaultTooltipBackground
+													# using = TooltipSound
+													# using = GeneralTooltipSetup
+													# size = { 300 50 }
+													alwaystransparent = no
+
+													flowcontainer = {
+														name = "traits_grid"
+														datamodel = "[CharacterListItem.GetTraits]"
+														direction = vertical
+
+														ignoreinvisible = yes
+														resizeparent = yes
+														margin = { 20 15 }
+														margin_top = 5
+
+														item = {
+															text_single = {
+																margin_left = 3
+																visible = "[Trait.IsValid]"
+																datacontext = "[Character.GetFaith]"
+																raw_text = "[Trait.GetNameNoTooltip(Character.Self)][AddTextIf(Faith.IsTraitVirtue( Trait.Self ), ' (virtue)')][AddTextIf(Faith.IsTraitSin( Trait.Self ), ' (sin)')][AddTextIf(Trait.IsInheritable, ' (inheritable)')]."
+																tooltip = "trait_tooltip"
+															}
+														}
+													}
+												}
+											}
+											using = tooltip_se
+
+											flowcontainer = {
+												datamodel = "[DataModelFirst(CharacterListItem.GetTraits, '(int32)1')]"
+												visible = "[DataModelHasItems(CharacterListItem.GetTraits)]"
+												ignoreinvisible = yes
+
+												item = {
+													text_single = {
+														margin_left = 3
+														visible = "[Trait.IsValid]"
+														datacontext = "[Character.GetFaith]"
+														raw_text = "[Trait.GetNameNoTooltip(Character.Self)],[AddTextIf(GreaterThanOrEqualTo_int32( GetDataModelSize(CharacterListItem.GetTraits), '(int32)2'), ' +')]"
+														tooltip = "trait_tooltip"
+														tooltip_enabled = "[EqualTo_int32(GetDataModelSize(CharacterListItem.GetTraits), '(int32)1')]"
+													}
+												}
+											}
+
+											text_single = {
+												visible = "[GreaterThanOrEqualTo_int32( GetDataModelSize(CharacterListItem.GetTraits), '(int32)2')]"
+												# layoutpolicy_horizontal = expanding
+												raw_text = " [Subtract_int32(GetDataModelSize(CharacterListItem.GetTraits), '(int32)1')] traits,"
+											}
+										}
+									}
+
+									block "bottom_right_box" {
+										hbox = {
+											layoutpolicy_horizontal = expanding
+											layoutpolicy_vertical = expanding
+											spacing = 3
+
+											block "claims" { # for kill list
+												widget_list_claims = { }
+											}
+
+											# Religion and culture
+											hbox = {
+												layoutpolicy_horizontal = expanding
+												layoutpolicy_vertical = expanding
+												spacing = 3
+												# minimumsize = { 110 0 }
+
+												text_single = {
+													raw_text = "[Character.GetFaith.GetAdjectiveNoTooltip],"
+													using = tooltip_se
+												}
+
+												flowcontainer = {
+													datacontext = "[Character.GetCulture]"
+
+													text_single = {
+														using = tooltip_se
+														layoutpolicy_horizontal = expanding
+														text = "CULTURE_LISTS_WINDOW"
+													}
+													dot = { }
+												}
+												text_single = {
+													raw_text = "[Character.Custom('character_health')] health."
+													visible = "[Not(Character.IsDeadAndValid)]"
+													tooltip = "[Character.GetHealthInfo]"
+
+												}
+
+												block "bottom_right_box_extra" {}
+												expand = { }
+											}
+										}
+									}
+									expand = { }
+								}
+
+								expand = { }
+							}
+
+							block "bottom_extra" {}
+
+							expand = { }
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+# widget_character_list_item_finder = {
+# 								size = { 650 70 }
+# 								blockoverride "small_traits" { }
+# 								blockoverride "click" {
+# 									onclick = "[CharacterListItem.OnClick('character')]"
+# 									onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+# 									enabled = "[CharacterListItem.IsSelectable]"
+# 								}
+# 								blockoverride "expand_traits" {
+# 									flowcontainer = {
+# 										spacing = 2
+# 										name = "traits_grid"
+# 										datamodel = "[CharacterListItem.GetTraits]"
+# 										ignoreinvisible = yes
+# 										righttoleft = yes
+# 										# layoutpolicy_horizontal = expanding
+#
+# 										item = {
+# 											widget = {
+# 												tooltip = "trait_tooltip"
+#
+# 												text_single = {
+# 													resizeparent = yes
+# 													margin_left = 3
+# 													margin_top = 1
+# 													visible = "[Trait.IsValid]"
+# 													datacontext = "[Character.GetFaith]"
+# 													raw_text = "[Trait.GetNameNoTooltip(Character.Self)][AddTextIf(Faith.IsTraitVirtue( Trait.Self ), ' (virtue)')][AddTextIf(Faith.IsTraitSin( Trait.Self ), ' (sin)')][AddTextIf(Trait.IsInheritable, ' (inheritable)')],"
+# 												}
+# 											}
+# 										}
+# 									}
+# 								}
+# 							}

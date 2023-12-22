@@ -12,7 +12,23 @@
 			}
 			clear_variable_list = holdings
 			clear_variable_list = counties
+			clear_variable_list = vassal_counties
 			clear_variable_list = neighbours
+			clear_variable_list = neighbouring_counties
+			capital_province = {
+				save_scope_as = origin
+			}
+
+			ordered_character_to_title_neighboring_county = {
+				min = 0
+				order_by = title_province.direction_svalue
+				root = {
+					add_to_variable_list = {
+						name = neighbouring_counties
+						target = prev
+					}
+				}
+			}
 			# if = {
 			# 	limit = { scope:player = { NOT = { exists = var:holdings_filter } } }
 			# 	scope:player = {
@@ -123,9 +139,53 @@
 			}
 
 			ordered_sub_realm_county = {
-				order_by = total_tax
+				order_by = {
+					if = {
+						limit = {
+							scope:player = {
+								has_variable = county_tax
+							}
+						}
+						value = total_tax
+					}
+					else = {
+						value = "squared_distance(scope:player.capital_province)"
+						multiply = -1
+					}
+				}
 				limit = {
 					holder = root
+					trigger_if = {
+						limit = {
+							scope:player = {
+								OR = {
+									has_variable = filter_counties_faith
+									has_variable = filter_counties_culture
+								}
+							}
+						}
+						OR = {
+							AND = {
+								scope:player = {
+									has_variable = filter_counties_faith
+								}
+								NOT = {
+									faith = root.faith
+								}
+							}
+							AND = {
+								scope:player = {
+									has_variable = filter_counties_culture
+								}
+								NOT = {
+									culture = root.culture
+								}
+							}
+						}
+					}
+					trigger_else = {
+						always = yes
+					}
 				}
 				min = 0
 				set_variable = {
@@ -145,9 +205,53 @@
 			}
 
 			ordered_sub_realm_county = {
-				order_by = total_tax
+				order_by = {
+					if = {
+						limit = {
+							scope:player = {
+								has_variable = county_tax
+							}
+						}
+						value = total_tax
+					}
+					else = {
+						value = "squared_distance(scope:player.capital_province)"
+						multiply = -1
+					}
+				}
 				limit = {
 					NOT = { holder = root }
+					trigger_if = {
+						limit = {
+							scope:player = {
+								OR = {
+									has_variable = filter_counties_faith
+									has_variable = filter_counties_culture
+								}
+							}
+						}
+						OR = {
+							AND = {
+								scope:player = {
+									has_variable = filter_counties_faith
+								}
+								NOT = {
+									faith = root.faith
+								}
+							}
+							AND = {
+								scope:player = {
+									has_variable = filter_counties_culture
+								}
+								NOT = {
+									culture = root.culture
+								}
+							}
+						}
+					}
+					trigger_else = {
+						always = yes
+					}
 				}
 				min = 0
 				set_variable = {
@@ -212,6 +316,15 @@
 						target = prev
 					}
 				}
+				# every_sub_realm_county = {
+				# 	limit = {
+				# 		any_neighboring_county = {
+				# 			limit = {
+				# 				holder.top_liege = root.top_liege
+				# 			}
+				# 		}
+				# 	}
+				# }
 			}
 			ordered_in_list = {
 				list = adjacent_rulers_across_water
@@ -462,5 +575,15 @@ knights_list = {
 				}
 			}
 		}
+	}
+}
+
+
+county_tax = {
+	effect = {
+		toggle_var = { VAR = county_tax }
+	}
+	is_shown = {
+		has_variable = county_tax
 	}
 }

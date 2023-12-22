@@ -36,6 +36,7 @@ window = {
 		using = Animation_FadeOut_Quick
 		using = Sound_WindowHide_Standard
 		using = Window_Position_MainTab_Hide
+		on_finish = "[Set('seen_vassals', 'yes')]"
 	}
 
 	state = {
@@ -105,6 +106,13 @@ window = {
 		widget = {
 			alwaystransparent = no
 			size = { 100% 100% }
+
+			button = {
+				onclick = "[ToggleGameView('outliner')]"
+				onclick = "[CloseGameView('my_realm')]"
+				visible = "[Hasnt('realms_tabs', 'rulers')]"
+				shortcut = "mapmode_empires_secondary"
+			}
 
 			### WINDOW CONTENT
 			vbox = {
@@ -244,12 +252,13 @@ window = {
 						layoutpolicy_horizontal = expanding
 						blockoverride "pre" {
 							text_single = {
-								text = "[SelectLocalization(MyRealmWindow.IsOverDomainLimit, 'MY_REALM_WINDOW_DOMAIN_LIMIT_WARNING', 'MY_REALM_WINDOW_DOMAIN_LIMIT')]"
+								raw_text = "MY_REALM_WINDOW_DOMAIN_LIMIT"
 							}
 
 							text_single = {
-								text = "[SelectLocalization(MyRealmWindow.IsOverDomainLimit, 'MY_REALM_WINDOW_DOMAIN_LIMIT_VALUE_WARNING', 'MY_REALM_WINDOW_DOMAIN_LIMIT_VALUE')]"
+								raw_text = "MY_REALM_WINDOW_DOMAIN_LIMIT_VALUE"
 							}
+							comma = {}
 						}
 						blockoverride "text" {
 							raw_text = "[Collapse('realm_income')] Shift D."
@@ -380,6 +389,24 @@ window = {
 							expand = { }
 						}
 
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							onclick = "[ToggleGameViewData('manage_tax_slots', Character.GetID)]"
+							visible = "[Character.HasTaxSlots]"
+							blockoverride "extra" {
+								text_single = {
+									margin_left = -5
+									text = "GO_TO_TAX_SLOTS_BUTTON_HEADER"
+								}
+
+								text_single = {
+									text = "GO_TO_TAX_SLOTS_BUTTON_VALUE"
+								}
+
+								dot_l = { }
+							}
+						}
+
 						hbox = {
 							layoutpolicy_horizontal = expanding
 							visible = "[GetPlayer.HasLiege]"
@@ -467,24 +494,26 @@ window = {
 						}
 					}
 
-					text_single = {
+					button_text = {
+						onclick = "[GetVariableSystem.Set('realm_tabs', 'vassals')]"
+						onclick = "[MyRealmWindow.SendTabClickedTelemetry( 'vassals' )]"
 						layoutpolicy_horizontal = expanding
-						raw_text = "[GetDataModelSize(GetPlayer.GetVassals)] vassals."
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(GetPlayer.GetVassals)] vassals."
+						}
 					}
 
 					hbox = {
-					    layoutpolicy_horizontal = expanding
-
+				    layoutpolicy_horizontal = expanding
 
 						hbox_vassal_stats = { }
 
-					    expand = { }
+				    expand = { }
 					}
 
 					vbox = {
 						visible = "[GetPlayer.HasVassals]"
 						layoutpolicy_horizontal = expanding
-
 
 						button_text = {
 							layoutpolicy_horizontal = expanding
@@ -674,12 +703,10 @@ window = {
 								visible = no#"[GetVariableSystem.HasValue('realm_tabs', 'vassals')]"
 							}
 						}
-					    blockoverride "text" {
-					        text = "MY_REALM_WINDOW_VASSALS_TAB"
-							align = left
-					    }
+				    blockoverride "text" {
+			        text = "MY_REALM_WINDOW_VASSALS_TAB"
+				    }
 						blockoverride "dot" {
-
 						}
 						shortcut = speed_2
 					}
@@ -1032,10 +1059,11 @@ window = {
 					state = {
 						name = _hide
 						alpha = 0
+						on_finish = "[Set('seen_vassals', 'yes')]"
 					}
 
 					hbox = {
-					    layoutpolicy_horizontal = expanding
+				    layoutpolicy_horizontal = expanding
 						spacing = 3
 
 						text_single = {
@@ -1055,7 +1083,6 @@ window = {
 
 					hbox = {
 						layoutpolicy_horizontal = expanding
-
 
 						hbox_vassal_stats = { }
 
@@ -1133,6 +1160,17 @@ window = {
 						raw_text = "[MyRealmWindow.GetActiveGovernmentTypeFilter.GetVassalsLabel]."
 					}
 
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Isnt('seen_vassals')]"
+
+						text_multi_wide = {
+							raw_text = "Tip: [AddTextIf(GetPlayer.GetGovernment.IsType('clan_government'), 'click the tax decree name to change jurisdiction, ')]click the taxes to change contract."
+						}
+
+						expand = { }
+					}
+
 					scrollbox = {
 						layoutpolicy_horizontal = expanding
 						layoutpolicy_vertical = expanding
@@ -1177,7 +1215,7 @@ window = {
 								setitemsizefromcell = yes
 
 								item = {
-									widget_vassal_list_item = {
+									widget_vassal_list_item_ocr = {
 										onclick = "[MyRealmWindow.Close]"
 										datacontext = "[MyRealmWindowVassalItem.GetCharacter]"
 										datacontext = "[MyRealmWindow.GetVassalInfo( Character.Self )]"
@@ -1930,6 +1968,9 @@ window = {
 					scrollbox = {
 						layoutpolicy_horizontal = expanding
 						layoutpolicy_vertical = expanding
+						blockoverride "scrollbox_background_fade" {
+
+						}
 						blockoverride "scrollbox_margins" {
 							margin_top = 20
 						}
