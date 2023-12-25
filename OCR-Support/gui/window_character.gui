@@ -171,17 +171,36 @@ window = {
 								layoutpolicy_horizontal = expanding
 								spacing = 3
 
-								text_single = {
-									visible = "[Character.IsDeadAndValid]"
-									raw_text = "Dead."
-									margin_right = -3
-								}
-
 								button_text = {
-									blockoverride "extra" {
+									blockoverride "pre" {
+										flowcontainer = {
+											ignoreinvisible = yes
+											spacing = 3
+											visible = "[Character.IsAlive]"
+
+											text_single = {
+												visible = "[Character.IsAtWar]"
+												raw_text = "At war,"
+											}
+
+											text_single = {
+												raw_text = "Pregnant,"
+												visible = "[GetScriptedGui('is_pregnant').IsShown( GuiScope.SetRoot( Character.MakeScope ).End )]"
+											}
+											text_single = {
+												visible = "[Character.IsImprisoned]"
+												raw_text = "In prison,"
+											}
+											text_single = {
+												visible = "[Character.IsIncapable]"
+												raw_text = "Incapable,"
+												tooltip = "trait_incapable"
+											}
+										}
+
 										text_single = {
-											visible = "[Character.IsImprisoned]"
-											raw_text = "In prison,"
+											visible = "[Character.IsDeadAndValid]"
+											raw_text = "Dead."
 										}
 
 										character_name_text = { }
@@ -219,7 +238,6 @@ window = {
 										raw_text = "Click to interact."
 									}
 								}
-
 
 								expand = { }
 							}
@@ -276,10 +294,36 @@ window = {
 														}
 													}
 												}
-												text_single = {
+												flowcontainer = {
+													visible = "[And(LessThan_int32(GetDataModelSize(TraitArrays.GetPersonalityTraits), '(int32)3'), DataModelHasItems(TraitArrays.GetTraits))]"
+													datacontext = "[CharacterWindow.GetTraitArrays]"
+													datamodel = "[DataModelFirst(TraitArrays.GetTraits, Subtract_int32('(int32)3', GetDataModelSize(TraitArrays.GetPersonalityTraits)))]"
+													spacing = 3
+													ignoreinvisible =yes
+
+													item = {
+														text_single = {
+															datacontext = "[Character.GetFaith]"
+															raw_text = "[Trait.GetName(Character.Self)],"
+															alwaystransparent = yes
+														}
+													}
+												}
+
+												flowcontainer = {
+													ignoreinvisible = yes
 													datacontext = "[CharacterWindow.GetTraitArrays]"
 													visible = "[DataModelHasItems(TraitArrays.GetTraits)]"
-													raw_text = "+[GetDataModelSize(TraitArrays.GetTraits)]."
+
+													text_single = {
+														visible = "[And(LessThan_int32(GetDataModelSize(TraitArrays.GetPersonalityTraits), '(int32)3'), GreaterThan_int32(Subtract_int32(GetDataModelSize(TraitArrays.GetTraits), '(int32)3'), '(int32)0'))]"
+														raw_text = "+[Subtract_int32(GetDataModelSize(TraitArrays.GetTraits), '(int32)3')]."
+													}
+
+													text_single = {
+														visible = "[GreaterThan_int32(GetDataModelSize(TraitArrays.GetPersonalityTraits), '(int32)2')]"
+														raw_text = "+[GetDataModelSize(TraitArrays.GetTraits)]."
+													}
 												}
 											}
 										}
@@ -315,7 +359,12 @@ window = {
 									hbox = {
 										layoutpolicy_horizontal = expanding
 										margin_left = 5
-										spacing = 3
+										spacing = 5
+
+										text_single = {
+											visible = "[Not(EqualTo_CFixedPoint(Character.GetBalance, '(CFixedPoint)0'))]"
+											raw_text = "[Character.GetBalance|1=] income."
+										}
 
 										hbox = {
 											name = "skills_grid"
@@ -713,10 +762,10 @@ window = {
 													button_text = {
 														onclick = "[GetVariableSystem.Set('expand_view', 'family')]"
 														blockoverride "text" {
+															margin_left = -3
 															raw_text = "[Character.MakeScope.ScriptValue('num_of_living_children')] child[AddTextIf(GreaterThan_CFixedPoint(Character.MakeScope.ScriptValue('num_of_living_children'), '(CFixedPoint)1'), 'ren')],"
 														}
 													}
-
 
 													flowcontainer = {
 														ignoreinvisible = yes
@@ -739,6 +788,11 @@ window = {
 												text_single = {
 													visible = "[IsDataModelEmpty(CharacterWindow.GetChildren)]"
 													raw_text = "No children."
+												}
+
+												text_single = {
+													visible = "[Character.HasSexuality]"
+													raw_text = "[Character.GetSexuality]."
 												}
 											}
 
@@ -880,8 +934,13 @@ window = {
 										# }
 
 										text_single = {
-											raw_text = "Your opinion of [Character.GetHerHim] [GetPlayer.GetOpinionOf(Character.Self)|=]."
+											raw_text = "Your opinion of [Character.GetHerHim] [GetPlayer.GetOpinionOf(Character.Self)|=],"
 											tooltip = "[GetPlayer.GetOpinionBreakdownText(Character.Self)]"
+										}
+
+										text_single = {
+											raw_text = "[Character.GetSheHe] is [Character.GetAIPersonalityNoTooltip]."
+											tooltip = "AI_PERSONALITY_TT"
 										}
 										expand = { }
 									}
@@ -898,11 +957,11 @@ window = {
 										spacing = 3
 										visible = "[Character.IsAlive]"
 
-										text_single = {
-											raw_text = "Incapable,"
-											visible = "[Character.IsIncapable]"
-											tooltip = "trait_incapable"
-										}
+										# text_single = {
+										# 	raw_text = "Incapable,"
+										# 	visible = "[Character.IsIncapable]"
+										# 	tooltip = "trait_incapable"
+										# }
 
 										text_single = {
 											raw_text = "Hostage,"
@@ -3809,23 +3868,23 @@ types CharOCRTypes {
 
 			visible = "[And(And(Not( Character.IsLocalPlayer ), Not(GetVariableSystem.HasValue('personality_view', 'traits'))), Not(GetVariableSystem.HasValue('personality_view', 'skills')))]"
 
-			hbox = {
-				layoutpolicy_horizontal = expanding
-				visible = "[Not(Has('expand_view', 'personality'))]"
-				spacing = 3
-
-				text_single = {
-					raw_text = "[Character.GetAIPersonalityNoTooltip]."
-					tooltip = "AI_PERSONALITY_TT"
-				}
-
-				text_single = {
-					visible = "[Character.HasSexuality]"
-					raw_text = "[Character.GetSexuality]."
-				}
-
-				expand = {}
-			}
+			# hbox = {
+			# 	layoutpolicy_horizontal = expanding
+			# 	visible = "[Not(Has('expand_view', 'personality'))]"
+			# 	spacing = 3
+			#
+			# 	text_single = {
+			# 		raw_text = "[Character.GetAIPersonalityNoTooltip]."
+			# 		tooltip = "AI_PERSONALITY_TT"
+			# 	}
+			#
+			# 	text_single = {
+			# 		visible = "[Character.HasSexuality]"
+			# 		raw_text = "[Character.GetSexuality]."
+			# 	}
+			#
+			# 	expand = {}
+			# }
 
 			text_multi_wide = {
 				layoutpolicy_horizontal = expanding
