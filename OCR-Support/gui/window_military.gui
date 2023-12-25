@@ -678,6 +678,7 @@ window = {
 											datamodel = "[MilitaryView.GetHiredMercenaries]"
 											layoutpolicy_horizontal = expanding
 
+
 											item = {
 												button_mercenary_list_item_ocr = {
 													blockoverride "your" { }
@@ -912,71 +913,87 @@ window = {
 					}
 
 					blockoverride "scrollbox_content" {
+						text_single = {
+							visible = "[IsDataModelEmpty(MilitaryView.GetAllMercenaries)]"
+							raw_text = "No entries, try reloading in a second."
+						}
+
 						vbox = {
-							name = "tutorial_highlight_mercenary_list_item"
-							datamodel = "[MilitaryView.GetAllMercenaries]"
-							visible = "[Not(GetVariableSystem.Exists('merc_sorting'))]"
 							layoutpolicy_horizontal = expanding
-							item = {
-								vbox = {
-									layoutpolicy_horizontal = expanding
+							visible = "[DataModelHasItems(MilitaryView.GetAllMercenaries)]"
 
-									button_mercenary_list_item_ocr = {
-										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
-										visible = "[MercenaryCompany.IsHired]"
+							state = {
+								name = _show
+								using = Sound_WindowShow_Standard
+							}
+
+							vbox = {
+								name = "tutorial_highlight_mercenary_list_item"
+								datamodel = "[MilitaryView.GetAllMercenaries]"
+								visible = "[Not(GetVariableSystem.Exists('merc_sorting'))]"
+								layoutpolicy_horizontal = expanding
+								item = {
+									vbox = {
 										layoutpolicy_horizontal = expanding
-										size = { 600 60 }
 
-										blockoverride "HiredTroopMenAtArmsTypesDataModel"
-										{
-											datamodel = "[HiredTroopItem.GetRegiments]"
+										button_mercenary_list_item_ocr = {
+											datacontext = "[HiredTroopItem.GetMercenaryCompany]"
+											visible = "[MercenaryCompany.IsHired]"
+											layoutpolicy_horizontal = expanding
+											size = { 600 60 }
+
+											blockoverride "HiredTroopMenAtArmsTypesDataModel"
+											{
+												datamodel = "[HiredTroopItem.GetRegiments]"
+											}
 										}
-									}
 
-									button_mercenary_list_item_ocr = {
-										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
-										visible = "[Not(MercenaryCompany.IsHired)]"
-										layoutpolicy_horizontal = expanding
-										size = { 600 60 }
+										button_mercenary_list_item_ocr = {
+											datacontext = "[HiredTroopItem.GetMercenaryCompany]"
+											visible = "[Not(MercenaryCompany.IsHired)]"
+											layoutpolicy_horizontal = expanding
+											size = { 600 60 }
 
-										blockoverride "HiredTroopMenAtArmsTypesDataModel"
-										{
-											datamodel = "[HiredTroopItem.GetRegiments]"
+											blockoverride "HiredTroopMenAtArmsTypesDataModel"
+											{
+												datamodel = "[HiredTroopItem.GetRegiments]"
+											}
 										}
+
 									}
 								}
 							}
-						}
-						vbox = {
-							datamodel = "[MilitaryView.GetAllMercenaries]"
-							visible = "[GetVariableSystem.Exists('merc_sorting')]"
-							layoutpolicy_horizontal = expanding
-							bottomtotop = yes
-							item = {
-								vbox = {
-									layoutpolicy_horizontal = expanding
 
-									button_mercenary_list_item_ocr = {
-										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
-										visible = "[MercenaryCompany.IsHired]"
+							vbox = {
+								datamodel = "[MilitaryView.GetAllMercenaries]"
+								visible = "[GetVariableSystem.Exists('merc_sorting')]"
+								layoutpolicy_horizontal = expanding
+								bottomtotop = yes
+								item = {
+									vbox = {
 										layoutpolicy_horizontal = expanding
-										size = { 600 60 }
+										button_mercenary_list_item_ocr = {
+											datacontext = "[HiredTroopItem.GetMercenaryCompany]"
+											visible = "[MercenaryCompany.IsHired]"
+											layoutpolicy_horizontal = expanding
+											size = { 600 60 }
 
-										blockoverride "HiredTroopMenAtArmsTypesDataModel"
-										{
-											datamodel = "[HiredTroopItem.GetRegiments]"
+											blockoverride "HiredTroopMenAtArmsTypesDataModel"
+											{
+												datamodel = "[HiredTroopItem.GetRegiments]"
+											}
 										}
-									}
 
-									button_mercenary_list_item_ocr = {
-										datacontext = "[HiredTroopItem.GetMercenaryCompany]"
-										visible = "[Not(MercenaryCompany.IsHired)]"
-										layoutpolicy_horizontal = expanding
-										size = { 600 60 }
+										button_mercenary_list_item_ocr = {
+											datacontext = "[HiredTroopItem.GetMercenaryCompany]"
+											visible = "[Not(MercenaryCompany.IsHired)]"
+											layoutpolicy_horizontal = expanding
+											size = { 600 60 }
 
-										blockoverride "HiredTroopMenAtArmsTypesDataModel"
-										{
-											datamodel = "[HiredTroopItem.GetRegiments]"
+											blockoverride "HiredTroopMenAtArmsTypesDataModel"
+											{
+												datamodel = "[HiredTroopItem.GetRegiments]"
+											}
 										}
 									}
 								}
@@ -1618,19 +1635,19 @@ types OCR {
 
 					hbox = {
 						layoutpolicy_horizontal = expanding
+						spacing = 3
 						block "your" {
 							text_single = {
+								# to avoid the tooltip
 								raw_text = "Hire"
-								margin_right = 3
-								visible = "[Or(Not(MercenaryCompany.IsHired), MercenaryCompany.IsHiredByLocalPlayer)]"
+								visible = "[And(Or(Not(MercenaryCompany.IsHired), MercenaryCompany.IsHiredByLocalPlayer), Not(MercenaryCompany.WillGoInBankruptcy(GetPlayer.Self)))]"
 							}
 
 							text_single = {
 								name = "cost_label"
 								raw_text = "[MercenaryCompany.GetCostDesc],"
+								alwaystransparent = yes
 							}
-
-							space = { }
 						}
 
 						text_single = {
@@ -1642,19 +1659,37 @@ types OCR {
 
 						char_name = {
 							datacontext = "[MercenaryCompany.GetTitle.GetHolder]"
-							blockoverride "text" {
-								raw_text = "[Character.GetSkill('martial')] Martial leader."
+							blockoverride "text2" {
+								margin_left = -3
+								raw_text = "[Character.GetSkill('martial')] Martial."
 							}
 						}
 
-						space = { }
-
-						text_single = {
-							raw_text = "[MercenaryCompany.GetName]."
-							max_width = 280
+						# bad for FPS, showing only for available bands
+						hbox = {
+							datamodel = "[GetTraits]"
+							datacontext = "[Character.GetFaith]"
+							datacontext = "[MercenaryCompany.GetTitle.GetHolder]"
+							visible = "[And(Or(Not(MercenaryCompany.IsHired), MercenaryCompany.IsHiredByLocalPlayer), Not(MercenaryCompany.WillGoInBankruptcy(GetPlayer.Self)))]"
+							spacing = 3
+							item = {
+								text_single = {
+									raw_text = "[Trait.GetName(Character.Self)],"
+									visible = "[And(EqualTo_string(Trait.GetTraitCategoryLabel, GetTrait('forder').GetTraitCategoryLabel), Character.HasTrait(Trait.Self))]"
+								}
+							}
 						}
 
-						expand = { }
+						# text_single = {
+						# 	raw_text = "leader."
+						# }
+
+						# text_single = {
+						# 	raw_text = "[MercenaryCompany.GetName]."
+						# 	max_width = 280
+						# }
+
+						expand = {}
 					}
 
 					text_single = {
@@ -1674,7 +1709,7 @@ types OCR {
 				spacing = 3
 
 				text_single = {
-					raw_text = "View details. Has"
+					raw_text = "Has"
 				}
 
 				flowcontainer = {

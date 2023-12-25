@@ -54,6 +54,7 @@ RouteMouse()
 
   SendInput, {NumpadDiv}
   SendInput, {Shift M}
+  mousemove, 2, 2, 0, R
 
   if ( OCR = "Num" )
   {
