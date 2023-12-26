@@ -4,4 +4,4 @@ tags={
 }
 name="OCR Support"
 supported_version="1.*.*"
-path="mod/OCR-Support"
+path="mod/CK3-OCR/OCR-Support"
