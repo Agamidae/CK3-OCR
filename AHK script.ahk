@@ -54,6 +54,7 @@ RouteMouse()
 
   SendInput, {NumpadDiv}
   SendInput, {Shift M}
+  Sleep, 50
   mousemove, 2, 2, 0, R
 
   if ( OCR = "Num" )
@@ -117,7 +118,7 @@ return
 /::
 RouteMouse()
 
-Sleep, 100
+Sleep, 50
 Click
 Sleep, 300
 mousemove, % ScaleX("1919"), 0, 0
@@ -130,7 +131,7 @@ return
 ^/::
 RouteMouse()
 
-Sleep, 100
+Sleep, 50
 ControlClick
 Sleep, 300
 mousemove, % ScaleX("1919"), 0, 0
@@ -152,7 +153,7 @@ return
 \::
 RouteMouse()
 
-Sleep, 100
+Sleep, 50
 Click, Right
 Sleep, 300
 mousemove, % ScaleX("1919"), 0, 0
