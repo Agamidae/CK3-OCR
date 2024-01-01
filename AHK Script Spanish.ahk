@@ -16,6 +16,14 @@ ScaleY(y)
 ; the code below will only run for CK3
 #ifWinActive, ahk_exe ck3.exe
 
++F1::
+SendInput, {Shift up}
+SendInput, {PgUp}
+return
++F2::
+SendInput, {Shift up}
+SendInput, {PgDn}
+return
 
 ^CapsLock::
 global OCR := "CAPS"
