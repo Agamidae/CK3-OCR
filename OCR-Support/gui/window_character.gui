@@ -221,6 +221,8 @@ window = {
 										text_single = {
 											visible = "[Character.IsDeadAndValid]"
 											raw_text = "Dead."
+											raw_tooltip = "[Character.GetDebugTooltip]"
+											tooltip_enabled = "[InDebugMode]"
 										}
 
 										character_name_text = { }
@@ -229,6 +231,13 @@ window = {
 									onclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
 									onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
 									# shortcut = increase_speed_2
+								}
+
+								text_single = {
+									margin_left = -2
+									visible = "[And(And(Not(ObjectsEqual(Province.GetID, MyCapital.GetID)), Has('expand_view', 'neighbours')), Character.HasLandedTitles)]"
+									datacontext = "[Character.GetCapitalLocation]"
+									raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
 								}
 
 								hbox = {
@@ -1275,6 +1284,7 @@ window = {
 
 					vbox = {
 						margin_left = 15
+						margin_bottom = 5
 						layoutpolicy_horizontal = expanding
 						visible = "[GetVariableSystem.Exists('expand_view')]"
 
@@ -1295,12 +1305,6 @@ window = {
 							space = { }
 
 							text_single = {
-								margin_right = 3
-								raw_text = "[Character.MakeScope.ScriptValue('neighbours_sval')]"
-								visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
-							}
-
-							text_single = {
 								raw_text = "counties"
 								visible = "[And(GetVariableSystem.HasValue('expand_view', 'counties'), Not(GetVariableSystem.Exists('counties_tabs')))]"
 							}
@@ -1319,12 +1323,30 @@ window = {
 
 							text_single = {
 								raw_text = "[GetVariableSystem.Get('expand_view')]."
-								visible = "[And(Not(GetVariableSystem.HasValue('expand_view', 'family')), Not(GetVariableSystem.HasValue('expand_view', 'counties')))]"
+								visible = "[And(And(Hasnt('expand_view', 'family'), Hasnt('expand_view', 'counties')), Hasnt('expand_view', 'neighbours'))]"
 							}
 
 							text_single = {
 								visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
-								raw_text = "and [GetDataModelSize(Character.MakeScope.GetList('neighbouring_counties'))] adjacent counties."
+								raw_text = "[Character.MakeScope.ScriptValue('neighbours_sval')] adjacent rulers and [GetDataModelSize(Character.MakeScope.GetList('neighbouring_counties'))] counties."
+							}
+
+							button_text = {
+								shortcut = increase_speed_2
+								visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
+								onclick = "[Click('close_adjacent_rulers')]"
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "Will"
+									}
+									text_single = {
+										visible = "[GetPlayer.MakeScope.Var('dont_close_adjacent_rulers').IsSet]"
+										raw_text = "not"
+									}
+								}
+								blockoverride "text" {
+									raw_text = "close on selection, X to toggle."
+								}
 							}
 
 							text_single = {
@@ -2098,6 +2120,22 @@ window = {
 										}
 									}
 								}
+
+								# widget = {
+								# 	size = { 0 10 }
+								# }
+
+								# button_checked_text = {
+								# 	shortcut = increase_speed_2
+								# 	layoutpolicy_horizontal = expanding
+								# 	blockoverride "text" {
+								# 		raw_text = "auto-close this view, X."
+								# 	}
+								# 	blockoverride "visible" {
+								# 		visible = "[GetPlayer.MakeScope.Var('dont_close_adjacent_rulers').IsSet]"
+								# 	}
+								# 	onclick = "[Click('close_adjacent_rulers')]"
+								# }
 
 								#counties
 								flowcontainer = {
@@ -3325,7 +3363,7 @@ types CharOCRTypes {
 	type adjacent_ruler_button = button {
 		onclick = "[DefaultOnCharacterClick(Scope.GetCharacter.GetID)]"
 		onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetCharacter.GetCapitalLocation.GetCoATitle.GetID)]"
-		onclick = "[GetVariableSystem.Clear('expand_view')]"
+		onclick = "[GetVariableSystem.Clear(AddTextIf(Not(GetPlayer.MakeScope.Var('dont_close_adjacent_rulers').IsSet),'expand_view'))]"
 		onrightclick = "[DefaultOnCharacterRightClick(Scope.GetCharacter.GetID)]"
 		button_ignore = none
 

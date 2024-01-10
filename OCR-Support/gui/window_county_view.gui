@@ -227,6 +227,7 @@ window = {
 										visible = "[And(And(Not(Character.IsLocalPlayer), Not(HoldingView.GetHolding.IsEmpty)), Not(ObjectsEqual(Character.Self, HoldingView.GetCountyTitle.GetHolder)))]"
 										using = char_click
 										blockoverride "text" {
+											margin_left = -3
 											raw_text = "[Select_CString(Title.IsLeasedOut, 'leased by', 'held by')] [Character.GetFirstNameNoTooltip]."
 										}
 									}
@@ -290,6 +291,7 @@ window = {
 										datacontext = "[HoldingView.GetCountyTitle]"
 										datacontext = "[Title.GetHolder]"
 										using = char_click
+										shortcut = mapmode_kingdoms_secondary
 										visible = "[Not(Character.IsLocalPlayer)]"
 										blockoverride "pre" {
 											spacing = 3
@@ -299,7 +301,7 @@ window = {
 											}
 										}
 										blockoverride "text" {
-											raw_text = "held by [Character.GetFirstNameNoTooltip]."
+											raw_text = "held by [Character.GetFirstNameNoTooltip], i:"
 										}
 									}
 								}
@@ -584,6 +586,7 @@ window = {
 								layoutpolicy_horizontal = expanding
 								onclick = "[GetVariableSystem.Set('county_tabs', 'adjacent counties')]"
 								shortcut = map_mode_6
+								onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 								visible = "[Or(Or(DataModelHasItems( HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_seas') ), DataModelHasItems( HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_rivers') )), DataModelHasItems( HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties') ))]"
 								blockoverride "text" {
 									raw_text = "County is adjacent to"
@@ -2406,6 +2409,7 @@ window = {
 					vbox = {
 						layoutpolicy_horizontal = expanding
 						visible = "[GetVariableSystem.HasValue('county_tabs', 'adjacent counties')]"
+						spacing = 5
 
 						button = {
 							onclick = "[DefaultOnCoatOfArmsRightClick(HoldingView.GetProvince.GetCoATitle.GetID)]"
@@ -2416,46 +2420,101 @@ window = {
 						hbox = {
 							layoutpolicy_horizontal = expanding
 							spacing = 3
+							margin_bottom = 5
 
 							text_single = {
-								raw_text = "[HoldingView.GetProvince.GetCoATitle.GetNameNoTierNoTooltip]"
+								raw_text = "[HoldingView.GetProvince.GetCoATitle.GetNameNoTierNoTooltip],"
+							}
+
+							text_single = {
+								datacontext = "[HoldingView.GetProvince]"
+								visible = "[Not(ObjectsEqual(HoldingView.GetProvince, GetPlayer.GetCapitalLocation))]"
+								raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)],"
+							}
+
+							text_single = {
+								raw_text = "held by [HoldingView.GetCountyTitle.GetHolder.GetFirstNameOrMeNoTooltip],"
+							}
+
+							hbox = {
+								spacing = 3
+								visible = "[Not(Character.IsLocalPlayer)]"
+								datacontext = "[HoldingView.GetCountyTitle.GetHolder]"
+
+								text_single = {
+									visible = "[ObjectsEqual(Character.Self, Character.GetTopLiege)]"
+									raw_text = "of"
+								}
+
+								text_single = {
+									visible = "[Not(ObjectsEqual(Character.Self, Character.GetTopLiege))]"
+									raw_text = "in"
+								}
+								text_single = {
+									raw_text = "[HoldingView.GetCountyTitle.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+								}
 							}
 
 
 							text_single = {
-								raw_text = "County adjacencies:"
+								raw_text = "Adjacencies:"
 							}
 
 							expand = {}
 						}
 
-
 						vbox = {
 							layoutpolicy_horizontal = expanding
 							datacontext = "[HoldingView.GetCountyTitle]"
 
-							button_checked_text = {
-								shortcut = character_finder
+							hbox = {
 								layoutpolicy_horizontal = expanding
-								onclick = "[Toggle('culture_counties')]"
-								blockoverride "visible" {
-									visible = "[Isnt('culture_counties')]"
+
+								button_text = {
+									shortcut = character_finder
+									onclick = "[Toggle('culture_counties')]"
+									blockoverride "pre" {
+										text_single = {
+											visible = "[Isnt('culture_counties')]"
+											raw_text = "Not"
+										}
+									}
+									blockoverride "text" {
+										raw_text = "showing culture and faith, C."
+									}
 								}
-								blockoverride "text" {
-									raw_text = "Show culture and faith, C."
+
+								button_text = {
+									shortcut = increase_speed_2
+									onclick = "[AddFlag('sgui_flag', 'close_adjacencies')]"
+									blockoverride "pre" {
+										text_single = {
+											raw_text = "Will"
+										}
+										text_single = {
+											visible = "[ShowAddFlag('sgui_flag', 'close_adjacencies')]"
+											raw_text = "not"
+										}
+									}
+									blockoverride "text" {
+										raw_text = "close on selection, X."
+									}
 								}
+
+								expand = {}
 							}
+
 							vbox = {
 								layoutpolicy_horizontal = expanding
-								visible = "[Or(DataModelHasItems(Title.MakeScope.GetList('adjacent_rivers')), DataModelHasItems(Title.MakeScope.GetList('adjacent_seas')))]"
+								visible = "[And(Or(DataModelHasItems(Title.MakeScope.GetList('adjacent_rivers')), DataModelHasItems(Title.MakeScope.GetList('adjacent_seas'))), Isnt('adjacent_counties_ring'))]"
 
 								button_text = {
 									visible = "[Is('county_seas')]"
 									layoutpolicy_horizontal = expanding
 									onclick = "[Toggle('county_seas')]"
-									shortcut = map_mode_11
+									shortcut = map_mode_1
 									blockoverride "text" {
-										raw_text = "Show seas and rivers, Shift E."
+										raw_text = "Show seas and rivers, E."
 									}
 								}
 								button_text = {
@@ -2470,7 +2529,7 @@ window = {
 							}
 							vbox = {
 								layoutpolicy_horizontal = expanding
-								visible = "[Isnt('county_seas')]"
+								visible = "[And(Isnt('county_seas'), Isnt('adjacent_counties_ring'))]"
 								# seas
 								vbox = {
 									visible = "[DataModelHasItems(Title.MakeScope.GetList('adjacent_seas'))]"
@@ -2520,8 +2579,88 @@ window = {
 						}
 
 						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+
+							button_text = {
+								visible = "[GetPlayer.MakeScope.Var('county_direction').IsSet]"
+								shortcut = map_mode_9
+								onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).AddScope('clear_direction', MakeScopeFlag('yes')).End )]"
+								onclick = "[DefaultOnCoatOfArmsRightClick(HoldingView.GetProvince.GetCoATitle.GetID)]"
+								blockoverride "text" {
+									raw_text = "[GetPlayer.MakeScope.Var('county_direction').GetFlagName] direction, reset with Shift Q."
+								}
+							}
+
+							text_single = {
+								raw_text = "Filter by direction with Shift WASD."
+							}
+
+							expand = {}
+						}
+
+
+						button = {
+							# shift w
+							shortcut = map_mode_10
+							onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).AddScope('direction', MakeScopeFlag('north')).End )]"
+						}
+
+						button = {
+							# shift a
+							shortcut = mapmode_faith_secondary
+							onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).AddScope('direction', MakeScopeFlag('west')).End )]"
+						}
+
+						button = {
+							# shift s
+							shortcut = mapmode_culture_secondary
+							onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).AddScope('direction', MakeScopeFlag('south')).End )]"
+						}
+
+						button = {
+							# shift d
+							shortcut = mapmode_house_secondary
+							onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).AddScope('direction', MakeScopeFlag('east')).End )]"
+						}
+
+						container = {
+							# button = {
+							# 	shortcut = map_mode_6
+							# 	onclick = "[Clear('county_tabs')]"
+							# }
+
+							button = {
+								shortcut = close_window
+								visible = "[Is('adjacent_counties_ring')]"
+								onclick = "[Clear('adjacent_counties_ring')]"
+							}
+
+							button = {
+								shortcut = speed_1
+								onclick = "[Set('adjacent_counties_ring', '1')]"
+							}
+
+							button = {
+								shortcut = speed_2
+								onclick = "[Set('adjacent_counties_ring', '2')]"
+							}
+							button = {
+								shortcut = speed_3
+								onclick = "[Set('adjacent_counties_ring', '3')]"
+							}
+							button = {
+								visible =  "[Not(IsDataModelEmpty(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_across_water')))]"
+								shortcut = map_mode_11
+								onclick = "[Set('adjacent_counties_ring', 'across_water')]"
+							}
+						}
+
+
+						hbox = {
 							spacing = 3
 							layoutpolicy_horizontal = expanding
+							visible = "[Or(Isnt('adjacent_counties_ring'), Has('adjacent_counties_ring', '1'))]"
 
 							button_text = {
 								blockoverride "text" {
@@ -2537,15 +2676,65 @@ window = {
 							trigger_when = "[IsDataModelEmpty(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties'))]"
 						}
 
+
 						vbox = {
 							layoutpolicy_horizontal = expanding
-							visible = "[Not(GetVariableSystem.Exists('hide_adjacent'))]"
+							visible = "[Or(Isnt('adjacent_counties_ring'), Has('adjacent_counties_ring', '1'))]"
 
 							datamodel = "[HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties')]"
 
 							item = {
 								adjacent_county_button = {
 									layoutpolicy_horizontal = expanding
+								}
+							}
+						}
+
+						button_text = {
+							shortcut = speed_2
+							layoutpolicy_horizontal = expanding
+							visible = "[Or(Isnt('adjacent_counties_ring'), Hasnt('adjacent_counties_ring', '3'))]"
+							onclick = "[Set('adjacent_counties_ring', '2')]"
+							blockoverride "text" {
+								raw_text = "[GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_2'))] counties in the second ring, hotkey 2."
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Or(Isnt('adjacent_counties_ring'), Has('adjacent_counties_ring', '2'))]"
+							# visible = "[Has('adjacent_counties_ring', '2')]"
+
+							datamodel = "[HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_2')]"
+
+							item = {
+								adjacent_county_button = {
+									layoutpolicy_horizontal = expanding
+									blockoverride "county_distance" {}
+								}
+							}
+						}
+
+						button_text = {
+							shortcut = speed_3
+							layoutpolicy_horizontal = expanding
+							onclick = "[Set('adjacent_counties_ring', '3')]"
+							blockoverride "text" {
+								raw_text = "[GetDataModelSize(HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_3'))] counties in the third ring, hotkey 3."
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Or(Isnt('adjacent_counties_ring'), Has('adjacent_counties_ring', '3'))]"
+							# visible = "[Has('adjacent_counties_ring', '3')]"
+
+							datamodel = "[HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_3')]"
+
+							item = {
+								adjacent_county_button = {
+									layoutpolicy_horizontal = expanding
+									blockoverride "county_distance" {}
 								}
 							}
 						}
@@ -2557,6 +2746,8 @@ window = {
 							button = {
 								size = { 400 22 }
 								layoutpolicy_horizontal = expanding
+								shortcut = map_mode_11
+								onclick = "[Set('adjacent_counties_ring', 'across_water')]"
 
 								flowcontainer = {
 									ignoreinvisible = yes
@@ -2569,45 +2760,34 @@ window = {
 									}
 
 									text_single = {
-										raw_text = "sea:"
+										raw_text = "sea,"
 										visible = "[GetScriptedGui('is_coastal_county').IsShown( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
 									}
 									text_single = {
-										raw_text = "river:"
+										raw_text = "river,"
 										visible = "[GetScriptedGui('is_riverside_county').IsShown( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
 									}
 									text_single = {
-										raw_text = "sea or river:"
+										raw_text = "sea or river,"
 										visible = "[GetScriptedGui('is_river_and_coastal').IsShown( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).End )]"
+									}
+
+									text_single = {
+										raw_text = "Shift E."
 									}
 								}
 							}
 
 							dynamicgridbox = {
 								layoutpolicy_horizontal = expanding
-								visible = "[Not(GetVariableSystem.Exists('hide_across_water'))]"
-
+								visible = "[Or(Isnt('adjacent_counties_ring'), Has('adjacent_counties_ring', 'across_water'))]"
 								datamodel = "[HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties_across_water')]"
 
 								item = {
-									adjacent_county_button = { }
+									adjacent_county_button = {
+										blockoverride "county_distance" {}
+									}
 								}
-							}
-						}
-
-						widget = {
-							size = { 0 5 }
-						}
-
-						button_checked_text = {
-							shortcut = increase_speed_2
-							layoutpolicy_horizontal = expanding
-							onclick = "[AddFlag('sgui_flag', 'close_adjacencies')]"
-							blockoverride "visible" {
-								visible = "[ShowAddFlag('sgui_flag', 'close_adjacencies')]"
-							}
-							blockoverride "text" {
-								raw_text = "Close this view automatically, X."
 							}
 						}
 					}
@@ -3827,7 +4007,7 @@ types CountyViewTypes
 		block "click" {
 			# onclick = "[CloseGameView('holding_view')]"
 			onclick = "[Scope.GetProvince.PanCameraTo]"
-			onclick = "[GetVariableSystem.Clear('county_tabs')]"
+			onclick = "[GetVariableSystem.Clear(AddTextIf(Not(ShowAddFlag('sgui_flag', 'close_adjacencies')), 'county_tabs'))]"
 			onclick = "[HoldingView.Close]"
 			onclick = "[Set('extra_window', 'window_sea')]"
 			onclick = "[ClickAdd('window_sea', GetPlayer, Scope.GetProvince)]"
@@ -3879,15 +4059,23 @@ types CountyViewTypes
 			# }
 			block "distance" {}
 
+			container = {
+				ignoreinvisible = yes
+				block "county_distance" {
+					visible = no
+				}
+				text_single = {
+					datacontext = "[HoldingView.GetProvince]"
+					visible = "[Not(ObjectsEqual(HoldingView.GetCountyTitle, Scope.Title))]"
+					raw_text = "[DistanceTo(Province, Scope.Title.GetProvince)|0] [DaysTo(Province, Scope.Title.GetProvince)]"
+				}
+			}
+
 			text_single = {
 				block "prov_context" {
 					datacontext = "[HoldingView.GetProvince]"
 				}
 				raw_text = "[GuiScope.SetRoot(Province.MakeScope).AddScope('second', Title.GetProvince.MakeScope).Custom('province_direction')],"
-			}
-			text_single = {
-				visible = "[Not(Or(ObjectsEqual(Title.GetHolder.GetTopLiege, GetPlayer), ObjectsEqual(Title.GetHolder, GetPlayer)))]"
-				raw_text = "in [Title.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip]."
 			}
 
 			text_single = {
@@ -3895,18 +4083,48 @@ types CountyViewTypes
 				raw_text = "Sieged,"
 			}
 
+
 			text_single = {
-				raw_text = "your county."
+				raw_text = "your county,"
 				visible = "[ObjectsEqual(Title.GetHolder, GetPlayer)]"
 			}
+
 			text_single = {
 				visible = "[And(ObjectsEqual(Title.GetHolder.GetTopLiege, GetPlayer), Not(ObjectsEqual(Title.GetHolder, GetPlayer)))]"
-				raw_text = "in your realm."
+
+				raw_text = "in your realm,"
 			}
+
+			flowcontainer = {
+				ignoreinvisible = yes
+				visible = "[Not(Or(ObjectsEqual(Title.GetHolder.GetTopLiege, GetPlayer), ObjectsEqual(Title.GetHolder, GetPlayer)))]"
+				spacing = 3
+				text_single = {
+					# visible = "[Not(ObjectsEqual(Title.GetHolder.GetTopLiege, Title.GetHolder))]"
+					raw_text = "in"
+				}
+				# text_single = {
+				# 	visible = "[ObjectsEqual(Title.GetHolder.GetTopLiege, Title.GetHolder)]"
+				# 	raw_text = "of"
+				# }
+
+				text_single = {
+					raw_text = "[Title.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+				}
+
+			}
+
+			text_single = {
+				visible = "[Not(ObjectsEqual(Title.GetHolder, GetPlayer))]"
+				raw_text = "held by [Title.GetHolder.GetFirstNameNoTooltip]."
+			}
+
+
 			text_single = {
 				visible = "[Is('culture_counties')]"
 				raw_text = "[Title.GetCountyData.GetFaith.GetAdjective], [Title.GetCountyData.GetCulture.GetName]."
 			}
+
 			block "county_extra" { }
 			# [Scope.Title.GetHolder.GetTopLiege.RealmSize] counties.
 		}

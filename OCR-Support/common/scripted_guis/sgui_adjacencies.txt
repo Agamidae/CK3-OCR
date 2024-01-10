@@ -15,9 +15,31 @@
 				save_scope_as = origin
 			}
 			clear_variable_list = adjacent_counties
+			clear_variable_list = adjacent_counties_2
+			clear_variable_list = adjacent_counties_3
 			clear_variable_list = adjacent_counties_across_water
 			clear_variable_list = adjacent_seas
 			clear_variable_list = adjacent_rivers
+
+			if = {
+				limit = {
+					exists = scope:direction
+				}
+				scope:player = {
+					set_variable = {
+						name = county_direction
+						value = scope:direction
+					}
+				}
+			}
+			if = {
+				limit = {
+					exists = scope:clear_direction
+				}
+				scope:player = {
+					remove_variable = county_direction
+				}
+			}
 
 			# every_county_province
 			# scope:target
@@ -69,6 +91,10 @@
 			ordered_neighboring_county = {
 				order_by = title_province.direction_svalue
 				min = 0
+				add_to_list = adjacent_counties # easier to check later
+				limit = {
+					direction_filter = yes
+				}
 				root = {
 					add_to_variable_list = {
 						name = adjacent_counties
@@ -76,6 +102,70 @@
 					}
 				}
 			}
+
+			every_in_list = {
+				list = adjacent_counties
+
+				every_neighboring_county = {
+					limit = {
+						NOR = {
+							is_in_list = adjacent_counties
+							this = root
+						}
+					}
+					add_to_list = adjacent_counties_2
+				}
+			}
+
+			every_in_list = {
+				list = adjacent_counties_2
+
+				every_neighboring_county = {
+					limit = {
+						NOR = {
+							is_in_list = adjacent_counties
+							is_in_list = adjacent_counties_2
+							this = root
+						}
+					}
+					add_to_list = adjacent_counties_3
+				}
+			}
+
+			ordered_in_list = {
+				list = adjacent_counties_2
+				order_by = title_province.direction_svalue
+				min = 0
+
+				limit = {
+					direction_filter = yes
+				}
+
+				root = {
+					add_to_variable_list = {
+						name = adjacent_counties_2
+						target = prev
+					}
+				}
+			}
+
+			ordered_in_list = {
+				list = adjacent_counties_3
+				order_by = title_province.direction_svalue
+				min = 0
+
+				limit = {
+					direction_filter = yes
+				}
+
+				root = {
+					add_to_variable_list = {
+						name = adjacent_counties_3
+						target = prev
+					}
+				}
+			}
+
 			ordered_title_to_title_neighboring_and_across_water_county = {
 				order_by = title_province.direction_svalue
 				limit = {
@@ -87,6 +177,7 @@
 							}
 						}
 					}
+					direction_filter = yes
 				}
 				min = 0
 				root = {
