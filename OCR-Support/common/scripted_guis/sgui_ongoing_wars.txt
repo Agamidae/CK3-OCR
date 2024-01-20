@@ -1,0 +1,119 @@
+﻿ongoing_wars_list = {
+	effect = {
+		clear_variable_list = ongoing_wars
+
+		# cbs need to be replaced for AGOT, or it will crash
+
+		if = {
+			limit = {
+				NOT = { exists = var:sort_wars }
+			}
+			set_variable = {
+				name = sort_wars
+				value = flag:total_war_men
+			}
+		}
+
+		if = {
+			limit = {
+				NOT = { exists = var:filter_wars }
+			}
+			set_variable = {
+				name = filter_wars
+				value = flag:all_wars
+			}
+		}
+
+		every_ruler = {
+			limit = {
+				is_at_war = yes
+			}
+			every_character_war = {
+				limit = {
+					NOT = {
+						is_in_list = ongoing_wars_temp
+					}
+				}
+				add_to_list = ongoing_wars_temp
+			}
+		}
+
+		every_in_list = {
+			list = ongoing_wars_temp
+
+			limit = {
+				trigger_if = {
+					limit = { exists = root.var:filter_wars root.var:filter_wars = flag:vassal_wars }
+
+					any_war_participant = {
+						is_vassal_or_below_of = root
+					}
+				}
+
+				trigger_else_if = {
+					limit = { exists = root.var:filter_wars root.var:filter_wars = flag:realm_wars }
+					any_war_participant = {
+						is_vassal_or_below_of = root
+						is_liege_or_above_of = root
+					}
+				}
+
+				trigger_else_if = {
+					limit = { exists = root.var:filter_wars root.var:filter_wars = flag:holy_wars }
+					#TODO replace with a scripted trigger
+					OR = {
+						using_cb = minor_religious_war
+						using_cb = religious_war
+						using_cb = major_religious_war
+						using_cb = excommunication_war
+						using_cb = flowery_war_cb
+						using_cb = undirected_great_holy_war
+						using_cb = directed_great_holy_war
+					}
+				}
+
+				trigger_else_if = {
+					limit = { exists = root.var:filter_wars root.var:filter_wars = flag:great_holy_wars }
+					OR = {
+						using_cb = undirected_great_holy_war
+						using_cb = directed_great_holy_war
+					}
+				}
+
+				trigger_else_if = {
+					limit = { exists = root.var:filter_wars root.var:filter_wars = flag:civil_wars }
+					OR = {
+						using_cb = independence_faction_war
+						using_cb = liberty_faction_war
+						using_cb = populist_war
+						using_cb = claimant_faction_war
+						using_cb = depose_war
+						using_cb = refused_liege_demand_war
+						using_cb = independence_war
+						using_cb = nation_fracturing_faction_war
+					}
+				}
+
+				trigger_else = { }
+			}
+
+			add_to_list = ongoing_wars
+		}
+
+		switch = {
+			trigger = var:sort_wars
+			flag:total_war_men = {
+				add_to_ledger = { list = ongoing_wars x = total_war_participants }
+			}
+			flag:attackers = {
+				add_to_ledger = { list = ongoing_wars x = primary_attacker.current_military_strength }
+			}
+			flag:defenders = {
+				add_to_ledger = { list = ongoing_wars x = primary_defender.current_military_strength }
+			}
+			flag:war_started = {
+				add_to_ledger_reverse = { list = ongoing_wars x = war_days }
+			}
+		}
+	}
+}

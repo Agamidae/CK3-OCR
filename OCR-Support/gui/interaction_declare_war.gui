@@ -17,6 +17,7 @@ window = {
 		name = _show
 		using = Animation_FadeIn_Quick
 		using = Sound_WindowShow_Standard
+		using = agot_rv_save_defender
 	}
 
 	state = {
@@ -24,6 +25,7 @@ window = {
 		using = Animation_FadeOut_Quick
 		using = Sound_WindowHide_Standard
 		on_start = "[SetMapMode('realms')]"
+		using = agot_rv_clear_revenge_list
 	}
 
 	widget = {
@@ -36,6 +38,10 @@ window = {
 
 		vbox = {
 			using = ocr_margins
+
+			error_button = {
+				layoutpolicy_horizontal = expanding
+			}
 
 			button = {
 				visible = "[And(GetVariableSystem.Exists('hide_tutorial'), GetTutorial.ShouldBeVisible)]"
@@ -71,31 +77,111 @@ window = {
 					expand = {}
 				}
 
-				hbox = {
+				hbox_declare_war_buttons = {}
+
+
+				vbox = {
+					name = "additional_warning_box"
 					layoutpolicy_horizontal = expanding
-					name = "declare_war_send_button"
+					margin_top = 3
 
-					button_primary_text = {
-						name = "send_button"
-						tooltip = "[DeclareWarInteractionWindow.GetDeclareWarButtonTooltip]"
-						blockoverride "disabled" {
-							visible = "[Not(DeclareWarInteractionWindow.CanSend)]"
-						}
-						enabled = "[DeclareWarInteractionWindow.CanSend]"
-						blockoverride "text" {
-							text = "[CharacterInteractionConfirmationWindow.GetSendName]"
-						}
-						onclick = "[DeclareWarInteractionWindow.Send]"
-						clicksound = "event:/SFX/UI/War/sfx_ui_war_declare_war"
+					agot_liege_join_warning = {}
 
-						blockoverride "extra" {
-							text_single = {
-								raw_text = ", warning, see tooltip"
-								visible = "[And(DeclareWarInteractionWindow.HasSelectedCasusBelli, Or( Or( Not( DeclareWarInteractionWindow.CanAffordCosts ), DeclareWarInteractionWindow.IsBreakingTruce), DeclareWarInteractionWindow.IsBreakingAlliance))]"
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "Warning, others might join."
+						datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+						visible = "[DeclareWarInteractionWindow.GetCbType.GuiDefenderFaithMightJoin]"
+						tooltip = "WAR_DEFENDER_FAITH_MIGHT_JOIN"
+					}
+
+					hbox = {
+						visible = "[DeclareWarInteractionWindow.ShouldShowAdditionalWarning]"
+						layoutpolicy_horizontal = expanding
+
+						text_multi = {
+							raw_text = "Warning, [DeclareWarInteractionWindow.WriteAdditionalWarningMessage]"
+							max_width = 400
+							autoresize = yes
+						}
+						expand = { }
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						margin_left = 5
+						visible = "[Not(IsDataModelEmpty(DeclareWarInteractionWindow.GetDefenders))]"
+						using = tooltip_ne
+
+						tooltipwidget = {
+							container = {
+								using = DefaultTooltipBackground
+								alwaystransparent = no
+
+								flowcontainer = {
+									margin = { 10 10 }
+									ignoreinvisible = yes
+									direction = vertical
+
+									text_single = {
+										raw_text = "Joining rulers, see tooltips for acceptance:"
+									}
+
+									datamodel = "[DeclareWarInteractionWindow.GetDefenders]"
+
+									item = {
+										button_text = {
+											using = char_click
+											datacontext = "[WarAllyItem.GetCharacter]"
+
+											tooltip = "WAR_DEFENDER_ALLY_TOOLTIP"
+											blockoverride "text" {
+												raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+											}
+											blockoverride "extra" {
+												text_single = {
+													raw_text = "[Character.GetMilitaryStrengthText] men, [Character.GetGold|0] gold."
+												}
+											}
+										}
+									}
+								}
 							}
 						}
+
+						text_single = {
+							raw_text = "[GetDataModelSize(DeclareWarInteractionWindow.GetDefenders)] joining:"
+						}
+
+						hbox = {
+							datamodel = "[DataModelFirst(DeclareWarInteractionWindow.GetDefenders, '(int32)2')]"
+
+							item = {
+								button_text = {
+									using = char_click
+									datacontext = "[WarAllyItem.GetCharacter]"
+
+									tooltip = "WAR_DEFENDER_ALLY_TOOLTIP"
+									blockoverride "text" {
+										raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip], [Character.GetMilitaryStrengthText] men,"
+									}
+								}
+							}
+						}
+
+						text_single = {
+							visible = "[GreaterThan_int32(GetDataModelSize(DeclareWarInteractionWindow.GetDefenders), '(int32)2')]"
+							raw_text = "see tooltip for more."
+						}
+
+						expand = {}
 					}
-					expand = { }
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						visible = "[And(DeclareWarInteractionWindow.ShouldShowAdditionalWarning, IsDataModelEmpty(DeclareWarInteractionWindow.GetDefenders))]"
+						raw_text = "No one joined yet."
+					}
 				}
 
 				margin_bottom = 5
@@ -142,9 +228,9 @@ window = {
 
 							item = {
 								button_text = {
-									blockoverride "num" {
+									blockoverride "num" {	}
+									using = agot_show_cb
 
-									}
 									shortcuts_list = {
 										blockoverride "click" {
 											onclick = "[CasusBelliItem.OnClick]"
@@ -248,8 +334,11 @@ window = {
 					layoutpolicy_vertical = expanding
 					# spacing = 8
 
+					vbox_agot_rv_targets = {}
+
 					scrollbox = {
-						visible = "[DeclareWarInteractionWindow.CanShowWarGoalSubview]"
+						using = agot_show_selected_cb
+						datacontext = "[DeclareWarInteractionWindow.GetSelectedCasusBelliItem]"
 						layoutpolicy_horizontal = expanding
 						layoutpolicy_vertical = expanding
 
@@ -367,11 +456,14 @@ window = {
 										raw_text = "[DeclareWarInteractionWindow.GetCurrentTabMainOutputDescription]"
 									}
 
+									hbox_agot_rescue_list = {}
+
 									text_single = {
 										name = "other_end_war_effects"
 										layoutpolicy_horizontal = expanding
 										raw_text = "See this tooltip for details."
 										tooltip = "[DeclareWarInteractionWindow.GetCurrentTabEffectsDescription]"
+										#TODO should it be only in the victory tab for agot?
 									}
 
 									char_name = {
@@ -424,163 +516,61 @@ window = {
 					}
 				}
 
-				vbox = {
-					name = "additional_warning_box"
-					layoutpolicy_horizontal = expanding
-
-					hbox = {
-						spacing = 5
-						margin_left = 5
-						layoutpolicy_horizontal = expanding
-
-						icon = {
-							name = "attacker_faith_might_join"
-							datacontext = "[GetPlayer]"
-							visible = "[DeclareWarInteractionWindow.GetCbType.GuiAttackerFaithMightJoin]"
-							size = { 40 40 }
-
-							texture = "[Character.GetFaith.GetIcon]"
-							tooltip = "WAR_ATTACKER_FAITH_MIGHT_JOIN"
-
-							icon = {
-								position = { 5 0 }
-								parentanchor = bottom|right
-								size = { 25 25 }
-								texture = "gfx/interface/icons/casus_bellis/_default.dds"
-							}
-						}
-
-						text_single = {
-							raw_text = "Warning,  "
-							datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
-							visible = "[DeclareWarInteractionWindow.GetCbType.GuiDefenderFaithMightJoin]"
-							tooltip = "WAR_DEFENDER_FAITH_MIGHT_JOIN"
-						}
-
-						hbox = {
-							visible = "[DeclareWarInteractionWindow.ShouldShowAdditionalWarning]"
-							spacing = 4
-							layoutpolicy_horizontal = expanding
-
-							text_single = {
-								raw_text = "Warning,"
-								align = top
-							}
-
-							text_multi = {
-								text = "[DeclareWarInteractionWindow.WriteAdditionalWarningMessage]"
-								max_width = 350
-								autoresize = yes
-							}
-							expand = { }
-						}
-					}
-
-					scrollarea = {
-						name = "defenders_scrollarea"
-						visible = "[Not(IsDataModelEmpty(DeclareWarInteractionWindow.GetDefenders))]"
-						size = { 540 120 }
-						scrollbarpolicy_vertical = always_off
-						scrollbarpolicy_horizontal = as_needed
-						scrollbar_horizontal = {
-							using = Scrollbar_Horizontal
-						}
-						scrollwidget = {
-							hbox = {
-								using = Scrollbox_Margins
-
-								fixedgridbox = {
-									datamodel_reuse_widgets = yes
-									maxverticalslots = 1
-									flipdirection = yes
-									name = "forced_defenders"
-									datamodel = "[DeclareWarInteractionWindow.GetDefenders]"
-									addrow = 90
-									addcolumn = 80
-
-									item = {
-										portrait_head_small = {
-											datacontext = "[WarAllyItem.GetCharacter]"
-
-											tooltip = "WAR_DEFENDER_ALLY_TOOLTIP"
-
-											blockoverride "opinion_box" {}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-
 				vbox_interaction_options = {
 					visible = "[DeclareWarInteractionWindow.HasSelectedCasusBelli]"
 					layoutpolicy_horizontal = expanding
 				}
 			}
 
-			widget = {
+			flowcontainer = {
+				name = "layer_one_war"
+				margin_left = 5
+				datacontext = "[DeclareWarInteractionWindow.GetMilitaryStrengthInfo]"
+				direction = vertical
 				layoutpolicy_horizontal = expanding
-				size = { 0 110 }
+				using = agot_show_war_comparison
 
-				background = {
-					using = Background_Area_Dark
-					alpha = 0.7
+				text_single = {
+					raw_text = "[DeclareWarInteractionWindow.GetMilitaryStrength] [GuiMilitaryStrength.GetRatio|0]% ratio."
 				}
 
-				widget = {
-					name = "layer_one_war"
-					size = { 100% 100% }
-					datacontext = "[DeclareWarInteractionWindow.GetMilitaryStrengthInfo]"
+				text_single = {
+					raw_text = ""
+				}
 
-					flowcontainer = {
-						margin_left = 5
-						direction = vertical
-
-						text_single = {
-							raw_text = "[DeclareWarInteractionWindow.GetMilitaryStrength] [GuiMilitaryStrength.GetRatio|0]% ratio."
-						}
-
-						text_single = {
-							raw_text = ""
-						}
-
-						soldiers_and_quality_small_text = {
-							datacontext = "[DeclareWarInteractionWindow.GetAttackerCharacter]"
-							datacontext = "[CharacterItem.GetComposition]"
-							blockoverride "side" {
-								raw_text = "Your side:"
-							}
-						}
-
-						button_text = {
-							datacontext = "[DeclareWarInteractionWindow.GetAttackerCharacter]"
-							blockoverride "text" {
-								raw_text = "[CharacterItem.GetAllyCount] allies. Click to show."
-							}
-							visible = "[GreaterThan_int32( CharacterItem.GetAllyCount, '(int32)0' )]"
-							onclick = "[DeclareWarInteractionWindow.ShowAlliesForCharacter( CharacterItem.Self )]"
-						}
-
-						soldiers_and_quality_small_text = {
-							datacontext = "[DeclareWarInteractionWindow.GetDefenderCharacter]"
-							datacontext = "[CharacterItem.GetComposition]"
-							blockoverride "side" {
-								raw_text = "Enemy side:"
-							}
-						}
-
-						button_text = {
-							datacontext = "[DeclareWarInteractionWindow.GetDefenderCharacter]"
-							blockoverride "text" {
-								raw_text = "[CharacterItem.GetAllyCount] enemies. Click to show."
-							}
-							visible = "[GreaterThan_int32( CharacterItem.GetAllyCount, '(int32)0' )]"
-							onclick = "[DeclareWarInteractionWindow.ShowAlliesForCharacter( CharacterItem.Self )]"
-						}
+				soldiers_and_quality_small_text = {
+					datacontext = "[DeclareWarInteractionWindow.GetAttackerCharacter]"
+					datacontext = "[CharacterItem.GetComposition]"
+					blockoverride "side" {
+						raw_text = "Your side:"
 					}
 				}
 
+				button_text = {
+					datacontext = "[DeclareWarInteractionWindow.GetAttackerCharacter]"
+					blockoverride "text" {
+						raw_text = "[CharacterItem.GetAllyCount] allies. Click to show."
+					}
+					visible = "[GreaterThan_int32( CharacterItem.GetAllyCount, '(int32)0' )]"
+					onclick = "[DeclareWarInteractionWindow.ShowAlliesForCharacter( CharacterItem.Self )]"
+				}
+
+				soldiers_and_quality_small_text = {
+					datacontext = "[DeclareWarInteractionWindow.GetDefenderCharacter]"
+					datacontext = "[CharacterItem.GetComposition]"
+					blockoverride "side" {
+						raw_text = "Enemy side:"
+					}
+				}
+
+				button_text = {
+					datacontext = "[DeclareWarInteractionWindow.GetDefenderCharacter]"
+					blockoverride "text" {
+						raw_text = "[CharacterItem.GetAllyCount] enemies. Click to show."
+					}
+					visible = "[GreaterThan_int32( CharacterItem.GetAllyCount, '(int32)0' )]"
+					onclick = "[DeclareWarInteractionWindow.ShowAlliesForCharacter( CharacterItem.Self )]"
+				}
 			}
 		}
 	}
@@ -1119,4 +1109,54 @@ types CharacterGold
 			}
 		}
 	}
+}
+
+types AGOT_OCR {
+	type agot_liege_join_warning = container {}
+	type vbox_agot_rv_targets = container {}
+	type hbox_agot_rescue_list = container {}
+
+	type hbox_declare_war_buttons = hbox {
+		layoutpolicy_horizontal = expanding
+		name = "declare_war_send_button"
+
+		button_declare_war = {
+			name = "send_button"
+		}
+
+		expand = {}
+	}
+
+	type button_declare_war = button_primary_text {
+		tooltip = "[DeclareWarInteractionWindow.GetDeclareWarButtonTooltip]"
+		block "disable_declare_war" {
+			enabled = "[DeclareWarInteractionWindow.CanSend]"
+			blockoverride "disabled" {
+				visible = "[Not(DeclareWarInteractionWindow.CanSend)]"
+			}
+		}
+		blockoverride "text" {
+			text = "[CharacterInteractionConfirmationWindow.GetSendName]"
+		}
+		onclick = "[DeclareWarInteractionWindow.Send]"
+		clicksound = "event:/SFX/UI/War/sfx_ui_war_declare_war"
+
+		blockoverride "extra" {
+			text_single = {
+				raw_text = ", warning, see tooltip"
+				visible = "[And(DeclareWarInteractionWindow.HasSelectedCasusBelli, Or( Or( Not( DeclareWarInteractionWindow.CanAffordCosts ), DeclareWarInteractionWindow.IsBreakingTruce), DeclareWarInteractionWindow.IsBreakingAlliance))]"
+			}
+		}
+	}
+}
+
+
+template agot_rv_save_defender {}
+template agot_rv_clear_revenge_list {}
+
+template agot_show_war_comparison {}
+template agot_show_cb {}
+
+template agot_show_selected_cb {
+	visible = "[DeclareWarInteractionWindow.CanShowWarGoalSubview]"
 }
