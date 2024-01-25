@@ -57,7 +57,7 @@ window = {
 			using = ocr_margins
 			using = ocr
 
-			hbox = {
+			vbox = {
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding
 
@@ -65,6 +65,7 @@ window = {
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
 					using = agot_character_is_not_ruin
+					using = not_wasteland_locr
 					widget = {
 						layoutpolicy_horizontal = expanding
 						size = { 0 0 }
@@ -702,6 +703,8 @@ window = {
 										}
 									}
 
+									locr_suzerain = {}
+
 									button_text = {
 										layoutpolicy_horizontal = expanding
 										visible = "[Character.HasRoyalCourt]"
@@ -886,13 +889,8 @@ window = {
 										layoutpolicy_horizontal = expanding
 										visible = "[Character.IsDeadAndValid]"
 
-										text_single = {
-											raw_text = "CHARACTER_DEAD_TOOLTIP"
-											max_width = 600
-											fontsize_min = 14
-										}
+										text_dead_character = {}
 
-										dot = { }
 										expand = { }
 									}
 
@@ -2170,6 +2168,14 @@ window = {
 						}
 					}
 
+					hbox_char_tabs = {
+						margin_left = 10
+						blockoverride "tab" {}
+						blockoverride "shortcut" {
+							onclick = "[Set('expand_view', 'family')]"
+						}
+					}
+
 					### expanded
 
 					vbox = {
@@ -2179,128 +2185,7 @@ window = {
 						visible = "[GetVariableSystem.HasValue('expand_view', 'family')]"
 
 						### TABS
-						hbox = {
-							name = "tabs"
-							margin_left = 5
-							layoutpolicy_horizontal = expanding
-							spacing = 5
-
-							button_tab = {
-								shortcut = speed_1
-								name = "family_button"
-								datacontext = "[CharacterWindow.GetCharacter]"
-
-								onclick = "[GetVariableSystem.Set('char_tab', 'family')]"
-								enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'family'))]"
-
-								using = tooltip_above
-
-								flowcontainer = {
-									resizeparent = yes
-									ignoreinvisible = yes
-									spacing = 3
-
-									text_single = {
-										raw_text = "Tab 1,"
-									}
-
-									text_single = {
-										text = "CV_TAB_FAMILY"
-									}
-
-									text_single = {
-										text = "[CharacterWindow.GetTabItemsCount('family')]"
-									}
-									dot_l = { }
-								}
-							}
-
-							button_tab = {
-								shortcut = speed_2
-								name = "relations_button"
-								datacontext = "[CharacterWindow.GetCharacter]"
-
-								onclick = "[GetVariableSystem.Set('char_tab', 'relations')]"
-								enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'relations'))]"
-
-								flowcontainer = {
-									resizeparent = yes
-									ignoreinvisible = yes
-									spacing = 3
-
-									text_single = {
-										raw_text = "Tab 2,"
-									}
-
-									text_single = {
-										text = "CV_TAB_RELATIONS"
-									}
-									text_single = {
-										text = "[CharacterWindow.GetTabItemsCount('relations')]"
-									}
-									dot_l = { }
-								}
-							}
-
-							button_tab = {
-								name = "court_button"
-								shortcut = speed_3
-								datacontext = "[CharacterWindow.GetCharacter]"
-								onclick = "[GetVariableSystem.Set('char_tab', 'court')]"
-								enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'court'))]"
-
-
-								flowcontainer = {
-									resizeparent = yes
-									ignoreinvisible = yes
-									spacing = 3
-
-									text_single = {
-										raw_text = "Tab 3,"
-									}
-									text_single = {
-										text = "CV_TAB_COURT"
-										margin_right = 3
-									}
-									text_single = {
-										text = "[CharacterWindow.GetTabItemsCount('court')]"
-									}
-									dot_l = { }
-								}
-							}
-
-							button_tab = {
-								shortcut = speed_4
-								name = "vassals_button"
-								datacontext = "[CharacterWindow.GetCharacter]"
-								visible = "[Character.IsRuler]"
-
-								onclick = "[GetVariableSystem.Set('char_tab', 'vassals')]"
-								enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'vassals'))]"
-
-								flowcontainer = {
-									ignoreinvisible = yes
-									resizeparent = yes
-									spacing = 3
-
-									text_single = {
-										raw_text = "Tab 4,"
-									}
-
-									text_single = {
-										text = "CV_TAB_VASSALS"
-										margin_right = 3
-									}
-									text_single = {
-										text = "[CharacterWindow.GetTabItemsCount('vassals')]"
-
-									}
-									dot_l = { }
-								}
-							}
-
-							expand = { }
-						}
+						hbox_char_tabs = {}
 
 						#######
 						# family tab
@@ -2999,12 +2884,15 @@ window = {
 							}
 						}
 
+						vbox_tribs_locr_list = {}
 					}
 
 					expand = { }
 				}
 
-				agot_ruin_character = { }
+				agot_ruin_character = {}
+
+				locr_wasteland_character = {}
 
 				expand = { }
 			}
@@ -3366,12 +3254,13 @@ types CharOCRTypes {
 		onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetCharacter.GetCapitalLocation.GetCoATitle.GetID)]"
 		onclick = "[GetVariableSystem.Clear(AddTextIf(Not(GetPlayer.MakeScope.Var('dont_close_adjacent_rulers').IsSet),'expand_view'))]"
 		onrightclick = "[DefaultOnCharacterRightClick(Scope.GetCharacter.GetID)]"
+		datacontext = "[Scope.GetCharacter]"
 		button_ignore = none
+		using = not_wasteland_locr
 
 		flowcontainer = {
 			resizeparent = yes
 			ignoreinvisible = yes
-			datacontext = "[Scope.GetCharacter]"
 			spacing = 3
 			text_single = {
 				raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip],"
@@ -4430,52 +4319,63 @@ types CharOCRTypes {
 		layoutpolicy_horizontal = expanding
 		block "heir" {
 			# player heir
-			hbox = {
+			vbox = {
+				layoutpolicy_horizontal = expanding
 				datacontext = "[CharacterWindow.GetCharacter.GetPlayerHeir]"
 				visible = "[And( Character.IsValid, CharacterWindow.GetCharacter.IsLocalPlayer )]"
-				layoutpolicy_horizontal = expanding
+				hbox = {
+					using = not_wasteland_locr
+					layoutpolicy_horizontal = expanding
 
-				char_name = {
-					shortcut = "zoom_in"
-					blockoverride "pre" {
-						text_single = {
-							raw_text = "Your heir,"
+					char_name = {
+						shortcut = "zoom_in"
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "Your heir,"
+							}
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Character.GetAge]"
+							}
+							opinion_text = { }
+							text_single = {
+								raw_text = ", Page Down."
+							}
 						}
 					}
-					blockoverride "extra" {
-						text_single = {
-							raw_text = "[Character.GetAge]"
-						}
-						opinion_text = { }
-						text_single = {
-							raw_text = ", Page Down."
-						}
-					}
+					expand = { }
 				}
-				expand = { }
+				#TODO is it even possible for wastelands to inherit?
+				locr_player_heir_is_wasteland = {}
 			}
 			# heir
-			hbox = {
+			vbox = {
+				layoutpolicy_horizontal = expanding
 				datacontext = "[CharacterWindow.GetCharacter.GetPrimaryTitle.GetHeir]"
 				visible = "[And( And( Character.IsValid, Not(CharacterWindow.GetCharacter.IsLocalPlayer) ), CharacterWindow.GetCharacter.IsAlive )]"
-				layoutpolicy_horizontal = expanding
-				spacing = 3
+				hbox = {
+					using = not_wasteland_locr
+					layoutpolicy_horizontal = expanding
+					spacing = 3
 
 
-				char_name = {
-					shortcut = "zoom_in"
-					blockoverride "pre" {
-						spacing = 3
-						text_single = {
-							raw_text = "Heir,"
+					char_name = {
+						shortcut = "zoom_in"
+						blockoverride "pre" {
+							spacing = 3
+							text_single = {
+								raw_text = "Heir,"
+							}
 						}
 					}
-				}
 
-				text_single = {
-					raw_text = "Page Down."
+					text_single = {
+						raw_text = "Page Down."
+					}
+					expand = { }
 				}
-				expand = { }
+				locr_heir_is_wasteland = {}
 			}
 		}
 		spouse_vbox = { }
@@ -5545,6 +5445,149 @@ types CharacterWindow
 				using = tooltip_below
 			}
 		}
+	}
+
+	type hbox_char_tabs = hbox {
+		name = "tabs"
+		margin_left = 5
+		layoutpolicy_horizontal = expanding
+		spacing = 5
+
+		button_tab = {
+			block "shortcut" {
+				shortcut = speed_1
+			}
+			name = "family_button"
+			datacontext = "[CharacterWindow.GetCharacter]"
+
+			onclick = "[GetVariableSystem.Set('char_tab', 'family')]"
+			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'family'))]"
+
+			using = tooltip_above
+
+			flowcontainer = {
+				resizeparent = yes
+				ignoreinvisible = yes
+				spacing = 3
+				block "tab" {
+					text_single = {
+						raw_text = "Tab 1,"
+					}
+				}
+
+				text_single = {
+					text = "CV_TAB_FAMILY"
+				}
+
+				text_single = {
+					text = "[CharacterWindow.GetTabItemsCount('family')]"
+				}
+				dot_l = { }
+			}
+		}
+
+		button_tab = {
+			block "shortcut" {
+				shortcut = speed_2
+			}
+			name = "relations_button"
+			datacontext = "[CharacterWindow.GetCharacter]"
+
+			onclick = "[GetVariableSystem.Set('char_tab', 'relations')]"
+			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'relations'))]"
+
+			flowcontainer = {
+				resizeparent = yes
+				ignoreinvisible = yes
+				spacing = 3
+
+				block "tab" {
+					text_single = {
+						raw_text = "Tab 2,"
+					}
+				}
+
+				text_single = {
+					text = "CV_TAB_RELATIONS"
+				}
+				text_single = {
+					text = "[CharacterWindow.GetTabItemsCount('relations')]"
+				}
+				dot_l = { }
+			}
+		}
+
+		button_tab = {
+			name = "court_button"
+			block "shortcut" {
+				shortcut = speed_3
+			}
+			datacontext = "[CharacterWindow.GetCharacter]"
+			onclick = "[GetVariableSystem.Set('char_tab', 'court')]"
+			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'court'))]"
+
+
+			flowcontainer = {
+				resizeparent = yes
+				ignoreinvisible = yes
+				spacing = 3
+
+				block "tab" {
+					text_single = {
+						raw_text = "Tab 3,"
+					}
+				}
+				text_single = {
+					text = "CV_TAB_COURT"
+					margin_right = 3
+				}
+				text_single = {
+					text = "[CharacterWindow.GetTabItemsCount('court')]"
+				}
+				dot_l = { }
+			}
+		}
+
+		button_tab = {
+			block "shortcut" {
+				shortcut = speed_4
+			}
+			name = "vassals_button"
+			datacontext = "[CharacterWindow.GetCharacter]"
+			visible = "[Character.IsRuler]"
+
+			onclick = "[GetVariableSystem.Set('char_tab', 'vassals')]"
+			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'vassals'))]"
+
+			flowcontainer = {
+				ignoreinvisible = yes
+				resizeparent = yes
+				spacing = 3
+
+				block "tab" {
+					text_single = {
+						raw_text = "Tab 4,"
+					}
+				}
+
+				text_single = {
+					text = "CV_TAB_VASSALS"
+					margin_right = 3
+				}
+				text_single = {
+					text = "[CharacterWindow.GetTabItemsCount('vassals')]"
+				}
+				dot_l = { }
+			}
+		}
+
+		button_tribs_locr = {}
+
+		expand = { }
+	}
+
+	type text_dead_character = text_multi_wide {
+		raw_text = "CHARACTER_DEAD_TOOLTIP"
 	}
 }
 
