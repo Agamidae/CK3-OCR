@@ -1,0 +1,279 @@
+window = {
+	name = "legend_creation"
+	datacontext = "[LegendCreationWindow.AccessPotentialProtagonists]"
+	using = base_ocr_window
+	layer = middle
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+	}
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+	}
+
+	datacontext = "[LegendCreationWindow.GetSeed]"
+	datacontext = "[GetPlayer]"
+
+	window_ocr = {
+		blockoverride "show_window" {
+			visible = "[And(IsOCR, Not(IsGameViewOpen('character')))]"
+		}
+		blockoverride "ocr_header" {
+			button_text = {
+				shortcut = map_mode_1
+				layoutpolicy_horizontal = expanding
+				onclick = "[Toggle('hide_create_legend_tip')]"
+				blockoverride "text" {
+					text = "CREATE_LEGEND_TITLE"
+				}
+				blockoverride "extra" {
+					comma = {}
+					text_single = {
+						raw_text = "Instructions [Collapse('hide_create_legend_tip')] E."
+					}
+				}
+			}
+			button = {
+				shortcut = close_window
+				onclick = "[LegendCreationWindow.Close]"
+			}
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				char_name = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Character.IsValid]"
+					datacontext = "[LegendCreationWindow.GetProtagonist]"
+					blockoverride "text2" {
+						raw_text = "[Character.GetNameOrMeNoTooltip|U]"
+					}
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "[CharAreIs( Character) ] the [legend_protagonist|e]."
+						}
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					shortcut = army_merge
+					onclick = "[Toggle('change_protagonist')]"
+					blockoverride "text" {
+						raw_text = "Change protagonist, G."
+					}
+				}
+
+				spacer = {
+					size = { 0 5 }
+				}
+
+				vbox = {
+					visible = "[Isnt('change_protagonist')]"
+					layoutpolicy_horizontal = expanding
+
+					button_primary_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							text = "CREATE"
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "legend"
+							}
+						}
+						blockoverride "disabled" {
+							visible = "[Not(LegendCreationWindow.CanCreate)]"
+						}
+						enabled = "[LegendCreationWindow.CanCreate]"
+						tooltip_when_disabled = "[LegendCreationWindow.GetCanCreateDesc]"
+
+						onclick = "[LegendCreationWindow.Create]"
+						onclick = "[LegendCreationWindow.Close]"
+					}
+
+					legend_seed_cost_hbox_ocr = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "visible" {
+
+						}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						text_multi_wide = {
+							text = "CREATE_LEGEND_WARNING_DESC"
+						}
+
+						expand = {}
+					}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Isnt('hide_create_legend_tip')]"
+
+					text_multi_wide = {
+						text = "CREATE_LEGEND_DESC"
+					}
+
+					expand = {}
+				}
+
+				vbox_character_list = {
+					visible = "[Is('change_protagonist')]"
+					name = "invited_characters"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					blockoverride "item_size" {
+						size = { 650 75 }
+					}
+					blockoverride "button"
+					{
+						down = "[ObjectsEqual( CharacterListItem.GetCharacter, LegendCreationWindow.GetProtagonist.Self )]"
+						onclick = "[Clear('change_protagonist')]"
+					}
+
+					blockoverride "container_implementation"
+					{
+						fixedgridbox = {
+							name = "characters_grid"
+
+							addcolumn = 650
+							addrow = 75
+							datamodel_reuse_widgets = yes
+
+							datamodel = "[CharacterSelectionList.GetList]"
+							visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+
+							item = {
+								widget_character_list_item_finder_ocr = {
+									size = { 650 75 }
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					name = "completion_rewards"
+					widgetid = "completion_rewards"
+					layoutpolicy_horizontal = expanding
+					visible = "[Isnt('change_protagonist')]"
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						oncreate = "[BindTabsContext]"
+						oncreate = "[PdxGuiTabs.SetResetOnShown( '(bool)no')]"
+						oncreate = "[PdxGuiTabs.AddTab( 'famed' )]"
+						oncreate = "[PdxGuiTabs.AddTab( 'illustrious' )]"
+						oncreate = "[PdxGuiTabs.AddTab( 'mythical' )]"
+						oncreate = "[PdxGuiTabs.ListenFor( 'seed_quality' )]"
+
+						hbox_tab_buttons_ocr = {
+							name = "quality_tabs"
+							blockoverride "showing" {
+								raw_text = "Showing effects of"
+							}
+							blockoverride "tab_click" {
+								onclick = "[Set('hide_create_legend_tip', 'yes')]"
+							}
+
+							blockoverride "tab_name"
+							{
+								raw_text = "[PdxGuiTabItem.LocalizeTab( 'legend_quality' )] [AddTextIf(PdxGuiTabs.IsTabItemSet( PdxGuiTabItem.Self ), 'quality')]"
+							}
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+								text_multi_wide = {
+									text = "[LegendCreationWindow.GetCompletionDesc( PdxGuiTabs.GetActiveTab.GetKey )]"
+									max_width = 720
+								}
+
+								expand = {}
+							}
+						}
+					}
+
+					expand = {}
+				}
+			}
+		}
+	}
+
+	legend_creation_old = {
+		using = vanilla
+	}
+
+	window_character_filter = {
+		blockoverride "addition_filter" {
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetCategory('age_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('adult_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('age_filter')]"
+					}
+				}
+			}
+
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetCategory('personal_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('alive_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('gender_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('culture_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('religion_filter')]"
+					}
+				}
+			}
+
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetCategory('politics_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('dynasty_house_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('ruler_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('hostage_filter')]"
+					}
+				}
+			}
+		}
+	}
+}

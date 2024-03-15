@@ -8,6 +8,7 @@ window = {
 	datacontext = "[CharacterWindow.GetCharacter]"
 	movable = no
 	allow_outside = yes
+	widgetid = "character_window"
 
 	# position = { 100 0 } #TODO
 
@@ -223,7 +224,7 @@ window = {
 											visible = "[Character.IsDeadAndValid]"
 											raw_text = "Dead."
 											raw_tooltip = "[Character.GetDebugTooltip]"
-											tooltip_enabled = "[InDebugMode]"
+											tooltip_visible = "[InDebugMode]"
 										}
 
 										character_name_text = { }
@@ -1136,6 +1137,40 @@ window = {
 										}
 									}
 
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										visible =  "[And( Character.IsAlive, And( Character.HasLandedTitles, And(Character.IsCountOrAbove, Character.GetGovernment.HasRule( 'legitimacy' ) ) ) )]"
+										datacontext = "[Character.GetLegitimacyType]"
+										datacontext = "[Character.GetLegitimacyLevel]"
+										shortcut = explore_legends
+										onclick = "[GetVariableSystem.Set('expand_view', 'legitimacy')]"
+
+										tooltipwidget = {
+											legitimacy_hud_tooltip_ocr = {
+												datacontext = "[CharacterWindow.GetLegitimacyBar]"
+											}
+										}
+
+										blockoverride "extra" {
+											margin_left = -3
+											text_single = {
+												raw_text = "Legitimacy"
+											}
+											text_single = {
+												raw_text = "level [LegitimacyLevel.GetIndex]" #TODO
+											}
+											text_single = {
+												raw_text = "and [Character.GetAverageVassalLegitimacyExpectation.GetIndex] is expected."
+											}
+											# text_single = {
+											# 	raw_text = "and [Character.GetAveragePowerfulVassalLegitimacyExpectation.GetIndex] for powerful vassals."
+											# }
+											text_single = {
+												raw_text = "Hotkey L."
+											}
+										}
+									}
+
 									vbox = {
 										layoutpolicy_horizontal = expanding
 
@@ -1279,7 +1314,8 @@ window = {
 
 					######################################################
 
-					# expanded counties, etc
+					# EXPANDED LISTS
+
 
 					vbox = {
 						margin_left = 15
@@ -1431,6 +1467,161 @@ window = {
 								}
 
 								expand = { }
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Has('expand_view', 'legitimacy')]"
+
+								datacontext = "[Character.GetLegitimacyType]"
+								datacontext = "[Character.GetLegitimacyLevel]"
+								datacontext = "[CharacterWindow.GetLegitimacyBar]"
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[Isnt('legit_levels')]"
+									spacing = 5
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "[LegitimacyType.GetFlavorName( LegitimacyLevel.Self )|V], level [LegitimacyLevel.GetIndex] and [Character.GetAverageVassalLegitimacyExpectation.GetIndex] is expected. See tooltip for expectation details."
+										tooltip = "game_concept_expected_legitimacy_desc"
+									}
+
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										shortcut = map_mode_1
+										onclick = "[Toggle('legit_levels')]"
+										blockoverride "text" {
+											raw_text = "View all levels, E."
+										}
+									}
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "LEGITIMACY_TRACK_TITLE"
+									}
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "legitimacy_hud_tt_subheading"
+									}
+
+									legitimacy_tooltip_ocr = {}
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[Is('legit_levels')]"
+
+									button = {
+										shortcut = close_window
+										onclick = "[Clear('legit_levels')]"
+										visible = "[Isnt('legit_tier')]"
+									}
+
+									button = {
+										shortcut = map_mode_1
+										onclick = "[Clear('legit_levels')]"
+									}
+
+									button = {
+										shortcut = close_window
+										onclick = "[Clear('legit_tier')]"
+										visible = "[Is('legit_tier')]"
+									}
+
+									flowcontainer = {
+										ignoreinvisible = yes
+										direction = vertical
+										datamodel = "[ComplexBar.GetItems]"
+
+										item = {
+											container = {
+												ignoreinvisible = yes
+												visible = "[LessThan_int32( PdxGuiWidget.GetIndexInDataModel, GetDataModelSize( LegitimacyType.GetLevels ) )]"
+												flowcontainer = {
+													ignoreinvisible = yes
+													direction = vertical
+													datacontext_from_model = {
+														datamodel = "[LegitimacyType.GetLevels]"
+														index = "[PdxGuiWidget.GetIndexInDataModel]"
+													}
+													visible = "[Has('legit_tier', LegitimacyType.GetFlavorName(LegitimacyLevel.Self))]"
+
+													text_single = {
+														raw_text = "level [PdxGuiWidget.GetIndexInDataModel]."
+													}
+													text_multi_wide = {
+														raw_text = "LEGITIMACY_TRACK_TOOLTIP"
+													}
+												}
+											}
+										}
+									}
+
+									hbox_complex_bar_levels_ocr = {
+										layoutpolicy_horizontal = expanding
+										blockoverride "show_all" {
+										}
+										blockoverride "modifiers" {
+											visible = no
+										}
+										blockoverride "tiers" {
+											raw_text = "[Subtract_int32(GetDataModelSize(ComplexBar.GetItems), '(int32)1')] levels, use number keys."
+										}
+										blockoverride "marker"
+										{
+											widget_level_marker_ocr = {
+												visible = "[LessThan_int32( PdxGuiWidget.GetIndexInDataModel, GetDataModelSize( LegitimacyType.GetLevels ) )]"
+												blockoverride "tier_button" {
+
+													button = {
+														size = { 100% 100% }
+														onclick = "[PdxGuiWidget.FindChild('tier').TriggerAnimation('save_tier')]"
+														onclick = "[Set('legit_tier', LegitimacyType.GetFlavorName(LegitimacyLevel.Self))]"
+														datacontext_from_model = {
+															datamodel = "[LegitimacyType.GetLevels]"
+															index = "[PdxGuiWidget.GetIndexInDataModel]"
+														}
+													}
+												}
+												blockoverride "visible_active"
+												{
+													visible = "[EqualTo_int32( LegitimacyLevel.GetIndex, PdxGuiWidget.GetIndexInDataModel )]"
+												}
+
+												blockoverride "visible_inactive"
+												{
+													visible = "[NotEqualTo_int32( LegitimacyLevel.GetIndex, PdxGuiWidget.GetIndexInDataModel )]"
+												}
+												blockoverride "progress" {
+													raw_text = "at [ComplexBarItem.GetValue]."
+												}
+												blockoverride "marker_tooltip"
+												{
+													visible = no
+												}
+
+												blockoverride "marker_text"
+												{
+													# visible = no
+													shortcuts_list = {
+														blockoverride "click" {
+															onclick = "[Set('legit_tier', LegitimacyType.GetFlavorName(LegitimacyLevel.Self))]"
+														}
+														datacontext_from_model = {
+															datamodel = "[LegitimacyType.GetLevels]"
+															index = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)1')]"
+														}
+													}
+													text = "[PdxGuiWidget.GetIndexInDataModel|V]"
+												}
+											}
+										}
+									}
+								}
+
 							}
 
 							flowcontainer = {
@@ -1908,24 +2099,46 @@ window = {
 										}
 									}
 
-									divider_light = {
-										size = { 100% 3 }
-									}
-
 									text_single = {
 										raw_text = "[Character.GetPrestigeTooltipWithBalance]"
-									}
-
-									divider_light = {
-										size = { 100% 3 }
 									}
 
 									text_single = {
 										raw_text = "[Character.GetPietyTooltipWithBalance]"
 									}
 
-									divider_light = {
-										size = { 100% 3 }
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										visible =  "[And( Character.IsAlive, And( Character.HasLandedTitles, And(Character.IsCountOrAbove, Character.GetGovernment.HasRule( 'legitimacy' ) ) ) )]"
+										datacontext = "[Character.GetLegitimacyType]"
+										datacontext = "[Character.GetLegitimacyLevel]"
+										shortcut = explore_legends
+										onclick = "[GetVariableSystem.Set('expand_view', 'legitimacy')]"
+
+										tooltipwidget = {
+											legitimacy_hud_tooltip_ocr = {
+												datacontext = "[CharacterWindow.GetLegitimacyBar]"
+											}
+										}
+
+										blockoverride "extra" {
+											margin_left = -3
+											text_single = {
+												raw_text = "Legitimacy"
+											}
+											text_single = {
+												raw_text = "level [LegitimacyLevel.GetIndex]" #TODO
+											}
+											text_single = {
+												raw_text = "and [Character.GetAverageVassalLegitimacyExpectation.GetIndex] is expected."
+											}
+											# text_single = {
+											# 	raw_text = "and [Character.GetAveragePowerfulVassalLegitimacyExpectation.GetIndex] for powerful vassals."
+											# }
+											text_single = {
+												raw_text = "Hotkey L."
+											}
+										}
 									}
 
 									flowcontainer = {
@@ -2818,7 +3031,7 @@ window = {
 									setitemsizefromcell = yes
 
 									item = {
-										widget_character_list_item_finder = {
+										widget_character_list_item_finder_ocr = {
 											blockoverride "click" {
 												onclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
 												onclick = "[GetVariableSystem.Clear('char_tab')]"
@@ -4258,6 +4471,11 @@ types CharOCRTypes {
 						ignoreinvisible = yes
 						spacing = 3
 						margin_right = 3
+
+						text_single = {
+							raw_text = "[CharYourHerHis( CharacterWindow.GetCharacter )|U]"
+						}
+
 						text_single = {
 							raw_text = "[AddTextIf(Character.IsDeadAndValid, 'Dead ')]"
 						}
@@ -4380,6 +4598,149 @@ types CharOCRTypes {
 		}
 		spouse_vbox = { }
 	}
+
+	type hbox_char_tabs = hbox {
+		name = "tabs"
+		margin_left = 5
+		layoutpolicy_horizontal = expanding
+		spacing = 5
+
+		button_tab = {
+			block "shortcut" {
+				shortcut = speed_1
+			}
+			name = "family_button"
+			datacontext = "[CharacterWindow.GetCharacter]"
+
+			onclick = "[GetVariableSystem.Set('char_tab', 'family')]"
+			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'family'))]"
+
+			using = tooltip_above
+
+			flowcontainer = {
+				resizeparent = yes
+				ignoreinvisible = yes
+				spacing = 3
+				block "tab" {
+					text_single = {
+						raw_text = "Tab 1,"
+					}
+				}
+
+				text_single = {
+					text = "CV_TAB_FAMILY"
+				}
+
+				text_single = {
+					text = "[CharacterWindow.GetTabItemsCount('family')]"
+				}
+				dot_l = { }
+			}
+		}
+
+		button_tab = {
+			block "shortcut" {
+				shortcut = speed_2
+			}
+			name = "relations_button"
+			datacontext = "[CharacterWindow.GetCharacter]"
+
+			onclick = "[GetVariableSystem.Set('char_tab', 'relations')]"
+			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'relations'))]"
+
+			flowcontainer = {
+				resizeparent = yes
+				ignoreinvisible = yes
+				spacing = 3
+
+				block "tab" {
+					text_single = {
+						raw_text = "Tab 2,"
+					}
+				}
+
+				text_single = {
+					text = "CV_TAB_RELATIONS"
+				}
+				text_single = {
+					text = "[CharacterWindow.GetTabItemsCount('relations')]"
+				}
+				dot_l = { }
+			}
+		}
+
+		button_tab = {
+			name = "court_button"
+			block "shortcut" {
+				shortcut = speed_3
+			}
+			datacontext = "[CharacterWindow.GetCharacter]"
+			onclick = "[GetVariableSystem.Set('char_tab', 'court')]"
+			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'court'))]"
+
+
+			flowcontainer = {
+				resizeparent = yes
+				ignoreinvisible = yes
+				spacing = 3
+
+				block "tab" {
+					text_single = {
+						raw_text = "Tab 3,"
+					}
+				}
+				text_single = {
+					text = "CV_TAB_COURT"
+					margin_right = 3
+				}
+				text_single = {
+					text = "[CharacterWindow.GetTabItemsCount('court')]"
+				}
+				dot_l = { }
+			}
+		}
+
+		button_tab = {
+			block "shortcut" {
+				shortcut = speed_4
+			}
+			name = "vassals_button"
+			datacontext = "[CharacterWindow.GetCharacter]"
+			visible = "[Character.IsRuler]"
+
+			onclick = "[GetVariableSystem.Set('char_tab', 'vassals')]"
+			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'vassals'))]"
+
+			flowcontainer = {
+				ignoreinvisible = yes
+				resizeparent = yes
+				spacing = 3
+
+				block "tab" {
+					text_single = {
+						raw_text = "Tab 4,"
+					}
+				}
+
+				text_single = {
+					text = "CV_TAB_VASSALS"
+					margin_right = 3
+				}
+				text_single = {
+					text = "[CharacterWindow.GetTabItemsCount('vassals')]"
+				}
+				dot_l = { }
+			}
+		}
+
+		button_tribs_locr = {}
+
+		expand = { }
+	}
+
+	type text_dead_character = text_multi_wide {
+		raw_text = "CHARACTER_DEAD_TOOLTIP"
+	}
 }
 
 template "expanded_view" {
@@ -4402,6 +4763,7 @@ types CharacterWindow
 			visible = "[ModifierItem.HasTooltipDataByTag('preview_list')]"
 
 			size = { 100% 100% }
+			alwaystransparent = no
 			texture = "[ModifierItem.GetIcon]"
 
 			block "icon_data" {
@@ -4491,6 +4853,7 @@ types CharacterWindow
 			# the tag is hard-coded, if you want to change the name or add a new one please contact someone from code team
 			visible = "[ModifierItem.HasTooltipDataByTag('single_modifier')]"
 			size = { 100% 100% }
+			alwaystransparent = no
 			texture = "[ModifierItem.GetIcon]"
 
 			block "icon_data" {
@@ -4514,6 +4877,7 @@ types CharacterWindow
 			visible = "[ModifierItem.HasTooltipDataByTag('scaled_single_modifier')]"
 
 			size = { 100% 100% }
+			alwaystransparent = no
 			texture = "[ModifierItem.GetIcon]"
 
 			block "icon_data" {
@@ -4682,7 +5046,10 @@ types CharacterWindow
 		widget = {
 			layoutpolicy_horizontal = expanding
 			size = { 0 25 }
-			min_width = 110
+
+			block "minimum_width" {
+				min_width = 110
+			}
 
 			block "expand_button" {
 				button_standard_hover = {
@@ -5015,7 +5382,7 @@ types CharacterWindow
 
 							coa_title_tiny_crown = {
 								name = "claim"
-								tooltip_enabled = no
+								tooltip_visible = no
 
 
 								highlight_icon = {
@@ -5124,7 +5491,7 @@ types CharacterWindow
 							frame = "[DiplomacyItem.GetDiplomacyFrame]"
 							framesize = { 120 120 }
 							size = { 50 50 }
-							tooltip_enabled = no
+							tooltip_visible = no
 
 							text_single = {
 								name = "warscore"
@@ -5259,7 +5626,7 @@ types CharacterWindow
 				text = "[Title.GetNameNoTooltip|U]"
 				default_format = "#medium"
 				using = Font_Size_Medium
-				max_width = 270
+				max_width = 220
 			}
 
 			expand = {}
@@ -5445,149 +5812,6 @@ types CharacterWindow
 				using = tooltip_below
 			}
 		}
-	}
-
-	type hbox_char_tabs = hbox {
-		name = "tabs"
-		margin_left = 5
-		layoutpolicy_horizontal = expanding
-		spacing = 5
-
-		button_tab = {
-			block "shortcut" {
-				shortcut = speed_1
-			}
-			name = "family_button"
-			datacontext = "[CharacterWindow.GetCharacter]"
-
-			onclick = "[GetVariableSystem.Set('char_tab', 'family')]"
-			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'family'))]"
-
-			using = tooltip_above
-
-			flowcontainer = {
-				resizeparent = yes
-				ignoreinvisible = yes
-				spacing = 3
-				block "tab" {
-					text_single = {
-						raw_text = "Tab 1,"
-					}
-				}
-
-				text_single = {
-					text = "CV_TAB_FAMILY"
-				}
-
-				text_single = {
-					text = "[CharacterWindow.GetTabItemsCount('family')]"
-				}
-				dot_l = { }
-			}
-		}
-
-		button_tab = {
-			block "shortcut" {
-				shortcut = speed_2
-			}
-			name = "relations_button"
-			datacontext = "[CharacterWindow.GetCharacter]"
-
-			onclick = "[GetVariableSystem.Set('char_tab', 'relations')]"
-			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'relations'))]"
-
-			flowcontainer = {
-				resizeparent = yes
-				ignoreinvisible = yes
-				spacing = 3
-
-				block "tab" {
-					text_single = {
-						raw_text = "Tab 2,"
-					}
-				}
-
-				text_single = {
-					text = "CV_TAB_RELATIONS"
-				}
-				text_single = {
-					text = "[CharacterWindow.GetTabItemsCount('relations')]"
-				}
-				dot_l = { }
-			}
-		}
-
-		button_tab = {
-			name = "court_button"
-			block "shortcut" {
-				shortcut = speed_3
-			}
-			datacontext = "[CharacterWindow.GetCharacter]"
-			onclick = "[GetVariableSystem.Set('char_tab', 'court')]"
-			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'court'))]"
-
-
-			flowcontainer = {
-				resizeparent = yes
-				ignoreinvisible = yes
-				spacing = 3
-
-				block "tab" {
-					text_single = {
-						raw_text = "Tab 3,"
-					}
-				}
-				text_single = {
-					text = "CV_TAB_COURT"
-					margin_right = 3
-				}
-				text_single = {
-					text = "[CharacterWindow.GetTabItemsCount('court')]"
-				}
-				dot_l = { }
-			}
-		}
-
-		button_tab = {
-			block "shortcut" {
-				shortcut = speed_4
-			}
-			name = "vassals_button"
-			datacontext = "[CharacterWindow.GetCharacter]"
-			visible = "[Character.IsRuler]"
-
-			onclick = "[GetVariableSystem.Set('char_tab', 'vassals')]"
-			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'vassals'))]"
-
-			flowcontainer = {
-				ignoreinvisible = yes
-				resizeparent = yes
-				spacing = 3
-
-				block "tab" {
-					text_single = {
-						raw_text = "Tab 4,"
-					}
-				}
-
-				text_single = {
-					text = "CV_TAB_VASSALS"
-					margin_right = 3
-				}
-				text_single = {
-					text = "[CharacterWindow.GetTabItemsCount('vassals')]"
-				}
-				dot_l = { }
-			}
-		}
-
-		button_tribs_locr = {}
-
-		expand = { }
-	}
-
-	type text_dead_character = text_multi_wide {
-		raw_text = "CHARACTER_DEAD_TOOLTIP"
 	}
 }
 

@@ -1,15 +1,18 @@
 types Breakdowns
 {
 	## List of values tooltip
-	type widget_value_breakdown_tooltip = widget {
+	type widget_value_breakdown_list = widget {
 		name = "values_grid"
 		size = { 50 50 }
 		alwaystransparent = no
 
+		block "background" {
+		}
 
 		vbox = {
 			set_parent_size_to_minimum = yes
 			hide_tooltip = { }
+
 
 			vbox = {
 				datamodel = "[ValueBreakdown.GetSubValues]"
@@ -23,6 +26,8 @@ types Breakdowns
 				background = {
 					using = Background_Area_Border_Solid
 				}
+
+				block "list" {}
 
 				block "header" { }
 
@@ -55,9 +60,9 @@ types Breakdowns
 							tooltipwidget = {
 								recursive = yes
 
-								widget_value_breakdown_tooltip = { }
-								}
+								widget_value_breakdown_tooltip = {}
 							}
+						}
 
 						text_single = {
 							visible = "[And( Not(ValueBreakdown.HasTooltip), ValueBreakdown.ShouldShowValue )]"
@@ -72,6 +77,36 @@ types Breakdowns
 					}
 				}
 			}
+		}
+	}
+
+	# Used in a 'top level' aka directly inside a `tooltipwidget = {}`
+	type widget_value_breakdown_tooltip = widget_value_breakdown_list
+	{
+		blockoverride "header"
+		{
+			# We have the header be the name, if it exists
+			block "header" {
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					block "header_text" {
+						text = "[ValueBreakdown.GetName]"
+					}
+					default_format = "#T"
+					visible = "[Not( StringIsEmpty( ValueBreakdown.GetName ) )]"
+				}
+			}
+		}
+
+		blockoverride "background"
+		{
+			using = DefaultTooltipBackground
+		}
+
+		blockoverride "list"
+		{
+			# We want more spacing in bottom for this background
+			margin_bottom = 17
 		}
 	}
 
@@ -265,59 +300,12 @@ types Breakdowns
 						visible = "[NotEqualTo_CFixedPoint(PlayerValueItem.GetBalance, '(CFixedPoint)0')]"
 						using = tooltip_ws
 
+						datacontext = "[PlayerValueItem.GetBalanceGained]"
+						tooltip_visible = "[ValueBreakdown.HasTooltip]"
+
 						tooltipwidget = {
-							widget = {
-								size = { 50 50 }
-								alwaystransparent = no
-
-								widget = {
-									name = "background"
-									using = DefaultTooltipBackground
-									size = { 100% 100% }
-									alwaystransparent = yes
-
-									blockoverride "frame_color" {
-										tintcolor = { 0.7 0.7 0.7 1}
-									}
-								}
-
-								vbox = {
-									set_parent_size_to_minimum = yes
-									margin = { 5 5 }
-									vbox = {
-										datacontext = "[PlayerValueItem.GetBalanceGained]"
-										visible = "[ValueBreakdown.HasTooltip]"
-										layoutpolicy_horizontal = expanding
-
-										background = {
-											using = Background_Area_Border_Solid
-										}
-
-										hbox = {
-											layoutpolicy_horizontal = expanding
-											margin = { 15 0 }
-											margin_bottom = 5
-
-											text_single = {
-												name = "gained_label"
-												layoutpolicy_horizontal = expanding
-												text = "GAINED_BREAKDOWN_LABEL_LINK"
-												fonttintcolor = "[TooltipInfo.GetTintColor]"
-											}
-
-											text_single = {
-												name = "gained_value"
-												visible = "[ValueBreakdown.ShouldShowValue]"
-												raw_text = "[ValueBreakdown.GetValue]."
-												fonttintcolor = "[TooltipInfo.GetTintColor]"
-											}
-										}
-
-										widget_value_breakdown_tooltip = {
-											layoutpolicy_horizontal = expanding
-										}
-									}
-								}
+							widget_value_breakdown_tooltip = {
+								blockoverride "header" {}
 							}
 						}
 					}
@@ -461,7 +449,7 @@ types Breakdowns
 					}
 
 
-					widget_value_breakdown_tooltip = {
+					widget_value_breakdown_list = {
 						layoutpolicy_horizontal = expanding
 						blockoverride "focus" { }
 					}
@@ -481,7 +469,6 @@ types Breakdowns
 				}
 			}
 		}
-
 	}
 
 	type court_position_aptitude_breakdown_tooltip = widget {
@@ -530,8 +517,8 @@ types Breakdowns
 							layoutpolicy_horizontal = expanding
 							autoresize = yes
 							name = "title"
+							margin_bottom = 18
 
-							fontsize_min = 14
 							using = Font_Size_Medium
 							fonttintcolor = "[TooltipInfo.GetTintColor]"
 

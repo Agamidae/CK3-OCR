@@ -5,6 +5,11 @@
 	layer = middle
 	# visible = "[Not(IsGameViewOpen('character'))]"
 
+	state = {
+		name = "clear"
+		trigger_when = "[Is('forced_ocr')]"
+		on_finish = "[Clear('ocr')]"
+	}
 
 	alwaystransparent = yes
 
@@ -30,6 +35,8 @@
 		using = Animation_FadeOut_Quick
 		on_start = "[GetVariableSystem.Clear( 'activity_planner_hide_default_magnificence' )]"
 		on_finish = "[DefaultOnCoatOfArmsRightClick(MyCapital.GetTitle.GetID)]"
+		on_finish = "[GetVariableSystem.Toggle(AddTextIf(Is('forced_ocr'), 'ocr'))]"
+		on_finish = "[Clear('forced_ocr')]"
 	}
 
 	widget = {
@@ -81,7 +88,7 @@
 		activity_planner_main_heading_widget = { }
 
 		travel_planning_window = {
-			name = "travel_planning_tutorial_uses_this_1"
+			widgetid = "travel_planning_tutorial_uses_this_1"
 			state = {
 				name = _show
 				using = Animation_FadeIn_Quick
@@ -440,7 +447,7 @@
 											raw_text = "[Val('num_invlid_for_tour')] invalid, see tooltip."
 
 										}
-										tooltip_enabled = "[And(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tour'), HasVal('num_invlid_for_tour'))]"
+										tooltip_visible = "[And(EqualTo_string(ActivityPlanner.GetActivityType.GetKey, 'activity_tour'), HasVal('num_invlid_for_tour'))]"
 										tooltipwidget = {
 											flowcontainer = {
 												using = DefaultTooltipBackground
@@ -1221,6 +1228,8 @@ types OCR {
 		button_text = {
 			layoutpolicy_horizontal = expanding
 			name = "empty_slot"
+			visible = "[Not(Character.IsValid)]"
+
 			blockoverride "text" {
 				block "button_add_visible" { }
 				raw_text = "Add character,"
@@ -1232,9 +1241,6 @@ types OCR {
 				}
 			}
 			shortcut = army_create_new
-
-
-			visible = "[Not(Character.IsValid)]"
 
 			block "empty_slot"
 			{
@@ -1248,9 +1254,16 @@ types OCR {
 
 		char_name = {
 			layoutpolicy_horizontal = expanding
+			blockoverride "extra" {
+				text_single = {
+					raw_text = "[Character.GetAge],"
+				}
+			}
 			blockoverride "pre" {
 				text_single = {
-					visible = "[ActivityIntentSelectionWindow.MayNotArriveInTime( CharacterListItem.Self )]"
+					block "time" {
+						visible = "[ActivityIntentSelectionWindow.MayNotArriveInTime( CharacterListItem.Self )]"
+					}
 					raw_text = "Warning, may be late."
 
 					tooltip = "ACTIVITY_GUEST_MAY_NOT_ARRIVE"
@@ -1354,15 +1367,15 @@ types OCR {
 					}
 				}
 
-				button_text = {
-					layoutpolicy_horizontal = expanding
-					blockoverride "text" {
-						# raw_text = "[Localize('ACTIVITY_PLANNER_QUIT')]."
-					}
-					onclick = "[ActivityPlanner.Close]"
-					shortcut = "close_window"
-					visible = "[Not(ActivityPlanner.IsEditingOption)]"
+			}
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					# raw_text = "[Localize('ACTIVITY_PLANNER_QUIT')]."
 				}
+				onclick = "[ActivityPlanner.Close]"
+				shortcut = "close_window"
+				visible = "[Not(ActivityPlanner.IsEditingOption)]"
 			}
 		}
 	}
@@ -1748,6 +1761,7 @@ types OCR {
 
 		widget = {
 			name = "tour_has_vassals_tutorial_uses_this"
+			widgetid = "tour_has_vassals_tutorial_uses_this"
 			size = { 0 0 }
 			visible = "[TravelPlanData.HasNextDestination]"
 		}
@@ -1951,7 +1965,7 @@ types ActivityPlannerTypes
 						name = "character_name"
 						layoutpolicy_horizontal = expanding
 
-						text = "[Character.GetUINameNoTooltip]"
+						text = "[Character.GetUINameNoTooltip|U]"
 						align = nobaseline
 						default_format = "#high"
 						max_width = 320
@@ -1967,7 +1981,7 @@ types ActivityPlannerTypes
 						text = "[Character.GetRelationToString( GetPlayer )]"
 						default_format = "#low"
 						align = nobaseline
-						max_width = 360
+						max_width = 320
 
 						alwaystransparent = yes
 					}
@@ -1977,14 +1991,7 @@ types ActivityPlannerTypes
 
 				expand = { }
 
-				warning_icon = {
-					visible = "[ActivityIntentSelectionWindow.MayNotArriveInTime( CharacterListItem.Self )]"
-					size = { 30 30 }
-
-					texture = "gfx/interface/icons/symbols/icon_cross.dds"
-
-					tooltip = "ACTIVITY_GUEST_MAY_NOT_ARRIVE"
-				}
+				block "extra_data" {}
 			}
 		}
 	}
@@ -2641,15 +2648,21 @@ types ActivityPlannerTypes
 						}
 					}
 
-					selectable_target_portrait_widget_ocr = {
+					hbox = {
+						layoutpolicy_horizontal = expanding
 						visible = "[ActivityIntent.HasTarget]"
-						name = "intent_target"
-						datacontext = "[ActivityIntentData.GetTarget]"
 
-						blockoverride "empty_slot"
-						{
-							onclick = "[VariableSystem.Toggle( 'activity_intent_selection_target_list' )]"
+						selectable_target_portrait_widget_ocr = {
+							name = "intent_target"
+							datacontext = "[ActivityIntentData.GetTarget]"
+
+							blockoverride "empty_slot"
+							{
+								onclick = "[VariableSystem.Toggle( 'activity_intent_selection_target_list' )]"
+							}
 						}
+
+						expand = {}
 					}
 
 					text_multi = {
@@ -2658,8 +2671,13 @@ types ActivityPlannerTypes
 						using = wide
 						tooltip = "ACTIVITY_SINGLE_INTENT_TOOLTIP"
 						raw_text = "[ActivityIntent.GetDescription]"
-						tooltip_enabled = "[LessThanOrEqualTo_int32( GetDataModelSize( ActivityType.GetHostIntents ), '(int32)1' )]"
+						tooltip_visible = "[LessThanOrEqualTo_int32( GetDataModelSize( ActivityType.GetHostIntents ), '(int32)1' )]"
 					}
+				}
+
+				vbox = {
+					name = "activity_options_plugins"
+					layoutpolicy_horizontal = expanding
 				}
 
 				# Activity Options
@@ -2729,7 +2747,6 @@ types ActivityPlannerTypes
 						}
 					}
 				}
-
 
 				# Special Guests
 				vbox = {
@@ -2992,7 +3009,7 @@ types ActivityPlannerNewTypes
 
 	type multi_location_picker_widget = widget
 	{
-		name = "multi_destination_selection"
+		widgetid = "multi_destination_selection"
 		datacontext = "[ActivityPlanner.GetActivityType]"
 		visible = "[And(ActivityPlanner.IsPlanningStage( 'location' ), Not(ActivityType.IsSingleLocation))]"
 		parentanchor = vcenter|right
@@ -3017,6 +3034,7 @@ types ActivityPlannerNewTypes
 
 		widget = {
 			name = "tour_has_vassals_tutorial_uses_this"
+			widgetid = "tour_has_vassals_tutorial_uses_this"
 			size = { 0 0 }
 			visible = "[TravelPlanData.HasNextDestination]"
 		}
@@ -3449,6 +3467,16 @@ types ActivityPlannerNewTypes
 						layoutpolicy_vertical = expanding
 					}
 				}
+
+				# vbox = {
+				# 	name = "activity_options_plugins"
+				# 	layoutpolicy_vertical = expanding
+				# }
+
+				# text_single = {
+				# 	raw_text = "[PdxGuiWidget.AccessParent.AccessParent.AccessParent.AccessParent.AccessParent.AccessParent.FindChild('activity_options_plugins').CountVisibleChildren] options"
+				# 	# visible = "[GreaterThan_int32(PdxGuiWidget.AccessParent.FindChild('activity_options_plugins').CountVisibleChildren, '(int32)0')]"
+				# }
 
 				# Activity Options
 				widget = {
