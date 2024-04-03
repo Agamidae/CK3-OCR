@@ -6,12 +6,12 @@ window = {
 	using = base_ocr_window
 
 	oncreate = "[BindTabsContext]"
-	oncreate = "[PdxGuiTabs.AddTab( 'player' )]"
-	oncreate = "[PdxGuiTabs.AddTab( 'world' )]"
-	oncreate = "[Set('oncreate', 'yes')]"
+	oncreate = "[PdxGuiTabs.AddTab( 'realm' )]"
+	oncreate = "[PdxGuiTabs.AddTab( 'distant' )]"
+	oncreate = "[PdxGuiTabs.AddTab( 'library' )]"
 
 	# Code can send an event which we can listen for to switch tabs
-	oncreate = "[PdxGuiTabs.ListenFor( 'focused_changed' )]"
+	oncreate = "[PdxGuiTabs.ListenFor( 'legend_window_change_tab' )]"
 
 	datacontext = "[GetPlayer]"
 	datacontext = "[LegendsWindow.GetPromotedLegend.GetLegend]"
@@ -46,6 +46,7 @@ window = {
 					visible = no
 				}
 				name = "tab_buttons"
+				widgetid = "legends_window_legend_tabs" # Used in code
 
 				blockoverride "tab_name"
 				{
@@ -94,7 +95,7 @@ window = {
 					name = "your_legends_scrollbox"
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
-					visible = "[PdxGuiTabs.IsTabSet( 'player' )]"
+					visible = "[PdxGuiTabs.IsTabSet( 'realm' )]"
 
 					vbox_labelled_legend_ocr = {
 						layoutpolicy_horizontal = expanding
@@ -150,12 +151,36 @@ window = {
 						name = "legend_seeds"
 					}
 
-					completed_legends_vbox_ocr = {
-						name = "dynasty_completed_legends"
+					legends_vbox_ocr = {
+						blockoverride "label"
+						{
+								text = "LEGENDS_REALM_ACTIVE_LEGENDS_SECTION"
+								using = tooltip_sw
+						}
+						blockoverride "not_empty" {
+							visible = "[DataModelHasItems( LegendsWindow.GetRealmActiveLegends )]"
+						}
+						blockoverride "empty_text"
+						{
+								visible = "[IsDataModelEmpty( LegendsWindow.GetRealmActiveLegends )]"
+								text = "NO_REALM_ACTIVE_LEGENDS"
+						}
+						blockoverride "datamodel"
+						{
+								datamodel = "[LegendsWindow.GetRealmActiveLegends]"
+						}
+					}
 
-						blockoverride "toggle_text"
+					legends_vbox_ocr = {
+						name = "dynasty_completed_legends"
+						oncreate = "[PdxGuiFoldOut.SetShownBehavior( 'unfolded' )]"
+
+						blockoverride "label"
 						{
 							text = "REALM_COMPLETED_LEGENDS"
+						}
+						blockoverride "not_empty" {
+							visible = "[DataModelHasItems( LegendsWindow.GetRealmCompletedLegends )]"
 						}
 						blockoverride "empty_text"
 						{
@@ -175,18 +200,43 @@ window = {
 					name = "world_legends_scrollbox"
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
-					visible = "[PdxGuiTabs.IsTabSet( 'world' )]"
+					visible = "[PdxGuiTabs.IsTabSet( 'distant' )]"
+
+					# legends_vbox_ocr = {
+					# 	name = "world_legends"
+					# }
 
 					legends_vbox_ocr = {
-						name = "world_legends"
+						name = "distant_legends"
+
+						blockoverride "label"
+						{
+								text = "LEGENDS_DISTANT_ACTIVE_LEGENDS_SECTION"
+						}
+						blockoverride "not_empty" {
+							visible = "[DataModelHasItems( LegendsWindow.GetDistantActiveLegends )]"
+						}
+						blockoverride "empty_text"
+						{
+								visible = "[IsDataModelEmpty( LegendsWindow.GetDistantActiveLegends )]"
+								text = "NO_DISTANT_ACTIVE_LEGENDS"
+						}
+						blockoverride "datamodel"
+						{
+								datamodel = "[LegendsWindow.GetDistantActiveLegends]"
+						}
 					}
 
-					completed_legends_vbox_ocr = {
+					legends_vbox_ocr = {
 						name = "world_completed_legends"
+						oncreate = "[PdxGuiFoldOut.SetShownBehavior( 'unfolded' )]"
 
-						blockoverride "toggle_text"
+						blockoverride "label"
 						{
 							text = "DISTANT_COMPLETED_LEGENDS"
+						}
+						blockoverride "not_empty" {
+							visible = "[DataModelHasItems( LegendsWindow.GetDistantCompletedLegends )]"
 						}
 						blockoverride "empty_text"
 						{
@@ -202,9 +252,60 @@ window = {
 					expand = {}
 				}
 
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[PdxGuiTabs.IsTabSet( 'library' )]"
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							text_multi_wide = {
+								layoutpolicy_horizontal = expanding
+								visible = "[IsDataModelEmpty( LegendsWindow.GetLibraryLegends )]"
+								text = "LEGEND_LIBRARY_INSTRUCTION"
+							}
+
+							expand = {}
+						}
+
+						legends_vbox_ocr = {
+							oncreate = "[PdxGuiFoldOut.SetShownBehavior( 'folded' )]"
+
+							blockoverride "label"
+							{
+								raw_text = "[GetDataModelSize(LegendsWindow.GetLibraryLegends)] legends"
+							}
+							blockoverride "not_empty" {
+								visible = "[DataModelHasItems( LegendsWindow.GetLibraryLegends )]"
+							}
+							blockoverride "datamodel"
+							{
+								datamodel = "[LegendsWindow.GetLibraryLegends]"
+							}
+							blockoverride "promoters" {
+								visible = no
+							}
+							blockoverride "date" {
+								text_single = {
+									raw_text = "Spread during"
+								}
+								text_single = {
+									raw_text = "LEGEND_DURATION_COMPLETED"
+								}
+								dot_l = {}
+							}
+						}
+					}
+				}
+
+				expand = {}
+
 				hbox_single_court_position_ocr = {
 					datacontext = "[GetCourtPositionType( 'chronicler_court_position' )]"
-					visible = [GetPlayer.IsValid]
+					visible = "[And( GetPlayer.IsValid, PdxGuiTabs.IsTabSet( 'realm' ))]"
 					datacontext = "[Character.GetFirstEmployedOfType( CourtPositionType.Self )]"
 					layoutpolicy_horizontal = expanding
 
@@ -213,14 +314,14 @@ window = {
 						widget = {
 							size = { 0 5 }
 						}
-						button_text = {
-							layoutpolicy_horizontal = expanding
-							shortcut = map_mode_2
-							onclick = "[Toggle('expand_chronicler')]"
-							blockoverride "text" {
-								raw_text = "Tasks, [Collapse('expand_chronicler')] T."
-							}
-						}
+						# button_text = {
+						# 	layoutpolicy_horizontal = expanding
+						# 	shortcut = map_mode_2
+						# 	onclick = "[Toggle('expand_chronicler')]"
+						# 	blockoverride "text" {
+						# 		raw_text = "Tasks, [Collapse('expand_chronicler')] T."
+						# 	}
+						# }
 					}
 					blockoverride "position_effects" {
 						visible = no
@@ -647,8 +748,10 @@ types OCRLegends
 
 		button_text = {
 			layoutpolicy_horizontal = expanding
+			block "click_legend" {}
 			onclick = "[LegendsWindow.SetFocusedLegend( Legend.Self )]"
 			onclick = "[Clear('your_legend')]"
+			onclick = "[Clear('focused_legend')]"
 			blockoverride "extra" {
 				text_single = {
 					raw_text = "[Legend.GetNameNoTooltip]"
@@ -675,6 +778,7 @@ types OCRLegends
 
 			button_text = {
 				blockoverride "extra" {
+					block "date" {}
 					text_single = {
 						raw_text = "[Legend.GetCurrentNumProvinces|V] baronies, see tooltip."
 						tooltipwidget = {
@@ -684,7 +788,9 @@ types OCRLegends
 
 					text_single = {
 						name = "no_promoters"
-						visible = "[IsDataModelEmpty( Legend.GetPromoters )]"
+						block "promoters" {
+							visible = "[IsDataModelEmpty( Legend.GetPromoters )]"
+						}
 						raw_text = "No [legend_promoters|E]."
 						tooltip = "game_concept_legend_promoters_desc"
 					}
@@ -692,7 +798,9 @@ types OCRLegends
 					text_single = {
 						name = "promoters"
 						layoutpolicy_horizontal = expanding
-						visible = "[DataModelHasItems( Legend.GetPromoters )]"
+						block "promoters" {
+							visible = "[DataModelHasItems( Legend.GetPromoters )]"
+						}
 						raw_text = "[GetDataModelSize( Legend.GetPromoters )|V] [legend_promoters|E], see tooltip."
 
 						tooltipwidget = {
@@ -773,53 +881,41 @@ types OCRLegends
 	type legends_vbox_ocr = vbox {
 		layoutpolicy_horizontal = expanding
 
+		oncreate = "[BindFoldOutContext]"
+
 		button_text = {
 			layoutpolicy_horizontal = expanding
-			onclick = "[Toggle('world_legends')]"
+			onclick = "[PdxGuiFoldOut.Toggle]"
 			blockoverride "text" {
-				raw_text = "LEGENDS_REST_OF_WORLD"
+				block "not_empty" {}
+				block "label" {}
 			}
 			blockoverride "extra" {
-				comma = {}
 				text_single = {
-					raw_text = "[Collapse('world_legends')]"
+					block "empty_text" {}
+				}
+				text_single = {
+					block "not_empty" {
+						visible = yes
+					}
+					margin_left = -3
+					block "collapsed" {
+						raw_text = ", [CollapseIf(PdxGuiFoldOut.IsUnfolded)]"
+					}
 				}
 			}
 		}
 
-
 		vbox = {
-			name = "legends_in_realm"
-			visible = "[Isnt('world_legends')]"
 			layoutpolicy_horizontal = expanding
+			visible = "[Not(PdxGuiFoldOut.IsUnfolded)]" # open by default
 
-			datamodel = "[LegendsWindow.GetRealmActiveLegends]"
+			block "datamodel" {
+				datamodel = "[LegendsWindow.GetRealmActiveLegends]"
+			}
 
 			item = {
 				small_legend_entry_vbox_ocr = {}
-			}
-		}
-
-		vbox = {
-			name = "legends_in_world"
-			visible = "[Isnt('world_legends')]"
-			layoutpolicy_horizontal = expanding
-
-			text_single = {
-				layoutpolicy_horizontal = expanding
-				visible = "[IsDataModelEmpty( LegendsWindow.GetDistantActiveLegends )]"
-				text = "NO_DISTANT_ACTIVE_LEGENDS"
-			}
-
-			vbox = {
-				name = "legend_entries"
-				layoutpolicy_horizontal = expanding
-
-				datamodel = "[LegendsWindow.GetDistantActiveLegends]"
-
-				item = {
-					small_legend_entry_vbox_ocr = {}
-				}
 			}
 		}
 	}
