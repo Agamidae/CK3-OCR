@@ -1,0 +1,3099 @@
+types OCR {
+	type vbox_character_window_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+
+		widget = {
+			layoutpolicy_horizontal = expanding
+			size = { 0 0 }
+			alpha = 0
+
+			button = {
+				size = { 0 0 }
+				shortcut = speed_4
+				onclick = "[GetVariableSystem.Set('expand_view', 'family')]"
+			}
+
+			buttons_window_control = {
+				parentanchor = top|right
+
+				blockoverride "button_close"
+				{
+					onclick = "[CharacterWindow.Close]"
+					visible = "[Not(GetVariableSystem.Exists('expand_view'))]"
+				}
+
+				blockoverride "button_back"
+				{
+					visible = "[HasViewHistory]"
+					onclick = "[OpenFromViewHistory]"
+					tooltip = "[GetViewHistoryTooltip]"
+				}
+
+				blockoverride "button_me"
+				{
+					visible = "[Not(Character.IsLocalPlayer)]"
+					onclick = "[DefaultOnCharacterClick(GetPlayer.GetID)]"
+				}
+
+				blockoverride "button_pin" { }
+			}
+		}
+
+		############################
+		### Character internal info
+
+		#main view
+		vbox = {
+			# size = { 0 560 }
+			layoutpolicy_horizontal = preferred
+			scissor = yes
+
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				margin = { 10 10 }
+
+				error_button = {
+					layoutpolicy_horizontal = expanding
+				}
+
+				#1st line: name
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					button_text = {
+						blockoverride "pre" {
+							flowcontainer = {
+								ignoreinvisible = yes
+								spacing = 3
+								visible = "[Character.IsAlive]"
+
+								text_single = {
+									visible = "[Character.IsAtWar]"
+									raw_text = "At war,"
+								}
+
+								text_single = {
+									raw_text = "[GetTrait('pregnant').GetName(Character.Self)],"
+									visible = "[Character.HasTrait(GetTrait('pregnant'))]"
+									# visible = "[GetScriptedGui('is_pregnant').IsShown( GuiScope.SetRoot( Character.MakeScope ).End )]"
+								}
+
+								text_single = {
+									visible = "[Character.IsImprisoned]"
+									raw_text = "In prison,"
+								}
+								text_single = {
+									visible = "[Character.IsIncapable]"
+									raw_text = "Incapable,"
+									tooltip = "trait_incapable"
+								}
+							}
+
+							text_single = {
+								visible = "[Character.IsDeadAndValid]"
+								raw_text = "Dead."
+								raw_tooltip = "[Character.GetDebugTooltip]"
+								tooltip_visible = "[InDebugMode]"
+							}
+
+							character_name_text = { }
+						}
+						enabled = "[Character.IsAlive]"
+						onclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
+						onrightclick = "[DefaultOnCharacterRightClick(Character.GetID)]"
+						# shortcut = increase_speed_2
+					}
+
+					text_single = {
+						margin_left = -2
+						visible = "[And(And(Not(ObjectsEqual(Province.GetID, MyCapital.GetID)), Has('expand_view', 'neighbours')), Character.HasLandedTitles)]"
+						datacontext = "[Character.GetCapitalLocation]"
+						raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+					}
+
+					hbox = {
+						spacing = 3
+						visible = "[Not(GetVariableSystem.Exists('expand_view'))]"
+						text_single = {
+							raw_text = "[Character.GetHouse.GetName]."
+							visible = "[Character.GetHouse.IsValid]"
+						}
+
+						text_single = {
+							raw_text = "[Character.GetAge] years,"
+							tooltip = "[Character.GetDeathOrBirthDateInfo]"
+						}
+
+						text_single = {
+							raw_text = "[Character.Custom('character_health')] health."
+							visible = "[Not(Character.IsDeadAndValid)]"
+
+							tooltipwidget = {
+								health_tooltip = { }
+							}
+						}
+
+						text_single = {
+							visible = "[Character.IsAlive]"
+							raw_text = "Click to interact."
+						}
+					}
+
+					expand = { }
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not(GetVariableSystem.Exists('expand_view'))]"
+					spacing = 10
+
+					# ruler
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						block "2nd_line" {}
+
+						#2nd line: personality
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							margin_left = 5
+							spacing = 3
+
+							hbox = {
+								spacing = 3
+								visible = "[Character.IsAlive]"
+								text_single = {
+									block "show_opinion" {
+										visible = "[Not(Character.IsLocalPlayer)]"
+									}
+									raw_text = "[Character.GetOpinionOf(GetPlayer)|=] opinion,"
+									tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+								}
+
+								char_text_soldiers = {}
+							}
+
+							button_text = {
+								onclick = "[Set('expand_view', 'personality')]"
+								onclick = "[Set('personality_view', 'traits')]"
+								blockoverride "text" {
+									margin_left = -3
+									raw_text = "[CharYouSheHe(Character)|U] [Select_CString( Character.IsAlive, CharAreIs(Character), CharWereWas(Character))]"
+								}
+								blockoverride "extra" {
+									flowcontainer = {
+										datacontext = "[CharacterWindow.GetTraitArrays]"
+										datamodel = "[TraitArrays.GetPersonalityTraits]"
+										spacing = 3
+										ignoreinvisible =yes
+
+										item = {
+											text_single = {
+												datacontext = "[Character.GetFaith]"
+												raw_text = "[Trait.GetName(Character.Self)],"
+												alwaystransparent = yes
+											}
+										}
+									}
+									flowcontainer = {
+										block "trait_amount" {
+											visible = "[And(LessThan_int32(GetDataModelSize(TraitArrays.GetPersonalityTraits), '(int32)3'), DataModelHasItems(TraitArrays.GetTraits))]"
+											datamodel = "[DataModelFirst(TraitArrays.GetTraits, Subtract_int32('(int32)3', GetDataModelSize(TraitArrays.GetPersonalityTraits)))]"
+										}
+										datacontext = "[CharacterWindow.GetTraitArrays]"
+										spacing = 3
+										ignoreinvisible =yes
+
+										item = {
+											text_single = {
+												datacontext = "[Character.GetFaith]"
+												raw_text = "[Trait.GetName(Character.Self)],"
+												alwaystransparent = yes
+											}
+										}
+									}
+
+									flowcontainer = {
+										ignoreinvisible = yes
+										datacontext = "[CharacterWindow.GetTraitArrays]"
+										visible = "[DataModelHasItems(TraitArrays.GetTraits)]"
+
+										text_single = {
+											block "some_extra_traits" {
+												visible = "[And(LessThan_int32(GetDataModelSize(TraitArrays.GetPersonalityTraits), '(int32)3'), GreaterThan_int32(Subtract_int32(GetDataModelSize(TraitArrays.GetTraits), '(int32)3'), '(int32)0'))]"
+												raw_text = "+[Subtract_int32(GetDataModelSize(TraitArrays.GetTraits), '(int32)3')]."
+											}
+										}
+
+										text_single = {
+											block "all_extra_traits" {
+												visible = "[GreaterThan_int32(GetDataModelSize(TraitArrays.GetPersonalityTraits), '(int32)2')]"
+											}
+											raw_text = "+[GetDataModelSize(TraitArrays.GetTraits)]."
+										}
+									}
+								}
+							}
+
+							flowcontainer = {
+								block "faith_culture" {}
+								layoutpolicy_horizontal = expanding
+								margin_left = -3
+								background = { using = Background_Area_Border_Solid margin_bottom = 2 }
+
+								button_text = {
+									datacontext = "[Character.GetFaith]"
+									tooltipwidget = { faith_tooltip_click = { } }
+									blockoverride "text" {
+										raw_text = "[Faith.GetAdjective], F,"
+									}
+									shortcut = army_split_half
+									onclick = "[OpenGameViewData( 'faith', Faith.GetID )]"
+								}
+
+								button_text = {
+									datacontext = "[Character.GetCulture]"
+									onclick = "[OpenGameViewData( 'culture_window', Culture.GetID )]"
+									shortcut = character_finder
+									blockoverride "text" {
+										raw_text = "[Culture.GetName], C."
+									}
+									tooltipwidget = { culture_tooltip_click = { } }
+								}
+							}
+
+							expand = { }
+						}
+
+						block "3rd_line" {}
+
+						#3rd line: stats
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							margin_left = 5
+							spacing = 5
+							block "stats" {}
+
+							text_single = {
+								visible = "[Not(EqualTo_CFixedPoint(Character.GetBalance, '(CFixedPoint)0'))]"
+								raw_text = "[Character.GetBalance|1=] income."
+							}
+
+							hbox = {
+								name = "skills_grid"
+								datamodel = "[CharacterWindow.GetSkills]"
+								spacing = 3
+								item = {
+									container = {
+										text_single = {
+											raw_text = "[SkillItem.GetName] [SkillItem.GetValue|+],"
+											alwaystransparent = yes
+										}
+
+										widget = {
+											size = { 100% 100% }
+											tooltip = "SKILL_ITEM_TOOLTIP"
+
+											block_tooltip = { }
+										}
+									}
+								}
+							}
+
+							text_single = {
+								using = tooltip_ne
+								tooltip = "[CharacterWindow.GetCharacter.GetProwessBreakdown]"
+								raw_text = "Prowess [CharacterWindow.GetCharacter.GetProwess|0]."
+								default_format = "#high"
+							}
+							# hbox_skills_grid_character_named_full = {}
+
+							expand = {}
+						}
+
+						widget = {
+							size = { 0 10 }
+						}
+
+						# ruler
+						button_text = {
+							shortcut = map_mode_2
+							layoutpolicy_horizontal = expanding
+							visible = "[Character.HasLandedTitles]"
+							blockoverride "extra" {
+
+								text_single = {
+									visible = "[Not(Character.IsAlive)]"
+									raw_text = "Was"
+								}
+								text_single = {
+									raw_text = "[Character.Custom('BaseRankName')] of"
+								}
+
+								text_single = {
+									raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+								}
+
+								text_single = {
+									visible = "[Character.IsAlive]"
+									raw_text = "[Character.RealmSize] counties,"
+								}
+								text_single = {
+									visible = "[Character.IsAlive]"
+									raw_text = "[AddTextIf(Character.IsIndependentRuler, 'Independent,')]"
+								}
+								text_single = {
+									visible = "[Character.IsAlive]"
+									raw_text = "[Character.GetGovernment.GetAdjective],"
+								}
+
+								text_single = {
+									raw_text = "T."
+								}
+							}
+							datacontext = "[Character.GetPrimaryTitle]"
+							using = title_click
+						}
+
+						# vassal
+						realm_name_and_type_vbox_ocr = {
+							layoutpolicy_horizontal = expanding
+							# visible = "[And(Character.HasLandedTitles, Character.IsAlive)]"
+							datacontext = "[Character.GetPrimaryTitle]"
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+							margin_left = 5
+
+							using = Portrait_Relation_Texts
+
+							expand = { }
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Character.IsAcclaimedKnight]"
+							datacontext = "[Character.GetAcclaimedAccolade]"
+							onclick = "[OpenGameViewData('accolade_view', Accolade.GetID)]"
+								blockoverride "text" {
+									alwaystransparent = yes
+									raw_text = "[Accolade.GetName], rank [Accolade.GetCurrentRankNumber]. [Accolade.GetPrimaryType.GetName] and [Accolade.GetSecondaryType.GetName]."
+								}
+						}
+
+						container = {
+							datacontext = "[Character.GetPrimaryTitle]"
+							visible = "[Title.IsValid]"
+
+							button = {
+								visible = "[LessThan_int32(Character.GetPrimaryTitle.GetTierFrame, '(int32)4')]"
+								shortcut = map_mode_9
+								onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetPrimaryTitle.GetDeJureLiege.GetID)]"
+							}
+
+							button = {
+								visible = "[GreaterThan_int32(Character.GetPrimaryTitle.GetTierFrame, '(int32)3')]"
+								shortcut = map_mode_9
+								using = title_pan
+							}
+						}
+
+						# button = {
+						# 	shortcut = map_mode_9
+						# 	datacontext = "[Character.GetPrimaryTitle]"
+						# 	visible = "[Title.IsValid]"
+						# 	using = title_pan
+						# }
+
+						button = {
+							shortcut = map_mode_9
+							datacontext = "[Character.GetPrimaryTitle]"
+							visible = "[Not(Title.IsValid)]"
+							datacontext = "[Character.GetCurrentLocation]"
+							using = prov_pan
+						}
+
+						# location
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[And(Character.IsAlive, Not(GetVariableSystem.Exists('expand_view')))]"
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[And(Character.HasLandedTitles, GreaterThan_int32(Character.RealmSize, '(int32)0'))]"
+								spacing = 3
+
+								button_text = {
+									# enabled = no
+									datacontext = "[Character.GetCapitalLocation]"
+									# onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCapitalLocation.GetCoATitle.GetID)]"
+									# using = prov_pan
+									using = prov_click
+									onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetTitle.GetID)]"
+									shortcut = mapmode_culture_secondary
+									blockoverride "text" {
+										raw_text = "Capital, [Character.GetCapitalLocation.GetNameNoTooltip]."
+									}
+								}
+
+								text_single = {
+									datacontext = "[Character.GetCapitalLocation]"
+									visible = "[Not(Character.IsLocalPlayer)]"
+									raw_text = "AnyProvinceDistanceDirection"
+								}
+
+								text_single = {
+									raw_text = "Shift S."
+								}
+
+								expand = { }
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								# visible = "[Not(Character.HasLandedTitles)]"
+								visible = "[Or(EqualTo_int32(Character.RealmSize, '(int32)0'), Character.IsTraveling)]"
+								# visible = "[Or(EqualTo_int32(Character.RealmSize, '(int32)0'), Not(ObjectsEqual(Character.GetCurrentLocation, Character.GetCapitalLocation)))]"
+								datacontext = "[Character.GetCurrentLocation]"
+								using = prov_click
+								using = prov_pan
+								onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetTitle.GetID)]"
+								# onclick = "[OpenGameViewData('holding_view', IntToUnsigned(Character.GetCurrentLocation.GetID))]"
+								enabled = "[GetScriptedGui('is_land_province').IsShown( GuiScope.SetRoot( Character.GetCurrentLocation.MakeScope ).End )]"
+								# onclick = "[DefaultOnCoatOfArmsRightClick(Character.GetCurrentLocation.GetCoATitle.GetID)]"
+
+								button = {
+									visible = "[And(GetScriptedGui('is_land_province').IsShown( GuiScope.SetRoot( Character.GetCurrentLocation.MakeScope ).End ), Not(Character.IsTraveling))]"
+									shortcut = mapmode_culture_secondary
+									using = prov_click
+									using = prov_pan
+									onclick = "[DefaultOnCoatOfArmsRightClick(Province.GetTitle.GetID)]"
+									datacontext = "[Character.GetCurrentLocation]"
+								}
+
+								blockoverride "text" {
+									alwaystransparent = yes
+									raw_text = "[Character.GetLocationDesc],"
+								}
+								blockoverride "extra" {
+
+									text_single = {
+										datacontext = "[Character.GetCurrentLocation]"
+										visible = "[Not(ObjectsEqual(Character.GetCurrentLocation, GetPlayer.GetCapitalLocation))]"
+										raw_text = "AnyProvinceDistanceDirection"
+									}
+
+									text_single = {
+										visible = "[And(GetScriptedGui('is_land_province').IsShown( GuiScope.SetRoot( Character.GetCurrentLocation.MakeScope ).End ), Not(Character.IsTraveling))]"
+										raw_text = ", Shift S."
+									}
+								}
+							}
+						}
+
+						#liege
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[CharacterWindow.GetCharacter.GetLiegeEvenWhenDead]"
+							block "show_liege" {
+								visible = "[And(CharacterWindow.HasLiegeEvenWhenDead, Not(CharacterWindow.GetCharacter.HasLandedTitles))]"
+							}
+
+							hbox = {
+								#TODO
+								# vanilla uses this for the portrait
+								# visible = "[And( Character.GetLiege.IsValid, And( Character.IsAlive, Not(Character.IsLocalPlayer ) ) )]"
+								layoutpolicy_horizontal = expanding
+
+								char_name = {
+									shortcut = "zoom_out"
+									blockoverride "pre" {
+										text_single = {
+											raw_text = "Non de-jure"
+											datacontext = "[CharacterWindow.GetCharacter]"
+											name = "non_dejure_liege"
+											visible = "[And(Not( Character.GetVassalContract.IsRightfulLiege ), Not(Character.IsHostage))]"
+										}
+										text_single = {
+											raw_text = "[liege|E],"
+											datacontext = "[CharacterWindow.GetCharacter]"
+											visible = "[Not( Character.IsHostage )]"
+											alwaystransparent = yes
+										}
+										text_single = {
+											datacontext = "[CharacterWindow.GetCharacter]"
+											visible = "[Character.IsHostage]"
+											raw_text = "WARDEN_OF" #TODO
+											alwaystransparent = yes
+										}
+									}
+									blockoverride "extra" {
+										# spacing = 0
+										# margin_left = 3
+										text_single = {
+											raw_text = "[Character.GetAge]"
+										}
+										opinion_text = { }
+
+										text_single = {
+											visible = "[Not(Character.IsLocalPlayer)]"
+											raw_text = "Opinion of [CharYouHerHim(Character)] is [CharacterWindow.GetCharacter.GetOpinionOf(CharacterWindow.GetCharacter.GetLiegeEvenWhenDead)|=]"
+											tooltip = "[CharacterWindow.GetCharacter.GetOpinionBreakdownText( CharacterWindow.GetCharacter.GetLiegeEvenWhenDead )]"
+										}
+
+										text_single = {
+											raw_text = ", Page Up."
+										}
+									}
+								}
+
+								expand = { }
+							}
+
+							#liege opinion
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+								datacontext = "[CharacterWindow.GetCharacter]"
+								visible = "[And( Character.HasLiege, And( Character.IsAlive, Not(Character.IsLocalPlayer ) ) )]"
+
+								text_single = {
+									visible = "[Character.ShouldShowDreadEffectIconFor( Character.GetLiege )]"
+									raw_text = "[CharacterWindow.GetCharacter.GetSheHe|U] is intimidated."
+									tooltip = "[Character.GetDreadEffectTooltipFor( Character.GetLiege )]"
+								}
+
+								expand = { }
+							}
+						}
+
+						#host
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[CharacterWindow.GetCourtOwner]"
+							visible = "[And( Not( CharacterWindow.HasLiegeEvenWhenDead ), And( CharacterWindow.GetCourtOwner.IsValid, Not( CharacterWindow.GetCharacter.IsRuler ) ) )]"
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+
+								char_name = {
+									shortcut = "zoom_out"
+									blockoverride "pre" {
+										spacing = 3
+										text_single = {
+											raw_text = "Host,"
+										}
+									}
+								}
+
+								text_single = {
+									raw_text = ", Page Up."
+								}
+								expand = { }
+							}
+
+							#liege opinion
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+								datacontext = "[CharacterWindow.GetCharacter]"
+								visible = "[And(Character.IsAlive, Not(Character.IsLocalPlayer))]"
+
+								text_single = {
+									raw_text = "[Character.GetHerHis|U] opinion of host: [Character.GetOpinionOf( CharacterWindow.GetCourtOwner )]."
+									tooltip = "[Character.GetOpinionBreakdownText( CharacterWindow.GetCourtOwner )]"
+								}
+
+								text_single = {
+									visible = "[Character.ShouldShowDreadEffectIconFor( CharacterWindow.GetCourtOwner )]"
+									raw_text = "[CharacterWindow.GetCharacter.GetSheHe|U] is intimidated."
+									tooltip = "[Character.GetDreadEffectTooltipFor( CharacterWindow.GetCourtOwner )]"
+								}
+
+								expand = { }
+							}
+						}
+
+						locr_suzerain = {}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Character.HasRoyalCourt]"
+
+							onclick = "[CharacterWindow.Close]"
+							onclick = "[Character.OpenRoyalCourtView( 'throne' )]"
+							shortcut = map_mode_5
+							datacontext = "[Character.GetCourtGrandeurData]"
+								blockoverride "text" {
+										raw_text = "Open [CharYourHerHis( Character )] royal court, Control Q."
+								}
+						}
+					}
+
+					# status
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						# warnings
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							# visible = "[Character.IsAlive]"
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								datacontext = "[CharacterWindow.GetCharacter.GetDiarchy]"
+								datacontext = "[Diarchy.GetDiarch]"
+								visible = "[Diarchy.IsValid]"
+								onclick = "[ToggleGameViewData( 'diarchy', CharacterWindow.GetCharacter.GetID )]"
+								blockoverride "text" {
+									margin_left = 5
+									alwaystransparent = yes
+									raw_text = "In [Diarchy.GetName] with"
+								}
+								blockoverride "extra" {
+									text_single = {
+										visible = "[Character.IsRuler]"
+										raw_text = "[Character.GetTitleAsNameNoTooltip]"
+									}
+									text_single = {
+										raw_text = "[Character.GetFirstNameNoTooltip]."
+									}
+								}
+							}
+
+							hbox = {
+								visible = "[Character.IsValid]"
+								spacing = 3
+								layoutpolicy_horizontal = expanding
+								margin_left = 5
+
+								# hbox = {
+								# 	visible = "[Character.IsAlive]"
+								#
+								# 	text_single = {
+								# 		raw_text = "You are [Character.GetHerHis] heir!"
+								# 		visible = "[ObjectsEqual(Character.GetPrimaryTitle.GetHeir.Self, GetPlayer )]"
+								# 	}
+								# }
+
+								button_text = {
+									blockoverride "text" {
+										raw_text = "Unmarried."
+									}
+									blockoverride "extra" {
+										text_single = {
+											raw_text = "find Spouse, U."
+											visible = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
+										}
+									}
+									visible = "[Not(Character.GetPrimarySpouseOrBetrothed.IsValid)]"
+									onclick = "[Character.OpenPlayerInteraction('marry_off_interaction')]"
+									onclick = "[CharacterWindow.Close]"
+									enabled = "[Character.IsPlayerInteractionValid('marry_off_interaction')]"
+									shortcut = mapmode_duchies_secondary
+								}
+
+								hbox = {
+									spacing = 3
+
+									button_text = {
+										datacontext = "[CharacterWindow.GetCharacter.GetPrimarySpouse]"
+										visible = "[Character.GetPrimarySpouse.IsValid]"
+										using = char_click
+
+										blockoverride "text" {
+											raw_text = "Married."
+										}
+									}
+
+									flowcontainer = {
+										ignoreinvisible = yes
+										visible = "[GreaterThan_CFixedPoint( Character.MakeScope.ScriptValue('num_of_living_children'), '(CFixedPoint)0' )]"
+										spacing = 3
+
+										button_text = {
+											onclick = "[GetVariableSystem.Set('expand_view', 'family')]"
+											blockoverride "text" {
+												margin_left = -3
+												raw_text = "[Character.MakeScope.ScriptValue('num_of_living_children')] child[AddTextIf(GreaterThan_CFixedPoint(Character.MakeScope.ScriptValue('num_of_living_children'), '(CFixedPoint)1'), 'ren')],"
+											}
+										}
+
+										flowcontainer = {
+											ignoreinvisible = yes
+											spacing = 3
+
+											visible = "[GreaterThan_CFixedPoint(Character.MakeScope.ScriptValue('unmarried_children'), '(CFixedPoint)0')]"
+											text_single = {
+												visible = "[LessThan_CFixedPoint(Character.MakeScope.ScriptValue('unmarried_children'), Character.MakeScope.ScriptValue('num_of_living_children'))]"
+												raw_text = "[Character.MakeScope.ScriptValue('unmarried_children')] unmarried."
+											}
+
+											text_single = {
+												visible = "[EqualTo_CFixedPoint(Character.MakeScope.ScriptValue('unmarried_children'), Character.MakeScope.ScriptValue('num_of_living_children'))]"
+												raw_text = "unmarried."
+											}
+										}
+									}
+
+
+									text_single = {
+										visible = "[IsDataModelEmpty(CharacterWindow.GetChildren)]"
+										raw_text = "No children."
+									}
+
+									text_single = {
+										visible = "[Character.HasSexuality]"
+										raw_text = "[Character.GetSexuality]."
+									}
+								}
+
+
+								hbox = {
+									spacing = 3
+									visible = "[Character.IsAlive]"
+									text_single = {
+										raw_text = "No heir of [Character.GetHerHis] dynasty!"
+										visible = "[And(Not(CharacterWindow.GetCharacter.GetPlayerHeir.IsValid), Character.HasLandedTitles)]"
+									}
+
+									text_single = {
+										raw_text = "You are [Character.GetHerHis] heir!"
+										visible = "[ObjectsEqual(Character.GetPrimaryTitle.GetHeir.Self, GetPlayer )]"
+									}
+								}
+
+								expand = { }
+							}
+
+							# imprisoned
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[And(Character.IsImprisoned, Not(GetVariableSystem.Exists('expand_view')))]"
+
+								char_name = {
+									blockoverride "pre" {
+										raw_text = "Imprisoned by"
+									}
+									datacontext = "[CharacterWindow.GetCharacter.GetImprisonedBy]"
+								}
+								expand = { }
+							}
+
+							# hostage
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								datacontext = "[CharacterWindow.GetCharacter.GetHomeCourt]"
+								visible = "[And(Character.IsValid, Isnt('expand_view'))]"
+
+								char_name = {
+									blockoverride "pre" {
+										raw_text = "[home_court|E]" #TODO
+									}
+								}
+								expand = { }
+							}
+						}
+
+						## dead
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Character.IsDeadAndValid]"
+
+							text_dead_character = {}
+
+							expand = { }
+						}
+
+						#diplo
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[And(Character.HasLandedTitles, Character.IsAlive)]"
+
+							button = {
+								onclick = "[GetVariableSystem.Set('expand_view', 'diplomacy')]"
+								using = expanded_view
+								shortcut = mapmode_house_secondary
+
+								flowcontainer = {
+									margin = { 3 1 }
+									resizeparent = yes
+									ignoreinvisible = yes
+									spacing = 3
+
+									text_single = {
+										raw_text = "At war"
+										visible = "[EqualTo_CFixedPoint(GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_of_wars'), '(CFixedPoint)1')]"
+									}
+
+									text_single = {
+										raw_text = "In [GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_of_wars')] wars,"
+										visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_of_wars'), '(CFixedPoint)1')]"
+									}
+
+									text_single = {
+										visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_of_raids'), '(CFixedPoint)0')]"
+										raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_of_raids')] raids,"
+									}
+
+									text_single = {
+										visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_of_allies'), '(CFixedPoint)0')]"
+										raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_of_allies')] allies,"
+									}
+
+									text_single = {
+										visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_of_truces'), '(CFixedPoint)0')]"
+										raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_of_truces')] truces,"
+									}
+
+									text_single = {
+										raw_text = "Involved,"
+										visible = "[GetScriptedGui('is_involved').IsShown( GuiScope.SetRoot( Character.MakeScope ).End )]"
+									}
+
+									text_single = {
+										raw_text = "Interloper,"
+										visible = "[GetScriptedGui('is_interloper').IsShown( GuiScope.SetRoot( Character.MakeScope ).End )]"
+									}
+
+									text_single = {
+										raw_text = "Shift D"
+									}
+									visible = "[DataModelHasItems(CharacterWindow.GetDiplomacyItems)]"
+									dot_l = { }
+								}
+							}
+
+							expand = { }
+						}
+
+						# opinion
+						hbox = {
+							margin_left = 5
+							name = "AI_personality"
+							layoutpolicy_horizontal = expanding
+							visible = "[And(Character.IsAlive, Not(Character.IsLocalPlayer))]"
+							spacing = 3
+
+							# text_single = {
+							# 	raw_text = "Opinion [Character.GetOpinionOf(GetPlayer)|=]."
+							# 	tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+							# }
+
+							text_single = {
+								raw_text = "Your opinion of [Character.GetHerHim] [GetPlayer.GetOpinionOf(Character.Self)|=],"
+								tooltip = "[GetPlayer.GetOpinionBreakdownText(Character.Self)]"
+							}
+
+							text_single = {
+								raw_text = "[Character.GetSheHe] is [Character.GetAIPersonalityNoTooltip]."
+								tooltip = "AI_PERSONALITY_TT"
+							}
+							expand = { }
+						}
+
+						close_relations_vbox = {
+							blockoverride "hide" {
+								visible = no
+							}
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							margin_left = 5
+							spacing = 3
+							visible = "[Character.IsAlive]"
+
+							# text_single = {
+							# 	raw_text = "Incapable,"
+							# 	visible = "[Character.IsIncapable]"
+							# 	tooltip = "trait_incapable"
+							# }
+
+							text_single = {
+								raw_text = "Hostage,"
+								tooltip = "[Character.GetHostageTooltip]"
+								visible = "[Character.IsHostage]"
+							}
+
+							text_single = {
+								visible = "[Character.CanBePunished]"
+								raw_text = "Can be punished,"
+								tooltip = "[Character.PunishmentTooltip]"
+							}
+
+							text_single = {
+								raw_text = "You have a hook on [Character.GetHerHim]"
+								visible = "[Character.PlayerHasHooksOrHookableSecrets]"
+							}
+
+							text_single = {
+								raw_text = "Has an inspiration"
+								visible = "[Character.HasInspiration]"
+								tooltip = "CHARACTER_HAS_INSPIRATION_TOOLTIP"
+							}
+
+							text_single = {
+								raw_text = "Completed an inspiration"
+								visible = "[And( Character.HasCompletedAnInspiration, Not( Character.HasInspiration ) )]"
+								tooltip = "CHARACTER_HAS_COMPLETED_AN_INSPIRATION_TOOLTIP"
+							}
+
+							expand = { }
+						}
+
+						vassal_stance_text = {
+							margin_left = 5
+							layoutpolicy_horizontal = expanding
+						}
+					}
+
+					# geography
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						# adjacent
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "[Character.MakeScope.ScriptValue('neighbours_sval')] adjacent rulers, Control A."
+							}
+							visible = "[And( GreaterThan_int32(Character.RealmSize, '(int32)0'), Character.IsAlive )]"
+							onclick = "[GetVariableSystem.Set('expand_view', 'neighbours')]"
+							onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+							using = expanded_view
+							shortcut = map_mode_6
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							using = expanded_view
+							blockoverride "text" {
+								raw_text = "Realm, hotkey 1."
+							}
+							visible = "[Or(DataModelHasItems(CharacterWindow.GetTitles), DataModelHasItems(CharacterWindow.GetClaims))]"
+							shortcut = speed_1
+							onclick = "[GetVariableSystem.Set('expand_view', 'counties')]"
+							onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+						}
+
+						# titles
+						counties_tabs = {
+							blockoverride "hotkeys" { }
+						}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							onclick = "[GetVariableSystem.Set('expand_view', 'resources')]"
+							visible = "[Not(Character.IsDeadAndValid)]"
+							blockoverride "pre" {
+								text_single = {
+									raw_text = "Resources, hotkey 2."
+								}
+							}
+						}
+
+						# resources
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							onclick = "[GetVariableSystem.Set('expand_view', 'resources')]"
+							shortcut = speed_2
+							visible = "[Not(Character.IsDeadAndValid)]"
+							blockoverride "extra" {
+								char_text_soldiers = {}
+
+								text_single = {
+									raw_text = "Gold, [Character.GetGold|0],"
+									# visible = "[Not(EqualTo_CFixedPoint(Character.GetGold, '(CFixedPoint)0'))]"
+								}
+
+								text_single = {
+									visible = "[Not(EqualTo_CFixedPoint(Character.GetBalance, '(CFixedPoint)0'))]"
+									raw_text = "[Character.GetBalance|1=] a month."
+								}
+							}
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							onclick = "[GetVariableSystem.Set('expand_view', 'resources')]"
+							visible = "[Not(Character.IsDeadAndValid)]"
+							blockoverride "pre" {
+								spacing = 3
+								text_single = {
+									raw_text = "Prestige, [Character.GetPrestige|0],"
+								}
+
+								text_single = {
+									raw_text = "Piety, [Character.GetPiety|0],"
+								}
+
+								text_single = {
+									visible = "[EqualTo_CFixedPoint(Character.GetDread, '(CFixedPoint)0')]"
+									raw_text = "No dread."
+								}
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									visible = "[GreaterThan_CFixedPoint(Character.GetDread, '(CFixedPoint)0')]"
+									spacing = 3
+
+									text_single = {
+										raw_text = "Dread [Character.GetDread|0],"
+										tooltip = "[Character.GetDreadBreakdown]"
+									}
+
+									text_single = {
+										raw_text = "intimidating [Sval('intimidated_or_terrified_vassals', Character)] vassals with [Sval('intimidated_or_terrified_vassals_strength', Character)] troops total."
+									}
+								}
+							}
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							visible =  "[And( Character.IsAlive, And( Character.HasLandedTitles, And(Character.IsCountOrAbove, Character.GetGovernment.HasRule( 'legitimacy' ) ) ) )]"
+							datacontext = "[Character.GetLegitimacyType]"
+							datacontext = "[Character.GetLegitimacyLevel]"
+							shortcut = explore_legends
+							onclick = "[GetVariableSystem.Set('expand_view', 'legitimacy')]"
+
+							tooltipwidget = {
+								legitimacy_hud_tooltip_ocr = {
+									datacontext = "[CharacterWindow.GetLegitimacyBar]"
+								}
+							}
+
+							blockoverride "extra" {
+								margin_left = -3
+								text_single = {
+									raw_text = "Legitimacy"
+								}
+								text_single = {
+									raw_text = "level [LegitimacyLevel.GetIndex]" #TODO
+								}
+								text_single = {
+									raw_text = "and [Character.GetAverageVassalLegitimacyExpectation.GetIndex] is expected."
+								}
+								# text_single = {
+								# 	raw_text = "and [Character.GetAveragePowerfulVassalLegitimacyExpectation.GetIndex] for powerful vassals."
+								# }
+								text_single = {
+									raw_text = "Hotkey L."
+								}
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Or(Character.HasArtifacts, Character.HasAnyArtifactClaims)]"
+								onclick = "[ToggleGameViewData( 'inventory', Character.GetID )]"
+								onclick = "[CloseGameView('character')]"
+								shortcut = mapmode_kingdoms_secondary
+
+								blockoverride "extra" {
+									spacing = 3
+									margin_left = 0
+									text_single = {
+										raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_artifacts')] Artifacts,"
+										visible = "[Character.HasArtifacts]"
+									}
+
+									text_single = {
+										raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('num_artifacts_claims')] Artifact claims,"
+										visible = "[Character.HasAnyArtifactClaims]"
+									}
+
+									text_single = {
+										raw_text = "Open Inventory, Hotkey i."
+									}
+								}
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Character.HasKillsKnownTo( GetPlayer )]"
+								blockoverride "text" {
+									raw_text = "View [GetDataModelSize(Character.GetKills)] known kill[AddTextIf(GreaterThan_int32(GetDataModelSize(Character.GetKills), '(int32)1'), 's')]."
+								}
+								onclick = "[ToggleGameViewData( 'kill_list', Character.GetID  )]"
+								datacontext = "[Character]"
+							}
+
+							expand = { }
+						}
+					}
+
+					personality_vbox = {
+						blockoverride "slots" {
+							maxverticalslots = 5
+						}
+						blockoverride "modifier slots" {
+							maxverticalslots = 3
+						}
+						blockoverride "hide" {
+							visible = no
+						}
+						blockoverride "hotkeys" { }
+					}
+
+					#TODO ages and opinions
+					# family
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						# house
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[Character.GetHouse]"
+							onclick = "[OpenGameViewData('dynasty_house_view', Character.GetHouse.GetID)]"
+							enabled = "[DynastyHouse.IsValid]"
+							shortcut = "army_create_new"
+
+							blockoverride "extra" {
+								spacing = 3
+								margin_left = 0
+								text_single = {
+									visible = "[DynastyHouse.IsValid]"
+									raw_text = "House [DynastyHouse.GetBaseNameNoTooltip],"
+								}
+
+								text_single = {
+									visible = "[Not(DynastyHouse.IsValid)]"
+									raw_text = "[lowborn|E]."
+								}
+
+								text_single = {
+									visible = "[Not(Character.IsLegitimateMemberOfHouse)]"
+									raw_text = "Bastard."
+									tooltip = "CV_TT_BASTARD"
+								}
+
+								text_single = {
+									visible = "[LessThan_int32(Character.GetDynastyHeadRelationFrame('(bool)no'), '(int32)9')]"
+									tooltip = "[Character.GetDynastyHeadTooltip]"
+									raw_text = "Head of House."
+								}
+
+								text_single = {
+									raw_text = "Hotkey H."
+									visible = "[DynastyHouse.IsValid]"
+								}
+
+								text_single = {
+									raw_text = "[GetDynastyPrestigeLevelName(Character.GetDynasty.GetPrestigeLevel)] dynasty."
+								}
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							# close_relations_vbox = {
+							# 	blockoverride "heir" {
+							#
+							# 	}
+							# }
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								onclick = "[GetVariableSystem.Set('expand_view', 'family')]"
+
+								blockoverride "pre" {
+									spacing = 3
+
+									text_single = {
+										visible = "[DataModelHasItems(CharacterWindow.GetRelationsOfType( GetRelation( 'lover' ) ))]"
+										raw_text = "[GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'lover' ) ))] lover[AddTextIf(GreaterThan_int32(GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'lover' ) )), '(int32)1'), 's')],"
+									}
+
+									text_single = {
+										visible = "[DataModelHasItems(CharacterWindow.GetRelationsOfType( GetRelation( 'rival' ) ))]"
+										raw_text = "[GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'rival' ) ))] rival[AddTextIf(GreaterThan_int32(GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'rival' ) )), '(int32)1'), 's')]."
+									}
+								}
+							}
+
+						}
+					}
+				}
+
+				# artifacts and kill list
+				expand = { }
+			}
+		}
+
+		######################################################
+
+		# EXPANDED LISTS
+
+
+		vbox = {
+			margin_left = 15
+			margin_bottom = 5
+			layoutpolicy_horizontal = expanding
+			visible = "[GetVariableSystem.Exists('expand_view')]"
+
+			button = {
+				onclick = "[GetVariableSystem.Clear('expand_view')]"
+				onclick = "[GetScriptedGui('close_expanded_view').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				shortcut = "close_window"
+				shortcut = "map_mode_1"
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				text_single = {
+					raw_text = "Showing"
+				}
+
+				space = { }
+
+				text_single = {
+					raw_text = "counties"
+					visible = "[And(GetVariableSystem.HasValue('expand_view', 'counties'), Not(GetVariableSystem.Exists('counties_tabs')))]"
+				}
+
+				text_single = {
+					raw_text = "[GetVariableSystem.Get('counties_tabs')]."
+					visible = "[GetVariableSystem.HasValue('expand_view', 'counties')]"
+				}
+
+				# text_single = {
+				# 	layoutpolicy_horizontal = expanding
+				# 	raw_text = "[GetDataModelSize(CharacterWindow.GetTitles)]."
+				# 	visible = "[GetVariableSystem.HasValue('counties_tabs', 'titles')]"
+				# }
+				###
+
+				text_single = {
+					raw_text = "[GetVariableSystem.Get('expand_view')]."
+					visible = "[And(And(Hasnt('expand_view', 'family'), Hasnt('expand_view', 'counties')), Hasnt('expand_view', 'neighbours'))]"
+				}
+
+				text_single = {
+					visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
+					raw_text = "[Character.MakeScope.ScriptValue('neighbours_sval')] adjacent rulers and [GetDataModelSize(Character.MakeScope.GetList('neighbouring_counties'))] counties."
+				}
+
+				button_text = {
+					shortcut = increase_speed_2
+					visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
+					onclick = "[Click('close_adjacent_rulers')]"
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "Will"
+						}
+						text_single = {
+							visible = "[GetPlayer.MakeScope.Var('dont_close_adjacent_rulers').IsSet]"
+							raw_text = "not"
+						}
+					}
+					blockoverride "text" {
+						raw_text = "close on selection, X to toggle."
+					}
+				}
+
+				text_single = {
+					raw_text = "family"
+					visible = "[And(GetVariableSystem.HasValue('expand_view', 'family'), Not(GetVariableSystem.Exists('char_tab')))]"
+				}
+
+				text_single = {
+					raw_text = "[GetVariableSystem.Get('char_tab')]."
+					visible = "[GetVariableSystem.HasValue('expand_view', 'family')]"
+				}
+				text_single = {
+					raw_text = "[GetDataModelSize(CharacterWindow.GetDiplomacyItems)] items."
+					visible = "[GetVariableSystem.HasValue('expand_view', 'diplomacy')]"
+				}
+
+				text_single = {
+					raw_text = "[GetVariableSystem.Get('personality_view')]."
+					visible = "[GetVariableSystem.Exists('personality_view')]"
+				}
+
+				# text_single = {
+				# 	raw_text = ", close with Escape or E."
+				# }
+
+				hbox = {
+					visible = "[GetVariableSystem.HasValue('expand_view', 'counties')]"
+
+					button_text = {
+						shortcut = increase_speed_2
+						onclick = "[Click('clear_county_filters')]"
+						visible = "[Show('clear_county_filters')]"
+						onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+						blockoverride "text" {
+							raw_text = "Filtered, reset with X."
+						}
+					}
+					button_text = {
+						blockoverride "text" {
+							raw_text = "Reload with Shift E."
+						}
+						shortcut = map_mode_11
+						onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+						visible = "[Or(GetVariableSystem.HasValue('counties_tabs', 'holdings'), Not(GetVariableSystem.Exists('counties_tabs')))]"
+					}
+				}
+				button_text = {
+					shortcut = mapmode_house_secondary
+					blockoverride "text" {
+						raw_text = "[Select_CString(GetVariableSystem.Exists('show_diplo_descriptions'), 'Hide', 'Show')] details, Shift D."
+					}
+					onclick = "[GetVariableSystem.Toggle('show_diplo_descriptions')]"
+					visible = "[GetVariableSystem.HasValue('expand_view', 'diplomacy')]"
+				}
+
+				expand = { }
+			}
+
+			counties_tabs = {
+				visible = "[GetVariableSystem.HasValue('expand_view', 'counties')]"
+				blockoverride "hotkey" {
+				}
+			}
+		}
+
+		scrollbox = {
+			visible = "[And(GetVariableSystem.Exists('expand_view'), Not(GetVariableSystem.HasValue('expand_view', 'family')))]"
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			blockoverride "scrollbox_content" {
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					visible = "[GetVariableSystem.HasValue('expand_view', 'personality')]"
+
+					personality_vbox = {
+						blockoverride "details" {
+							visible = no
+						}
+					}
+
+					expand = { }
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Has('expand_view', 'legitimacy')]"
+
+					datacontext = "[Character.GetLegitimacyType]"
+					datacontext = "[Character.GetLegitimacyLevel]"
+					datacontext = "[CharacterWindow.GetLegitimacyBar]"
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Isnt('legit_levels')]"
+						spacing = 5
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "[LegitimacyType.GetFlavorName( LegitimacyLevel.Self )|V], level [LegitimacyLevel.GetIndex] and [Character.GetAverageVassalLegitimacyExpectation.GetIndex] is expected. See tooltip for expectation details."
+							tooltip = "game_concept_expected_legitimacy_desc"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							shortcut = map_mode_1
+							onclick = "[Toggle('legit_levels')]"
+							blockoverride "text" {
+								raw_text = "View all levels, E."
+							}
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "LEGITIMACY_TRACK_TITLE"
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "legitimacy_hud_tt_subheading"
+						}
+
+						legitimacy_tooltip_ocr = {}
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Is('legit_levels')]"
+
+						button = {
+							shortcut = close_window
+							onclick = "[Clear('legit_levels')]"
+							visible = "[Isnt('legit_tier')]"
+						}
+
+						button = {
+							shortcut = map_mode_1
+							onclick = "[Clear('legit_levels')]"
+						}
+
+						button = {
+							shortcut = close_window
+							onclick = "[Clear('legit_tier')]"
+							visible = "[Is('legit_tier')]"
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							datamodel = "[ComplexBar.GetItems]"
+
+							item = {
+								container = {
+									ignoreinvisible = yes
+									visible = "[LessThan_int32( PdxGuiWidget.GetIndexInDataModel, GetDataModelSize( LegitimacyType.GetLevels ) )]"
+									flowcontainer = {
+										ignoreinvisible = yes
+										direction = vertical
+										datacontext_from_model = {
+											datamodel = "[LegitimacyType.GetLevels]"
+											index = "[PdxGuiWidget.GetIndexInDataModel]"
+										}
+										visible = "[Has('legit_tier', LegitimacyType.GetFlavorName(LegitimacyLevel.Self))]"
+
+										text_single = {
+											raw_text = "level [PdxGuiWidget.GetIndexInDataModel]."
+										}
+										text_multi_wide = {
+											raw_text = "LEGITIMACY_TRACK_TOOLTIP"
+										}
+									}
+								}
+							}
+						}
+
+						hbox_complex_bar_levels_ocr = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "show_all" {
+							}
+							blockoverride "modifiers" {
+								visible = no
+							}
+							blockoverride "tiers" {
+								raw_text = "[Subtract_int32(GetDataModelSize(ComplexBar.GetItems), '(int32)1')] levels, use number keys."
+							}
+							blockoverride "marker"
+							{
+								widget_level_marker_ocr = {
+									visible = "[LessThan_int32( PdxGuiWidget.GetIndexInDataModel, GetDataModelSize( LegitimacyType.GetLevels ) )]"
+									blockoverride "tier_button" {
+
+										button = {
+											size = { 100% 100% }
+											onclick = "[PdxGuiWidget.FindChild('tier').TriggerAnimation('save_tier')]"
+											onclick = "[Set('legit_tier', LegitimacyType.GetFlavorName(LegitimacyLevel.Self))]"
+											datacontext_from_model = {
+												datamodel = "[LegitimacyType.GetLevels]"
+												index = "[PdxGuiWidget.GetIndexInDataModel]"
+											}
+										}
+									}
+									blockoverride "visible_active"
+									{
+										visible = "[EqualTo_int32( LegitimacyLevel.GetIndex, PdxGuiWidget.GetIndexInDataModel )]"
+									}
+
+									blockoverride "visible_inactive"
+									{
+										visible = "[NotEqualTo_int32( LegitimacyLevel.GetIndex, PdxGuiWidget.GetIndexInDataModel )]"
+									}
+									blockoverride "progress" {
+										raw_text = "at [ComplexBarItem.GetValue]."
+									}
+									blockoverride "marker_tooltip"
+									{
+										visible = no
+									}
+
+									blockoverride "marker_text"
+									{
+										# visible = no
+										shortcuts_list = {
+											blockoverride "click" {
+												onclick = "[Set('legit_tier', LegitimacyType.GetFlavorName(LegitimacyLevel.Self))]"
+											}
+											datacontext_from_model = {
+												datamodel = "[LegitimacyType.GetLevels]"
+												index = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)1')]"
+											}
+										}
+										text = "[PdxGuiWidget.GetIndexInDataModel|V]"
+									}
+								}
+							}
+						}
+					}
+
+				}
+
+				flowcontainer = {
+					direction = vertical
+					ignoreinvisible = yes
+					layoutpolicy_horizontal = expanding
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						visible = "[GetVariableSystem.HasValue('expand_view', 'counties')]"
+
+						direction = vertical
+
+						#counties
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							visible = "[Not(GetVariableSystem.Exists('counties_tabs'))]"
+
+							button_text = {
+								datacontext = "[Character.GetFaith]"
+								blockoverride "extra" {
+									flowcontainer = {
+										ignoreinvisible = yes
+										spacing = 3
+										visible = "[And(Not(Character.IsBaronOrUnlanded), Character.IsAlive)]"
+
+										text_single = {
+											visible = "[EqualTo_CFixedPoint(Character.MakeScope.ScriptValue('counties_of_this_faith'), IntToFixedPoint(Character.RealmSize))]"
+											raw_text = "All"
+										}
+										text_single = {
+											raw_text = "[Character.MakeScope.ScriptValue('counties_of_this_faith')] of [CharYourHerHis(Character)]"
+										}
+										text_single = {
+											visible = "[Not(EqualTo_CFixedPoint(Character.MakeScope.ScriptValue('counties_of_this_faith'), IntToFixedPoint(Character.RealmSize)))]"
+											raw_text = "[Character.RealmSize]"
+										}
+										text_single = {
+											raw_text = "counties are [Faith.GetAdjective]."
+										}
+
+										text_single = {
+											visible = "[GetPlayer.MakeScope.Var('filter_counties_faith').IsSet]"
+											raw_text = "Remove filter, F."
+										}
+
+										text_single = {
+											visible = "[Not(GetPlayer.MakeScope.Var('filter_counties_faith').IsSet)]"
+											raw_text = "Filter out, F."
+										}
+									}
+								}
+								shortcut = army_split_half
+								onclick = "[Click('filter_counties_faith')]"
+								onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+							}
+
+							button_text = {
+								datacontext = "[Character.GetCulture]"
+								shortcut = character_finder
+								blockoverride "extra" {
+									flowcontainer = {
+										ignoreinvisible = yes
+										spacing = 3
+										visible = "[And(Not(Character.IsBaronOrUnlanded), Character.IsAlive)]"
+
+										text_single = {
+											visible = "[EqualTo_CFixedPoint(Character.MakeScope.ScriptValue('counties_of_this_culture'), IntToFixedPoint(Character.RealmSize))]"
+											raw_text = "All"
+										}
+										text_single = {
+											raw_text = "[Character.MakeScope.ScriptValue('counties_of_this_culture')] of [CharYourHerHis(Character)]"
+										}
+										text_single = {
+											visible = "[Not(EqualTo_CFixedPoint(Character.MakeScope.ScriptValue('counties_of_this_culture'), IntToFixedPoint(Character.RealmSize)))]"
+											raw_text = "[Character.RealmSize]"
+										}
+										text_single = {
+											raw_text = "counties are [Culture.GetName],"
+										}
+										text_single = {
+											visible = "[GetPlayer.MakeScope.Var('filter_counties_culture').IsSet]"
+											raw_text = "Remove filter, C."
+										}
+										text_single = {
+											visible = "[Not(GetPlayer.MakeScope.Var('filter_counties_culture').IsSet)]"
+											raw_text = "Filter out, C."
+										}
+									}
+								}
+								onclick = "[Click('filter_counties_culture')]"
+								onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+							}
+
+							#counties
+							flowcontainer = {
+								datamodel = "[Character.MakeScope.GetList('counties')]"
+								direction = vertical
+								layoutpolicy_horizontal = expanding
+
+								button_text = {
+									onclick = "[Click('county_tax')]"
+									onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+									shortcut = map_mode_2
+									blockoverride "text" {
+										raw_text = "[GetDataModelSize(Character.MakeScope.GetList('counties'))] personal counties, sorted by [Select_CString(Show('county_tax'), 'tax', 'distance')], T to use [Select_CString(Show('county_tax'), 'distance', 'tax')]."
+									}
+								}
+
+								item = {
+									button = {
+										onclick = "[OpenGameViewData('holding_view', Scope.GetLandedTitle.GetProvince.Self)]"
+										onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetLandedTitle.GetID)]"
+
+										flowcontainer = {
+											resizeparent = yes
+											ignoreinvisible = yes
+											spacing = 3
+											text_single = {
+												raw_text = "[Scope.Title.GetNameNoTierNoTooltip],"
+											}
+											text_single = {
+												visible = "[ObjectsEqual(Scope.Title.GetProvince.GetID, Character.GetCapitalLocation.GetID)]"
+												raw_text = "capital,"
+											}
+
+											flowcontainer = {
+												ignoreinvisible = yes
+												spacing = 3
+												visible = "[Show('county_tax')]"
+
+												text_single = {
+													raw_text = "tax: [Scope.GetLandedTitle.MakeScope.Var('total_tax').GetValue|1],"
+												}
+												text_single = {
+													raw_text = "levies: [Scope.GetLandedTitle.MakeScope.Var('total_levies').GetValue|0]."
+												}
+												text_single = {
+													raw_text = "Control: [Scope.GetLandedTitle.GetCountyData.GetControl|0]."
+												}
+											}
+
+											text_single = {
+												visible = "[And(Not(ObjectsEqual(Province.GetID, MyCapital.GetID)), Not(Show('county_tax')))]"
+												datacontext = "[Scope.Title.GetProvince]"
+												raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+											}
+											text_single = {
+												raw_text = "[Scope.GetLandedTitle.GetCountyData.GetCulture.GetName],"
+											}
+											text_single = {
+												raw_text = "[Scope.GetLandedTitle.GetCountyData.GetFaith.GetAdjective]."
+											}
+										}
+									}
+								}
+							}
+
+							widget = {
+								size = { 0 5 }
+							}
+
+							text_single = {
+								raw_text = "[GetDataModelSize(Character.MakeScope.GetList('vassal_counties'))] vassal counties."
+							}
+
+							divider_light = {
+								size = { 500 3 }
+							}
+							#counties
+							flowcontainer = {
+								datamodel = "[Character.MakeScope.GetList('vassal_counties')]"
+								direction = vertical
+								layoutpolicy_horizontal = expanding
+								item = {
+									button = {
+										onclick = "[OpenGameViewData('holding_view', Scope.GetLandedTitle.GetProvince.Self)]"
+										onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetLandedTitle.GetID)]"
+
+										flowcontainer = {
+											resizeparent = yes
+											ignoreinvisible = yes
+											spacing = 3
+											text_single = {
+												raw_text = "[Scope.GetLandedTitle.GetBaseNameNoTierNoTooltip],"
+											}
+
+											flowcontainer = {
+												ignoreinvisible = yes
+												spacing = 3
+												visible = "[Show('county_tax')]"
+
+												text_single = {
+													raw_text = "tax: [Scope.GetLandedTitle.MakeScope.Var('total_tax').GetValue|1],"
+												}
+												text_single = {
+													raw_text = "levies: [Scope.GetLandedTitle.MakeScope.Var('total_levies').GetValue|0]."
+												}
+												# text_single = {
+												# 	raw_text = "Control: [Scope.GetLandedTitle.GetCountyData.GetControl]."
+												# }
+											}
+
+											text_single = {
+												visible = "[And(Not(ObjectsEqual(Province.GetID, MyCapital.GetID)), Not(Show('county_tax')))]"
+												datacontext = "[Scope.Title.GetProvince]"
+												raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+											}
+
+											text_single = {
+												raw_text = "[Scope.GetLandedTitle.GetCountyData.GetFaith.GetAdjective]."
+											}
+											text_single = {
+												raw_text = "[Scope.GetLandedTitle.GetCountyData.GetCulture.GetName],"
+											}
+
+											char_name = {
+												datacontext = "[Scope.GetLandedTitle.GetHolder]"
+												blockoverride "pre" {
+													margin_left = -2
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+
+						#holdings
+						flowcontainer = {
+							visible = "[GetVariableSystem.HasValue('counties_tabs', 'holdings')]"
+							direction = vertical
+							layoutpolicy_horizontal = expanding
+							ignoreinvisible = yes
+
+							# button = {
+							# 	size = { 0 0 }
+							# 	onclick = "[GetVariableSystem.Clear('expand_view')]"
+							# 	onclick = "[GetScriptedGui('close_expanded_view').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							# 	shortcut = "close_window"
+							# }
+
+							flowcontainer = {
+								spacing = 3
+								ignoreinvisible = yes
+								text_single = {
+									raw_text = "[Character.GetDomainSize] personal holdings. Limit: [Character.GetDomainLimit]. Total: [GuiScope.SetRoot(Character.MakeScope).ScriptValue('realm_holdings')]"
+									# visible = "[GetScriptedGui('realm_holdings').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+								}
+
+								# text_single = {
+								# 	raw_text = "Sorted by income."
+								# }
+							}
+
+							char_expanded_list = {
+								datamodel = "[Character.MakeScope.GetList('holdings')]"
+							}
+
+							widget = {
+								size = { 0 5 }
+							}
+							text_single = {
+								raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('vassal_holdings')] vassal holdings."
+							}
+							char_expanded_list = {
+								datamodel = "[Character.MakeScope.GetList('realm_holdings')]"
+							}
+						}
+						#titles
+						flowcontainer = {
+							datacontext = "[CharacterWindow.GetCharacter]"
+							direction = vertical
+							visible = "[GetVariableSystem.HasValue('counties_tabs', 'titles')]"
+
+							datamodel = "[CharacterWindow.GetTitles]"
+
+							item = {
+								button = {
+									onclick = "[DefaultOnCoatOfArmsClick(TitleItem.GetTitle.GetID)]"
+									onclick = "[DefaultOnCoatOfArmsRightClick(TitleItem.GetTitle.GetPreferredCapital.GetID)]"
+									onrightclick = "[DefaultOnCoatOfArmsRightClick(TitleItem.GetTitle.GetPreferredCapital.GetID)]"
+									onrightclick =  "[OpenGameViewData('holding_view', TitleItem.GetTitle.GetPreferredCapital.GetProvince.Self)]"
+									button_ignore = none
+
+									flowcontainer = {
+										resizeparent = yes
+										datacontext = "[TitleItem.GetTitle]"
+										spacing = 3
+
+										text_single = {
+											raw_text = "[Title.GetNameNoTooltip],"
+										}
+
+										flowcontainer = {
+											ignoreinvisible = yes
+											visible = "[And(Character.IsAlive, GreaterThan_CFixedPoint(Title.MakeScope.ScriptValue('counties_in_title'), '(CFixedPoint)1'))]"
+											spacing = 3
+											text_single = {
+												raw_text = "[AddTextIf(Character.IsLocalPlayer, 'you ')]hold[AddTextIf(Not(Character.IsLocalPlayer), 's')]"
+											}
+
+											text_single = {
+												visible = "[EqualTo_CFixedPoint(GuiScope.SetRoot(Title.MakeScope).AddScope('player', Character.MakeScope).ScriptValue('your_counties_in_title'), Title.MakeScope.ScriptValue('counties_in_title'))]"
+												raw_text = "all"
+											}
+
+											text_single = {
+												raw_text = "[GuiScope.SetRoot(Title.MakeScope).AddScope('player', Character.MakeScope).ScriptValue('your_counties_in_title')] counties"
+											}
+
+											text_single = {
+												visible = "[LessThan_CFixedPoint(GuiScope.SetRoot(Title.MakeScope).AddScope('player', Character.MakeScope).ScriptValue('your_counties_in_title'), Title.MakeScope.ScriptValue('counties_in_title'))]"
+												raw_text = "out of [Title.MakeScope.ScriptValue('counties_in_title')]"
+											}
+
+											dot_l = {}
+										}
+										# text_single = {
+										# 	visible = "[Not(ObjectsEqual(Title.Self, Character.GetPrimaryTitle))]"
+										# 	datacontext = "[Title.GetPreferredCapital.GetProvince]"
+										# 	raw_text = "AnyProvinceDistanceDirection"
+										# }
+									}
+								}
+							}
+						}
+						# claims
+						flowcontainer = {
+							visible = "[GetVariableSystem.HasValue('counties_tabs', 'claims')]"
+							datacontext = "[CharacterWindow.GetCharacter]"
+							datamodel = "[CharacterWindow.GetClaims]"
+							direction = vertical
+							spacing = 3
+
+							item = {
+								button = {
+									onclick = "[DefaultOnCoatOfArmsClick(Claim.GetTitle.GetID)]"
+									onclick = "[DefaultOnCoatOfArmsRightClick(Claim.GetTitle.GetID)]"
+									flowcontainer = {
+										resizeparent = yes
+
+										using = tooltip_ne
+										# tooltip = "[Claim.GetTooltip]"
+
+										flowcontainer = {
+											direction = vertical
+											ignoreinvisible = yes
+
+											flowcontainer = {
+												ignoreinvisible = yes
+												spacing = 3
+
+												text_single = {
+													raw_text = "[Claim.GetTitle.GetNameNoTooltip]."
+												}
+
+												text_single = {
+													name = "pressed_claim"
+													visible = "[And(Claim.IsPressed, Not(Claim.IsImplicit))]"
+													raw_text = "[pressed_claim|E]."
+												}
+
+												text_single = {
+													name = "unpressed_claim"
+													visible = "[And(Not(Claim.IsPressed), Not(Claim.IsImplicit))]"
+													raw_text = "[unpressed_claim|E]."
+												}
+
+												text_single = {
+													name = "implicit_claim"
+													visible = "[Claim.IsImplicit]"
+													raw_text = "[implicit_claim|E]."
+												}
+											}
+
+
+											flowcontainer = {
+												ignoreinvisible = yes
+
+												realm_name = {
+													datacontext = "[Claim.GetTitle.GetHolder]"
+													visible = "[Claim.GetTitle.GetHolder.IsValid]"
+													blockoverride "pre" {
+														text_single = {
+															margin_right = 3
+															raw_text = "Held by"
+														}
+													}
+													blockoverride "extra" {
+														text_single = {
+															raw_text = "[Character.GetRelationToString( CharacterWindow.GetCharacter )]."
+														}
+													}
+												}
+
+												text_single = {
+													visible = "[Not(Claim.GetTitle.GetHolder.IsValid)]"
+													raw_text = "[Localize('CLAIM_TITLE_NOT_CREATED')]."
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+						visible = "[GetVariableSystem.HasValue('expand_view', 'resources')]"
+						spacing = 5
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							visible = "[Character.HasLandedTitles]"
+
+							char_text_soldiers = {}
+
+							block "resources_2nd_line"{}
+
+							button_text = {
+								blockoverride "text" {
+									raw_text = "Knights, [Character.MakeScope.ScriptValue('knights_sval')] out of [Character.MakeScope.ScriptValue('knights_max_sval')], see tooltip."
+								}
+								onmousehierarchyenter = "[GetScriptedGui('knights_list').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
+								tooltipwidget = {
+									container = {
+										alwaystransparent = no
+										using = DefaultTooltipBackground
+
+										flowcontainer = {
+											ignoreinvisible = yes
+											direction = vertical
+
+											margin = { 15 10 }
+
+											datamodel = "[Character.MakeScope.GetList('my_knights'))]"
+
+											text_single = {
+												raw_text = "Ordered by prowess."
+											}
+
+											item = {
+												char_name = {
+													datacontext = "[Scope.GetCharacter]"
+													blockoverride "pre" {
+														text_single = {
+															margin_right = 3
+															raw_text = "[Character.GetProwess],"
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+
+							text_single = {
+								raw_text = "Gold, [Character.GetGold|0],"
+							}
+
+							text_single = {
+								visible = "[Not(EqualTo_CFixedPoint(Character.GetBalance, '(CFixedPoint)0'))]"
+								raw_text = "[Character.GetBalance|1=] a month."
+							}
+						}
+
+						text_single = {
+							raw_text = "[Character.GetPrestigeTooltipWithBalance]"
+						}
+
+						text_single = {
+							raw_text = "[Character.GetPietyTooltipWithBalance]"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							using = agot_char_legitimacy
+							datacontext = "[Character.GetLegitimacyType]"
+							datacontext = "[Character.GetLegitimacyLevel]"
+							shortcut = explore_legends
+							onclick = "[GetVariableSystem.Set('expand_view', 'legitimacy')]"
+
+							tooltipwidget = {
+								legitimacy_hud_tooltip_ocr = {
+									datacontext = "[CharacterWindow.GetLegitimacyBar]"
+								}
+							}
+
+							blockoverride "extra" {
+								margin_left = -3
+								text_single = {
+									raw_text = "Legitimacy"
+								}
+								text_single = {
+									raw_text = "level [LegitimacyLevel.GetIndex]" #TODO
+								}
+								text_single = {
+									raw_text = "and [Character.GetAverageVassalLegitimacyExpectation.GetIndex] is expected."
+								}
+								# text_single = {
+								# 	raw_text = "and [Character.GetAveragePowerfulVassalLegitimacyExpectation.GetIndex] for powerful vassals."
+								# }
+								text_single = {
+									raw_text = "Hotkey L."
+								}
+							}
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							visible = "[Character.GetDynasty.IsValid]"
+
+							text_single = {
+								raw_text = "[Character.GetDynasty.GetNameNoTooltip] dynasty, [GetDynastyPrestigeLevelName(Character.GetDynasty.GetPrestigeLevel)]."
+							}
+
+							text_single = {
+								raw_text = "Renown: [Character.GetDynasty.GetPrestige|0],"
+								tooltip = "[Character.GetDynasty.GetPrestigeBreakdown]"
+							}
+
+							text_single = {
+								tooltip = "[Character.GetDynasty.GetPrestigeBreakdown]"
+								raw_text = "[Character.GetDynasty.GetPrestigeIncome|=1]/month."
+							}
+							text_single = {
+								raw_text = "[Character.GetDynasty.GetPrestigeProgress]."
+							}
+						}
+
+						divider_light = {
+							size = { 100% 3 }
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							visible = "[GreaterThan_CFixedPoint(Character.GetDread, '(CFixedPoint)0')]"
+							spacing = 3
+
+
+							text_single = {
+								raw_text = "Dread [Character.GetDread|0],"
+								tooltip = "[Character.GetDreadBreakdown]"
+							}
+
+							text_single = {
+								visible = "[GreaterThan_CFixedPoint(Sval('intimidated_or_terrified_vassals', Character), '(CFixedPoint)0')]"
+								raw_text = "resulting in:"
+							}
+
+						}
+
+
+						text_single = {
+							visible = "[EqualTo_CFixedPoint(Character.GetDread, '(CFixedPoint)0')]"
+							raw_text = "No dread."
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							visible = "[GreaterThan_CFixedPoint(Character.GetDread, '(CFixedPoint)0')]"
+
+							text_single = {
+								visible = "[GreaterThan_CFixedPoint(Sval('intimidated_vassals', Character), '(CFixedPoint)0')]"
+								raw_text = "[Sval('intimidated_vassals', Character)] intimidated vassals with [Sval('intimidated_vassals_strength', Character)] troops total, unlikely to join factions."
+							}
+
+							text_single = {
+								visible = "[GreaterThan_CFixedPoint(Sval('terrified_vassals', Character), '(CFixedPoint)0')]"
+								raw_text = "[Sval('terrified_vassals', Character)] terrified vassals with [Sval('terrified_vassals_strength', Character)] troops total, won't join factions unless one is over threshold."
+							}
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								spacing = 3
+
+								text_single = {
+									visible = "[EqualTo_CFixedPoint(Sval('intimidated_vassals', Character), '(CFixedPoint)0')]"
+									raw_text = "No vassals intimidated,"
+								}
+
+								text_single = {
+									visible = "[EqualTo_CFixedPoint(Sval('terrified_vassals', Character), '(CFixedPoint)0')]"
+									raw_text = "No vassals terrified."
+								}
+							}
+						}
+					}
+					#diplo
+					flowcontainer = {
+						direction = vertical
+						visible = "[GetVariableSystem.HasValue('expand_view', 'diplomacy')]"
+						name = "diplomacy_items"
+						datamodel = "[CharacterWindow.GetDiplomacyItems]"
+						ignoreinvisible = yes
+
+						item = {
+							button = {
+								onclick = "[DiplomacyItem.OnClick]"
+								onclick = "[GetVariableSystem.Clear('expand_view')]"
+
+								flowcontainer = {
+									direction = vertical
+									resizeparent = yes
+									spacing = 0
+									ignoreinvisible = yes
+									tooltip = "[DiplomacyItem.GetInfo]"
+
+									# text_single = {
+									# 	raw_text = "[DiplomacyItem.GetDiplomacyFrame]"
+									# }
+									#
+									# text_single = {
+									# 	raw_text = ""
+									# }
+
+									widget = {
+										size = { 600 45 }
+										scissor = yes
+
+										visible = "[Not(GetVariableSystem.Exists('show_diplo_descriptions'))]"
+
+										text_multi_wide = {
+											raw_text = "[IndexNumber], [DiplomacyItem.GetWarScoreFraction|%0] [DiplomacyItem.GetInfo]"
+											autoresize = yes
+											max_width = 600
+											alwaystransparent = yes
+											visible = "[DiplomacyItem.HasWarScore]"
+										}
+
+										text_multi_wide = {
+											raw_text = "[IndexNumber], [DiplomacyItem.GetInfo]"
+											autoresize = yes
+											max_width = 600
+											alwaystransparent = yes
+											visible = "[Not(DiplomacyItem.HasWarScore)]"
+										}
+									}
+
+									text_multi_wide = {
+										visible = "[GetVariableSystem.Exists('show_diplo_descriptions')]"
+										raw_text = "[IndexNumber], [DiplomacyItem.GetInfo]"
+										autoresize = yes
+										max_width = 600
+										alwaystransparent = yes
+									}
+
+									# container = {
+									# 	ignoreinvisible = yes
+									# 	visible = "[DiplomacyItem.IsStruggle]"
+									# 	datacontext = "[DiplomacyItem.GetStruggle]"
+									#
+									# 	text_single = {
+									# 		raw_text = "Involved in Iberian struggle"
+									# 		visible = "[Struggle.IsInvolvedCharacter(Character.Self)]"
+									# 	}
+									# 	text_single = {
+									# 		raw_text = "Interloper in Iberian struggle"
+									# 		visible = "[Struggle.IsInterloperCharacter(Character.Self)]"
+									# 	}
+									# }
+
+									flowcontainer = {
+										visible = "[And(DiplomacyItem.HasReasonCharacters, Is('show_diplo_descriptions'))]"
+										direction = vertical
+
+										char_name = {
+											datacontext = "[DiplomacyItem.GetLeftReasonCharacter]"
+											blockoverride "pre" {
+												text_single = {
+													raw_text = "Select"
+												}
+											}
+										}
+
+										char_name = {
+											datacontext = "[DiplomacyItem.GetRightReasonCharacter]"
+											blockoverride "pre" {
+												text_single = {
+													raw_text = "Select"
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+					button_text = {
+						visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
+						shortcut = map_mode_1
+						onclick = "[Toggle('collapse_neighbours')]"
+						blockoverride "text" {
+							raw_text = "[Character.MakeScope.ScriptValue('neighbours_sval')] Rulers, [Collapse('collapse_neighbours')] E"
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+						layoutpolicy_horizontal = expanding
+						visible = "[And(Has('expand_view', 'neighbours'), Isnt('collapse_neighbours'))]"
+						#neighbours
+						flowcontainer = {
+							visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
+							datamodel = "[Character.MakeScope.GetList('adjacent_rulers')]"
+							direction = vertical
+							layoutpolicy_horizontal = expanding
+
+							text_single = {
+								raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_rulers'))] Independent."
+							}
+							item = {
+								adjacent_ruler_button = { }
+							}
+						}
+						#vassals
+						flowcontainer = {
+							visible = "[And(GetVariableSystem.HasValue('expand_view', 'neighbours'), Not(Character.IsIndependentRuler))]"
+							datamodel = "[Character.MakeScope.GetList('adjacent_vassals')]"
+							direction = vertical
+							layoutpolicy_horizontal = expanding
+
+							text_single = {
+								raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_vassals'))] fellow vassals."
+							}
+							item = {
+								adjacent_ruler_button = { }
+							}
+						}
+						# across water
+						flowcontainer = {
+							visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
+							datamodel = "[Character.MakeScope.GetList('adjacent_rulers_across_water')]"
+							direction = vertical
+							layoutpolicy_horizontal = expanding
+
+							text_single = {
+								raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_rulers_across_water'))] Across water."
+							}
+							item = {
+								adjacent_ruler_button = { }
+							}
+						}
+					}
+
+					# widget = {
+					# 	size = { 0 10 }
+					# }
+
+					# button_checked_text = {
+					# 	shortcut = increase_speed_2
+					# 	layoutpolicy_horizontal = expanding
+					# 	blockoverride "text" {
+					# 		raw_text = "auto-close this view, X."
+					# 	}
+					# 	blockoverride "visible" {
+					# 		visible = "[GetPlayer.MakeScope.Var('dont_close_adjacent_rulers').IsSet]"
+					# 	}
+					# 	onclick = "[Click('close_adjacent_rulers')]"
+					# }
+
+					#counties
+					flowcontainer = {
+						margin_top = 10
+						visible = "[GetVariableSystem.HasValue('expand_view', 'neighbours')]"
+						datamodel = "[Character.MakeScope.GetList('neighbouring_counties')]"
+						direction = vertical
+						layoutpolicy_horizontal = expanding
+
+						text_single = {
+							raw_text = "[GetDataModelSize(Character.MakeScope.GetList('neighbouring_counties'))] adjacent counties."
+						}
+						item = {
+							adjacent_county_button = {
+								datacontext = "[Character.GetCapitalLocation]"
+
+							}
+						}
+					}
+				}
+			}
+		}
+
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			onclick = "[GetVariableSystem.Set('expand_view', 'family')]"
+			visible = "[Not(GetVariableSystem.Exists('expand_view'))]"
+			blockoverride "text" {
+				margin_left = 7
+				raw_text = "View family and other relations, hotkey 4."
+			}
+		}
+
+		hbox_char_tabs = {
+			block "show_char_tabs" {
+				visible = "[Isnt('expand_view')]"
+			}
+			margin_left = 10
+			blockoverride "tab" {}
+			blockoverride "shortcut" {
+				onclick = "[Set('expand_view', 'family')]"
+			}
+		}
+
+		### expanded
+
+		vbox = {
+			margin_left = 10
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			visible = "[GetVariableSystem.HasValue('expand_view', 'family')]"
+
+			### TABS
+			hbox_char_tabs = {
+				block "show_char_tabs" {}
+			}
+
+			#######
+			# family tab
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				visible = "[Or(Not(GetVariableSystem.Exists('char_tab')), GetVariableSystem.HasValue('char_tab','family'))]"
+				blockoverride "scrollbox_margins" {
+					margin_top = 20
+				}
+				blockoverride "scrollbox_content" {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 10
+
+						close_relations_vbox = {
+							block "show_close_relations" {}
+						}
+						#children
+						vbox_character_row_item_ocr = {
+							name = "children"
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetChildren]"
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Children [Character.MakeScope.ScriptValue('num_of_living_children')],"
+							}
+
+							blockoverride "remaining_items"
+							{
+								spacing = 3
+
+								text_single = {
+									visible = "[GreaterThan_CFixedPoint(Character.MakeScope.ScriptValue('unmarried_children'), '(CFixedPoint)0')]"
+									raw_text = "[Character.MakeScope.ScriptValue('unmarried_children')] unmarried."
+								}
+
+								text_single = {
+									visible = "[GreaterThan_int32(GetDataModelSize(CharacterWindow.GetChildren), FixedPointToInt(Character.MakeScope.ScriptValue('num_of_living_children')))]"
+									raw_text = "[Subtract_int32(GetDataModelSize(CharacterWindow.GetChildren), FixedPointToInt(Character.MakeScope.ScriptValue('num_of_living_children')))] dead."
+								}
+
+								text_single = {
+									raw_text = "Click to [Select_CString(GetVariableSystem.Exists('hide_children'), 'show', 'hide')]."
+								}
+							}
+
+							blockoverride "expand_button_inside" {
+								onclick = "[GetVariableSystem.Toggle('hide_children')]"
+							}
+							blockoverride "hide_items" {
+								visible = "[Not(GetVariableSystem.Exists('hide_children'))]"
+							}
+							blockoverride "extra3" {
+								text_single = {
+									raw_text = "[Select_CString( Character.IsFemale, 'Female', 'Male' )],"
+								}
+								text_single = {
+									raw_text = "Unmarried."
+									visible = "[Not(Character.GetPrimarySpouseOrBetrothed.IsValid)]"
+								}
+								flowcontainer = {
+									ignoreinvisible = yes
+									spacing = 3
+									visible = "[Character.GetPrimarySpouseOrBetrothed.IsValid]"
+									text_single = {
+										raw_text = "[Select_CString( Character.IsBetrothed, 'Betrothed', 'Married' )] to"
+									}
+									text_single = {
+										raw_text = "[Character.GetPrimarySpouseOrBetrothed.GetName], [Character.GetPrimarySpouseOrBetrothed.GetAge]."
+									}
+								}
+							}
+						}
+
+						block "relations_3rd_line" {}
+
+						#spouses
+						vbox_character_row_item_ocr = {
+							name = "secondary_spouses"
+							block "show_spouses" {
+								visible = "[GreaterThan_int32( Character.GetMaxSpouses, '(int32)1' )]"
+							}
+							# layoutpolicy_vertical = expanding
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetSecondarySpouses]"
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Secondary spouses [GetDataModelSize(CharacterWindow.GetSecondarySpouses)]."
+							}
+
+							blockoverride "expand_button" { }
+
+							blockoverride "find_partner"
+							{
+								hbox = {
+									visible = "[Character.IsPlayerInteractionShown('marry_off_interaction')]"
+									layoutpolicy_horizontal = expanding
+									spacing = 3
+
+									text_single = {
+										margin_left = 3
+										raw_text = "[Character.CalcUnusedSecondarySpouseSlots] more slots. "
+									}
+
+									button = {
+										size = { 0 20 }
+										onclick = "[CharacterWindow.GetCharacter.OpenPlayerInteraction('marry_off_interaction')]"
+										onclick = "[CharacterWindow.Close]"
+										text_single = {
+											resizeparent = yes
+											raw_text = "Find spouse."
+										}
+									}
+
+									expand = { }
+								}
+							}
+						}
+
+						#consorts
+						vbox_character_row_item_ocr = {
+							name = "consorts"
+							block "show_consorts" {
+								visible = "[GreaterThan_int32( Character.GetMaxConsorts, '(int32)0' )]"
+							}
+							# layoutpolicy_vertical = expanding
+							layoutpolicy_horizontal = expanding
+
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetConcubines]"
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Concubines [GetDataModelSize(CharacterWindow.GetConcubines)]."
+							}
+
+							blockoverride "expand_button" { }
+
+							blockoverride "find_partner"
+							{
+								vbox = {
+									visible = "[Character.IsPlayerInteractionShown('find_concubine')]"
+									layoutpolicy_horizontal = expanding
+									spacing = 3
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										margin_left = 3
+										raw_text = "[Character.CalcUnusedConsortSlots] more slots. "
+									}
+
+									button = {
+										layoutpolicy_horizontal = expanding
+										size = { 0 20 }
+										onclick = "[CharacterWindow.GetCharacter.OpenPlayerInteraction('find_concubine')]"
+										enabled = "[CharacterWindow.GetCharacter.IsPlayerInteractionValid('find_concubine')]"
+
+										flowcontainer = {
+											resizeparent = yes
+											ignoreinvisible = yes
+
+											text_single = {
+												raw_text = "Find concubine."
+												visible = "[CharacterWindow.GetCharacter.IsPlayerInteractionValid('find_concubine')]"
+											}
+											text_single = {
+												raw_text = "Disabled, see tooltip."
+												visible = "[Not(CharacterWindow.GetCharacter.IsPlayerInteractionValid('find_concubine'))]"
+												tooltip = "[CharacterWindow.GetCharacter.GetPlayerInteractionTooltip('find_concubine')]"
+											}
+										}
+									}
+
+								}
+							}
+						}
+
+						#parents
+						vbox_character_row_item_ocr = {
+							name = "parents"
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetParents]"
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Parents [GetDataModelSize(CharacterWindow.GetParents)]."
+							}
+
+							blockoverride "expand_button" { }
+						}
+
+						# siblings
+						vbox_character_row_item_ocr = {
+							name = "siblings"
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetSiblings]"
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Siblings [GetDataModelSize(CharacterWindow.GetSiblings)]."
+							}
+
+							blockoverride "remaining_items"
+							{
+								# visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetSiblings), '(int32)7' )]"
+								# text = "[GetNumberAbove_int32( GetDataModelSize(CharacterWindow.GetSiblings), '(int32)7' )|=]"
+							}
+
+							blockoverride "expand_button_inside" {
+								# visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetSiblings), '(int32)7' )]"
+								# onclick = "[CharacterWindow.ToggleExpandedRelation( 'siblings' )]"
+							}
+						}
+
+						#grandparents
+						vbox_character_row_item_ocr = {
+							layoutpolicy_horizontal = expanding
+							name = "grandparents"
+							# visible = "[Not(Or(GreaterThan_int32( Character.GetMaxSpouses, '(int32)1' ), GreaterThan_int32( Character.GetMaxConsorts, '(int32)0' )))]"
+							# layoutpolicy_vertical = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetGrandparents]"
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Grandparents [GetDataModelSize(CharacterWindow.GetGrandparents)]."
+							}
+
+							blockoverride "expand_button" { }
+						}
+
+						block "relations_last_line" {}
+
+						expand = { }
+					}
+				}
+			}
+
+			########
+			# relations tab
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				visible = "[GetVariableSystem.HasValue('char_tab','relations')]"
+				blockoverride "scrollbox_margins" {
+					margin_top = 20
+				}
+				blockoverride "scrollbox_content" {
+					vbox = {
+						margin_top = 15
+						spacing = 3
+						layoutpolicy_horizontal = expanding
+
+						vbox_agot_dragons = {}
+
+						vbox_character_row_item_ocr = {
+							layoutpolicy_horizontal = expanding
+							name = "wards"
+							visible = "[CharacterWindow.GetCharacter.IsAdult]"
+							# layoutpolicy_vertical = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetRelationsOfType( GetRelation( 'ward' ) )]"
+							}
+
+							blockoverride "extra2" {
+								text_single = {
+									raw_text = "[Character.GetRelationToString( GetPlayer )]."
+								}
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Wards, [GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'ward' ) ))]."
+							}
+
+							blockoverride "expand_button" { }
+
+							### WARD FINDER
+							blockoverride "find_partner"
+							{
+								hbox = {
+									visible = "[Character.IsPlayerInteractionShown('educate_child_interaction')]"
+									layoutpolicy_horizontal = expanding
+									spacing = 3
+
+
+									text_single = {
+										margin_left = 3
+										raw_text = "[CharacterWindow.CalcUnusedRelationSlots( GetRelation( 'ward' ), '(int32)2' )] more slots. "
+									}
+
+									button = {
+										size = { 0 20 }
+										onclick = "[CharacterWindow.GetCharacter.OpenPlayerInteraction('educate_child_interaction')]"
+										# enabled = "[CharacterWindow.GetCharacter.IsPlayerInteractionValid('educate_child_interaction')]"
+
+										flowcontainer = {
+											resizeparent = yes
+											ignoreinvisible = yes
+
+											text_single = {
+												raw_text = "Educate child."
+												# visible = "[CharacterWindow.GetCharacter.IsPlayerInteractionValid('educate_child_interaction')]"
+											}
+											# text_single = {
+											# 	raw_text = "Disabled, see tooltip."
+											# 	visible = "[Not(CharacterWindow.GetCharacter.IsPlayerInteractionValid('educate_child_interaction'))]"
+											# 	# tooltip = "[CharacterWindow.GetCharacter.GetPlayerInteractionTooltip('educate_child_interaction')]"
+											# }
+										}
+									}
+
+									expand = { }
+								}
+							}
+						}
+
+						vbox_character_row_item_ocr = {
+							name = "lovers"
+							visible = "[CharacterWindow.GetCharacter.IsAdult]"
+							# layoutpolicy_vertical = expanding
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetRelationsOfType( GetRelation( 'lover' ) )]"
+							}
+
+							blockoverride "extra2" {
+								text_single = {
+									raw_text = "[Character.GetRelationToString( GetPlayer )]."
+								}
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Lovers. [GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'lover' ) ))]."
+							}
+
+							blockoverride "remaining_items"
+							{
+								# visible = "[GreaterThan_int32( GetDataModelSize( CharacterWindow.GetRelationsOfType( GetRelation( 'lover' ) ) ), '(int32)5' ) )]"
+								# margin = { 167 }
+								# text = "[GetNumberAbove_int32( GetDataModelSize( CharacterWindow.GetRelationsOfType( GetRelation( 'lover' ) ) ), '(int32)5' )|=]"
+
+							}
+
+							blockoverride "expand_button_inside" {
+								# visible = "[GreaterThan_int32( GetDataModelSize( CharacterWindow.GetRelationsOfType( GetRelation( 'lover' ) ) ), '(int32)5' )]"
+								# onclick = "[CharacterWindow.ToggleExpandedRelation( 'lovers' )]"
+							}
+
+						}
+
+						vbox_agot_paramour = { }
+
+						vbox_character_row_item_ocr = {
+							name = "guardian"
+							layoutpolicy_horizontal = expanding
+							visible = "[Not(CharacterWindow.GetCharacter.IsAdult)]"
+							# layoutpolicy_vertical = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetRelationsOfType( GetRelation( 'guardian' ) )]"
+							}
+
+							blockoverride "extra2" {
+								text_single = {
+									raw_text = "[Character.GetRelationToString( GetPlayer )]."
+								}
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Guardian, [GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'guardian' ) ))]."
+							}
+
+
+							blockoverride "expand_button" { }
+
+							### GUARDIAN FINDER
+							blockoverride "find_partner"
+							{
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									hbox = {
+										visible = "[Character.IsPlayerInteractionShown('educate_child_interaction')]"
+										layoutpolicy_horizontal = expanding
+										spacing = 3
+
+
+										text_single = {
+											margin_left = 3
+											raw_text = "[CharacterWindow.CalcUnusedRelationSlots( GetRelation( 'guardian' ), '(int32)1' )] more slots. "
+										}
+
+										button = {
+											size = { 0 20 }
+											onclick = "[CharacterWindow.GetCharacter.OpenPlayerInteraction('educate_child_interaction')]"
+											# enabled = "[CharacterWindow.GetCharacter.IsPlayerInteractionValid('educate_child_interaction')]"
+
+											flowcontainer = {
+												resizeparent = yes
+												ignoreinvisible = yes
+
+												text_single = {
+													raw_text = "Educate child."
+													# visible = "[CharacterWindow.GetCharacter.IsPlayerInteractionValid('educate_child_interaction')]"
+												}
+												# text_single = {
+												# 	raw_text = "Disabled, see tooltip."
+												# 	visible = "[Not(CharacterWindow.GetCharacter.IsPlayerInteractionValid('educate_child_interaction'))]"
+												# 	# tooltip = "[CharacterWindow.GetCharacter.GetPlayerInteractionTooltip('educate_child_interaction')]"
+												# }
+											}
+										}
+
+										expand = { }
+									}
+
+									hbox = {
+										visible = "[Character.IsPlayerInteractionShown('offer_guardianship_interaction')]"
+										layoutpolicy_horizontal = expanding
+										spacing = 3
+
+
+										text_single = {
+											margin_left = 3
+											raw_text = "[CharacterWindow.CalcUnusedRelationSlots( GetRelation( 'guardian' ), '(int32)1' )] more slots. "
+										}
+
+										button = {
+											size = { 0 20 }
+											onclick = "[CharacterWindow.GetCharacter.OpenPlayerInteraction('offer_guardianship_interaction')]"
+											enabled = "[CharacterWindow.GetCharacter.IsPlayerInteractionValid( 'offer_guardianship_interaction' )]"
+											# enabled = "[CharacterWindow.GetCharacter.IsPlayerInteractionValid('educate_child_interaction')]"
+
+											flowcontainer = {
+												resizeparent = yes
+												ignoreinvisible = yes
+
+												text_single = {
+													raw_text = "Educate child."
+													visible = "[CharacterWindow.GetCharacter.IsPlayerInteractionValid('offer_guardianship_interaction')]"
+												}
+												text_single = {
+													raw_text = "Disabled, see tooltip."
+													visible = "[Not(CharacterWindow.GetCharacter.IsPlayerInteractionValid('offer_guardianship_interaction'))]"
+													tooltip = "[CharacterWindow.GetCharacter.GetPlayerInteractionTooltip('offer_guardianship_interaction')]"
+												}
+											}
+										}
+
+										expand = { }
+									}
+								}
+							}
+						}
+
+						vbox_agot_squires = { } # also knights
+
+						vbox_agot_bodyguards = { }
+						vbox_agot_bodyguard_targets = { }
+
+						vbox_character_row_item_ocr = {
+							name = "crushes"
+							visible = "[Not(CharacterWindow.GetCharacter.IsAdult)]"
+							layoutpolicy_horizontal = expanding
+							# layoutpolicy_vertical = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetRelationsOfType( GetRelation( 'crush' ) )]"
+							}
+
+							blockoverride "extra2" {
+								text_single = {
+									raw_text = "[Character.GetRelationToString( GetPlayer )]."
+								}
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Crushes, [GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'crush' ) ))]."
+							}
+
+							blockoverride "expand_button" { }
+						}
+
+						vbox_character_row_item_ocr = {
+							name = "friends"
+							# layoutpolicy_vertical = expanding
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetRelationsOfType( GetRelation( 'friend' ) )]"
+							}
+
+							blockoverride "extra2" {
+								text_single = {
+									raw_text = "[Character.GetRelationToString( GetPlayer )]."
+								}
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Friends, [GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'friend' ) ))]."
+							}
+
+							blockoverride "remaining_items"
+							{
+								# visible = "[GreaterThan_int32( GetDataModelSize( CharacterWindow.GetRelationsOfType( GetRelation( 'friend' ) ) ), '(int32)7' ) )]"
+								# text = "[GetNumberAbove_int32( GetDataModelSize( CharacterWindow.GetRelationsOfType( GetRelation( 'friend' ) ) ), '(int32)7' )|=]"
+							}
+
+							blockoverride "expand_button_inside" {
+								# visible = "[GreaterThan_int32( GetDataModelSize( CharacterWindow.GetRelationsOfType( GetRelation( 'friend' ) ) ), '(int32)7' )]"
+								# onclick = "[CharacterWindow.ToggleExpandedRelation( 'friends' )]"
+							}
+						}
+
+						vbox_character_row_item_ocr = {
+							name = "rivals"
+							# visible = "[CharacterWindow.GetCharacter.IsAdult]"
+							# layoutpolicy_vertical = expanding
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetRelationsOfType( GetRelation( 'rival' ) )]"
+							}
+
+							blockoverride "extra2" {
+								text_single = {
+									raw_text = "[Character.GetRelationToString( GetPlayer )]."
+								}
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Rivals, [GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'rival' ) ))]."
+							}
+
+							blockoverride "remaining_items"
+							{
+								# visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'rival' ) )), '(int32)7' ))]"
+								# text = "[GetNumberAbove_int32( GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'rival' ) )), '(int32)7' )|=]"
+							}
+
+							blockoverride "expand_button_inside" {
+								# visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'rival' ) )), '(int32)7' )]"
+								# onclick = "[CharacterWindow.ToggleExpandedRelation( 'rivals' )]"
+							}
+						}
+
+						vbox_character_row_item_ocr = {
+							name = "bullies"
+							visible = "[Not( CharacterWindow.GetCharacter.IsAdult )]"
+							# layoutpolicy_vertical = expanding
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetRelationsOfType( GetRelation( 'bully' ) )]"
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Bullies, [GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'bully' ) ))]."
+							}
+
+							blockoverride "expand_button" { }
+						}
+
+						vbox_character_row_item_ocr = {
+							name = "victims"
+							visible = "[Not( CharacterWindow.GetCharacter.IsAdult )]"
+							# layoutpolicy_vertical = expanding
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetRelationsOfType( GetRelation( 'victim' ) )]"
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Victims, [GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'victim' ) ))]."
+							}
+
+							blockoverride "expand_button" { }
+						}
+
+						expand = { }
+					}
+				}
+			}
+
+			####################################
+			############ COURT TAB #############
+			####################################
+
+			vbox_character_list = {
+				datacontext = "[CharacterWindow.GetCourt]"
+				visible = "[GetVariableSystem.HasValue('char_tab','court')]"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "sort_dropdown" {
+					dropdown_sort_characterlist = {
+						# unique name needed to distinct from vassal sort options
+						name = "court_sort_options"
+					}
+				}
+
+				blockoverride "scrollbox_margins" {
+					margin_top = 20
+				}
+
+				blockoverride "container_implementation" {
+					fixedgridbox = {
+						name = "characters_grid"
+						datamodel = "[CharacterSelectionList.GetList]"
+						visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+						addcolumn = 590
+						addrow = 90
+						setitemsizefromcell = yes
+
+						item = {
+							widget_character_list_item_finder_ocr = {
+								blockoverride "click" {
+									onclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+									onclick = "[GetVariableSystem.Clear('char_tab')]"
+									onclick = "[GetVariableSystem.Clear('expand_view')]"
+									onrightclick = "[DefaultOnCharacterRightClick(CharacterListItem.GetCharacter.GetID)]"
+								}
+								datacontext = "[CharacterListItem.GetCharacter]"
+
+								blockoverride "gridbox_items"
+								{
+									datamodel_wrap = 7
+									maxverticalslots = 2
+								}
+
+								blockoverride "action_buttons" { }
+							}
+						}
+					}
+				}
+			}
+
+			####################################
+			########### VASSALS TAB ############
+			####################################
+
+			vbox_character_list = {
+				visible = "[GetVariableSystem.HasValue('char_tab','vassals')]"
+				datacontext = "[CharacterWindow.GetVassals]"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "sort_dropdown" {
+					dropdown_sort_characterlist = {
+						# unique name needed to distinct from court sort options
+						name = "vassal_sort_options"
+					}
+				}
+
+				blockoverride "scrollbox_margins" {
+					margin_top = 20
+				}
+
+				blockoverride "container_implementation" {
+					fixedgridbox = {
+						name = "characters_grid"
+						datamodel = "[CharacterSelectionList.GetList]"
+						visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+						addcolumn = 590
+						addrow = 70
+						layoutpolicy_horizontal = expanding
+						setitemsizefromcell = yes
+
+						item = {
+							widget_vassal_list_item_ocr = {
+								onclick = "[GetVariableSystem.Clear('char_tab')]"
+
+								datacontext = "[CharacterListItem.GetCharacter]"
+
+								blockoverride "own_vassal" { }
+							}
+						}
+					}
+				}
+			}
+
+			vbox_tribs_locr_list = {}
+		}
+
+		expand = { }
+	}
+}
