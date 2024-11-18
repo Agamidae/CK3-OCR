@@ -7,7 +7,7 @@ widget = {
 	state = {
 		name = _show
 		using = Animation_FadeIn_Standard
-		on_start = "[GetVariableSystem.Clear('mod_changes')]"
+		on_start = "[Clear('frontend_view')]"
 		start_sound = {
 			soundeffect = "event:/SFX/UI/Frontend/sfx_ui_frontend_window_show"
 		}
@@ -67,8 +67,9 @@ widget = {
 		}
 	}
 
+	# animations
 	widget = {
-		visible = "[GetVariableSystem.Exists('ocr')]"
+		using = vanilla
 		parentanchor = center
 		size = { 1920 1080 }
 		scale = "[ScaleToFitElementInside('(int32)1920', '(int32)1080')]"
@@ -270,14 +271,16 @@ widget = {
 		}
 	}
 
+	# main menu
 	widget = {
 		size = { 100% 100% }
+		visible = "[Isnt('frontend_view')]"
 		# scale = "[ScaleToFitElementInside('(int32)1920', '(int32)1080')]"
 
 		icon = {
 			name = "left_panel"
 			size = { 700 100% }
-			visible = "[Not(GetVariableSystem.Exists('ocr'))]"
+			using = ocr
 
 			vbox = {
 				layoutpolicy_horizontal = expanding
@@ -309,7 +312,7 @@ widget = {
 									raw_text = " View change notes."
 								}
 							}
-							onclick = "[GetVariableSystem.Toggle('mod_changes')]"
+							onclick = "[Set('frontend_view', 'mod_changes')]"
 						}
 
 						#TODO don't show without AGOT
@@ -410,15 +413,6 @@ widget = {
 							shortcut = speed_1
 							layoutpolicy_horizontal = expanding
 
-							state = {
-								name = _mouse_hierarchy_enter
-								on_start = "[PdxGuiInterruptThenTriggerAllAnimations('main_menu_glow_new_leave','main_menu_glow_new_enter')]"
-							}
-
-							state = {
-								name = _mouse_hierarchy_leave
-								on_start = "[PdxGuiInterruptThenTriggerAllAnimations('main_menu_glow_new_enter','main_menu_glow_new_leave')]"
-							}
 							blockoverride "text" {
 								raw_text = "Start new Game, hotkey 1."
 							}
@@ -448,6 +442,45 @@ widget = {
 							dot = { }
 						}
 
+						flowcontainer = {
+							ignoreinvisible = yes
+							layoutpolicy_horizontal = expanding
+							direction = vertical
+
+							datacontext = "[FrontEndMainView.GetChallengeCharacter]"
+							datacontext = "[ChallengeCharacter.GetBookmarkCharacter]"
+							visible = "[FrontEndMainView.ShouldShowChallengeCharacter]"
+
+							button_text = {
+								shortcut = map_mode_10
+								onclick = "[Set('frontend_view', 'week')]"
+								blockoverride "text" {
+									raw_text = "CHALLENGE_CHARACTER_SUGGESTION"
+								}
+								blockoverride "extra" {
+									comma = {}
+									text_single = {
+										raw_text = "Shift W."
+									}
+								}
+							}
+
+							button_text = {
+								onclick = "[Set('frontend_view', 'week')]"
+								blockoverride "text" {
+									raw_text = "Play as"
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = "[BookmarkCharacter.GetName]"
+									}
+									text_single = {
+										raw_text = "of [BookmarkCharacter.GetTitleName]."
+									}
+								}
+							}
+						}
+
 						button_text = {
 							layoutpolicy_horizontal = expanding
 							blockoverride "text" {
@@ -463,36 +496,12 @@ widget = {
 							onclick = "[FrontEndMainView.OnSettings]"
 						}
 					}
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						visible = no
-
-						button = {
-							scale = "[ScaleToFitElementInside('(int32)1920', '(int32)1080')]"
-							background = { using = Background_Area_Border_Solid }
-
-							text_multi = {
-								margin = { 0 15 }
-								margin_left = 5
-								fontsize = 18
-								max_width = 680
-								autoresize = yes
-								resizeparent = yes
-								raw_text = "If your screen reader can't read the text above, click here to open settings and increase gui scaling to one hundred percent."
-
-							}
-							onclick = "[FrontEndMainView.OnSettings]"
-							onclick = "[GetVariableSystem.Set('scaled_settings', 'yes')]"
-						}
-
-						expand = { }
-					}
 
 					vbox = {
 						layoutpolicy_horizontal = expanding
 
 						hbox = {
-						    layoutpolicy_horizontal = expanding
+					    layoutpolicy_horizontal = expanding
 							spacing = 3
 
 							text_single = {
@@ -503,15 +512,15 @@ widget = {
 								raw_text = "[Select_CString(POPSStatusIsLoggedIn, 'Online', 'Offline')]."
 							}
 
-						    expand = { }
+					    expand = { }
 						}
 
 						button_text = {
 							layoutpolicy_horizontal = expanding
 							visible = "[Or( Not( POPSStatusIsLoggedIn ), POPStatusIsUserNameEmpty )]"
-						    blockoverride "text" {
-						        raw_text = "Log in to access multiplayer."
-						    }
+					    blockoverride "text" {
+					        raw_text = "Log in to access multiplayer."
+					    }
 							onclick = "[FrontEndMainView.OnLogin]"
 						}
 
@@ -713,13 +722,14 @@ widget = {
 		}
 
 		left_panel_old = {
-			visible = "[GetVariableSystem.Exists('ocr')]"
+			using = vanilla
 		}
 
+		#DLCs vanilla
 		widget = {
 			parentanchor = bottom|left
 			size = { 800 100 }
-			visible = "[GetVariableSystem.Exists('ocr')]"
+			using = vanilla
 
 			hbox = { # DLCs
 				layoutpolicy_horizontal = expanding
@@ -787,11 +797,12 @@ widget = {
 		}
 	}
 
+	# mod changes
 	window = {
 		size = { 100% 100% }
 		background = { using = Background_Area_Border_Solid }
 
-		visible = "[GetVariableSystem.Exists('mod_changes')]"
+		visible = "[Has('frontend_view', 'mod_changes')]"
 
 		scrollbox = {
 			size = { 100% 100% }
@@ -799,7 +810,7 @@ widget = {
 			blockoverride "scrollbox_content" {
 				button_text = {
 					shortcut = close_window
-					onclick = "[GetVariableSystem.Toggle('mod_changes')]"
+					onclick = "[Clear('frontend_view')]"
 					layoutpolicy_horizontal = expanding
 				    blockoverride "text" {
 						raw_text = "Change notes. Close with Escape."
@@ -839,6 +850,597 @@ widget = {
 		}
 	}
 
+	# week
+	widget = {
+		visible = "[Has('frontend_view', 'week')]"
+		size = { 100% 100% }
+		background = { using = Background_Area_Border_Solid }
+
+
+		datacontext = "[FrontEndMainView.GetChallengeCharacter]"
+		datacontext = "[ChallengeCharacter.GetBookmarkCharacter]"
+		allow_outside = yes
+
+		scrollbox = {
+			size = { 100% 100% }
+			blockoverride "scrollbox_content" {
+				flowcontainer = {
+					ignoreinvisible = yes
+					layoutpolicy_horizontal = expanding
+					direction = vertical
+
+					button_text = {
+						shortcut = close_window
+						shortcut = map_mode_10
+						onclick = "[Clear('frontend_view')]"
+						blockoverride "text" {
+							text = "CHALLENGE_CHARACTER_SUGGESTION"
+						}
+						blockoverride "extra" {
+							comma = {}
+
+							text_single = {
+								raw_text = "Escape to close."
+							}
+						}
+					}
+
+					####
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+
+						text_single = {
+							name = "character_name"
+							text = "CHALLENGE_CHARACTER_INFO"
+						}
+
+						comma = {}
+
+						text_single = {
+							raw_text = "of [BookmarkCharacter.GetTitleName]."
+						}
+
+						# text_single = {
+						# 	raw_text = "[BookmarkCharacter.GetDynastyHouseTemplate.GetName]."
+						# }
+					}
+
+					button_text = {
+						blockoverride "text" {
+							raw_text = "Start new game."
+						}
+						blockoverride "extra" {
+							datacontext = "[GetGameRules]"
+							text_single = {
+								raw_text = "Achievements"
+							}
+							text_single = {
+								visible = "[Not( CanGetAchievements )]"
+								raw_text = "disabled."
+							}
+							text_single = {
+								visible = "[CanGetAchievements]"
+								raw_text = "enabled."
+							}
+						}
+						onclick = "[FrontEndMainView.StartGameWithChallengeCharacter]"
+					}
+
+					button_text = {
+						shortcut = map_mode_3
+						name = "game_rules_button"
+						onclick = "[OpenGameRules]"
+						blockoverride "text" {
+							raw_text = "Open game rules. R."
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+
+						text_single = {
+							raw_text = "BOOKMARK_CHARACTER_DIFFICULTY"
+						}
+
+						comma = {}
+
+						text_single = {
+							raw_text = "Date: [ChallengeCharacter.GetStartDate.GetStringLong]."
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+
+						text_single = {
+							text = "BOOKMARK_CHARACTER_CULTURE"
+						}
+
+						comma = {}
+
+						text_single = {
+							text = "BOOKMARK_CHARACTER_RELIGION"
+						}
+
+						comma = {}
+
+						text_single = {
+							raw_text = "Realm: [BookmarkCharacter.GetGovernmentType.GetNameNoTooltip]."
+						}
+					}
+
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+
+						text_single = {
+							raw_text = "[GetDataModelSize(FrontEndMainView.AccessChallengeAchievements)]"
+						}
+
+						text_single = {
+							raw_text = "related achievements, see tooltips."
+						}
+					}
+
+					flowcontainer = {
+						datamodel = "[FrontEndMainView.AccessChallengeAchievements]"
+						spacing = 3
+
+						item = {
+							flowcontainer = {
+								ignoreinvisible = yes
+								spacing = 3
+
+								text_single = {
+									raw_text = "Unlocked,"
+									visible = "[GUIAchievement.GetAchievement.IsUnlocked]"
+								}
+
+								text_single = {
+									raw_text = "[GUIAchievement.GetName],"
+									raw_tooltip = "[GUIAchievement.GetDescription]"
+								}
+							}
+						}
+					}
+
+					text_single = {
+						raw_text = "Description:"
+					}
+
+					text_multi = {
+						name = "character_text"
+						autoresize = yes
+						max_width = 500
+						text = "[BookmarkCharacter.GetDescription]"
+						align = left
+					}
+				}
+			}
+		}
+	}
+
+	# vanilla week
+	widget = {
+		name = "challenge_character"
+		visible = "[And(FrontEndMainView.ShouldShowChallengeCharacter, Is('ocr'))]"
+		datacontext = "[FrontEndMainView.GetChallengeCharacter]"
+		datacontext = "[ChallengeCharacter.GetBookmarkCharacter]"
+		allow_outside = yes
+
+		parentanchor = vcenter|right
+		position = { -60 -10 }
+		size = { 400 744 }
+
+		widget = {
+			position = { 0 -40 }
+			size = { 280 280 }
+			parentanchor = top|hcenter
+
+			icon = {
+				texture = "gfx/interface/colors/black.dds"
+				size = { 180% 180% }
+				position = { -10 -10 }
+				parentanchor = top|hcenter
+				alpha = 0.5
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_glow.dds"
+					blend_mode = alphaMultiply
+				}
+			}
+
+			icon = {
+				texture = "gfx/interface/colors/black.dds"
+				size = { 220% 220% }
+				position = { -10 -10 }
+				parentanchor = top|hcenter
+				alpha = 0.5
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_glow.dds"
+					blend_mode = alphaMultiply
+				}
+			}
+
+			coat_of_arms_icon = { #Dynasty
+				size = { 100% 100% }
+				visible = "[Not( BookmarkCharacter.HasDynastyHouse )]"
+				parentanchor = top|hcenter
+				coat_of_arms = "[BookmarkCharacter.GetDynastyTemplate.GetCoA.GetTexture('(int32)256','(int32)256')]"
+				coat_of_arms_slot = "[BookmarkCharacter.GetDynastyTemplate.GetCoA.GetSlot('(int32)256','(int32)256')]"
+				coat_of_arms_mask = "gfx/interface/frontend/mask_coa_flag.dds"
+
+				modify_texture = {
+					texture = "gfx/interface/coat_of_arms/coa_overlay.dds"
+					blend_mode = overlay
+					spritetype = corneredTiled
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_glow.dds"
+					blend_mode = alphaMultiply
+				}
+			}
+
+			coat_of_arms_icon = { #Dynasty House
+				size = { 100% 100% }
+				visible = "[BookmarkCharacter.HasDynastyHouse]"
+				parentanchor = top|hcenter
+				coat_of_arms = "[BookmarkCharacter.GetDynastyHouseTemplate.GetCoA.GetTexture('(int32)256','(int32)256')]"
+				coat_of_arms_slot = "[BookmarkCharacter.GetDynastyHouseTemplate.GetCoA.GetSlot('(int32)256','(int32)256')]"
+				coat_of_arms_mask = "gfx/interface/frontend/mask_coa_flag.dds"
+
+				modify_texture = {
+					texture = "gfx/interface/coat_of_arms/coa_overlay.dds"
+					blend_mode = overlay
+					spritetype = corneredTiled
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_glow.dds"
+					blend_mode = alphaMultiply
+				}
+			}
+		}
+
+		portrait_button = {
+			using = portrait_base
+			size = { 240 240 }
+			position = { 0 -42 }
+
+			parentanchor = top|hcenter
+
+			portrait_texture = "[FrontEndMainView.GetChallengeCharacterPortrait( 'environment_bookmarks_map', 'camera_shoulders', PdxGetWidgetScreenSize(PdxGuiWidget.Self) )]"
+			mask = "gfx/portraits/portrait_mask_body.dds"
+
+			blockoverride "grayscale" {}
+			blockoverride "portrait_button_template_onmouseenter" {}
+			blockoverride "portrait_button_template_onmouseleave" {}
+			blockoverride "portrait_button_template_onclick" {}
+			blockoverride "portrait_button_template_onrightclick" {}
+			blockoverride "portrait_button_template_tooltip" {}
+			alwaystransparent = yes
+		}
+
+		widget = {
+			parentanchor = hcenter
+			position = { 0 90 }
+			size = { 300 200 }
+			button_back = {
+				parentanchor = left
+				visible = "[InDebugMode]"
+				size = { 30 30 }
+				onclick = "[FrontEndMainView.GoPreviousChallengeCharacter]"
+			}
+
+			button_forward = {
+				parentanchor = right
+				visible = "[InDebugMode]"
+				size = { 30 30 }
+				onclick = "[FrontEndMainView.GoNextChallengeCharacter]"
+			}
+		}
+
+		icon = {
+			texture = "gfx/interface/component_decoration/decoration_frame_top_clean.dds"
+			position = { -24 164 }
+			spriteType = Corneredtiled
+			spriteborder = { 100 0 }
+			size = { 448 20 }
+			texture_density = 2
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			margin_bottom = 10
+
+			spacer = {
+				size = { 180 180 }
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				background = {
+					texture = "gfx/interface/component_masks/mask_rough_edges.dds"
+					spriteType = Corneredtiled
+					spriteborder = { 20 20 }
+					color = { 0.025 0.025 0.05 0.8 }
+					texture_density = 2
+					alpha = 0.75
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					margin = {0 10}
+
+					background = {
+						using = Background_Area_Dark
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						autoresize = no
+						align = nobaseline|center
+						text = "CHALLENGE_CHARACTER_SUGGESTION"
+						default_format = "#high;glow_color:{0,0,0,1}"
+					}
+
+					text_single = {
+						name = "character_name"
+						layoutpolicy_horizontal = expanding
+						autoresize = no
+						align = nobaseline|center
+						text = "CHALLENGE_CHARACTER_INFO"
+						using = Font_Size_Big
+						default_format = "#high;glow_color:{0,0,0,1}"
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						autoresize = no
+						align = nobaseline|center
+						text = "[ChallengeCharacter.GetStartDate.GetStringLong]"
+						default_format = "#medium;glow_color:{0,0,0,1}"
+						using = Font_Size_Medium
+						using = Font_Type_Flavor
+					}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					margin = { 24 0 }
+
+					divider_light = {
+						layoutpolicy_horizontal = expanding
+					}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					margin_top = 16
+
+					expand = {layoutpolicy_horizontal = expanding}
+
+					vbox = {
+						layoutpolicy_vertical = expanding
+						coa_dynasty_bookmark = {
+							blockoverride "character" {}
+							using = tooltip_ws
+
+						}
+						expand = {layoutpolicy_vertical = expanding}
+					}
+
+					expand = {layoutpolicy_horizontal = expanding}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 4
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							min_width = 270
+							spacing = 10
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 5
+								text_single = {
+									max_width = 140
+									layoutpolicy_horizontal = expanding
+									text = "BOOKMARK_CHARACTER_CULTURE"
+									autoresize = no
+									align = nobaseline
+								}
+
+								text_single = {
+									max_width = 140
+									layoutpolicy_horizontal = expanding
+									text = "BOOKMARK_CHARACTER_RELIGION"
+									autoresize = no
+									align = nobaseline
+								}
+							}
+
+							divider_light = {
+								layoutpolicy_vertical = expanding
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 5
+
+								text_single = {
+									max_width = 140
+									layoutpolicy_horizontal = expanding
+									text = "BOOKMARK_CHARACTER_GOVERNMENT"
+									autoresize = no
+									align = nobaseline
+								}
+
+								text_single = {
+									max_width = 140
+									layoutpolicy_horizontal = expanding
+									text = "BOOKMARK_CHARACTER_REALM"
+									autoresize = no
+									align = nobaseline
+									tooltip = "BOOKMARK_CHARACTER_REALM"
+								}
+							}
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							text = "BOOKMARK_CHARACTER_DIFFICULTY"
+							autoresize = no
+							align = nobaseline
+						}
+					}
+					expand = {layoutpolicy_horizontal = expanding}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					margin = { 24 12 }
+
+					divider_light = {
+						layoutpolicy_horizontal = expanding
+					}
+				}
+
+				hbox = {
+					datamodel = "[FrontEndMainView.AccessChallengeAchievements]"
+					spacing = 16
+					item = {
+
+						container = {
+
+							icon = {
+								visible = "[GUIAchievement.GetAchievement.IsUnlocked]"
+								texture = "[GUIAchievement.AccessTexture]"
+								size = { 64 64 }
+								alpha = "[Select_float(GUIAchievement.GetAchievement.IsUnlocked,'(float)1.0','(float)0.5')]"
+								#tooltip = "ACHIEVEMENT_UNLOCKED"
+								tooltip = "CHALLENGE_ACHIEVEMENT_TOOLTIP"
+							}
+
+							highlight_icon = {
+								visible = "[Not(GUIAchievement.GetAchievement.IsUnlocked)]"
+								texture = "[GUIAchievement.AccessTexture]"
+								size = { 64 64 }
+								alpha = "[Select_float(GUIAchievement.GetAchievement.IsUnlocked,'(float)1.0','(float)0.5')]"
+								#tooltip = "ACHIEVEMENT_LOCKED"
+								tooltip = "CHALLENGE_ACHIEVEMENT_TOOLTIP"
+
+								effectname = "GreyedOut"
+
+								highlight_icon = {
+									size = { 96% 97% }
+									parentanchor = center
+									texture = "gfx/interface/component_masks/mask_frame_horizontal.dds"
+									tintcolor = { 0 0 0 0.6 }
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					margin_bottom = 12
+
+					background = {
+						using = Background_Area_Light
+						using = Mask_Rough_Edges
+						margin_top = -12
+						margin_bottom = 12
+					}
+
+					text_multi = {
+						name = "character_text"
+						text = "[BookmarkCharacter.GetDescription]"
+						size = { 330 250 }
+						margin_bottom = 10
+						align = left
+					}
+
+					expand = {}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						expand = {}
+
+
+						button_standard = {
+							size = { 160 40 }
+							onclick = "[FrontEndMainView.StartGameWithChallengeCharacter]"
+							text = "START"
+						}
+
+						expand = {}
+
+						button_tertiary = {
+							name = "game_rules_button"
+							size = { 160 40 }
+
+							onclick = "[OpenGameRules]"
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								expand = {}
+								button_rules = {
+									size = { 25 25 }
+									alwaystransparent = yes
+								}
+
+								text_single = {
+									margin = { 4 0 }
+									text = "GAME_RULES"
+									align = nobaseline
+									default_format = "#clickable"
+									alwaystransparent = yes
+								}
+
+								vbox = {
+									datacontext = "[GetGameRules]"
+									achievements_enabled_icon = {
+										visible = "[CanGetAchievements]"
+										size = { 25 25 }
+										tooltip = ACHIEVEMENTS_ENABLED
+									}
+									achievements_disabled_icon = {
+										visible = "[Not( CanGetAchievements )]"
+										size = { 25 25 }
+										tooltip = ACHIEVEMENTS_DISABLED
+									}
+								}
+
+								expand = {}
+							}
+						}
+
+						expand = {}
+					}
+				}
+			}
+		}
+		icon = {
+			parentanchor = bottom
+			texture = "gfx/interface/component_decoration/decoration_frame_bottom.dds"
+			position = { -20 42 }
+			spriteType = Corneredtiled
+			spriteborder = { 100 0 }
+			size = { 440 20 }
+			texture_density = 2
+		}
+	}
+
+
 	button_standard_hover = {
 		visible = "[And(InDebugMode, Is('ocr'))]"
 		raw_text = "Console, F11"
@@ -858,10 +1460,7 @@ widget = {
 
 		blockoverride "background"
 		{
-
 		}
-
-
 	}
 
 	state = {
@@ -883,12 +1482,6 @@ widget = {
 		position = { -120 -85 }
 	}
 
-	# window = {
-	# 	size = { 100% 100% }
-	# 	background = { using = Background_Area_Border_Solid }
-	#
-	# 	widget_loading_screen = { }
-	# }
 }
 
 types FrontendTypes {

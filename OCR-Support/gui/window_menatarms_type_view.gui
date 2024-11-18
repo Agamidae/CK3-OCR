@@ -71,24 +71,6 @@ window = {
 			size = { 0 0 }
 			scissor = yes
 
-			widget = {
-				visible = "[MenAtArmsTypeView.IsAnyMenAtArmsTypeSelected]"
-				parentanchor = bottom
-				size = { 100% 250 }
-
-				background = {
-					texture = "[MenAtArmsType.GetHorizontalImage]"
-					alpha = 0.8
-					margin = { -4 0 }
-
-					modify_texture = {
-						texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
-						blend_mode = alphamultiply
-						mirror = vertical
-					}
-				}
-			}
-
 			state = {
 				name = _show
 
@@ -176,9 +158,15 @@ window = {
 						layoutpolicy_horizontal = expanding
 						blockoverride "start" {
 							text_single = {
-								margin_left = 5
 								layoutpolicy_horizontal = expanding
+								visible = "[Not(GetPlayer.GetGovernment.IsType( 'landless_adventurer_government' ))]"
 								text = "MV_REGIMENT_START_SIZE"
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								visible = "[GetPlayer.GetGovernment.IsType( 'landless_adventurer_government' )]"
+								text = "MV_REGIMENT_START_SIZE_ADVENTURER"
 							}
 						}
 					}
@@ -208,10 +196,11 @@ window = {
 					spacing = 3
 
 					item = {
-						button_standard = {
+						button = {
 							name = "select"
 							datacontext = "[MenAtArmsTypeViewTypeItem.GetMenAtArmsType]"
 							datacontext = "[GetNullProvince]"
+							datacontext = "[GetNullLandedTitle]"
 							layoutpolicy_horizontal = expanding
 							size = { 0 42 }
 
@@ -381,7 +370,7 @@ types MenAtArms
 				name = "label"
 				block "damage_stat"
 				{
-					raw_text = "[MenAtArmsType.GetStat( GetPlayer, Province.Self, 'damage' )|0]"
+					raw_text = "[MenAtArmsType.GetStat( GetPlayer, Province.Self, Title.Self,'damage' )|0]"
 				}
 			}
 
@@ -402,7 +391,7 @@ types MenAtArms
 				name = "label"
 				block "toughness_stat"
 				{
-					raw_text = "[MenAtArmsType.GetStat( GetPlayer, Province.Self, 'toughness' )|0]"
+					raw_text = "[MenAtArmsType.GetStat( GetPlayer, Province.Self, Title.Self,'toughness' )|0]"
 				}
 			}
 
@@ -426,7 +415,7 @@ types MenAtArms
 				name = "label"
 				block "pursuit_stat"
 				{
-					raw_text = "[MenAtArmsType.GetStat( GetPlayer, Province.Self, 'pursuit' )|0],"
+					raw_text = "[MenAtArmsType.GetStat( GetPlayer, Province.Self, Title.Self, 'pursuit' )|0],"
 				}
 			}
 
@@ -450,14 +439,34 @@ types MenAtArms
 				name = "label"
 				block "screen_stat"
 				{
-					raw_text = "[MenAtArmsType.GetStat( GetPlayer, Province.Self, 'screen' )|0]"
+					raw_text = "[MenAtArmsType.GetStat( GetPlayer, Province.Self, Title.Self,'screen' )|0]"
 				}
 			}
 
 			text_single = {
 				raw_text = "screen."
 			}
+		}
 
+		hbox = {
+			visible = "[GreaterThan_CFixedPoint(MenAtArmsType.GetStat(GetPlayer, Province.Self, Title.Self, 'siege_value'), '(CFixedPoint)0')]"
+			block "siege_tt"
+			{
+				tooltip = "REGIMENT_SIEGE_TT"
+			}
+			using = tooltip_se
+			spacing = 3
+
+			text_single = {
+				block "siege_stat"
+				{
+					text = "[MenAtArmsType.GetStat( GetPlayer, Province.Self, Title.Self, 'siege_value' )|1]"
+				}
+			}
+
+			text_single = {
+				raw_text = "siege."
+			}
 		}
 
 		expand = { }
@@ -521,6 +530,7 @@ types MenAtArms
 	type vbox_maa_stats_numbers = vbox_maa_stats_numbers_base
 	{
 		datacontext = "[GetNullProvince]"
+		datacontext = "[GetNullLandedTitle]"
 	}
 
 
@@ -688,10 +698,17 @@ types MenAtArms
 				margin_bottom = 15
 
 				text_label_center = {
+					visible = "[IsLandlessAdventurer( GetPlayer )]"
+					text = "[MenAtArmsType.GetProvisionsCostString]"
+				}
+
+				text_label_center = {
+					visible = "[Not(GetPlayer.GetGovernment.IsType( 'landless_adventurer_government' ))]"
 					text = "[MenAtArmsType.GetReinforcementCostString( GetPlayer )]"
 				}
 
 				text_label_center = {
+					visible = "[Not(GetPlayer.GetGovernment.IsType( 'landless_adventurer_government' ))]"
 					text = "[MenAtArmsType.GetFullStrengthMaintenanceCostForPlayerString]"
 				}
 			}
@@ -720,16 +737,34 @@ types MenAtArms
 
 				text_single = {
 					layoutpolicy_horizontal = expanding
+					visible = "[IsLandlessAdventurer( GetPlayer )]"
+					text = "[MenAtArmsType.GetProvisionsCostString]"
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not(GetPlayer.GetGovernment.IsType( 'landless_adventurer_government' ))]"
 					text = "[MenAtArmsType.GetReinforcementCostString( GetPlayer )]"
 				}
 
 				text_single = {
 					layoutpolicy_horizontal = expanding
+					visible = "[Not(GetPlayer.GetGovernment.IsType( 'landless_adventurer_government' ))]"
 					text = "[MenAtArmsType.GetFullStrengthMaintenanceCostForPlayerString]"
 				}
 			}
 
 			block "start" { }
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[MenAtArmsTypeView.GetSelectedTitle]"
+				visible = "[Title.IsValid]"
+				using = title_click
+				blockoverride "text" {
+					raw_text = "belongs to [Title.GetNameNoTooltip]."
+				}
+			}
 
 			text_multi = {
 				max_width = 530
@@ -737,6 +772,8 @@ types MenAtArms
 				text = "[MenAtArmsType.GetFlavorString]"
 				margin = { 5 0 }
 			}
+
+
 
 			expand = { }
 		}

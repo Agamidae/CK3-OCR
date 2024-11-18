@@ -32,13 +32,14 @@ types OCR {
 
 				vbox = {
 					using = Window_Margins
-					margin_top = 20
+
 					header_pattern = {
 						layoutpolicy_horizontal = expanding
 
 						blockoverride "header_text"
 						{
-							text = "DECISIONS_VIEW_TITLE"
+							datacontext = "[GetPlayer]"
+							text = "DECISIONS_VIEW_TITLE_CONTAINER"
 						}
 
 						blockoverride "button_close"
@@ -46,9 +47,43 @@ types OCR {
 							onclick = "[DecisionsView.Close]"
 						}
 					}
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						margin_bottom = 5
+
+						button_tab = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Or( IsAdministrativeRuler( GetPlayer ), IsLandlessAdventurer( GetPlayer) )]"
+							onclick = "[GetVariableSystem.Set( 'decision_tab', 'decision' )]"
+							down = "[GetVariableSystem.HasValue( 'decision_tab', 'decision' )]"
+
+							text_single = {
+								text = "DECISIONS_VIEW_DECISION_TAB_TITLE"
+								parentanchor = center
+
+								maximumsize = { 400 -1 }
+								default_format = "#low"
+							}
+						}
+						button_tab = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Or( GetPlayer.IsGovernor, IsLandlessAdventurer( GetPlayer ) )]"
+							onclick = "[GetVariableSystem.Set( 'decision_tab', 'task_contract' )]"
+							down = "[GetVariableSystem.HasValue( 'decision_tab', 'task_contract' )]"
+
+							text_single = {
+								text = "DECISIONS_VIEW_CONTRACTS_TAB_TITLE"
+								parentanchor = center
+
+								maximumsize = { 400 -1 }
+								default_format = "#low"
+							}
+						}
+					}
 
 					scrollbox = {
 						name = "decision_scrollarea"
+						visible = "[GetVariableSystem.HasValue( 'decision_tab', 'decision' )]"
 						layoutpolicy_horizontal = expanding
 						layoutpolicy_vertical = expanding
 
@@ -69,87 +104,56 @@ types OCR {
 
 						blockoverride "scrollbox_content"
 						{
-							name = "decisions_main_container"
-							spacing = 15
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
 
 							vbox = {
+								name = "decision_groups_container"
+								spacing = 2
+
 								layoutpolicy_horizontal = expanding
-								spacing = 10
 
-								text_label_center = {
-									text = "DECISIONS_VIEW_MAJOR_DECISIONS"
-								}
-
-								text_single = {
-									visible = "[IsDataModelEmpty(DecisionsView.GetDecisions)]"
-									text = "DECISIONS_VIEW_MAJOR_NOT_AVAILABLE"
-									default_format = "#low;italic"
-								}
-
-								vbox = {
-									name = "major_decisions"
-									datamodel = "[DecisionsView.GetDecisions]"
-									layoutpolicy_horizontal = expanding
-									spacing = 5
-
-									item = {
-										button_decision_entry = {
-											datacontext = "[DecisionsViewItem.GetDecision]"
-											visible = "[Decision.IsMajor]"
-											layoutpolicy_horizontal = expanding
-											size = { -1 55 }
-
-											blockoverride "size_illustration" {
-												size = { 250 53 }
-											}
-
-											onclick = "[DecisionsViewItem.OnSelect]"
-											onclick = "[PdxGuiTriggerAllAnimations('decisions_detail_refresh')]"
-											down = "[DecisionsViewItem.IsSelected]"
-
-											blockoverride "default_format" {
-												default_format = "#medium"
-											}
-										}
-									}
-								}
-
-							}
-
-							divider_light = {
-								layoutpolicy_horizontal = expanding
-							}
-
-							vbox = {
-								name = "decisions_container"
-								layoutpolicy_horizontal = expanding
-								spacing = 10
-
-								text_label_center = {
-									text = "DECISIONS_VIEW_DECISIONS"
-								}
-
-								vbox = {
-									name = "regular_decisions"
-									datamodel = "[DecisionsView.GetDecisions]"
-									layoutpolicy_horizontal = expanding
-									spacing = 5
-
-									item = {
-										button_decision_entry = {
-											datacontext = "[DecisionsViewItem.GetDecision]"
-											visible = "[Not(Decision.IsMajor)]"
-											layoutpolicy_horizontal = expanding
-
-											onclick = "[DecisionsViewItem.OnSelect]"
-											onclick = "[PdxGuiTriggerAllAnimations('decisions_detail_refresh')]"
-											down = "[DecisionsViewItem.IsSelected]"
-										}
-									}
+								datamodel = "[DecisionsView.GetDecisionGroupItems]"
+								item = {
+									vbox_decision_group_foldout = {}
 								}
 							}
 						}
+						blockoverride "scrollbox_expand" {
+							expand = {}
+						}
 					}
+
+					scrollbox = {
+						name = "tab_contracts"
+						visible = "[GetVariableSystem.HasValue( 'decision_tab', 'task_contract' )]"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						background = {
+							using = Background_Area
+						}
+
+						blockoverride "scrollbox_content"
+						{
+							text_label_center = {
+								text = "DECISIONS_VIEW_ONGOING_CONTRACTS"
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 10
+
+								datamodel = "[GetPlayer.GetAcceptedTaskContracts]"
+								item = {
+									contract_item = {}
+								}
+								expand = {}
+							}
+						}
+					}
+
+					expand = {}
 				}
 			}
 		}

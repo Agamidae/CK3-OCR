@@ -1,12 +1,5 @@
 types CharacterInteraction
 {
-	type icon_character_interaction = icon {
-		name = "interaction_icon"
-		position = { 0 -5 }
-		size = { 60 60 }
-		texture = "[CharacterInteractionConfirmationWindow.GetInteraction.GetIcon]"
-	}
-
 	type vbox_sender_portrait_message = vbox {
 		margin = { 10 5 }
 		# using = Background_Letter
@@ -524,21 +517,34 @@ types CharacterInteraction
 		}
 	}
 
+	type vbox_list_interaction_maa_selection = vbox {
+		name = "maa_grid"
+		datamodel = "[CharacterInteractionConfirmationWindow.GetMaa]"
+		layoutpolicy_horizontal = expanding
+
+		item = {
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					text = "[Regiment.GetName]"
+				}
+				blockoverride "selected" {
+					visible = "[ObjectsEqual(CharacterInteractionConfirmationWindow.GetSelectedMaa, Regiment.Self)]"
+				}
+				onclick = "[CharacterInteractionConfirmationWindow.SetSelectedMaa( Regiment.Self )]"
+				onclick = "[GetVariableSystem.Toggle( 'character_interaction_change_maa' )]"
+			}
+		}
+	}
+
 	type vbox_character_interaction_three_characters = vbox {
 		margin = { 10 10 }
 
-		background = {
-			texture = "gfx/interface/illustrations/event_scenes/study.dds"
-			alpha = 0.1
-			fittype = centercrop
-			using = Mask_Rough_Edges
-		}
-
 		button_text = {
 			layoutpolicy_horizontal = expanding
-		    blockoverride "text" {
-		        raw_text = "Participants, click to hide."
-		    }
+	    blockoverride "text" {
+        raw_text = "Participants, click to hide."
+	    }
 			onclick = "[GetVariableSystem.Toggle('hide_x_participants')]"
 			visible = "[GetVariableSystem.Exists('hide_x_participants')]"
 		}
@@ -559,25 +565,13 @@ types CharacterInteraction
 			char_name = {
 				layoutpolicy_horizontal = expanding
 				blockoverride "pre" {
-					spacing = 3
 					text_single = {
-						raw_text = "Sender: "
+						raw_text = "INTERACTION_SENDER"
 					}
+					comma = {}
 				}
 				datacontext = "[CharacterInteractionConfirmationWindow.GetActor]"
 				visible = "[Character.IsValid]"
-
-			}
-
-			vbox = {
-				visible = "[CharacterInteractionConfirmationWindow.ShouldPickSecondaryActor]"
-				layoutpolicy_horizontal = expanding
-
-				char_name = {
-					layoutpolicy_horizontal = expanding
-					datacontext = "[CharacterInteractionConfirmationWindow.GetSecondaryActor]"
-					visible = "[CharacterInteractionConfirmationWindow.GetSecondaryActor.IsValid]"
-				}
 			}
 
 			### Right
@@ -596,6 +590,29 @@ types CharacterInteraction
 					datacontext = "[CharacterInteractionConfirmationWindow.GetSecondaryRecipient]"
 					visible = "[CharacterInteractionConfirmationWindow.GetSecondaryRecipient.IsValid]"
 				}
+
+				change_revert_buttons = {
+					layoutpolicy_horizontal = expanding
+					visible = "[CharacterInteractionConfirmationWindow.ShouldShowSecondaryRecipient]"
+
+					blockoverride "ReplaceClick"
+					{
+						onclick = [CharacterInteractionConfirmationWindow.OnChangeOrRevertRecipientCharacter]
+					}
+					blockoverride "ReplaceVisible"
+					{
+						visible = [CharacterInteractionConfirmationWindow.CanChangeRecipientCharacter]
+					}
+					blockoverride "RevertClick"
+					{
+						onclick = [CharacterInteractionConfirmationWindow.OnChangeOrRevertRecipientCharacter]
+					}
+					blockoverride "RevertVisible"
+					{
+						visible = [CharacterInteractionConfirmationWindow.CanRevertRecipientCharacter]
+					}
+				}
+
 			}
 
 			char_name = {
@@ -610,81 +627,6 @@ types CharacterInteraction
 
 				visible = "[And( Character.IsValid, Not( ObjectsEqual( CharacterInteractionConfirmationWindow.GetActor, CharacterInteractionConfirmationWindow.GetRecipient ) ) )]"
 			}
-		}
-
-		vbox = {
-			# visible = "[GetVariableSystem.Exists('hide_x_participants')]"
-			layoutpolicy_horizontal = expanding
-			allow_outside = yes
-
-			# text_single = {
-			# 	layoutpolicy_horizontal = expanding
-			# 	visible = "[CharacterInteractionConfirmationWindow.ShouldPickSecondaryActor]"
-			# 	text = "[CharacterInteractionConfirmationWindow.GetActorSecondaryLabel]"
-			# 	min_width = 100
-			# 	allow_outside = yes
-			#
-			# }
-
-			change_revert_buttons = {
-				layoutpolicy_horizontal = expanding
-				visible = "[CharacterInteractionConfirmationWindow.ShouldPickSecondaryActor]"
-
-				blockoverride "ReplaceClick"
-				{
-					onclick = "[CharacterInteractionConfirmationWindow.OnChangeOrRevertActorCharacter]"
-				}
-				blockoverride "ReplaceVisible"
-				{
-					visible = "[CharacterInteractionConfirmationWindow.CanChangeActorCharacter]"
-				}
-				blockoverride "RevertClick"
-				{
-					onclick = "[CharacterInteractionConfirmationWindow.OnChangeOrRevertActorCharacter]"
-				}
-				blockoverride "RevertVisible"
-				{
-					visible = "[CharacterInteractionConfirmationWindow.CanRevertActorCharacter]"
-				}
-			}
-
-			# text_single = {
-			# 	layoutpolicy_horizontal = expanding
-			# 	visible = "[CharacterInteractionConfirmationWindow.ShouldShowSecondaryRecipient]"
-			# 	text = "[CharacterInteractionConfirmationWindow.GetRecipientSecondaryLabel]"
-			# 	min_width = 100
-			#
-			# }
-
-			change_revert_buttons = {
-				layoutpolicy_horizontal = expanding
-				visible = "[CharacterInteractionConfirmationWindow.ShouldShowSecondaryRecipient]"
-
-				blockoverride "ReplaceClick"
-				{
-					onclick = [CharacterInteractionConfirmationWindow.OnChangeOrRevertRecipientCharacter]
-				}
-				blockoverride "ReplaceVisible"
-				{
-					visible = [CharacterInteractionConfirmationWindow.CanChangeRecipientCharacter]
-				}
-				blockoverride "RevertClick"
-				{
-					onclick = [CharacterInteractionConfirmationWindow.OnChangeOrRevertRecipientCharacter]
-				}
-				blockoverride "RevertVisible"
-				{
-					visible = [CharacterInteractionConfirmationWindow.CanRevertRecipientCharacter]
-				}
-			}
-
-			# text_single = {
-			# 	visible = "[Not( ObjectsEqual( CharacterInteractionConfirmationWindow.GetActor, CharacterInteractionConfirmationWindow.GetRecipient ) )]"
-			# 	text = "INTERACTION_RECIPIENT"
-			# 	min_width = 100
-			# 	layoutpolicy_horizontal = expanding
-			# }
-
 		}
 	}
 
@@ -1136,24 +1078,9 @@ types CharacterInteraction
 			}
 		}
 
-		scrollbox = {
-			name = "effects_scrollarea"
-			autoresizescrollarea = yes
-			datacontext = "[InteractionEffectsDescription.GetDisplayedEffects]"
-			visible = "[DisplayedInteractionEffects.HasAnyEffects]"
-			scissor = yes
-			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
-
-			blockoverride "scrollbox_content"
-			{
-				set_parent_size_to_minimum = yes
-
-				block "minimumsize" {
-					minimumsize = { 640 0 }
-				}
-
-				vbox_character_interaction_effects_contents = {}
+		scrollbox_character_interaction_effects_wrapper = {
+			blockoverride "maximumsize" {
+				maximumsize = { -1 -1 }
 			}
 		}
 	}
@@ -1192,6 +1119,7 @@ types CharacterInteraction
 
 			button_text = {
 				layoutpolicy_horizontal = expanding
+				visible = "[InteractionEffectsDescription.IsIntermediaryVisible]"
 				blockoverride "pre" {
 					text_single = {
 						raw_text = "Showing"
@@ -1203,12 +1131,10 @@ types CharacterInteraction
 					}
 					space = { }
 				}
-			    blockoverride "text" {
+		    blockoverride "text" {
 					text = "INTERACTION_SHOW_INTERMEDIARY_DECLINE_EFFECTS"
-			    }
-				blockoverride "dot" {
-
-				}
+		    }
+				blockoverride "dot" {}
 				onclick = "[InteractionEffectsDescription.ShowIntermediaryDeclineEffect]"
 			}
 
@@ -1445,249 +1371,208 @@ types CharacterInteraction
 
 	type vbox_scheme_info = vbox {
 		name = "scheme_info"
-		margin = {3 10 }
 
-		hbox = {
+		datacontext = "[InteractionSchemeInfo.GetScheme]"
+
+		vbox = {
 			layoutpolicy_horizontal = expanding
+			visible = "[InteractionSchemeInfo.HasSuccessDesc]"
 
+			# name
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				text_single = {
+					text = "SCHEME_PREDICTION_NAME"
+				}
+
+				dot = {}
+
+				expand = {}
+			}
+
+			# odds
 			vbox = {
 				layoutpolicy_horizontal = expanding
-				margin = { 0 10 }
 
 				hbox = {
 					layoutpolicy_horizontal = expanding
+					spacing = 3
 
-					text_single = {
-						text = "SCHEME_PREDICTION_NAME"
+					tooltipwidget = {
+						widget_value_breakdown_tooltip = {
+							datacontext = "[CharacterInteractionConfirmationWindow.AccessSchemeInfo.GetOddsPredictionBreakdown]"
+						}
 					}
 
-					dot = {}
+					text_single = {
+						name = "success"
+						text = "SCHEME_PREDICTION_SUCCESS_CHANCE"
+					}
+
+					comma = {}
+
+					text_single = {
+						raw_text = "[InteractionSchemeInfo.GetOddsPredictionValue]."
+					}
+
+					expand = { }
+				}
+
+
+				hbox = {
+					name = "phases"
+					spacing = 3
+					layoutpolicy_horizontal = expanding
+
+
+					text_single = {
+						name = "scheme_speed"
+						raw_text = "[InteractionSchemeInfo.GetSpeedDesc]."
+					}
 
 					expand = {}
 				}
+
+				text_single = {
+					# visible = "[And(Scheme.IsUnfrozen, Not(SchemeItem.GetScheme.GetSchemeType.IsBasic))]"
+					visible = "[Scheme.IsUnfrozen]"
+					raw_text = "[Multiply_CFixedPoint(Divide_CFixedPoint(Subtract_CFixedPoint(Scheme.GetMaxSuccessChance, Scheme.GetSuccessChance), Scheme.GetSuccessChanceGrowth), IntToFixedPoint(Subtract_int32(Scheme.GetProgressGoal, Scheme.GetProgress)))|0] days to reach maximum chance."
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[And(InteractionSchemeInfo.HasDiscoveryDesc, InteractionSchemeInfo.IsSecret)]" # merged the two, unclear why vanilla has two different checks
+					min_width = 135
+					tooltip = "SCHEME_PREDICTION_SECRECY_TT"
+					spacing = 3
+
+					text_single = {
+						raw_text = "SCHEME_WINDOW_SECRECY_LABEL"
+					}
+
+					comma = {}
+
+					text_single = {
+						name = "secrecy"
+						raw_text = "[InteractionSchemeInfo.GetSecrecy|%/V1]."
+					}
+
+					expand = { }
+				}
+
+				#TODO calculate ETA?
+				#TODO add intrigue skill?
 			}
-		}
 
-		vbox = { #summary
-			layoutpolicy_horizontal = expanding
-
-			hbox = {
-				visible = "[InteractionSchemeInfo.HasSuccessDesc]"
+			# old stuff, apparently replaced somewhere?
+			vbox = {
 				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-				min_width = 135
-				tooltip = "SCHEME_PREDICTION_SUCCESS_TT"
+				visible = no
 
-				background = {
-					using = Background_Area
+				hbox = {
+					name = "on_success"
+					visible = "[InteractionSchemeInfo.HasSuccessDesc]"
+					layoutpolicy_horizontal = expanding
+
+					background = {
+						using = Background_Area
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							text = "SCHEME_PREDICTION_ON_SUCCESS"
+							default_format = "#weak"
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							text_multi = {
+								layoutpolicy_horizontal = expanding
+								max_width = 380
+								autoresize = yes
+								raw_text = "[InteractionSchemeInfo.GetSuccessDesc]."
+							}
+
+							expand = { }
+						}
+					}
+				}
+
+				hbox = {
+					name = "on_discovery"
+					visible = "[InteractionSchemeInfo.HasDiscoveryDesc]"
+					layoutpolicy_horizontal = expanding
+
+					background = {
+						using = Background_Area
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+
+							text = "SCHEME_PREDICTION_ON_DISCOVERY"
+
+							default_format = "#weak"
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							text_multi = {
+								layoutpolicy_horizontal = expanding
+								autoresize = yes
+								max_width = 600
+								raw_text = "[InteractionSchemeInfo.GetDiscoveryDesc]."
+							}
+
+							expand = { }
+						}
+					}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					background = {
+						using = Background_Area
+					}
 				}
 
 				text_single = {
-					raw_text = "Success chance:"
-				}
-
-				text_single = {
-					raw_text = " "
-				}
-
-				text_single = {
-					name = "success"
-					text = "SCHEME_PREDICTION_SUCCESS_CHANCE"
+					visible = "[LessThanOrEqualTo_int32( InteractionSchemeInfo.GetSuccessChance, '(int32)0' )]"
+					layoutpolicy_horizontal = expanding
+					margin = { 0 10 }
+					text = "SCHEME_PREDICTION_NO_SUCCESS"
+					tooltip = "SCHEME_PREDICTION_SUCCESS_TT"
 					using = Font_Size_Medium
-				}
+					align = center
 
-				dot = { }
-
-				expand = { }
-			}
-
-			hbox = {
-				layoutpolicy_vertical = expanding
-				layoutpolicy_horizontal = expanding
-				visible = "[InteractionSchemeInfo.IsSecret]"
-				min_width = 135
-				tooltip = "SCHEME_PREDICTION_SECRECY_TT"
-
-				background = {
-					using = Background_Area
-				}
-
-				text_single = {
-					raw_text = "Secrecy:"
-				}
-
-				space = { }
-
-				text_single = {
-					name = "secrecy"
-					text = "[InteractionSchemeInfo.GetSecrecy|%/V]"
-				}
-
-				dot = { }
-
-				expand = { }
-			}
-
-			hbox = {
-				name = "expected_time"
-				layoutpolicy_vertical = expanding
-				layoutpolicy_horizontal = expanding
-				min_width = 135
-
-				background = {
-					using = Background_Area
-				}
-
-				text_single = {
-					raw_text = "Expected time:"
-				}
-
-				space = { }
-
-				text_single = {
-					text = "[InteractionSchemeInfo.GetEstimatedTime]"
-				}
-
-				dot = { }
-
-				expand = { }
-				tooltip = "SCHEME_PREDICTION_ESTIMATED_TIME_TT"
-			}
-
-			flowcontainer = {
-				layoutpolicy_horizontal = expanding
-				visible = "[InteractionSchemeInfo.GetScheme.UsesAgents]"
-
-				text_single = {
-					text = "SCHEME_PREDICTION_AGENTS"
-					tooltip = "SCHEME_PREDICTION_AGENTS_TT"
-				}
-
-				dot = { }
-			}
-
-		}
-
-		hbox = {
-			name = "on_success"
-			visible = "[InteractionSchemeInfo.HasSuccessDesc]"
-			layoutpolicy_horizontal = expanding
-
-			background = {
-				using = Background_Area
-			}
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				spacing = 3
-
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					text = "SCHEME_PREDICTION_ON_SUCCESS"
-					default_format = "#weak"
-				}
-
-				hbox = {
-					layoutpolicy_horizontal = expanding
-
-					text_multi = {
-						layoutpolicy_horizontal = expanding
-						max_width = 380
-						autoresize = yes
-						raw_text = "[InteractionSchemeInfo.GetSuccessDesc]."
+					background = {
+						using = Background_Area
 					}
-
-					expand = { }
 				}
-			}
-		}
-
-		hbox = {
-			name = "on_discovery"
-			visible = "[InteractionSchemeInfo.HasDiscoveryDesc]"
-			layoutpolicy_horizontal = expanding
-
-			background = {
-				using = Background_Area
-			}
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				spacing = 3
 
 				text_single = {
+					visible = "[InteractionSchemeInfo.IsReplace]"
+					text = "INTERACTION_REPLACE_SCHEME"
 					layoutpolicy_horizontal = expanding
+					margin = { 0 10 }
+					align = center
 
-					text = "SCHEME_PREDICTION_ON_DISCOVERY"
-
-					default_format = "#weak"
-				}
-
-				hbox = {
-					layoutpolicy_horizontal = expanding
-
-					text_multi = {
-						layoutpolicy_horizontal = expanding
-						autoresize = yes
-						max_width = 600
-						raw_text = "[InteractionSchemeInfo.GetDiscoveryDesc]."
+					background = {
+						using = Background_Area
 					}
-
-					expand = { }
 				}
-			}
-		}
-
-		hbox = {
-			layoutpolicy_horizontal = expanding
-
-			background = {
-				using = Background_Area
-			}
-
-			vbox = {
-				layoutpolicy_horizontal = expanding
-				spacing = 3
-
-				hbox = {
-					layoutpolicy_horizontal = expanding
-
-					text_multi = {
-						layoutpolicy_horizontal = expanding
-						autoresize = yes
-						max_width = 500
-						text = "SCHEME_PREDICTION_EXPECTED_TIME_TEXT"
-					}
-
-					expand = { }
-				}
-			}
-		}
-
-
-		text_single = {
-			visible = "[LessThanOrEqualTo_int32( InteractionSchemeInfo.GetSuccessChance, '(int32)0' )]"
-			layoutpolicy_horizontal = expanding
-			margin = { 0 10 }
-			text = "SCHEME_PREDICTION_NO_SUCCESS"
-			tooltip = "SCHEME_PREDICTION_SUCCESS_TT"
-			using = Font_Size_Medium
-			align = center
-
-			background = {
-				using = Background_Area
-			}
-		}
-
-		text_single = {
-			visible = "[InteractionSchemeInfo.IsReplace]"
-			text = "INTERACTION_REPLACE_SCHEME"
-			layoutpolicy_horizontal = expanding
-			margin = { 0 10 }
-			align = center
-
-			background = {
-				using = Background_Area
 			}
 		}
 	}
@@ -1777,41 +1662,42 @@ types CharacterInteraction
 		# }
 	}
 
-	type hbox_interaction_option_levels = hbox
-	{
-		datamodel = "[RepeatedItem( Add_int32( OptionItem.GetNumLevels, '(int32)1' ) )]"
-
-		# text_single = {
-		# 	layoutpolicy_horizontal = expanding
-		# 	raw_text = "Options:"
-		# }
-
-		item = {
-			button_text = {
-				layoutpolicy_horizontal = expanding
-				blockoverride "pre" {
-					text_single = {
-						raw_text = "Can't pick,"
-						visible = "[Not(And( OptionItem.IsValid, And( OptionItem.CanBeChanged, OptionItem.CanSetLevel( int32.GetInt ) ) ))]"
-					}
-					text_single = {
-						raw_text = "Selected,"
-						visible = "[EqualTo_int32( OptionItem.GetCurrentLevel, int32.GetInt)]" #TODO
-					}
-				}
-				blockoverride "text" {
-					raw_text = "[OptionItem.GetName]."
-				}
-				onclick = "[OptionItem.SetLevel( int32.GetInt )]"
-				enabled = "[And( OptionItem.IsValid, And( OptionItem.CanBeChanged, OptionItem.CanSetLevel( int32.GetInt ) ) )]"
-				tooltip = "[OptionItem.GetLevelTooltip( int32.GetInt )]"
-
-				block "level_button"
-				{
-				}
-			}
-		}
-	}
+	# removed radio
+	# type hbox_interaction_option_levels = hbox
+	# {
+	# 	datamodel = "[RepeatedItem( Add_int32( OptionItem.GetNumLevels, '(int32)1' ) )]"
+	#
+	# 	# text_single = {
+	# 	# 	layoutpolicy_horizontal = expanding
+	# 	# 	raw_text = "Options:"
+	# 	# }
+	#
+	# 	item = {
+	# 		button_text = {
+	# 			layoutpolicy_horizontal = expanding
+	# 			blockoverride "pre" {
+	# 				text_single = {
+	# 					raw_text = "Can't pick,"
+	# 					visible = "[Not(And( OptionItem.IsValid, And( OptionItem.CanBeChanged, OptionItem.CanSetLevel( int32.GetInt ) ) ))]"
+	# 				}
+	# 				text_single = {
+	# 					raw_text = "Selected,"
+	# 					visible = "[EqualTo_int32( OptionItem.GetCurrentLevel, int32.GetInt)]" #TODO
+	# 				}
+	# 			}
+	# 			blockoverride "text" {
+	# 				raw_text = "[OptionItem.GetName]."
+	# 			}
+	# 			onclick = "[OptionItem.SetLevel( int32.GetInt )]"
+	# 			enabled = "[And( OptionItem.IsValid, And( OptionItem.CanBeChanged, OptionItem.CanSetLevel( int32.GetInt ) ) )]"
+	# 			tooltip = "[OptionItem.GetLevelTooltip( int32.GetInt )]"
+	#
+	# 			block "level_button"
+	# 			{
+	# 			}
+	# 		}
+	# 	}
+	# }
 
 	# Options to consider before accepting and interaction
 	type vbox_interaction_options = vbox {
@@ -1824,9 +1710,39 @@ types CharacterInteraction
 		}
 
 		text_single = {
-			visible = "[Not( StringIsEmpty(CharacterInteractionConfirmationWindow.GetOptionsHeading) )]"
+			visible = "[And(Not( StringIsEmpty(CharacterInteractionConfirmationWindow.GetOptionsHeading) ), Not(CharacterInteractionConfirmationWindow.HasExclusiveOptions ))]"
 			layoutpolicy_horizontal = expanding
-			raw_text = "[CharacterInteractionConfirmationWindow.GetOptionsHeading]."
+			raw_text = "[CountItems] [CharacterInteractionConfirmationWindow.GetOptionsHeading], [PdxGuiWidget.FindChild('enabled').CountVisibleChildren] valid, [PdxGuiWidget.FindChild('checked').CountVisibleChildren] checked."
+
+			hbox = {
+				datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
+				name = "items"
+				item = {
+					hbox = {
+						visible = "[OptionItem.IsShown]"
+					}
+				}
+			}
+
+			hbox = {
+				datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
+				name = "enabled"
+				item = {
+					hbox = {
+						visible = "[And(OptionItem.IsShown, OptionItem.IsValid)]"
+					}
+				}
+			}
+
+			hbox = {
+				datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
+				name = "checked"
+				item = {
+					hbox = {
+						visible = "[And(OptionItem.IsShown, OptionItem.HasOption)]"
+					}
+				}
+			}
 		}
 
 		vbox = {
@@ -1844,19 +1760,28 @@ types CharacterInteraction
 
 					button_text = {
 						layoutpolicy_horizontal = expanding
-						visible = "[EqualTo_int32( OptionItem.GetNumLevels, '(int32)0' )]"
+						# visible = "[EqualTo_int32( OptionItem.GetNumLevels, '(int32)0' )]"
 						blockoverride "pre" {
 							text_single = {
-								raw_text = "Can't pick,"
+								raw_text = "Can't pick"
 								visible = "[Not(And(OptionItem.IsValid, OptionItem.CanBeChanged))]"
 							}
 							text_single = {
 								raw_text = "[Select_CString(OptionItem.HasOption, 'Checked', 'Unchecked')],"
-								# visible = "[OptionItem.HasOption]" #TODO
+								visible = "[And(OptionItem.IsValid, Or(OptionItem.CanBeChanged, OptionItem.HasOption))]"
 							}
 						}
 						blockoverride "text" {
+							margin_left = -3
 							raw_text = "[OptionItem.GetName]."
+						}
+						blockoverride "extra" {
+							text_single = {
+								visible = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
+								raw_text = "[OptionItem.GetTooltip]"
+								max_width = 300
+								fontsize_min = 14
+							}
 						}
 						onclick = "[OptionItem.OnClick]"
 						# enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
@@ -1864,11 +1789,11 @@ types CharacterInteraction
 						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
 						tooltip = "[OptionItem.GetTooltip]"
 					}
-
-					hbox_interaction_option_levels = {
-						layoutpolicy_horizontal = expanding
-						visible = "[GreaterThan_int32( OptionItem.GetNumLevels, '(int32)1' )]"
-					}
+					#
+					# hbox_interaction_option_levels = {
+					# 	layoutpolicy_horizontal = expanding
+					# 	visible = "[GreaterThan_int32( OptionItem.GetNumLevels, '(int32)1' )]"
+					# }
 				}
 			}
 		}
@@ -1878,24 +1803,6 @@ types CharacterInteraction
 			visible = "[CharacterInteractionConfirmationWindow.HasExclusiveOptions]"
 			layoutpolicy_horizontal = expanding
 
-			hbox = {
-				name = "single_option"
-				layoutpolicy_horizontal = expanding
-				margin = { 10 0 }
-				visible = "[EqualTo_int32( CharacterInteractionConfirmationWindow.GetVisibleOptionsCount, '(int32)1' )]"
-
-				datacontext_from_model = {
-					datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
-				}
-
-				tooltip = "[OptionItem.GetTooltip]"
-				using = tooltip_below
-
-				text_single = {
-					text = "[OptionItem.GetName]"
-				}
-			}
-
 			vbox = {
 				name = "multiple_options"
 				layoutpolicy_horizontal = expanding
@@ -1903,7 +1810,7 @@ types CharacterInteraction
 
 				text_single = {
 					layoutpolicy_horizontal = expanding
-					raw_text = "[CountItems] Options:"
+					raw_text = "[CountItems] Options, select one:"
 
 					hbox = {
 						datamodel = "[CharacterInteractionConfirmationWindow.GetOptionItems]"
@@ -1923,7 +1830,7 @@ types CharacterInteraction
 						shortcuts_list = {
 							blockoverride "click" {
 								onclick = "[OptionItem.OnClick]"
-								enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
+								enabled = "[And(And(OptionItem.IsValid, OptionItem.CanBeChanged), Not(OptionItem.HasOption))]"
 							}
 						}
 						blockoverride "pre" {
@@ -1941,10 +1848,11 @@ types CharacterInteraction
 							}
 						}
 						blockoverride "text" {
+							margin_left = -3
 							raw_text = "[OptionItem.GetName]."
 						}
 						onclick = "[OptionItem.OnClick]"
-						enabled = "[And(OptionItem.IsValid, OptionItem.CanBeChanged)]"
+						enabled = "[And(And(OptionItem.IsValid, OptionItem.CanBeChanged), Not(OptionItem.HasOption))]"
 						tooltip = "[OptionItem.GetTooltip]"
 					}
 				}
@@ -1994,6 +1902,49 @@ types InteractionCharacterList
 			}
 
 			blockoverride "interaction_accept" {
+
+
+				# Candidate Score
+				hbox = {
+					visible = "[CharacterInteractionConfirmationWindow.HasSelectedCandidateScoreSortOption]"
+					spacing = 3
+
+					text_single = {
+						raw_text = "Score:"
+					}
+
+					text_single = {
+						raw_text = "[CharacterInteractionConfirmationWindow.GetCandidateScore( CharacterListItem.Self )|V0]."
+					}
+
+					tooltipwidget = {
+						widget_value_breakdown_tooltip = {
+							block "score_breakdown" {
+								datacontext = "[CharacterInteractionConfirmationWindow.GetCandidateScoreBreakdown( CharacterListItem.Self )]"
+							}
+						}
+					}
+				}
+
+				# Governor Efficiency
+				hbox = {
+					visible = "[CharacterInteractionConfirmationWindow.HasSelectedGovernorEfficiencySortOption]"
+					tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT"
+					spacing = 3
+
+					text_single = {
+						raw_text = "Efficiency:"
+					}
+
+					text_single = {
+						name = "char_governor_efficiency_value"
+						text = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALUE"
+					}
+
+					dot_l = {}
+				}
+
+
 				hbox = {
 					visible = "[Not(CharacterInteractionConfirmationWindow.IsForcedToAccept)]"
 
@@ -2131,7 +2082,7 @@ types OCR {
 								visible = "[InteractionItem.IsCharacterInteraction]"
 								name = "interaction_icon"
 								size = { 30 30 }
-								texture = "[InteractionItem.GetCharacterInteraction.GetIcon]"
+								texture = "[InteractionItem.GetCharacterInteraction.GetIcon( GetPlayer.Self )]"
 							}
 
 							text_single = {

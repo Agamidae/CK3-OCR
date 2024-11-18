@@ -1,0 +1,323 @@
+﻿window = {
+	name = "task_contract"
+	using = base_ocr_window
+	movable = no
+
+	datacontext = "[TaskContractWindow.GetCurrentTaskContract]"
+
+	state = {
+		name = _show
+		trigger_on_create = yes
+		on_start = "[Clear('contract_failure')]"
+		on_start = "[Clear('contract_request')]"
+		on_start = "[GetVariableSystem.Clear( 'event_window_mouse_leave')]"
+
+		on_start = "[PdxGuiWidget.AccessChild('letter_paper').TriggerAnimation('show')]"
+		on_start = "[PdxGuiWidget.AccessChild('letter_content').TriggerAnimation('show')]"
+		on_start = "[PdxGuiWidget.AccessChild('letter_edges').TriggerAnimation('show')]"
+
+		start_sound = {
+			soundeffect = "event:/SFX/Events/Panels/sfx_event_panel_letter"
+		}
+	}
+
+	state = {
+		name = _hide
+		# duration = 1
+		on_start = "[PdxGuiWidget.AccessChild('letter_paper').TriggerAnimation('hide')]"
+		on_start = "[PdxGuiWidget.AccessChild('letter_content').TriggerAnimation('hide')]"
+		on_start = "[PdxGuiWidget.AccessChild('letter_edges').TriggerAnimation('hide')]"
+	}
+
+	state = {
+		name = _mouse_hierarchy_leave
+		on_start = "[GetVariableSystem.Set( 'event_window_mouse_leave', 'true' )]"
+	}
+
+	button = {
+		shortcut = close_window
+		onclick = "[TaskContractWindow.Close]"
+	}
+
+	window_ocr = {
+		name = "letter_content"
+		blockoverride "ocr_header" {
+
+			# task name and distance
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 3
+
+				text_single = {
+					raw_text = "[TaskContract.GetType.GetName],"
+				}
+
+				text_single = {
+					raw_text = "Tier [AddTextIf(TaskContract.IsEasy, 'one')][AddTextIf(TaskContract.IsMedium, 'two')][AddTextIf(TaskContract.IsHard, 'three')]"
+				}
+
+				text_single = {
+					visible = "[TaskContract.IsCriminal]"
+					raw_text = "criminal"
+				}
+
+				text_single = {
+					raw_text = "contract,"
+				}
+
+				text_single = {
+					visible = "[ObjectsEqual(MyCapital, TaskContract.GetLocation)]"
+					raw_text = "at your [GetPlayer.GetDomicile.GetType.GetName]"
+				}
+
+				text_single = {
+					visible = "[Not(ObjectsEqual(MyCapital, TaskContract.GetLocation))]"
+					raw_text = "[DistanceTo(MyCapital, TaskContract.GetLocation)|0] [DaysTo(MyCapital, TaskContract.GetLocation)] [Direction(MyCapital, TaskContract.GetLocation)]."
+				}
+
+				expand = {}
+			}
+
+			# Contractor
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[TaskContract.GetEmployer]"
+				visible = "[Character.IsValid]"
+				using = char_click
+				blockoverride "text" {
+					raw_text = "Contractor:"
+				}
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "[Character.GetFirstNameNoTooltip] of"
+					}
+					text_single = {
+						raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+					}
+					text_single = {
+						raw_text = "opinion [Character.GetOpinionOf( GetPlayer )|=],"
+						tooltip = "[Character.GetOpinionBreakdownText( GetPlayer )]"
+					}
+					text_single = {
+						raw_text = "[Character.GetCulture.GetNameNoTooltip],"
+					}
+					text_single = {
+						raw_text = "[Character.GetFaith.GetAdjectiveNoTooltip]."
+					}
+				}
+			}
+
+			# no contractor
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[TaskContract.GetEmployer]"
+				visible = "[Not(Character.IsValid)]"
+				raw_text = "No contractor."
+			}
+
+			# location
+			button_text = {
+				using = prov_click
+				datacontext = "[TaskContract.GetLocation]"
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					raw_text = "Location:"
+				}
+				blockoverride "extra" {
+					text_single = {
+						visible = "[Not(Province.GetHolding.IsEmpty)]"
+						raw_text = "[Province.GetHolding.GetType.GetName] of"
+					}
+					text_single = {
+						raw_text = "[Province.GetNameNoTooltip],"
+					}
+					text_single = {
+						raw_text = "[Province.GetTerrain.GetNameNoTooltip],"
+					}
+					#TODO maybe check that we're on land?
+					text_single = {
+						raw_text = "in [Province.GetCounty.GetCount.GetPrimaryTitle.GetNameNoTooltip],"
+					}
+					text_single = {
+						visible = "[Not(ObjectsEqual(Province.GetCounty.GetCount, Province.GetCounty.GetCount.GetTopLiege))]"
+						raw_text = "in [Province.GetCounty.GetCount.GetTopLiege.GetPrimaryTitle.GetNameNoTooltip]."
+					}
+				}
+			}
+
+			### Accept button
+			button_primary_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					text = "[TaskContractWindow.GetAcceptText]"
+				}
+				blockoverride "disabled" {
+					visible = "[Not(IsValidCommand( TaskContract.AcceptTaskContract ))]"
+				}
+
+				visible = "[Not( Or( TaskContractWindow.IsContractStarted, TaskContractWindow.IsTravelingDueToCurrentContract ) )]"
+
+				enabled = "[IsValidCommand( TaskContract.AcceptTaskContract )]"
+				onclick = "[TaskContractWindow.StartContract]"
+				onclick = "[TaskContractWindow.Close]"
+				tooltip = "[TaskContractWindow.GetTooltip]"
+				tooltip_when_disabled = "[GetCommandDesc( TaskContract.AcceptTaskContract )]"
+			}
+
+			# abort
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					text = "TASK_CONTRACT_ABANDON"
+				}
+				blockoverride "extra" {
+					comma = {}
+					text_single = {
+						raw_text = "X."
+					}
+				}
+				blockoverride "disabled" {
+					visible = "[Not(IsValidCommand( TaskContract.InvalidateTaskContract ))]"
+				}
+
+				visible = "[TaskContractWindow.IsContractStarted]"
+
+				enabled = "[IsValidCommand( TaskContract.InvalidateTaskContract )]"
+				onclick = "[CreateCommandPopup( TaskContract.InvalidateTaskContract )]"
+				onclick = "[TaskContractWindow.Close]"
+
+				tooltip = "[TaskContractWindow.GetInvalidateTooltip]"
+				using = tooltip_se
+			}
+
+			# desc header
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = mapmode_house_secondary
+				onclick = "[Toggle('contract_request')]"
+				blockoverride "text" {
+					raw_text = "Request,"
+				}
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "[Collapse('contract_request')]"
+					}
+					text_single = {
+						raw_text = "Shift D."
+					}
+				}
+			}
+		}
+
+		blockoverride "scrollbox_margins" {
+		}
+
+		blockoverride "ocr_content" {
+			spacer = { size = { 0 10 } }
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Isnt('contract_request')]"
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					text_multi_wide = {
+						raw_text = "[TaskContract.GetType.GetDescriptionTitle]"
+					}
+
+					expand = {}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					text_multi_wide = {
+						text = "[TaskContract.GetTaskContractDescription]"
+					}
+
+					expand = {}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					text_multi_wide = {
+						text = "[TaskContract.GetTaskContractRequest]"
+					}
+
+					expand = {}
+				}
+			}
+
+			spacer = { size = { 0 10 } }
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				### Tabs header
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[Toggle('contract_failure')]"
+					onclick = "[Set('contract_request', 'yes')]"
+
+					blockoverride "text" {
+						raw_text = "Showing"
+					}
+					blockoverride "extra" {
+
+						text_single = {
+							raw_text = "[SelectLocalization(Is('contract_failure'), 'task_contract_tab_failure', 'task_contract_tab_success')]."
+						}
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					shortcut = army_split_half
+					onclick = "[Toggle('contract_failure')]"
+					onclick = "[Set('contract_request', 'yes')]"
+
+					blockoverride "extra" {
+
+						text_single = {
+							raw_text = "Switch to"
+						}
+
+						text_single = {
+							raw_text = "[SelectLocalization(Isnt('contract_failure'), 'task_contract_tab_failure', 'task_contract_tab_success')],"
+						}
+						text_single = {
+							raw_text = "F."
+						}
+					}
+				}
+
+				spacer = { size = { 0 10 } }
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Isnt('contract_failure')]"
+
+					text_multi_wide = {
+						text = "[TaskContract.GetRewardEffectDescription( '(bool)yes' )]"
+					}
+
+					expand = {}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Is('contract_failure')]"
+
+					text_multi_wide = {
+						text = "[TaskContract.GetRewardEffectDescription( '(bool)no' )]"
+					}
+
+					expand = {}
+				}
+			}
+		}
+	}
+
+	task_contract_old = {}
+}

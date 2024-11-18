@@ -175,13 +175,18 @@ window = {
 									datacontext = "[HoldingView.GetHolding.GetProvince.GetTitle]"
 									blockoverride "pre" {
 
-										text_single = {
-											raw_text = "Your Capital,"
+										container = {
+											ignoreinvisible = yes
 											visible = "[ObjectsEqual(HoldingView.GetProvince, GetPlayer.GetCapitalLocation)]"
+
+											text_single = {
+												visible = "[Not( GetPlayer.IsLandlessRuler )]"
+												raw_text = "Your Capital,"
+											}
 										}
 										text_single = {
 											raw_text = "Your"
-											visible = "[And(HoldingView.GetTitle.GetLesseeOrHolder.IsLocalPlayer, Not( ObjectsEqual( HoldingView.GetProvince, GetPlayer.GetCapitalLocation ) ) )]"
+											visible = "[And(And(HoldingView.GetTitle.GetLesseeOrHolder.IsLocalPlayer, Not( ObjectsEqual( HoldingView.GetProvince, GetPlayer.GetCapitalLocation ) ) ), Not(GetPlayer.IsLandlessRuler))]"
 										}
 										text_single = {
 											raw_text = "Hostle"
@@ -279,16 +284,22 @@ window = {
 									button_text = {
 										datacontext = "[HoldingView.GetTitle]"
 										datacontext = "[HoldingView.GetTitle.GetLesseeOrHolder]"
-										visible = "[And(And(Not(Character.IsLocalPlayer), Not(HoldingView.GetHolding.IsEmpty)), Not(ObjectsEqual(Character.Self, HoldingView.GetCountyTitle.GetHolder)))]"
+										visible = "[Or(And(And(Not(Character.IsLocalPlayer), Not(HoldingView.GetHolding.IsEmpty)), Not(ObjectsEqual(Character.Self, HoldingView.GetCountyTitle.GetHolder))), GetPlayer.IsLandlessRuler)]"
 										using = char_click
 										blockoverride "text" {
 											margin_left = -3
-											raw_text = "[Select_CString(Title.IsLeasedOut, 'leased by', 'held by')] [Character.GetFirstNameNoTooltip]."
+											raw_text = "[Select_CString(Title.IsLeasedOut, 'leased by', 'held by')] [Character.GetFirstNameNoTooltip], i."
 										}
 									}
 								}
 
 								expand = { }
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								visible = "[And(ObjectsEqual(HoldingView.GetProvince, GetPlayer.GetCapitalLocation), And(GetPlayer.IsLandlessRuler, GetPlayer.HasDomicile))]"
+								raw_text = "Your [GetPlayer.GetDomicile.GetType.GetNameNoTooltip] is here,"
 							}
 
 							hbox = {
@@ -323,6 +334,29 @@ window = {
 								layoutpolicy_horizontal = expanding
 							}
 
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								name = "move_domcicle_button"
+								datacontext = "[GetPlayer.GetDomicile]"
+								datacontext = "[HoldingView.GetProvince]"
+								visible = "[And(IsLandlessAdventurer( GetPlayer ), Not(ObjectsEqual(Province.Self, MyCapital)))]"
+								widgetid = "move_domcicle_button"
+
+								enabled = "[Domicile.CanMoveTo( Province.Self )]"
+								onclick = "[OpenGameViewData( 'move_domicile_planner', Province.Self )]"
+								onclick = "[HoldingView.Close]"
+
+								# tooltip = "[Domicile.GetType.GetMoveTooltip( Character.Self )]"
+								tooltip_when_disabled = "[Domicile.GetMoveToTooltip( Province.Self )]"
+								using = tooltip_ne
+								blockoverride "text" {
+									raw_text = "Move [Domicile.GetType.GetName] here."
+								}
+								blockoverride "disabled" {
+									visible = "[Not(Domicile.CanMoveTo( Province.Self ))]"
+								}
+							}
+
 							# county
 							hbox = {
 								layoutpolicy_horizontal = expanding
@@ -345,7 +379,7 @@ window = {
 										}
 										text_single = {
 											raw_text = "capital"
-											visible = "[And(ObjectsEqual(HoldingView.GetCountyTitle, GetPlayer.GetCapitalLocation.GetCoATitle), Not( ObjectsEqual( HoldingView.GetProvince, GetPlayer.GetCapitalLocation ) ) )]"
+											visible = "[And(And(ObjectsEqual(HoldingView.GetCountyTitle, GetPlayer.GetCapitalLocation.GetCoATitle), Not( ObjectsEqual( HoldingView.GetProvince, GetPlayer.GetCapitalLocation ) ) ), Not(GetPlayer.IsLandlessRuler))]"
 										}
 									}
 									blockoverride "text" {
@@ -405,6 +439,17 @@ window = {
 									raw_text = "tasks, hotkey T."
 								}
 							}
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							datacontext = [County.GetCountyOccupant]
+							visible = [County.IsFullyOccupied]
+							blockoverride "text" {
+								raw_text = "County occupied by [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+							}
+							tooltip = "COUNTY_OCCUPIER_TOOLTIP"
+							using = char_click
 						}
 
 						# claim
@@ -774,7 +819,7 @@ window = {
 									}
 								}
 								using = prov_click
-								visible = "[Not(Or(ObjectsEqual( Character.Self, GetPlayer ),Character.IsOtherLiegeOrAbove( GetPlayer )))]"
+								visible = "[And(Not(Or(ObjectsEqual( Character.Self, GetPlayer ),Character.IsOtherLiegeOrAbove( GetPlayer ))), Not(GetPlayer.IsLandlessRuler))]"
 								shortcut = go_to_capital
 							}
 						}
@@ -951,12 +996,13 @@ window = {
 								visible = "[Not(HoldingView.GetHolding.IsEmpty)]"
 
 								button_text = {
+									name = "toggle_find_vassal"
 									blockoverride "text" {
 										raw_text = "Grant [Select_CString(HoldingView.GetProvince.GetTitle.IsCountyCapital, 'holding and county', 'holding')], hotkey G."
 									}
 									shortcut = army_merge
 									onclick = "[HoldingView.ToggleFindVassalListWindow]"
-									visible = "[And( And( ObjectsEqual( HoldingView.GetTitle.GetHolder, GetPlayer ), HoldingView.GetTitle.CanUseFindVassal( GetPlayer ) ), Not(HoldingView.GetTitle.IsLeasedOut))]"
+									visible = "[And(And( ObjectsEqual( HoldingView.GetTitle.GetHolder, GetPlayer ), Not(HoldingView.GetTitle.IsLeasedOut) ), Not(HoldingView.GetProvince.IsRealmCapital))]"
 								}
 
 								expand = { }
@@ -1369,7 +1415,8 @@ window = {
 													raw_text = "Terrain: [Terrain.GetNameNoTooltip]."
 													visible = "[HoldingStatus.IsTerrainType]"
 													datacontext = "[HoldingStatus.GetTerrainType]"
-													tooltip = "HOLDING_TERRAIN_TOOLTIP"
+													datacontext = "[HoldingView.GetProvince]"
+													tooltip = "HOLDING_TERRAIN_TOTAL_TOOLTIP"
 												}
 
 												button_text = {
@@ -1513,7 +1560,7 @@ window = {
 										}
 										shortcut = "find_title_shortcut"
 										onclick = "[HoldingView.ToggleFindVassalListWindow]"
-										visible = "[And( And( ObjectsEqual( HoldingView.GetTitle.GetHolder, GetPlayer ), HoldingView.GetTitle.CanUseFindVassal( GetPlayer ) ), Not(HoldingView.GetTitle.IsLeasedOut))]"
+										visible = "[And(And( ObjectsEqual( HoldingView.GetTitle.GetHolder, GetPlayer ), Not(HoldingView.GetTitle.IsLeasedOut) ), Not(HoldingView.GetProvince.IsRealmCapital))]"
 									}
 
 									container = {
@@ -2481,7 +2528,7 @@ window = {
 								}
 								shortcut = "find_title_shortcut"
 								onclick = "[HoldingView.ToggleFindVassalListWindow]"
-								visible = "[And( And( ObjectsEqual( HoldingView.GetTitle.GetHolder, GetPlayer ), HoldingView.GetTitle.CanUseFindVassal( GetPlayer ) ), Not(HoldingView.GetTitle.IsLeasedOut))]"
+								visible = "[And(And( ObjectsEqual( HoldingView.GetTitle.GetHolder, GetPlayer ), Not(HoldingView.GetTitle.IsLeasedOut) ), Not(HoldingView.GetProvince.IsRealmCapital))]"
 							}
 
 							# available

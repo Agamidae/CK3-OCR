@@ -4,8 +4,9 @@ types CourtPositionTypes
 {
 	type widget_court_position_item_ocr = widget
 	{
-		datacontext = "[EmptyCourtPosition.GetType]"
-		datacontext = "[EmptyCourtPosition.GetCourtOwner]"
+		datacontext = "[CourtPositionListItem.GetObject]"
+		datacontext = "[CourtPositionItem.GetPositionType]"
+		datacontext = "[CourtPositionItem.GetCourtOwner]"
 		layoutpolicy_horizontal = expanding
 
 		# minimumsize = { @position_text  20 }
@@ -13,8 +14,9 @@ types CourtPositionTypes
 		size = { 530 20 }
 		button = {
 			size = { 100% 100% }
-			enabled = "[And( CourtPositionType.CanHirePosition( Character.Self ), CourtPositionType.HasValidCourtiersForCharacter( Character.Self ) )]"
-			onclick = "[CourtPositionType.OpenAppointWindow( Character.Self )]"
+			enabled = "[And( CourtPositionItem.CanHirePosition, CourtPositionType.HasValidCourtiersForCharacter( Character.Self ) )]"
+			onclick = "[CourtPositionItem.OpenAppointWindow]"
+			onclick = "[CourtPositionsWindow.SetSelectedPositionId( CourtPositionItem.GetListId )]"
 		}
 
 		# Header  name, position, salary, buttons
@@ -33,7 +35,7 @@ types CourtPositionTypes
 
 				text_single = {
 					raw_text = "Can't hire"
-					visible = "[Not(CourtPositionType.CanHirePosition( Character.Self ))]"
+					visible = "[Not(CourtPositionItem.CanHirePosition)]"
 				}
 
 				block "position_pre" {}
@@ -60,8 +62,10 @@ types CourtPositionTypes
 					name = "salary_available"
 					visible = "[And( CourtPositionType.CanHirePosition( Character.Self ), CourtPositionType.HasValidCourtiersForCharacter( Character.Self ) )]"
 
-					raw_text = "salary: [CourtPositionType.GetSalaryTextFor(CourtPositionsWindow.CourtOwner)],"
-					tooltip = "[CourtPositionType.GetSalaryBreakdownFor(CourtPositionsWindow.CourtOwner)]"
+					#CourtPositionsWindow.CourtOwner
+
+					raw_text = "salary: [CourtPositionType.GetSalaryTextFor(Character.Self)],"
+					tooltip = "[CourtPositionType.GetSalaryBreakdownFor(Character.Self)]"
 				}
 
 				# text_single = {
@@ -199,14 +203,13 @@ types CourtPositionTypes
 	type widget_hired_court_position_item_ocr = widget
 	{
 		block "position_datacontext" {
-			datacontext = "[EmployedPositionItem.GetPosition]"
+			datacontext = "[CourtPositionItem.GetPosition]"
+			datacontext = "[CourtPosition.GetPositionType]"
 		}
+		datacontext = "[CourtPositionListItem.GetObject]"
 		datacontext = "[CourtPosition.GetEmployee]"
+
 		layoutpolicy_horizontal = expanding
-		block "position_datacontext" {
-			datacontext = "[EmployedPositionItem.GetPosition]"
-			datacontext = "[EmployedPositionItem.GetPosition.GetPositionType]"
-		}
 		# direction = vertical
 
 		# minimumsize = { @position_text 20 }
@@ -219,6 +222,7 @@ types CourtPositionTypes
 		button = {
 			size = { 100% 100% }
 			onclick = "[CourtPosition.OpenReplaceWindow]"
+			onclick = "[CourtPositionsWindow.ClearSelectedPositionId]"
 			onrightclick = "[DefaultOnCharacterClick(CourtPosition.GetEmployee.GetID)]"
 			button_ignore = none
 		}
@@ -323,8 +327,8 @@ types CourtPositionTypes
 					ignoreinvisible = yes
 					visible = "[And( Not( IsDataModelEmpty( CourtPositionType.GetAllPositionTasks ) ), CourtPositionType.HasVisibleTasks( CourtPosition.GetEmployer.Self ) )]"
 					block "position_datacontext" {
-						datacontext = "[EmployedPositionItem.GetPosition]"
-						datacontext = "[EmployedPositionItem.GetPosition.GetPositionType]"
+						datacontext = "[CourtPositionItem.GetPosition]"
+						datacontext = "[CourtPosition.GetPositionType]"
 					}
 
 
@@ -449,23 +453,20 @@ types CourtPositionTypes
 	type hbox_single_court_position_ocr = hbox {
 
 		vbox = {
-			visible = "[Character.EmploysCourtPositionType( CourtPositionType.Self )]"
-
+			visible = "[CourtPositionListItem.GetObject.IsEmployedPosition]"
 			layoutpolicy_horizontal = expanding
 
 			widget_hired_court_position_item_ocr = {
-
 				layoutpolicy_horizontal = expanding
 			}
 		}
 
 		vbox = {
-			visible = "[Not( Character.EmploysCourtPositionType( CourtPositionType.Self ) )]"
+			visible = "[Not( CourtPositionListItem.GetObject.IsEmployedPosition )]"
 
 			layoutpolicy_horizontal = expanding
 
 			widget_court_position_item_ocr = {
-
 				blockoverride "position_pre" {
 					text_single = {
 						raw_text = "Appoint"
@@ -538,7 +539,7 @@ types CourtPositionTypes
 
 		data_model_view_filter_hbox_ocr = {
 			name = "filter_options"
-			datacontext = "[CourtPositionsWindow.EmptyPositions.AccessBase]"
+			datacontext = "[CourtPositionsWindow.AllPositions.AccessBase]"
 		}
 
 		## Position finances
@@ -665,15 +666,23 @@ types CourtPositionTypes
 				vbox = {
 					name = "your_court_positions"
 					layoutpolicy_horizontal = expanding
-					datacontext = "[CourtPositionsWindow.EmployedPositions]"
-					visible = "[DataModelHasItems( EmployedCourtPositionList.GetItems )]"
+					visible = "[CourtPositionsWindow.HasEmployedPositions]"
 
 					button_text = {
 						layoutpolicy_horizontal = expanding
 						shortcut = map_mode_1
 						blockoverride "pre" {
 							text_single = {
-								raw_text = "[GetDataModelSize( EmployedCourtPositionList.GetItems )]"
+								raw_text = "[CountItems]"
+								hbox = {
+									datamodel = "[CourtPositionsWindow.AllPositions.GetItems]"
+									name = "items"
+									item = {
+										hbox = {
+											visible = "[CourtPositionListItem.GetObject.IsEmployedPosition]"
+										}
+									}
+								}
 							}
 						}
 						blockoverride "text" {
@@ -695,25 +704,25 @@ types CourtPositionTypes
 
 						text_single = {
 							layoutpolicy_horizontal = expanding
-							visible = "[IsDataModelEmpty( EmployedCourtPositionList.GetItems )]"
+							visible = "[Not( CourtPositionsWindow.HasEmployedPositions )]"
 							text = "COURT_POSITIONS_no_positions_in_your_court"
 						}
 
 						text_single = {
 							layoutpolicy_horizontal = expanding
-							visible = "[DataModelHasItems( EmployedCourtPositionList.GetItems )]"
+							visible = "[CourtPositionsWindow.HasEmployedPositions]"
 							raw_text = "Click to replace, right-click to view character."
 						}
 
 						vbox = {
 							name = "active_positions"
-							datamodel = "[EmployedCourtPositionList.GetItems]"
-							visible = "[Not(IsDataModelEmpty( EmployedCourtPositionList.GetItems ))]"
+							datamodel = "[CourtPositionsWindow.AllPositions.GetItems]"
+							visible = "[CourtPositionsWindow.HasEmployedPositions]"
 							layoutpolicy_horizontal = expanding
 
 							item = {
 								widget_hired_court_position_item_ocr = {
-									datacontext = "[EmployedCourtPositionListItem.GetObject]"
+									visible = "[CourtPositionListItem.GetObject.IsEmployedPosition]"
 								}
 							}
 						}
@@ -723,7 +732,6 @@ types CourtPositionTypes
 				vbox = {
 					name = "your_empty_court_positions"
 					layoutpolicy_horizontal = expanding
-					datacontext = "[CourtPositionsWindow.EmptyPositions]"
 
 					button_text = {
 						layoutpolicy_horizontal = expanding
@@ -735,11 +743,10 @@ types CourtPositionTypes
 
 								hbox = {
 									name = "items"
-									datamodel = "[EmptyCourtPositionList.GetItems]"
+									datamodel = "[CourtPositionsWindow.AllPositions.GetItems]"
 									item = {
 										container = {
-											datacontext = "[EmptyCourtPositionListItem.GetObject]"
-											visible = "[EmptyCourtPosition.CanShow]"
+											visible = "[Not( CourtPositionListItem.GetObject.IsEmployedPosition )]"
 										}
 									}
 								}
@@ -747,7 +754,7 @@ types CourtPositionTypes
 						}
 
 						blockoverride "text" {
-							raw_text = "[Localize('COURT_POSITIONS_WINDOW_EMPTY_POSITION_HEADER')],"
+							raw_text = "COURT_POSITIONS_WINDOW_EMPTY_POSITION_HEADER"
 						}
 						onclick = "[GetVariableSystem.Toggle( 'expand_empty_court_positions' )]"
 
@@ -765,20 +772,18 @@ types CourtPositionTypes
 						visible = "[GetVariableSystem.Exists( 'expand_empty_court_positions' )]"
 
 						text_single = {
-							visible = "[IsDataModelEmpty( EmptyCourtPositionList.GetItems )]"
-							text = "COURT_POSITIONS_no_positions_in_your_court"
+							visible = "[Not( CourtPositionsWindow.HasEmptyPositions )]"
+							text = "COURT_POSITIONS_cannot_hire_more_positions_in_category"
 						}
 
 						vbox = {
-							name = "active_positions"
-							datamodel = "[CourtPositionsWindow.EmptyPositions.GetItems]"
-							visible = "[Not(IsDataModelEmpty( EmptyCourtPositionList.GetItems ))]"
+							datamodel = "[CourtPositionsWindow.AllPositions.GetItems]"
+							visible = "[CourtPositionsWindow.HasEmptyPositions]"
 							layoutpolicy_horizontal = expanding
 
 							item = {
 								widget_court_position_item_ocr = {
-									datacontext = "[EmptyCourtPositionListItem.GetObject]"
-									visible = "[EmptyCourtPosition.CanShow]"
+									visible = "[Not( CourtPositionListItem.GetObject.IsEmployedPosition )]"
 								}
 							}
 						}
@@ -791,5 +796,5 @@ types CourtPositionTypes
 
 
 template agot_court_position_size {
-	size = "[Select_CVector2f(IsDataModelEmpty( CourtPositionType.GetTasks ), '(CVector2f)537,45', Select_CVector2f( Isnt('court_tasks'), '(CVector2f)537,160', '(CVector2f)537,70' ))]"
+	size = "[Select_CVector2f(IsDataModelEmpty( CourtPositionItem.GetTasks ), '(CVector2f)537,45', Select_CVector2f( Isnt('court_tasks'), '(CVector2f)537,160', '(CVector2f)537,70' ))]"
 }

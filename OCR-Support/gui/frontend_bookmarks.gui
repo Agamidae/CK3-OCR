@@ -59,7 +59,7 @@ widget = {
 				name = "background_map"
 				parentanchor = center
 				size = { 1920 1080 }
-				alpha = 0.1
+				alpha = 0
 
 				state = {
 					name = "bookmarks_game_start"
@@ -107,7 +107,7 @@ widget = {
 				icon = {
 					name = "character_selection"
 					visible = "[GameSetup.HasSelectedCharacter]"
-					texture = "[GameSetup.GetSelectedCharacterGUI.GetCharacter.GetLocationImage]"
+					texture = "[GameSetup.GetSelectedCharacter.GetLocationImage]"
 					size = { 100% 100% }
 
 					state = {
@@ -136,7 +136,7 @@ widget = {
 				icon = {
 					name = "character_over"
 					visible = "[GameSetup.HasHoveredCharacter]"
-					texture = "[GameSetup.GetHoveredCharacterGUI.GetCharacter.GetLocationImage]"
+					texture = "[GameSetup.GetHoveredCharacter.GetLocationImage]"
 					size = { 100% 100% }
 					alpha = 0.3
 
@@ -229,40 +229,6 @@ widget = {
 					layoutpolicy_horizontal = expanding
 					ignoreinvisible = yes
 
-					button_primary_text = {
-						datacontext = "[GameSetup.GetSelectedCharacterGUI]"
-						visible = "[GameSetup.HasSelectedCharacter]"
-
-						name = "start_button"
-						onclick = "[GameSetup.StartGame]"
-						onclick = "[PdxGuiTriggerAllAnimations('bookmarks_game_start')]"
-						onclick = "[PdxGuiTriggerAllAnimations('bookmarks_game_start_selected_character')]"
-						onclick = "[PdxGuiTriggerAllAnimations('bookmarks_hide_any_character')]"
-						onclick = "[PdxGuiTriggerAllAnimations('start_game_audio')]"
-						enabled = "[GameSetup.CanStart]"
-						# tooltip = "[GameSetup.PlayTooltip]"
-
-						blockoverride "text" {
-							raw_text = "START"
-						}
-
-						blockoverride "extra" {
-							text_single = {
-								raw_text = " as [BookmarkCharacterGUI.GetCharacter.GetName]"
-								align = left
-							}
-						}
-
-						state = {
-							name = start_game_audio
-							duration = 0.1
-
-							start_sound = {
-								soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_start_game"
-							}
-						}
-					}
-
 					### Custom Ruler
 					button_text = {
 						layoutpolicy_horizontal = expanding
@@ -332,7 +298,7 @@ widget = {
 					}
 
 					flowcontainer = {
-					    ignoreinvisible = yes
+				    ignoreinvisible = yes
 
 						text_single = {
 							raw_text = "Start date is "
@@ -344,8 +310,40 @@ widget = {
 
 							item = {
 								widget_bookmark_group_button_ocr = {
-									visible = "[BookmarkGroupItem.IsSelected]"
+									visible = "[GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self )]"
 									name = "bookmark_group_tab"
+								}
+							}
+						}
+
+						spacer = { size = { 3 0 }}
+
+						spacer = { size = { 3 0 }}
+
+						flowcontainer = {
+							datamodel = "[GameSetup.GetBookmarksInGroup(GameSetup.GetSelectedBookmarkGroup)]"
+
+							item = {
+								flowcontainer = {
+									visible = "[And(GameSetup.IsBookmarkSelected( Bookmark.Self ), Bookmark.HasRequiredDLC)]"
+									ignoreinvisible = yes
+									spacing = 3
+
+									text_single = {
+										raw_text = "[Bookmark.GetName]"
+									}
+
+									spacer = { size = { 0 0 }}
+
+									text_single = {
+										raw_text = "bookmark,"
+									}
+
+									text_single = {
+										raw_text = "Recommended."
+										visible = "[Bookmark.IsRecommended]"
+									}
+
 								}
 							}
 						}
@@ -359,7 +357,7 @@ widget = {
 
 					item = {
 						widget_bookmark_group_button_ocr = {
-							visible = "[Not(BookmarkGroupItem.IsSelected)]"
+							visible = "[Not(GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self ))]"
 							name = "bookmark_group_tab"
 						}
 					}
@@ -368,7 +366,7 @@ widget = {
 				vbox = {
 					visible = "[GameSetup.HasUngroupedBookmarks]"
 					name = "ungrouped_bookmarks"
-					datamodel = "[GameSetup.AccessUngroupedBookmarks]"
+					datamodel = "[GameSetup.GetUngroupedBookmarks]"
 					layoutpolicy_horizontal = expanding
 
 					item = {
@@ -379,42 +377,25 @@ widget = {
 				}
 
 				text_single = {
-					raw_text = "Selected bookmark is,"
 					layoutpolicy_horizontal = expanding
+					raw_text = "[Subtract_int32(GetDataModelSize(GameSetup.GetBookmarksInGroup(GameSetup.GetSelectedBookmarkGroup)), '(int32)1')] other bookmarks:"
 				}
 
 				vbox = {
-					datamodel = "[GameSetup.AccessBookmarksInGroup(GameSetup.GetSelectedBookmarkGroup)]"
+					datamodel = "[GameSetup.GetBookmarksInGroup(GameSetup.GetSelectedBookmarkGroup)]"
 					layoutpolicy_horizontal = expanding
 
 					item = {
 						bookmark_button_ocr = {
-							visible = "[BookmarkItem.IsSelected]"
-						}
-					}
-				}
-
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					raw_text = "Change bookmark to:"
-				}
-
-				vbox = {
-					datamodel = "[GameSetup.AccessBookmarksInGroup(GameSetup.GetSelectedBookmarkGroup)]"
-					layoutpolicy_horizontal = expanding
-
-					item = {
-						bookmark_button_ocr = {
-							visible = "[Not(BookmarkItem.IsSelected)]"
+							visible = "[And(Not(GameSetup.IsBookmarkSelected( Bookmark.Self )), Bookmark.HasRequiredDLC)]"
 						}
 					}
 				}
 
 				text_single = {
 					margin_top = 5
-					raw_text = "Select character:"
+					raw_text = "Select one of [GetDataModelSize(GameSetup.GetSelectedBookmarkCharacters)] characters, you can use number keys from 1 to 5."
 					layoutpolicy_horizontal = expanding
-					align = left
 				}
 
 				vbox = {
@@ -423,12 +404,14 @@ widget = {
 
 					item = {
 						button_text = {
+							visible = "[BookmarkCharacter.ShouldDisplay]"
 							layoutpolicy_horizontal = expanding
 							onclick = "[PdxGuiTriggerAllAnimations('bookmark_character_change')]"
-							onclick = "[BookmarkCharacterGUI.Select]"
+							onclick = "[GameSetup.SetSelectedCharacter( BookmarkCharacter.Self )]"
 							onclick = "[GetVariableSystem.Set( 'show_character_info', 'true' )]"
-							alwaystransparent = "[BookmarkCharacterGUI.IsSelected]"
-							datacontext = "[BookmarkCharacterGUI.GetCharacter]"
+							alwaystransparent = "[GameSetup.IsCharaterSelected( BookmarkCharacter.Self )]"
+							datacontext = "[BookmarkCharacter]"
+							enabled = "[Not(BookmarkCharacter.GetGovernmentType.IsType( 'administrative_government' ))]"
 
 							shortcut_bookmark = {
 								visible = "[EqualTo_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)0')]"
@@ -458,21 +441,25 @@ widget = {
 
 							blockoverride "pre" {
 								text_single = {
-									visible = "[LessThan_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)5'))]"
+									visible = "[LessThan_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)5')]"
 									raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)1')],"
+								}
+								text_single = {
+									raw_text = "Disabled for now."
+									visible = "[BookmarkCharacter.GetGovernmentType.IsType( 'administrative_government' )]"
 								}
 							}
 
-						    blockoverride "text" {
+					    blockoverride "text" {
 								raw_text = "[BookmarkCharacter.GetName],"
 								align = left
-						    }
+					    }
 
 
 							# #TODO
 							# state = {
 							# 	trigger_on_create = yes
-							# 	on_finish = "[BookmarkCharacterGUI.Select]"
+							# 	on_finish = "[BookmarkCharacter.Select]"
 							# 	on_finish = "[GetVariableSystem.Set( 'show_character_info', 'true' )]"
 							# }
 
@@ -488,9 +475,19 @@ widget = {
 									raw_text = "[BookmarkCharacter.GetDynastyHouseTemplate.GetName]."
 								}
 
+								text_single = {
+									text = "ADVENTURER_BOOKMARK_CHARACTER_TITLE"
+									visible = "[BookmarkCharacter.GetGovernmentType.IsType('landless_adventurer_government')]"
+								}
 
 								text_single = {
-									raw_text = "BOOKMARK_CHARACTER_TITLE"
+									text = "BOOKMARK_CHARACTER_TITLE"
+									visible = "[Not( Or( BookmarkCharacter.GetGovernmentType.IsType( 'landless_adventurer_government' ), BookmarkCharacter.GetGovernmentType.IsType( 'administrative_government' ) ) )]"
+								}
+
+								text_single = {
+									text = "ADMIN_BOOKMARK_CHARACTER_TITLE"
+									visible = "[BookmarkCharacter.GetGovernmentType.IsType( 'administrative_government' )]"
 								}
 
 								dot = {
@@ -498,7 +495,7 @@ widget = {
 								}
 
 								text_single = {
-									raw_text = "[BookmarkCharacter.GetDifficulty]."
+									raw_text = "[BookmarkCharacter.GetDifficulty] difficulty."
 								}
 
 							}
@@ -506,6 +503,8 @@ widget = {
 						}
 					}
 				}
+
+				spacer = { size = { 0 5 }}
 
 				button_text = {
 					layoutpolicy_horizontal = expanding
@@ -524,6 +523,9 @@ widget = {
 				scrollbox = {
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
+					blockoverride "scrollbox_margins" {
+
+					}
 					blockoverride "scrollbox_content" {
 						flowcontainer = {
 							direction = vertical
@@ -667,16 +669,103 @@ widget = {
 				}
 
 				margin_widget = {
-					size = { 550 100% }
+					size = { 650 100% }
 					name = "selected_character_info"
 					visible = "[GameSetup.HasSelectedCharacter]"
 
 					vbox = {
 						layoutpolicy_vertical = expanding
 						margin = { 5 5 }
-						margin_top = 25
+						# margin_top = 25
 						# margin_bottom = 40
-						background = { using = Background_Area_Border_Solid margin_top = -25 }
+						background = { using = Background_Area_Border_Solid }
+						datacontext = "[GameSetup.GetSelectedCharacter]"
+
+						button_primary_text = {
+							visible = "[GameSetup.HasSelectedCharacter]"
+							layoutpolicy_horizontal = expanding
+
+							name = "start_button"
+							onclick = "[GameSetup.StartGame]"
+							onclick = "[PdxGuiTriggerAllAnimations('bookmarks_game_start')]"
+							onclick = "[PdxGuiTriggerAllAnimations('bookmarks_game_start_selected_character')]"
+							onclick = "[PdxGuiTriggerAllAnimations('bookmarks_hide_any_character')]"
+							onclick = "[PdxGuiTriggerAllAnimations('start_game_audio')]"
+							enabled = "[GameSetup.CanStart]"
+							# tooltip = "[GameSetup.PlayTooltip]"
+
+							blockoverride "text" {
+								raw_text = "START"
+							}
+
+							blockoverride "extra" {
+								text_single = {
+									raw_text = " as [BookmarkCharacter.GetName]"
+								}
+							}
+
+							state = {
+								name = start_game_audio
+								duration = 0.1
+
+								start_sound = {
+									soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_start_game"
+								}
+							}
+						}
+
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							button_text = {
+								name = "game_rules_button"
+
+								blockoverride "text" {
+									text = "GAME_RULES"
+								}
+								blockoverride "extra" {
+									text_single = {
+										margin_left = -3
+										raw_text = ", R."
+									}
+								}
+								shortcut = map_mode_3
+								onclick = "[OpenGameRules]"
+							}
+
+							hbox_achievements_info = {
+								margin_left = 3
+								# layoutpolicy_horizontal = expanding
+							}
+
+							# flowcontainer_game_rules_mini = {
+							# 	name = "game_rules_mini"
+							# }
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								spacing = 3
+
+								text_single = {
+									raw_text = "Ironman:"
+								}
+								text_single = {
+									visible = "[Not(IsIronmanEnabled)]"
+									raw_text = "Off"
+								}
+								text_single = {
+									visible = "[IsIronmanEnabled]"
+									raw_text = "On"
+								}
+								dot_l = {}
+
+							}
+
+
+							expand = { }
+						}
+
+						spacer = { size = { 0 10 }}
 
 						vbox = {
 							layoutpolicy_horizontal = expanding
@@ -691,9 +780,6 @@ widget = {
 
 
 								vbox = {
-									datacontext = "[GameSetup.GetSelectedCharacterGUI.GetCharacter]"
-									datacontext = "[GameSetup.GetSelectedCharacterGUI]"
-
 									layoutpolicy_horizontal = expanding
 									layoutpolicy_vertical = expanding
 									margin = { 10 0 }
@@ -710,10 +796,15 @@ widget = {
 											flowcontainer = {
 												layoutpolicy_horizontal = expanding
 												text_single = {
-													layoutpolicy_horizontal = expanding
 													name = "character_title"
 													text = "BOOKMARK_CHARACTER_TITLE_TYPE"
+													visible = "[Not( BookmarkCharacter.GetGovernmentType.IsType( 'landless_adventurer_government' ) )]"
 												}
+												text_single = {
+														name = "character_title_adventurer"
+														visible = "[BookmarkCharacter.GetGovernmentType.IsType( 'landless_adventurer_government' )]"
+														text = "BOOKMARK_CHARACTER_TITLE_TYPE_ADVENTURER"
+													}
 												text_single = {
 													raw_text = ", [BookmarkCharacter.GetAge] years old."
 												}
@@ -763,17 +854,17 @@ widget = {
 											#related
 											flowcontainer = {
 												margin_top = 5
-												visible = "[DataModelHasItems(BookmarkCharacterGUI.GetRelatedCharacters)]"
+												visible = "[DataModelHasItems(BookmarkCharacter.GetRelatedCharacters)]"
 												direction = vertical
 												layoutpolicy_horizontal = expanding
 
 												text_single = {
 													layoutpolicy_horizontal = expanding
-													raw_text = "[GetDataModelSize(BookmarkCharacterGUI.GetRelatedCharacters)] Related characters:"
+													raw_text = "[GetDataModelSize(BookmarkCharacter.GetRelatedCharacters)] Related characters:"
 												}
 
 												flowcontainer = {
-													datamodel = "[BookmarkCharacterGUI.GetRelatedCharacters]"
+													datamodel = "[BookmarkCharacter.GetRelatedCharacters]"
 													direction = vertical
 
 													item = {
@@ -785,15 +876,35 @@ widget = {
 												}
 											}
 
-											text_multi = {
+											spacer = { size = { 0 10 }}
+
+											text_single = {
+												raw_text = "Description:"
 												visible = "[GetVariableSystem.Exists( 'show_character_info' )]"
-												name = "character_text"
 												layoutpolicy_horizontal = expanding
-												text = "[BookmarkCharacter.GetDescription]"
-												autoresize = yes
-												maximumsize = { 490 -1 }
-												margin_top = 10
 											}
+
+											hbox = {
+												layoutpolicy_horizontal = expanding
+
+												text_multi = {
+													visible = "[GetVariableSystem.Exists( 'show_character_info' )]"
+													name = "character_text"
+													layoutpolicy_horizontal = expanding
+													text = "[BookmarkCharacter.GetDescription]"
+													autoresize = yes
+													maximumsize = { 550 -1 }
+													margin_top = 10
+												}
+
+												expand = {}
+											}
+
+											text_single = {
+												layoutpolicy_horizontal = expanding
+												raw_text = "Escape to go back or use numbers to switch to another character."
+											}
+
 										}
 
 										expand = { }
@@ -806,33 +917,6 @@ widget = {
 						vbox = {
 							layoutpolicy_horizontal = expanding
 
-							button_text = {
-								layoutpolicy_horizontal = expanding
-								name = "game_rules_button"
-
-								blockoverride "text" {
-									text = "GAME_RULES"
-								}
-								blockoverride "extra" {
-									text_single = {
-										margin_left = -3
-										raw_text = ", hotkey R."
-									}
-								}
-								shortcut = map_mode_3
-								onclick = "[OpenGameRules]"
-							}
-
-							hbox = {
-								layoutpolicy_horizontal = expanding
-
-
-								flowcontainer_game_rules_mini = {
-									name = "game_rules_mini"
-								}
-
-								expand = { }
-							}
 
 							hbox = {
 								name = "buttons"
@@ -874,10 +958,6 @@ widget = {
 								}
 
 								expand = { }
-							}
-
-							hbox_achievements_info = {
-								layoutpolicy_horizontal = expanding
 							}
 						}
 						expand = {}
@@ -995,6 +1075,7 @@ widget = {
 		}
 	}
 
+	# vanilla
 	widget = {
 		using = vanilla
 		parentanchor = center
@@ -1078,7 +1159,7 @@ widget = {
 				icon = {
 					name = "character_selection"
 					visible = "[GameSetup.HasSelectedCharacter]"
-					texture = "[GameSetup.GetSelectedCharacterGUI.GetCharacter.GetLocationImage]"
+					texture = "[GameSetup.GetSelectedCharacter.GetLocationImage]"
 					size = { 100% 100% }
 
 					state = {
@@ -1107,7 +1188,7 @@ widget = {
 				icon = {
 					name = "character_over"
 					visible = "[GameSetup.HasHoveredCharacter]"
-					texture = "[GameSetup.GetHoveredCharacterGUI.GetCharacter.GetLocationImage]"
+					texture = "[GameSetup.GetHoveredCharacter.GetLocationImage]"
 					size = { 100% 100% }
 					alpha = 0.3
 
@@ -1149,19 +1230,19 @@ widget = {
 
 				item = {
 					container = {
-						position = "[BookmarkCharacterGUI.GetCharacter.GetGuiPosition]"
-						datacontext = "[BookmarkCharacterGUI.GetCharacter]"
+						position = "[BookmarkCharacter.GetGuiPosition]"
+						datacontext = "[BookmarkCharacter]"
 
 						button_group_map_character_selection = {
-							visible = "[Not(BookmarkCharacterGUI.IsSelected)]"
+							visible = "[Not(GameSetup.IsCharaterSelected( BookmarkCharacter.Self ))]"
 							onclick = "[PdxGuiTriggerAllAnimations('bookmark_character_change')]"
-							onclick = "[BookmarkCharacterGUI.Select]"
+							onclick = "[GameSetup.SetSelectedCharacter( BookmarkCharacter.Self )]"
 							onclick = "[GetVariableSystem.Set( 'show_character_info', 'true' )]"
-							alwaystransparent = "[BookmarkCharacterGUI.IsSelected]"
+							alwaystransparent = "[GameSetup.IsCharaterSelected( BookmarkCharacter.Self )]"
 
 							state = {
 								name = _mouse_hierarchy_enter
-								on_start = "[BookmarkCharacterGUI.HoverStart]"
+								on_start = "[GameSetup.SetHoveredBookmarkCharacter( BookmarkCharacter.Self )]"
 								on_start = "[PdxGuiWidget.FindChild('banner_hover_glow').TriggerAnimation('bookmark_character_hover_enter')]"
 								on_start = "[PdxGuiWidget.FindChild('size_widget').TriggerAnimation('bookmark_character_hover_enter')]"
 								position = { 0 -6 }
@@ -1171,7 +1252,7 @@ widget = {
 
 							state = {
 								name = _mouse_hierarchy_leave
-								on_start = "[BookmarkCharacterGUI.HoverEnd]"
+								on_start = "[GameSetup.DeselectHoveredBookmarkCharacter]"
 								on_start = "[PdxGuiWidget.FindChild('banner_hover_glow').TriggerAnimation('bookmark_character_hover_leave')]"
 								on_start = "[PdxGuiWidget.FindChild('size_widget').TriggerAnimation('bookmark_character_hover_leave')]"
 								position = { 0 0 }
@@ -1210,7 +1291,7 @@ widget = {
 						}
 
 						button_group_map_character_selection = {
-							visible = "[BookmarkCharacterGUI.IsSelected]"
+							visible = "[GameSetup.IsCharaterSelected( BookmarkCharacter.Self )]"
 							visible_at_creation = no
 							position = { 0 -6 }
 							alwaystransparent = yes
@@ -1489,7 +1570,7 @@ widget = {
 										hbox = {
 											visible = "[GameSetup.HasUngroupedBookmarks]"
 											name = "ungrouped_bookmarks"
-											datamodel = "[GameSetup.AccessUngroupedBookmarks]"
+											datamodel = "[GameSetup.GetUngroupedBookmarks]"
 											layoutpolicy_vertical = expanding
 											allow_outside = yes
 
@@ -1600,7 +1681,7 @@ widget = {
 						vbox = {
 
 							vbox = {
-								datamodel = "[GameSetup.AccessBookmarksInGroup(GameSetup.GetSelectedBookmarkGroup)]"
+								datamodel = "[GameSetup.GetBookmarksInGroup( GameSetup.GetSelectedBookmarkGroup )]"
 
 								item = {
 									widget={
@@ -2427,14 +2508,14 @@ widget = {
 								}
 
 								vbox = {
-									datacontext = "[GameSetup.GetSelectedCharacterGUI.GetCharacter]"
-									datacontext = "[GameSetup.GetSelectedCharacterGUI]"
+									datacontext = "[GameSetup.GetSelectedCharacter]"
+									datacontext = "[GameSetup.GetSelectedCharacter]"
 
 									layoutpolicy_horizontal = expanding
 									layoutpolicy_vertical = expanding
 
 									widget = {
-										datacontext = "[GameSetup.GetSelectedCharacterGUI]"
+										datacontext = "[GameSetup.GetSelectedCharacter]"
 										visible = "[GameSetup.HasSelectedCharacter]"
 										layoutpolicy_horizontal = expanding
 										size = { 0 280 }
@@ -2463,7 +2544,7 @@ widget = {
 										}
 
 										coat_of_arms_icon = { #Dynasty
-											datacontext = "[BookmarkCharacterGUI.GetCharacter]"
+											datacontext = "[BookmarkCharacter]"
 											visible = "[Not( BookmarkCharacter.HasDynastyHouse )]"
 											parentanchor = bottom|hcenter
 											size = { 280 280 }
@@ -2479,7 +2560,7 @@ widget = {
 										}
 
 										coat_of_arms_icon = { #Dynasty House
-											datacontext = "[BookmarkCharacterGUI.GetCharacter]"
+											datacontext = "[BookmarkCharacter]"
 											visible = "[BookmarkCharacter.HasDynastyHouse]"
 											parentanchor = bottom|hcenter
 											size = { 280 280 }
@@ -2501,13 +2582,13 @@ widget = {
 
 											blockoverride "portrait_button"
 											{
-												portrait_texture = "[BookmarkCharacterGUI.GetAnimatedPortrait( 'environment_bookmarks_selected', 'camera_body', PdxGetWidgetScreenSize(PdxGuiWidget.Self) )]"
+												portrait_texture = "[BookmarkCharacter.GetAnimatedPortrait( 'environment_bookmarks_selected', 'camera_body', PdxGetWidgetScreenSize(PdxGuiWidget.Self) )]"
 												mask = "gfx/portraits/portrait_mask_blank.dds"
 											}
 										}
 
 										widget = {
-											visible = "[EqualTo_int32(GetDataModelSize(BookmarkCharacterGUI.GetRelatedCharacters), '(int32)2')]"
+											visible = "[EqualTo_int32(GetDataModelSize(BookmarkCharacter.GetRelatedCharacters), '(int32)2')]"
 											size = { 100% 100% }
 
 											icon = {
@@ -2519,7 +2600,7 @@ widget = {
 											}
 
 											flowcontainer = {
-												datamodel = "[BookmarkCharacterGUI.GetRelatedCharacters]"
+												datamodel = "[BookmarkCharacter.GetRelatedCharacters]"
 												parentanchor = bottom|hcenter
 												margin_bottom = 5
 												spacing = 25
@@ -2547,7 +2628,7 @@ widget = {
 
 															blockoverride "portrait_button"
 															{
-																portrait_texture = "[BookmarkCharacterGUI.GetPortrait( 'environment_bookmarks_selected', 'camera_shoulders', PdxGetWidgetScreenSize(PdxGuiWidget.Self) )]"
+																portrait_texture = "[BookmarkCharacter.GetPortrait( 'environment_bookmarks_selected', 'camera_shoulders', PdxGetWidgetScreenSize(PdxGuiWidget.Self) )]"
 															}
 														}
 
@@ -2567,7 +2648,7 @@ widget = {
 										}
 
 										widget = {
-											visible = "[EqualTo_int32(GetDataModelSize(BookmarkCharacterGUI.GetRelatedCharacters), '(int32)1')]"
+											visible = "[EqualTo_int32(GetDataModelSize(BookmarkCharacter.GetRelatedCharacters), '(int32)1')]"
 											size = { 100% 100% }
 
 											icon = {
@@ -2591,7 +2672,7 @@ widget = {
 											}
 
 											flowcontainer = {
-												datamodel = "[BookmarkCharacterGUI.GetRelatedCharacters]"
+												datamodel = "[BookmarkCharacter.GetRelatedCharacters]"
 												parentanchor = bottom|right
 												margin_bottom = 5
 												spacing = 30
@@ -2612,7 +2693,7 @@ widget = {
 
 															blockoverride "portrait_button"
 															{
-																portrait_texture = "[BookmarkCharacterGUI.GetPortrait( 'environment_bookmarks_selected', 'camera_shoulders', PdxGetWidgetScreenSize(PdxGuiWidget.Self) )]"
+																portrait_texture = "[BookmarkCharacter.GetPortrait( 'environment_bookmarks_selected', 'camera_shoulders', PdxGetWidgetScreenSize(PdxGuiWidget.Self) )]"
 															}
 														}
 
@@ -3237,23 +3318,23 @@ widget = {
 
 types OCR {
 	type widget_ungrouped_bookmark_button_ocr = button_text {
-		onclick = "[BookmarkItem.Select]"
+		onclick = "[GameSetup.SetSelectedBookmark( Bookmark.Self )]"
 		onclick = "[GameSetup.ClearSelectedBookmarkGroup]"
 		onclick = "[PdxGuiTriggerAllAnimations('bookmark_group_reset')]"
 		onclick = "[PdxGuiInterruptThenTriggerAllAnimations('bookmark_change','bookmark_change')]"
 		onclick = "[PdxGuiInterruptThenTriggerAllAnimations('map_characters_appear','map_characters_appear')]"
 
-		down = "[BookmarkItem.IsSelected]"
-		alwaystransparent = "[BookmarkItem.IsSelected]"
+		down = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
+		alwaystransparent = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 
 		blockoverride "text" {
-			raw_text = "[BookmarkItem.GetName]."
+			raw_text = "[Bookmark.GetName]."
 		}
 
 		blockoverride "extra" {
 			text_single = {
 				raw_text = ", Selected"
-				visible = "[BookmarkItem.IsSelected]"
+				visible = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 				align = left
 			}
 		}
@@ -3262,7 +3343,7 @@ types OCR {
 
 		state = {
 			name = "button_selection"
-			trigger_when = "[BookmarkItem.IsSelected]"
+			trigger_when = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 			on_start = "[PdxGuiWidget.InterruptAnimation('bookmark_group_reset')]"
 			delay = 0.05
 			duration = 0.1
@@ -3340,28 +3421,28 @@ types OCR {
 	type widget_bookmark_group_button_ocr = button_text {
 		layoutpolicy_horizontal = expanding
 
-		onclick = "[BookmarkGroupItem.OnClick]"
+		onclick = "[GameSetup.SelectBookmarkGroup( BookmarkGroup.Self )]"
 		onclick = "[PdxGuiTriggerAllAnimations('bookmark_group_reset')]"
 		onclick = "[PdxGuiInterruptThenTriggerAllAnimations('bookmark_group_change','bookmark_group_change')]"
 		onclick = "[PdxGuiInterruptThenTriggerAllAnimations('bookmark_change','bookmark_change')]"
 		onclick = "[PdxGuiInterruptThenTriggerAllAnimations('map_characters_appear','map_characters_appear')]"
 		onclick = "[GetVariableSystem.Clear( 'show_character_info' )]"
-		down = "[BookmarkGroupItem.IsSelected]"
-		alwaystransparent = "[BookmarkGroupItem.IsSelected]"
+		down = "[GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self )]"
+		alwaystransparent = "[GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self )]"
 
 		blockoverride "text" {
-			raw_text = "[BookmarkGroupItem.GetBookmarkGroup.GetName],"
+			raw_text = "[BookmarkGroup.GetName],"
 		}
 		blockoverride "pre" {
 			text_single = {
 				raw_text = "Change to"
-				visible = "[Not(BookmarkGroupItem.IsSelected)]"
+				visible = "[Not(GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self ))]"
 			}
 		}
 		blockoverride "extra" {
 			container = {
 				ignoreinvisible = yes
-				visible = "[Not(BookmarkGroupItem.IsSelected)]"
+				visible = "[Not(GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self ))]"
 				text_single = {
 					raw_text = "F one."
 					visible = "[IsIndex( '(int32)0' )]"
@@ -3375,6 +3456,14 @@ types OCR {
 					visible = "[IsIndex( '(int32)1' )]"
 					button = {
 						shortcut = my_realm_window
+						using = date_click
+					}
+				}
+				text_single = {
+					raw_text = "F[IndexNumber]."
+					visible = "[IsIndex( '(int32)2' )]"
+					button = {
+						shortcut = military_window
 						using = date_click
 					}
 				}
@@ -3398,32 +3487,24 @@ types OCR {
 		onclick = "[PdxGuiInterruptThenTriggerAllAnimations('bookmark_change','bookmark_change')]"
 		onclick = "[PdxGuiTriggerAllAnimations('bookmark_tab_reset')]"
 		onclick = "[PdxGuiInterruptThenTriggerAllAnimations('map_characters_appear','map_characters_appear')]"
-		onclick = "[BookmarkItem.Select]"
+		onclick = "[GameSetup.SetSelectedBookmark( Bookmark.Self )]"
 		onclick = "[GetVariableSystem.Clear( 'show_character_info' )]"
-		down = "[BookmarkItem.IsSelected]"
-		alwaystransparent = "[BookmarkItem.IsSelected]"
+		down = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
+		alwaystransparent = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 
 
 		blockoverride "text" {
-			raw_text = "[BookmarkItem.GetName],"
+			raw_text = "[Bookmark.GetName],"
 		}
 
 		blockoverride "extra" {
 			flowcontainer = {
 				ignoreinvisible = yes
-				visible = "[Not(BookmarkItem.IsSelected)]"
+				visible = "[Not(GameSetup.IsBookmarkSelected( Bookmark.Self ))]"
 
 				text_single = {
-					raw_text = "F3"
-					visible = "[IsIndex( '(int32)0' )]"
-					button = {
-						shortcut = military_window
-						using = bookmark_click
-					}
-				}
-				text_single = {
 					raw_text = "F4"
-					visible = "[IsIndex( '(int32)1' )]"
+					visible = "[IsIndex( '(int32)0' )]"
 					button = {
 						shortcut = council_window
 						using = bookmark_click
@@ -3431,7 +3512,7 @@ types OCR {
 				}
 				text_single = {
 					raw_text = "F five"
-					visible = "[IsIndex( '(int32)2' )]"
+					visible = "[IsIndex( '(int32)1' )]"
 					button = {
 						shortcut = court_window
 						using = bookmark_click
@@ -3439,7 +3520,7 @@ types OCR {
 				}
 				text_single = {
 					raw_text = "F6"
-					visible = "[IsIndex( '(int32)3' )]"
+					visible = "[IsIndex( '(int32)2' )]"
 					button = {
 						shortcut = intrigue_window
 						using = bookmark_click
@@ -3447,7 +3528,7 @@ types OCR {
 				}
 				text_single = {
 					raw_text = "F7"
-					visible = "[IsIndex( '(int32)4' )]"
+					visible = "[IsIndex( '(int32)3' )]"
 					button = {
 						shortcut = factions_window
 						using = bookmark_click
@@ -3455,7 +3536,7 @@ types OCR {
 				}
 				text_single = {
 					raw_text = "F8"
-					visible = "[IsIndex( '(int32)5' )]"
+					visible = "[IsIndex( '(int32)4' )]"
 					button = {
 						shortcut = decision_window
 						using = bookmark_click
@@ -3463,7 +3544,7 @@ types OCR {
 				}
 				text_single = {
 					raw_text = "F9"
-					visible = "[IsIndex( '(int32)6' )]"
+					visible = "[IsIndex( '(int32)5' )]"
 					button = {
 						shortcut = activity_list_window
 						using = bookmark_click
@@ -3473,8 +3554,8 @@ types OCR {
 			}
 
 			text_single = {
-				raw_text = "Recommended start."
-				visible = "[BookmarkItem.GetBookmark.IsRecommended]"
+				raw_text = "Recommended."
+				visible = "[Bookmark.IsRecommended]"
 			}
 		}
 	}
@@ -3491,14 +3572,14 @@ types BookmarkPortraits
 			position = { 0 5 }
 			size = { 100% 100% }
 
-			onclick = "[BookmarkItem.Select]"
+			onclick = "[GameSetup.SetSelectedBookmark( Bookmark.Self )]"
 			onclick = "[GameSetup.ClearSelectedBookmarkGroup]"
 			onclick = "[PdxGuiTriggerAllAnimations('bookmark_group_reset')]"
 			onclick = "[PdxGuiInterruptThenTriggerAllAnimations('bookmark_change','bookmark_change')]"
 			onclick = "[PdxGuiInterruptThenTriggerAllAnimations('map_characters_appear','map_characters_appear')]"
 
-			down = "[BookmarkItem.IsSelected]"
-			alwaystransparent = "[BookmarkItem.IsSelected]"
+			down = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
+			alwaystransparent = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 
 			state = {
 				name = "_mouse_enter"
@@ -3512,7 +3593,7 @@ types BookmarkPortraits
 
 			state = {
 				name = "button_selection"
-				trigger_when = "[BookmarkItem.IsSelected]"
+				trigger_when = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 				on_start = "[PdxGuiWidget.InterruptAnimation('bookmark_group_reset')]"
 				delay = 0.05
 				duration = 0.1
@@ -3532,7 +3613,7 @@ types BookmarkPortraits
 				parentanchor = bottom|hcenter
 				size = { 100% 75 }
 				alwaystransparent = yes
-				texture = "[BookmarkItem.GetBookmark.GetButtonIcon]"
+				texture = "[Bookmark.GetButtonIcon]"
 
 				using = tooltip_ne
 
@@ -3566,7 +3647,7 @@ types BookmarkPortraits
 
 				modify_texture = {
 					name = "shimmer"
-					visible = "[BookmarkItem.GetBookmark.IsRecommended]"
+					visible = "[Bookmark.IsRecommended]"
 					texture = "gfx/interface/component_effects/effect_shimmer.dds"
 					blend_mode = colordodge
 					translate_uv = { 0.2 0.2 }
@@ -3581,7 +3662,7 @@ types BookmarkPortraits
 
 				state = {
 					name = "selected_glow"
-					trigger_when = "[BookmarkItem.IsSelected]"
+					trigger_when = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 					on_start = "[PdxGuiWidget.InterruptAnimation('bookmark_group_reset')]"
 					duration = 0.25
 
@@ -3707,7 +3788,7 @@ types BookmarkPortraits
 
 					modify_texture = {
 						name = "shimmer"
-						visible = "[BookmarkItem.GetBookmark.IsRecommended]"
+						visible = "[Bookmark.IsRecommended]"
 						texture = "gfx/interface/component_effects/effect_shimmer.dds"
 						blend_mode = colordodge
 						translate_uv = { 0.2 0.2 }
@@ -3812,7 +3893,7 @@ types BookmarkPortraits
 
 						text_single = {
 							name = "year"
-							text = "[BookmarkItem.GetYear]"
+							text = "[Bookmark.GetDate.GetYear]"
 							default_format = "#clickable;bold;glow_color:{0,0,0,1}"
 							using = Font_Size_Medium
 							using = Font_Type_Flavor
@@ -3830,7 +3911,7 @@ types BookmarkPortraits
 							spacing = 3
 
 							icon = {
-								visible = "[BookmarkItem.GetBookmark.IsRecommended]"
+								visible = "[Bookmark.IsRecommended]"
 								texture = "gfx/interface/icons/portraits/me_small.dds"
 								size = { 18 18 }
 							}
@@ -3840,7 +3921,7 @@ types BookmarkPortraits
 								align = nobaseline
 								max_width = 140
 
-								text = "[BookmarkItem.GetName]"
+								text = "[Bookmark.GetName]"
 								default_format = "#high;glow_color:{0,0,0,1}"
 							}
 						}
@@ -3860,14 +3941,14 @@ types BookmarkPortraits
 			parentanchor = top|hcenter
 			position = { 0 5 }
 			size = { 100% 100% }
-			onclick = "[BookmarkGroupItem.OnClick]"
+			onclick = "[GameSetup.SelectBookmarkGroup( BookmarkGroup.Self )]"
 			onclick = "[PdxGuiTriggerAllAnimations('bookmark_group_reset')]"
 			onclick = "[PdxGuiInterruptThenTriggerAllAnimations('bookmark_group_change','bookmark_group_change')]"
 			onclick = "[PdxGuiInterruptThenTriggerAllAnimations('bookmark_change','bookmark_change')]"
 			onclick = "[PdxGuiInterruptThenTriggerAllAnimations('map_characters_appear','map_characters_appear')]"
 			onclick = "[GetVariableSystem.Clear( 'show_character_info' )]"
-			down = "[BookmarkGroupItem.IsSelected]"
-			alwaystransparent = "[BookmarkGroupItem.IsSelected]"
+			down = "[GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self )]"
+			alwaystransparent = "[GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self )]"
 
 			state = {
 				name = "_mouse_enter"
@@ -3881,7 +3962,7 @@ types BookmarkPortraits
 
 			state = {
 				name = "button_selection"
-				trigger_when = "[BookmarkGroupItem.IsSelected]"
+				trigger_when = "[GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self )]"
 				on_start = "[PdxGuiWidget.InterruptAnimation('bookmark_group_reset')]"
 				delay = 0.05
 				duration = 0.1
@@ -3901,7 +3982,7 @@ types BookmarkPortraits
 				parentanchor = bottom|hcenter
 				size = { 100% 75 }
 				alwaystransparent = yes
-				#texture = "[BookmarkGroupItem.GetBookmarkGroup.GetButtonIcon]"
+				#texture = "[BookmarkGroup.GetButtonIcon]"
 				texture = "gfx/interface/icons/bookmark_buttons/year_tab.dds"
 
 				using = tooltip_ne
@@ -3936,7 +4017,7 @@ types BookmarkPortraits
 
 				modify_texture = {
 					name = "shimmer"
-					visible = "[BookmarkGroupItem.IsSelected]"
+					visible = "[GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self )]"
 					texture = "gfx/interface/component_effects/effect_shimmer.dds"
 					blend_mode = colordodge
 					translate_uv = { 0.2 0.2 }
@@ -3951,7 +4032,7 @@ types BookmarkPortraits
 
 				state = {
 					name = "selected_glow"
-					trigger_when = "[BookmarkGroupItem.IsSelected]"
+					trigger_when = "[GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self )]"
 					on_start = "[PdxGuiWidget.InterruptAnimation('bookmark_group_reset')]"
 					duration = 0.25
 
@@ -4078,7 +4159,7 @@ types BookmarkPortraits
 
 					modify_texture = {
 						name = "shimmer"
-						visible = "[BookmarkGroupItem.IsSelected]"
+						visible = "[GameSetup.IsBookmarkGroupSelected( BookmarkGroup.Self )]"
 						texture = "gfx/interface/component_effects/effect_shimmer.dds"
 						blend_mode = colordodge
 						translate_uv = { 0.2 0.2 }
@@ -4184,7 +4265,7 @@ types BookmarkPortraits
 
 						text_single = {
 							name = "year"
-							text = "[BookmarkGroupItem.GetBookmarkGroup.GetName]"
+							text = "[BookmarkGroup.GetName]"
 							default_format = "#high;bold;glow_color:{0,0,0,1}"
 							using = Font_Size_Big
 							using = Font_Type_Flavor
@@ -4209,10 +4290,10 @@ types BookmarkPortraits
 		onclick = "[PdxGuiInterruptThenTriggerAllAnimations('bookmark_change','bookmark_change')]"
 		onclick = "[PdxGuiTriggerAllAnimations('bookmark_tab_reset')]"
 		onclick = "[PdxGuiInterruptThenTriggerAllAnimations('map_characters_appear','map_characters_appear')]"
-		onclick = "[BookmarkItem.Select]"
+		onclick = "[GameSetup.SetSelectedBookmark( Bookmark.Self )]"
 		onclick = "[GetVariableSystem.Clear( 'show_character_info' )]"
-		down = "[BookmarkItem.IsSelected]"
-		alwaystransparent = "[BookmarkItem.IsSelected]"
+		down = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
+		alwaystransparent = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 
 		state = {
 			name = "_mouse_enter"
@@ -4226,7 +4307,7 @@ types BookmarkPortraits
 
 		state = {
 			name = "button_selection"
-			trigger_when = "[BookmarkItem.IsSelected]"
+			trigger_when = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 			on_start = "[PdxGuiWidget.InterruptAnimation('bookmark_tab_reset')]"
 			delay = 0.05
 			duration = 0.1
@@ -4259,7 +4340,7 @@ types BookmarkPortraits
 			using = tooltip_ne
 
 			background = {
-				texture = "[BookmarkItem.GetBookmark.GetButtonIcon]"
+				texture = "[Bookmark.GetButtonIcon]"
 			}
 
 			modify_texture = {
@@ -4292,7 +4373,7 @@ types BookmarkPortraits
 
 			modify_texture = {
 				name = "tab_shimmer"
-				visible = "[BookmarkItem.IsSelected]"
+				visible = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 				texture = "gfx/interface/component_effects/effect_shimmer.dds"
 				blend_mode = colordodge
 				translate_uv = { 0.2 0.2 }
@@ -4307,7 +4388,7 @@ types BookmarkPortraits
 
 			state = {
 				name = "tab_selected_glow"
-				trigger_when = "[BookmarkItem.IsSelected]"
+				trigger_when = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 				on_start = "[PdxGuiWidget.InterruptAnimation('bookmark_tab_reset')]"
 				duration = 0.25
 
@@ -4435,14 +4516,14 @@ types BookmarkPortraits
 					}
 
 					text_single = {
-						text = "[BookmarkItem.GetName]"
+						text = "[Bookmark.GetName]"
 						default_format = "#high;glow_color:{0,0,0,1}"
 						align = nobaseline
 						using = Font_Size_Medium
 					}
 
 					icon = {
-						visible = "[BookmarkItem.GetBookmark.IsRecommended]"
+						visible = "[Bookmark.IsRecommended]"
 						texture = "gfx/interface/icons/portraits/me_small.dds"
 						size = { 22 22 }
 					}
@@ -4451,7 +4532,7 @@ types BookmarkPortraits
 				}
 				state = {
 					name = "button_selection"
-					trigger_when = "[BookmarkItem.IsSelected]"
+					trigger_when = "[GameSetup.IsBookmarkSelected( Bookmark.Self )]"
 					on_start = "[PdxGuiWidget.InterruptAnimation('bookmark_tab_reset')]"
 					delay = 0.05
 					duration = 0.1
@@ -4507,7 +4588,7 @@ types BookmarkPortraits
 
 					blockoverride "portrait_button"
 					{
-						portrait_texture = "[BookmarkCharacterGUI.GetPortrait( 'environment_bookmarks_map', 'camera_shoulders', PdxGetWidgetScreenSize(PdxGuiWidget.Self) )]"
+						portrait_texture = "[BookmarkCharacter.GetPortrait( 'environment_bookmarks_map', 'camera_shoulders', PdxGetWidgetScreenSize(PdxGuiWidget.Self) )]"
 					}
 				}
 
@@ -4527,6 +4608,7 @@ types BookmarkPortraits
 
 				flowcontainer = {
 					margin_left = 15
+					allow_outside = yes
 
 					icon = {
 						texture = "gfx/interface/icons/banners/banner_blue_left.dds"
@@ -4534,10 +4616,11 @@ types BookmarkPortraits
 						spriteborder = { 72 0 }
 						spriteborder_right = 114
 						texture_density = 2
+						allow_outside = yes
 
 						modify_texture = {
 							name = overlay
-							visible = "[Not(BookmarkCharacterGUI.IsSelected)]"
+							visible = "[Not( GameSetup.IsCharaterSelected( BookmarkCharacter.Self ) )]"
 							texture = "gfx/interface/component_effects/effect_blue_shine.dds"
 							blend_mode = colordodge
 							translate_uv = { 0.6 0 }
@@ -4623,7 +4706,7 @@ types BookmarkPortraits
 						}
 
 						icon = {
-							visible = "[BookmarkCharacterGUI.IsSelected]"
+							visible = "[GameSetup.IsCharaterSelected( BookmarkCharacter.Self )]"
 							visible_at_creation = no
 							size = { 100% 100% }
 							texture = "gfx/interface/icons/banners/banner_blue_left_glow.dds"
@@ -4656,25 +4739,62 @@ types BookmarkPortraits
 							}
 						}
 
-						flowcontainer = {
+						vbox = {
 							parentanchor = bottom|hcenter
-							widgetanchor = center
-							direction = vertical
-							margin_bottom = 6
+							widgetanchor = top|hcenter
+							position = { 0 -47 }
+							allow_outside = yes
 
-							text_single = {
-								parentanchor = hcenter
-								text = "BOOKMARK_CHARACTER_TITLE"
-								default_format = "#light_background"
-							}
+							vbox = {
+								# This vbox is necessary to not get flowcontainer inherited padding
+								spacing = 1
 
-							text_single = {
-								parentanchor = hcenter
-								text = "[BookmarkCharacter.GetDifficulty]"
+								text_single = {
+									text = "ADVENTURER_BOOKMARK_CHARACTER_TITLE"
+									default_format = "#light_background"
+									visible = "[BookmarkCharacter.GetGovernmentType.IsType('landless_adventurer_government')]"
+								}
+
+								text_single = {
+									text = "BOOKMARK_CHARACTER_TITLE"
+									default_format = "#light_background"
+									visible = "[Not( Or( BookmarkCharacter.GetGovernmentType.IsType( 'landless_adventurer_government' ), BookmarkCharacter.GetGovernmentType.IsType( 'administrative_government' ) ) )]"
+								}
+
+								text_single = {
+									text = "ADMIN_BOOKMARK_CHARACTER_TITLE"
+									default_format = "#light_background"
+									visible = "[BookmarkCharacter.GetGovernmentType.IsType( 'administrative_government' ) )]"
+								}
+
+								text_single = {
+									text = "[BookmarkCharacter.GetDifficulty]"
+								}
 							}
 						}
 
 						coa_realm_bookmark = {
+							visible = "[And(And(Not(BookmarkCharacter.GetGovernmentType.IsType('clan_government')),Not(BookmarkCharacter.GetGovernmentType.IsType('adventurer_government'))), Not(BookmarkCharacter.GetGovernmentType.IsType( 'administrative_government' )))]"
+							position = { 0 -25 }
+						}
+
+						coa_realm_bookmark = {
+							visible = "[And(HasDlcFeature( 'admin_gov' ), BookmarkCharacter.GetGovernmentType.IsType( 'administrative_government' ))]"
+							position = { 0 -25 }
+						}
+
+						coa_admin_nodlc_bookmark = {
+							visible = "[And(Not(HasDlcFeature( 'admin_gov' )), BookmarkCharacter.GetGovernmentType.IsType( 'administrative_government' ))]"
+							position = { 0 -25 }
+						}
+
+						coa_clan_bookmark = {
+							visible = "[BookmarkCharacter.GetGovernmentType.IsType('clan_government')]"
+							position = { 0 -25 }
+						}
+
+						coa_adventurer_bookmark = {
+							visible = "[BookmarkCharacter.GetGovernmentType.IsType('landless_adventurer_government')]"
 							position = { 0 -25 }
 						}
 
@@ -4721,13 +4841,12 @@ types BookmarkPortraits
 			size = { 100% 100% }
 			using = portrait_base
 			name = "culture_head_portrait"
-			portrait_texture = "[BookmarkCharacterGUI.GetPortrait( 'environment_bookmarks_map', 'camera_head', PdxGetWidgetScreenSize(PdxGuiWidget.Self) )]"
+			portrait_texture = "[BookmarkCharacter.GetPortrait( 'environment_bookmarks_map', 'camera_head', PdxGetWidgetScreenSize(PdxGuiWidget.Self) )]"
 			background_texture = "gfx/portraits/portrait_transparent.dds"
 			texture = "gfx/portraits/portrait_transparent.dds"
 			framesize = { 86 129 }
 			mask = "gfx/portraits/portrait_mask_council.dds"
 
-			datacontext = "[BookmarkCharacterGUI.GetCharacter]"
 			effectname = "NoHighlight"
 			alwaystransparent = yes
 
@@ -4873,14 +4992,14 @@ types GameSetupTypes
 
 	type shortcut_bookmark = button {
 		onclick = "[PdxGuiTriggerAllAnimations('bookmark_character_change')]"
-		onclick = "[BookmarkCharacterGUI.Select]"
+		onclick = "[GameSetup.SetSelectedCharacter( BookmarkCharacter.Self )]"
 		onclick = "[GetVariableSystem.Set( 'show_character_info', 'true' )]"
 	}
 }
 
 
 template date_click {
-	onclick = "[BookmarkGroupItem.OnClick]"
+	onclick = "[GameSetup.SelectBookmarkGroup( BookmarkGroup.Self )]"
 	onclick = "[PdxGuiTriggerAllAnimations('bookmark_group_reset')]"
 	onclick = "[PdxGuiInterruptThenTriggerAllAnimations('bookmark_group_change','bookmark_group_change')]"
 	onclick = "[PdxGuiInterruptThenTriggerAllAnimations('bookmark_change','bookmark_change')]"
@@ -4892,6 +5011,6 @@ template bookmark_click {
 	onclick = "[PdxGuiInterruptThenTriggerAllAnimations('bookmark_change','bookmark_change')]"
 	onclick = "[PdxGuiTriggerAllAnimations('bookmark_tab_reset')]"
 	onclick = "[PdxGuiInterruptThenTriggerAllAnimations('map_characters_appear','map_characters_appear')]"
-	onclick = "[BookmarkItem.Select]"
+	onclick = "[GameSetup.SetSelectedBookmark( Bookmark.Self )]"
 	onclick = "[GetVariableSystem.Clear( 'show_character_info' )]"
 }

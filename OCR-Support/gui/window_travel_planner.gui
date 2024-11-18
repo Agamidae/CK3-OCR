@@ -24,6 +24,8 @@
 	state = {
 		name = _show
 
+		using = zoom_out_title
+		on_finish = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
 		using = Animation_FadeIn_Standard
 		using = Sound_WindowShow_Standard
 		using = Animation_FadeIn_BottomLeft
@@ -36,6 +38,9 @@
 		using = Animation_FadeOut_Standard
 		using = Sound_WindowHide_Standard
 		using = Animation_FadeOut_BottomLeft
+		on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
+		on_finish = "[GetScriptedGui('clear_provisions_low').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		on_finish = "[GetScriptedGui('clear_provisions_critical').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 	}
 
 	window = {
@@ -1523,63 +1528,106 @@ types OCR {
 		vbox = {
 			layoutpolicy_horizontal = expanding
 
-			text_multi_wide = {
+			hbox = {
 				layoutpolicy_horizontal = expanding
-				visible = "[And( Activity.IsValid, IsDateAfter( TravelPlanData.GetNextDestination.GetEstimatedArrivalDate, Activity.GetActiveStartDate ) )]"
-				text = "TRAVEL_PLANNER_INVITED_WILL_NOT_ARRIVE_IN_TIME"
-				autoresize = yes
+				visible = "[TravelPlanData.HasNextDestination]"
+
+				text_multi_wide = {
+					layoutpolicy_horizontal = expanding
+					visible = "[And( Activity.IsValid, IsDateAfter( TravelPlanData.GetNextDestination.GetEstimatedArrivalDate, Activity.GetActiveStartDate ) )]"
+					text = "TRAVEL_PLANNER_INVITED_WILL_NOT_ARRIVE_IN_TIME"
+					autoresize = yes
+				}
+
+				expand = {}
 			}
 
 			hbox = {
-			    layoutpolicy_horizontal = expanding
+		    layoutpolicy_horizontal = expanding
 				visible = "[Activity.IsValid]"
 
 				text_single = {
 					text = "TRAVEL_PLANNER_INVITED_ACTIVITY_START"
 				}
 
-			    dot = { }
+		    dot = { }
 
-			    expand = { }
+		    expand = { }
 			}
 
 			hbox = {
-			    layoutpolicy_horizontal = expanding
+		    layoutpolicy_horizontal = expanding
 
 				text_single = {
+					visible = "[TravelPlanData.HasNextDestination]"
 					text = "TRAVEL_PLANNER_INVITED_ACTIVITY_ESTIMATED_ARRIVAL"
 				}
 
 				dot = { }
 
-			    expand = { }
+		    expand = { }
+			}
+
+			hbox = {
+				visible = "[And( IsLandlessAdventurer( GetPlayer ), TravelPlanData.IsTravelWithDomicile )]"
+				layoutpolicy_horizontal = expanding
+				spacing = 3
+
+				text_single = {
+					raw_text = "[TravelPlanner.GetProvisionsCost],"
+				}
+
+				text_single = {
+					raw_text = "and you have [GetPlayer.GetDomicile.GetProvisions]."
+				}
+
+				tooltip = "[TravelPlanner.GetProvisionsCostBreakdown]"
+				using = tooltip_se
+
+				expand = {}
 			}
 
 
 			hbox = {
-			    layoutpolicy_horizontal = expanding
+		    layoutpolicy_horizontal = expanding
+				visible = "[Not( TravelPlanData.IsTravelWithDomicile )]"
 
 				cost_breakdown_vbox = {
 					datacontext = "[TravelPlanner.AccessCostBreakdown]"
 					name = "travel_cost"
 				}
 
-			    expand = { }
+		    expand = { }
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[TravelPlanData.HasNextDestination]"
+
+				button_primary_text = {
+					layoutpolicy_horizontal = expanding
+					name = "progress_planning"
+					widgetid = "progress_planning"
+					blockoverride "text" {
+						text = "[TravelPlanner.GetStartTravelPlanText]"
+
+					}
+					onclick = "[TravelPlanner.StartTravelPlan]"
+					blockoverride "disabled" {
+						visible = "[And( Activity.IsValid, IsDateAfter( TravelPlanData.GetNextDestination.GetEstimatedArrivalDate, Activity.GetActiveStartDate ) )]"
+					}
+
+					enabled = "[Not( And( Activity.IsValid, IsDateAfter( TravelPlanData.GetNextDestination.GetEstimatedArrivalDate, Activity.GetActiveStartDate ) ) )]"
+				}
+
+				expand = {}
 			}
 
 			button_primary_text = {
 				layoutpolicy_horizontal = expanding
-				name = "progress_planning"
-				blockoverride "text" {
-					text = "[TravelPlanner.GetStartTravelPlanText]"
-
-				}
+				text = "[TravelPlanner.GetStartTravelPlanText]"
 				onclick = "[TravelPlanner.StartTravelPlan]"
-				blockoverride "disabled" {
-					visible = "[And( Activity.IsValid, IsDateAfter( TravelPlanData.GetNextDestination.GetEstimatedArrivalDate, Activity.GetActiveStartDate ) )]"
-				}
-
-				enabled = "[Not( And( Activity.IsValid, IsDateAfter( TravelPlanData.GetNextDestination.GetEstimatedArrivalDate, Activity.GetActiveStartDate ) ) )]"
+				visible = "[Not(TravelPlanData.HasNextDestination)]"
 			}
 		}
 	}
@@ -1989,6 +2037,7 @@ types OCR {
 							}
 						}
 
+
 						# Travel Safety
 
 						vbox = {
@@ -2011,6 +2060,68 @@ types OCR {
 								}
 
 								expand = { }
+							}
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								direction = vertical
+								layoutpolicy_horizontal = expanding
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									direction = vertical
+									datacontext = "[GetPlayer.MakeScope.Var('provisions_critical').GetProvince]"
+									visible = "[GetPlayer.MakeScope.Var('provisions_critical').IsSet]"
+
+									button_text = {
+										using = prov_click
+										blockoverride "text" {
+											raw_text = "warning, you will run out of provisions past [Province.GetName], expect extreme privation events."
+										}
+									}
+
+									button_text = {
+										using = prov_click
+										blockoverride "extra" {
+											text_single = {
+												visible = "[Not(ObjectsEqual( Province.Self, GetPlayer.GetCapitalLocation))]"
+												raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)],"
+											}
+											text_single = {
+												visible = "[GetScriptedGui('is_land_province').IsShown( GuiScope.SetRoot( Province.MakeScope ).End )]"
+												raw_text = "inside [Province.GetCounty.GetCount.GetTopLiege.GetPrimaryTitle.GetNameNoTier]."
+											}
+										}
+									}
+								}
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									direction = vertical
+									datacontext = "[GetPlayer.MakeScope.Var('provisions_low').GetProvince]"
+									visible = "[GetPlayer.MakeScope.Var('provisions_low').IsSet]"
+
+									button_text = {
+										using = prov_click
+										blockoverride "text" {
+											raw_text = "warning, provisions get low past [Province.GetName], expect privation events."
+										}
+									}
+
+									button_text = {
+										using = prov_click
+										blockoverride "extra" {
+											text_single = {
+												visible = "[Not(ObjectsEqual( Province.Self, GetPlayer.GetCapitalLocation))]"
+												raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)],"
+											}
+											text_single = {
+												visible = "[GetScriptedGui('is_land_province').IsShown( GuiScope.SetRoot( Province.MakeScope ).End )]"
+												raw_text = "inside [Province.GetCounty.GetCount.GetTopLiege.GetPrimaryTitle.GetNameNoTier]."
+											}
+										}
+									}
+								}
 							}
 
 							hbox = {
@@ -2232,7 +2343,7 @@ types OCR {
 								visible = "[TravelPlanner.CanCancelTravelPlan]"
 							}
 							blockoverride "text" {
-								text = "CANCEL_TRAVEL_PLAN"
+								text = "[TravelPlanner.GetCancelTravelPlanText]"
 							}
 							tooltip = "[TravelPlanner.GetCanCancelTravelPlanTooltip]"
 						}
@@ -2455,7 +2566,7 @@ types OCR {
 			name = order_dangers
 			delay = 0.1
 			on_finish = "[GetScriptedGui('order_dangers').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-			on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
+			# on_finish = "[DefaultOnCoatOfArmsRightClick(GetPlayer.GetCapitalLocation.GetCounty.GetTitle.GetID)]"
 			on_finish = "[GetVariableSystem.Clear('dangers_done')]"
 			using = Sound_WindowShow_Standard
 		}
@@ -2518,6 +2629,68 @@ types OCR {
 					vbox = {
 						layoutpolicy_horizontal = expanding
 						layoutpolicy_vertical = expanding
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							layoutpolicy_horizontal = expanding
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								direction = vertical
+								datacontext = "[GetPlayer.MakeScope.Var('provisions_critical').GetProvince]"
+								visible = "[GetPlayer.MakeScope.Var('provisions_critical').IsSet]"
+
+								button_text = {
+									using = prov_click
+									blockoverride "text" {
+										raw_text = "warning, you will run out of provisions past [Province.GetName], expect extreme privation events."
+									}
+								}
+
+								button_text = {
+									using = prov_click
+									blockoverride "extra" {
+										text_single = {
+											visible = "[Not(ObjectsEqual( Province.Self, GetPlayer.GetCapitalLocation))]"
+											raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)],"
+										}
+										text_single = {
+											visible = "[GetScriptedGui('is_land_province').IsShown( GuiScope.SetRoot( Province.MakeScope ).End )]"
+											raw_text = "inside [Province.GetCounty.GetCount.GetTopLiege.GetPrimaryTitle.GetNameNoTier]."
+										}
+									}
+								}
+							}
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								direction = vertical
+								datacontext = "[GetPlayer.MakeScope.Var('provisions_low').GetProvince]"
+								visible = "[GetPlayer.MakeScope.Var('provisions_low').IsSet]"
+
+								button_text = {
+									using = prov_click
+									blockoverride "text" {
+										raw_text = "warning, provisions get low past [Province.GetName], expect privation events."
+									}
+								}
+
+								button_text = {
+									using = prov_click
+									blockoverride "extra" {
+										text_single = {
+											visible = "[Not(ObjectsEqual( Province.Self, GetPlayer.GetCapitalLocation))]"
+											raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)],"
+										}
+										text_single = {
+											visible = "[GetScriptedGui('is_land_province').IsShown( GuiScope.SetRoot( Province.MakeScope ).End )]"
+											raw_text = "inside [Province.GetCounty.GetCount.GetTopLiege.GetPrimaryTitle.GetNameNoTier]."
+										}
+									}
+								}
+							}
+						}
 
 						text_single = {
 							layoutpolicy_horizontal = expanding

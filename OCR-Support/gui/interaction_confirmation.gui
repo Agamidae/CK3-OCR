@@ -14,6 +14,7 @@ window = {
 		name = _show
 		on_start = "[GetVariableSystem.Clear( 'character_interaction_change_title' )]"
 		on_start = "[GetVariableSystem.Clear( 'character_interaction_change_artifact' )]"
+		on_start = "[GetVariableSystem.Clear( 'character_interaction_change_maa' )]"
 		using = Animation_FadeIn_Quick
 		using = Sound_WindowShow_Standard
 	}
@@ -49,10 +50,11 @@ window = {
 			vbox = {
 				layoutpolicy_horizontal = expanding
 
-				## Options
-				vbox_interaction_options = {
+				## Scheme Information
+				vbox_scheme_info = {
+					visible = "[And( CharacterInteractionConfirmationWindow.ShouldShowScheme, Not( CharacterInteractionConfirmationWindow.IsActorRecipientSame ) )]"
+					datacontext = "[CharacterInteractionConfirmationWindow.GetSchemeInfo]"
 					layoutpolicy_horizontal = expanding
-					visible = "[CharacterInteractionConfirmationWindow.HasOptions]"
 				}
 
 				### Acceptance
@@ -60,12 +62,6 @@ window = {
 					visible = "[CharacterInteractionConfirmationWindow.ShouldShowAnswer]"
 					layoutpolicy_horizontal = expanding
 				}
-
-				text_multi_on_decline_summary = {
-					max_width = 650
-					layoutpolicy_horizontal = expanding
-				}
-
 				hbox = {
 					layoutpolicy_horizontal = expanding
 					visible = "[CharacterInteractionConfirmationWindow.HasCost]"
@@ -91,6 +87,18 @@ window = {
 
 					button_primary_text = {
 						layoutpolicy_horizontal = expanding
+						blockoverride "pre" {
+							flowcontainer = {
+								ignoreinvisible = yes
+								visible = "[CharacterInteractionConfirmationWindow.ShouldShowScheme]"
+								datacontext = "[CharacterInteractionConfirmationWindow.GetSchemeInfo]"
+
+								text_single = {
+									raw_text = "Will replace scheme,"
+									visible = "[InteractionSchemeInfo.IsReplace]"
+								}
+							}
+						}
 
 						blockoverride "text" {
 							raw_text = "Confirm [CharacterInteractionConfirmationWindow.GetSendName]"
@@ -116,6 +124,19 @@ window = {
 						tooltip = "[CharacterInteractionConfirmationWindow.GetDebugInfo]"
 					}
 				}
+
+				## Options
+				vbox_interaction_options = {
+					layoutpolicy_horizontal = expanding
+					widgetid = "interaction_options"
+					visible = "[CharacterInteractionConfirmationWindow.HasOptions]"
+				}
+
+				text_multi_on_decline_summary = {
+					max_width = 650
+					layoutpolicy_horizontal = expanding
+				}
+
 				# Title Picker
 				vbox = {
 					visible = "[CharacterInteractionConfirmationWindow.UsesTitleTarget]"
@@ -252,6 +273,60 @@ window = {
 					expand = { }
 				}
 
+				# MaA Picker
+				vbox = {
+					visible = "[CharacterInteractionConfirmationWindow.UsesMaaTarget]"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					hbox = {
+						visible = "[Not( CharacterInteractionConfirmationWindow.HasSelectedMaa )]"
+						layoutpolicy_horizontal = expanding
+
+						text_single = {
+							text = "CHARACTER_INTERACTION_NO_TARGET_SELECTED"
+						}
+
+						expand = {}
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						text = "[CharacterInteractionConfirmationWindow.GetSelectedMaa.GetName]"
+						visible = "[CharacterInteractionConfirmationWindow.HasSelectedMaa]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						name = "change"
+						datacontext = "[GetVariableSystem]"
+						blockoverride "text" {
+							raw_text = "Change MAA."
+						}
+						onclick = "[VariableSystem.Toggle( 'character_interaction_change_maa' )]"
+
+						tooltip = "CHARACTER_INTERACTION_WINDOW_SELECT_ARTIFACT_TOOLTIP"
+						using = tooltip_below
+					}
+
+					#### replaces character effects ###
+					scrollbox = {
+						visible = "[GetVariableSystem.Exists( 'character_interaction_change_maa' )]"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						blockoverride "scrollbox_content"
+						{
+							vbox_list_interaction_maa_selection = {
+								layoutpolicy_vertical = expanding
+								layoutpolicy_horizontal = expanding
+
+								blockoverride "button_toggles" {}
+							}
+						}
+					}
+				}
+
 				### EDUCATE CHILD ###
 				widget_character_interaction_four_characters = {
 					visible = "[CharacterInteractionConfirmationWindow.ShowFourCharacters]"
@@ -261,6 +336,8 @@ window = {
 				vbox_interaction_character_list = {
 					datacontext = "[CharacterInteractionConfirmationWindow.GetCharacterList]"
 					layoutpolicy_horizontal = expanding
+					visible = "[And( And( And( Not( GetVariableSystem.Exists( 'character_interaction_change_title' ) ), Not(GetVariableSystem.Exists( 'character_interaction_change_artifact' ) ) ), Not( GetVariableSystem.Exists( 'character_interaction_change_maa' ) ) ), Not( CharacterInteractionConfirmationWindow.HasPickedCharacters ) )]"
+
 					minimumsize = { 640 750 }
 					layoutpolicy_vertical = expanding
 
@@ -280,20 +357,13 @@ window = {
 
 				## Effects on Characters
 				vbox_character_interaction_effects = {
-					visible = "[And(And(And( Not(GetVariableSystem.Exists('character_interaction_change_title') ), Not(GetVariableSystem.Exists('character_interaction_change_artifact') ) ), CharacterInteractionConfirmationWindow.HasPickedCharacters ), InteractionEffectsDescription.GetDisplayedEffects.HasAnyEffects )]"
+					margin_top = 5
+					visible = "[And( And( And( And( Not( GetVariableSystem.Exists( 'character_interaction_change_title' ) ), Not(GetVariableSystem.Exists( 'character_interaction_change_artifact' ) ) ), Not( GetVariableSystem.Exists( 'character_interaction_change_maa' ) ) ), CharacterInteractionConfirmationWindow.HasPickedCharacters ), InteractionEffectsDescription.GetDisplayedEffects.HasAnyEffects )]"
 					datacontext = "[CharacterInteractionConfirmationWindow.GetEffectsDescription]"
 					layoutpolicy_horizontal = expanding
 				}
 
 				expand = { }
-
-				## Scheme Information
-				vbox_scheme_info = {
-					visible = "[CharacterInteractionConfirmationWindow.ShouldShowScheme]"
-					datacontext = "[CharacterInteractionConfirmationWindow.GetSchemeInfo]"
-					layoutpolicy_horizontal = expanding
-				}
-
 			}
 		}
 	}

@@ -14,6 +14,13 @@ window = {
 	size = { 100% 100% }
 	alwaystransparent = yes
 
+	oncreate = "[BindTabsContext]"
+	oncreate = "[PdxGuiTabs.SetResetOnShown( '(bool)no')]"
+	oncreate = "[PdxGuiTabs.AddTab( 'domain' )]"
+
+	# Code can send an event which we can listen for to switch tabs
+	oncreate = "[PdxGuiTabs.ListenFor( 'focused_changed' )]"
+
 	state = {
 		name = _show
 		using = Animation_FadeIn_Quick
@@ -23,6 +30,16 @@ window = {
 		on_start = "[PdxGuiTriggerAllAnimations('refresh_rulers')]"
 		on_start = "[PdxGuiTriggerAllAnimations('refresh_macrobuilder')]"
 		on_finish = "[CloseGameView('character')]"
+
+		# Reset to the domain tab if you have the admin tab open but no longer have access to it
+		on_start = "[PdxGuiTabs.SetResetOnShown( And( PdxGuiTabs.IsTabSet( 'admin_laws' ), Not( IsAdministrativeRuler( GetPlayer ) ) ) )]"
+
+		on_start = "[PdxGuiTabs.RemoveTab( 'succession' )]"
+		on_start = "[PdxGuiTabs.AddTabIf( 'vassals', Not( IsLandlessAdventurer( GetPlayer ) ) )]"
+		on_start = "[PdxGuiTabs.RemoveTabIf( 'vassals', IsLandlessAdventurer( GetPlayer ) )]"
+		on_start = "[PdxGuiTabs.AddTab( 'succession' )]"
+		on_start = "[PdxGuiTabs.RemoveTabIf( 'admin_laws', Not( IsAdministrativeRuler( GetPlayer ) ) )]"
+		on_start = "[PdxGuiTabs.AddTabIf( 'admin_laws', IsAdministrativeRuler( GetPlayer ) )]"
 
 		# start_sound = {
 		# 	soundeffect = "event:/SFX/UI/Character/Lifestyle/sfx_ui_character_lifestyle_stewardship_lifestyle"
@@ -44,6 +61,7 @@ window = {
 		on_finish = "[GetScriptedGui('reset_vassal_page').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
 		trigger_when = "[LessThan_int32( GetDataModelSize( MyRealmWindow.GetVassals ), FixedPointToInt(GetPlayer.MakeScope.Var('vassal_page').GetValue ))]"
 	}
+
 
 	# state = {
 	# 	name = dismiss
@@ -151,29 +169,40 @@ window = {
 						layoutpolicy_horizontal = expanding
 						# spacing = 20
 
-						text_single = {
-							raw_text = "Realm: [GetPlayer.GetPrimaryTitle.GetNameNoTooltip|U]"
-							tooltip = "[Character.GetDefaultRealmFlagTooltip]"
+						hbox = {
+
+							visible = "[Not( IsLandlessAdventurer( GetPlayer ) )]"
+
+							text_single = {
+								raw_text = "Realm: [GetPlayer.GetPrimaryTitle.GetNameNoTooltip|U]"
+								tooltip = "[Character.GetDefaultRealmFlagTooltip]"
+							}
+
+							text_single = {
+								raw_text = ","
+							}
+							space = { }
+
+							text_single = {
+								name = "realm_type"
+								text = "[Character.GetGovernment.GetAdjective]"
+							}
+
+							text_single = {
+								raw_text = ","
+							}
+							space = { }
+
+							text_single = {
+								raw_text = "[GetPlayer.RealmSize] counties."
+								tooltip = "REALM_WINDOW_SIZE_TT"
+							}
 						}
 
 						text_single = {
-							raw_text = ","
-						}
-						space = { }
-
-						text_single = {
-							name = "realm_type"
-							text = "[Character.GetGovernment.GetAdjective]"
-						}
-
-						text_single = {
-							raw_text = ","
-						}
-						space = { }
-
-						text_single = {
-							raw_text = "[GetPlayer.RealmSize] counties."
-							tooltip = "REALM_WINDOW_SIZE_TT"
+							visible = "[IsLandlessAdventurer( GetPlayer )]"
+							name = "realm_type_adv"
+							text = "you_are_an_adventurer_tt"
 						}
 
 						expand = { }
@@ -182,7 +211,7 @@ window = {
 
 				# default summary
 				vbox = {
-					visible = "[Not(GetVariableSystem.Exists('realm_tabs'))]"
+					visible = "[And(Not(GetVariableSystem.Exists('realm_tabs')), Not( IsLandlessAdventurer( GetPlayer ) ))]"
 					layoutpolicy_horizontal = expanding
 					spacing = 5
 					# margin_bottom = 15
@@ -194,9 +223,10 @@ window = {
 						size = { 0 50 }
 						datacontext = "[GetPlayer]"
 						shortcut = zoom_out
+						visible = "[Not( IsLandlessAdventurer( GetPlayer ) )]"
 
-						onclick = "[ToggleGameViewData( 'diarchy', GetPlayer.GetID )]"
-						onclick = "[MyRealmWindow.SendButtonClickedTelemetry( 'diarchy' )]"
+						onclick = "[ToggleGameViewData( 'diarchy', Character.GetID )]"
+						onclick = "[MyRealmWindow.SendButtonClickedTelemetry( PdxGuiTabs.GetActiveTab.GetKey, 'diarchy' )]"
 						onclick = "[CloseGameView('my_realm')]"
 
 						# tooltip = "DIARCHY_WINDOW_OPEN_TOOLTIP"
@@ -209,7 +239,7 @@ window = {
 
 							vbox = {
 								hbox = {
-								    layoutpolicy_horizontal = expanding
+							    layoutpolicy_horizontal = expanding
 									spacing = 3
 
 									text_single = {
@@ -478,16 +508,11 @@ window = {
 
 							button_text = {
 								layoutpolicy_horizontal = expanding
-								# visible = "[VassalContract.IsContractDefault]"
-							    blockoverride "text" {
-							        raw_text = "Change contract."
-							    }
-								# blockoverride "disabled" {
-								# 	visible = "[Not(Character.IsPlayerInteractionValid('vassal_modify_vassal_contract_interaction'))]"
-								# }
+						    blockoverride "text" {
+						        raw_text = "Change contract."
+						    }
 								onclick = "[Character.OpenPlayerInteraction('vassal_modify_vassal_contract_interaction')]"
 								tooltip = "[Character.GetPlayerInteractionTooltip('vassal_modify_vassal_contract_interaction')]"
-								# enabled = "[Character.IsPlayerInteractionValid('vassal_modify_vassal_contract_interaction')]"
 							}
 
 							text_single = {
@@ -555,102 +580,105 @@ window = {
 
 						expand = {}
 					}
+				}
 
-					vbox = {
+				vbox = {
+					visible = "[Not(GetVariableSystem.Exists('realm_tabs'))]"
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						name = "crown_authority"
+						datamodel = "[MyRealmWindow.GetRealmLaws]"
+						ignoreinvisible = yes
+						margin_top = 5
+
 						layoutpolicy_horizontal = expanding
-						# visible = "[Not(GetVariableSystem.Exists('realm_tabs'))]"
-						# visible = "[GetVariableSystem.HasValue('realm_tabs', 'vassals')]"
-						# margin_top = 10
 
-						hbox = {
-							# visible = "[Not(GetVariableSystem.Exists('realm_tabs'))]"
-							name = "crown_authority"
-							datamodel = "[MyRealmWindow.GetRealmLaws]"
-							ignoreinvisible = yes
-							margin_top = 5
+						item = {
+							vbox = {
+								layoutpolicy_vertical = expanding
+								layoutpolicy_horizontal = expanding
+								datacontext = "[GuiLawGroup.GetLawGroup]"
+								visible = "[And( GuiLawGroup.GetLawGroup.HasFlag( 'realm_law' ), GuiLawGroup.IsAvailable )]"
+								ignoreinvisible = yes
+								spacing = 3
 
-							layoutpolicy_horizontal = expanding
-							# margin_left = 10
-
-							item = {
-								vbox = {
-									layoutpolicy_vertical = expanding
+								button_text = {
 									layoutpolicy_horizontal = expanding
-									datacontext = "[GuiLawGroup.GetLawGroup]"
-									visible = "[And( GuiLawGroup.GetLawGroup.HasFlag( 'realm_law' ), GuiLawGroup.IsAvailable )]"
-									ignoreinvisible = yes
-									spacing = 3
-
-									button_text = {
-										layoutpolicy_horizontal = expanding
-										blockoverride "text" {
-											raw_text = "[LawGroup.GetName],"
-											alwaystransparent = yes
-										}
-										blockoverride "extra" {
-											text_single = {
-												raw_text = "[Collapse('crown_law')] hotkey C."
-											}
-										}
-										shortcut = character_finder
-										onclick = "[GetVariableSystem.Toggle('crown_law')]"
+									blockoverride "text" {
+										raw_text = "[LawGroup.GetName],"
+										alwaystransparent = yes
 									}
+									blockoverride "extra" {
+										text_single = {
+											visible = "[Not( IsLandlessAdventurer( GetPlayer ) )]"
+											raw_text = "[Collapse('crown_law')] hotkey C."
+										}
+										# text_single = {
+										# 	visible = "[IsLandlessAdventurer( GetPlayer )]"
+										# 	raw_text = "see tooltips."
+										# }
+									}
+									shortcut = character_finder
+									onclick = "[GetVariableSystem.Toggle('crown_law')]"
+								}
 
-									# text_single = {
-									# 	layoutpolicy_horizontal = expanding
-									# 	raw_text = "Crown Authority."
-									# }
+								flowcontainer = {
+									visible = "[Or(Isnt('crown_law'),IsLandlessAdventurer( GetPlayer ))]"
+									layoutpolicy_horizontal = expanding
+									direction = vertical
+									datamodel = "[GuiLawGroup.GetLaws]"
 
-									flowcontainer = {
-										visible = "[Isnt('crown_law')]"
-										layoutpolicy_horizontal = expanding
-										direction = vertical
-										datamodel = "[GuiLawGroup.GetLaws]"
+									item = {
+										button_text = {
+											datacontext = "[GuiLaw.GetLaw]"
+											blockoverride "pre" {
+												spacing = 3
+												text_single = {
+													raw_text = "[Select_CString(GetPlayer.GetGovernment.IsType('landless_adventurer_government'), 'become', 'pass')]"
+													visible = "[Not(GuiLaw.IsEnacted)]"
+												}
+												text_single = {
+													raw_text = "Current:"
+													visible = "[GuiLaw.IsEnacted]"
+												}
+											}
+											blockoverride "text" {
+												raw_text = "[GuiLaw.GetLaw.GetNameNoTooltip]"
+											}
 
-										item = {
-											button_text = {
-												datacontext = "[GuiLaw.GetLaw]"
-												blockoverride "pre" {
-													spacing = 3
-													text_single = {
-														raw_text = "pass"
-														visible = "[Not(GuiLaw.IsEnacted)]"
+											blockoverride "dot" {
+											}
+											enabled = "[GuiLaw.CanEnact]"
+											onclick = "[GuiLaw.Enact]"
+											#text disable
+											blockoverride "disabled" {
+												visible = "[And(Not(GuiLaw.CanEnact), Not(GuiLaw.IsEnacted))]"
+												align = left
+											}
+											tooltipwidget = {
+												pass_law_tooltip = {
+													#TODO localization
+													blockoverride "concept_link" {
+														text = "[Select_CString(GetPlayer.GetGovernment.IsType('landless_adventurer_government'), 'camp_purpose', 'law')|E]"
 													}
-													text_single = {
-														raw_text = "Current:"
-														visible = "[GuiLaw.IsEnacted]"
-													}
 												}
-												blockoverride "text" {
-													raw_text = "[GuiLaw.GetLaw.GetNameNoTooltip]"
-												}
-
-												blockoverride "dot" {
-													# visible = "[GuiLaw.IsEnacted]"
-												}
-												enabled = "[GuiLaw.CanEnact]"
-												onclick = "[GuiLaw.Enact]"
-												#text disable
-												blockoverride "disabled" {
-													visible = "[And(Not(GuiLaw.CanEnact), Not(GuiLaw.IsEnacted))]"
-													align = left
-												}
-												tooltipwidget = { pass_law_tooltip = { } }
 											}
 										}
 									}
 								}
 							}
 						}
-
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							datacontext = "[MyRealmWindow.GetCharacter.GetLiege]"
-							visible = "[GetPlayer.HasLiege]"
-							datacontext = "[Character.GetActiveLawInGroupWithFlag( 'realm_law' )]"
-							raw_text = "Liege's authority: [Law.GetName]."
-						}
 					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[MyRealmWindow.GetCharacter.GetLiege]"
+						visible = "[GetPlayer.HasLiege]"
+						datacontext = "[Character.GetActiveLawInGroupWithFlag( 'realm_law' )]"
+						raw_text = "Liege's authority: [Law.GetName]."
+					}
+
 				}
 
 				button = {
@@ -675,6 +703,7 @@ window = {
 						# onclick = "[MyRealmWindow.ShowDomain]"
 						onclick = "[GetVariableSystem.Set('realm_tabs', 'domain')]"
 						onclick = "[MyRealmWindow.SendTabClickedTelemetry( 'domain' )]"
+						visible = "[Not( IsLandlessAdventurer( GetPlayer ) )]"
 						blockoverride "pre" {
 							text_single = {
 								raw_text = "1,"
@@ -685,7 +714,7 @@ window = {
 							}
 						}
 					    blockoverride "text" {
-					        text = "MY_REALM_WINDOW_DOMAIN_TAB"
+					        text = "realm_tab_domain"
 							align = left
 					    }
 						blockoverride "dot" {
@@ -695,6 +724,7 @@ window = {
 					}
 
 					button_text = {
+						visible = "[Not( IsLandlessAdventurer( GetPlayer ) )]"
 						# onclick = "[MyRealmWindow.ShowVassals]"
 						onclick = "[GetVariableSystem.Set('realm_tabs', 'vassals')]"
 						onclick = "[MyRealmWindow.SendTabClickedTelemetry( 'vassals' )]"
@@ -708,7 +738,7 @@ window = {
 							}
 						}
 				    blockoverride "text" {
-			        text = "MY_REALM_WINDOW_VASSALS_TAB"
+			        text = "realm_tab_vassals"
 				    }
 						blockoverride "dot" {
 						}
@@ -729,7 +759,7 @@ window = {
 							}
 						}
 					    blockoverride "text" {
-					        text = "MY_REALM_WINDOW_SUCCESSION_TAB"
+					        text = "realm_tab_succession"
 							align = left
 					    }
 						blockoverride "dot" {
@@ -942,7 +972,7 @@ window = {
 																			dot = { }
 																		}
 																		onclick = "[HoldingItem.OnClick]"
-																		onclick = "[MyRealmWindow.SendButtonClickedTelemetry( 'holding' )]"
+																		onclick = "[MyRealmWindow.SendButtonClickedTelemetry( PdxGuiTabs.GetActiveTab.GetKey, 'holding' )]"
 																		onclick = "[MyRealmWindow.Close]"
 																		# onclick = "[MyRealmWindow.Close]" #TODO
 																	}
@@ -1230,6 +1260,7 @@ window = {
 
 								item = {
 									widget_vassal_list_item_ocr = {
+										name = tutorial_highlight_vassal
 										onclick = "[MyRealmWindow.Close]"
 										datacontext = "[MyRealmWindowVassalItem.GetCharacter]"
 										datacontext = "[MyRealmWindow.GetVassalInfo( Character.Self )]"
@@ -1237,7 +1268,7 @@ window = {
 
 										blockoverride "feudal_contract_button_round"
 										{
-											onclick = "[MyRealmWindow.SendButtonClickedTelemetry( 'vassal_contract' )]"
+											onclick = "[MyRealmWindow.SendButtonClickedTelemetry( PdxGuiTabs.GetActiveTab.GetKey, 'vassal_contract' )]"
 										}
 
 										blockoverride "vassal_portrait"
@@ -1332,7 +1363,7 @@ window = {
 
 										button_text = {
 											onclick = "[OpenSuccessionLawChangeWindow(GuiLawGroup.Self)]"
-											onclick = "[MyRealmWindow.SendButtonClickedTelemetry( GuiLawGroup.GetLawGroup.GetKey )]"
+											onclick = "[MyRealmWindow.SendButtonClickedTelemetry( PdxGuiTabs.GetActiveTab.GetKey, GuiLawGroup.GetLawGroup.GetKey )]"
 											blockoverride "text" {
 												text = "MRW_CHANGE_LAW"
 											}
@@ -1445,7 +1476,7 @@ window = {
 											name = "vassal_stances_that_prefer"
 											datacontext = "[MyRealmWindow.GetCharacter.GetPlayerHeir]"
 
-											visible = "[And( MyRealmWindow.HasHeir, Not( StringIsEmpty( MyRealmWindow.GetCharacter.GetVassalStancesThatPrefer( Character.Self ) ) ) )]"
+											visible = "[And( Not( IsLandlessAdventurer( GetPlayer ) ), And( MyRealmWindow.HasHeir, Not( StringIsEmpty( MyRealmWindow.GetCharacter.GetVassalStancesThatPrefer( Character.Self ) ) ) ) )]"
 
 											layoutpolicy_horizontal = expanding
 											layoutpolicy_vertical = expanding
@@ -1634,7 +1665,7 @@ window = {
 
 												text_single = {
 													name = "vassal_stances_that_prefer"
-													visible = "[Not( StringIsEmpty( MyRealmWindow.GetCharacter.GetVassalStancesThatPrefer( Character.Self ) ) )]"
+													visible = "[And( Not( IsLandlessAdventurer( GetPlayer ) ), Not( StringIsEmpty( MyRealmWindow.GetCharacter.GetVassalStancesThatPrefer( Character.Self ) ) ) )]"
 
 													layoutpolicy_horizontal = expanding
 													layoutpolicy_vertical = expanding
@@ -1906,8 +1937,7 @@ window = {
 																	text = "MY_REALM_WINDOW_VOTE"
 															    }
 																onclick = "[OpenSuccessionElectionWindowForTitle(Title.Self)]"
-																onclick = "[MyRealmWindow.SendButtonClickedTelemetry( 'election' )]"
-															}
+																onclick = "[MyRealmWindow.SendButtonClickedTelemetry( PdxGuiTabs.GetActiveTab.GetKey, 'election' )]"
 
 															expand = { }
 														}
@@ -1923,6 +1953,132 @@ window = {
 
 							expand = {
 								layoutpolicy_vertical = expanding
+							}
+						}
+					}
+				}
+
+				#TODO
+				### ADMIN LAW TAB
+				scrollbox = {
+					name = "tab_admin_laws"
+					widgetid = "tab_admin_laws"
+					visible = "[PdxGuiTabs.IsTabSet( 'admin_laws' )]"
+
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					using = Animation_Tab_Switch
+
+					blockoverride "scrollbox_margins" {
+						margin = { 0 4 }
+					}
+
+					background = {
+						texture = "gfx/interface/illustrations/council/fp2_bg_council_steward.dds"
+						margin = { -5 0 }
+						fittype = end
+						alpha = 0.3
+
+						modify_texture = {
+							texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
+							blend_mode = alphamultiply
+							mirror = vertical
+						}
+					}
+
+					blockoverride "scrollbox_content"
+					{
+						vbox = {
+							margin = { 20 10 }
+							margin_bottom = 10
+
+							vbox = {
+								name = "administrative_laws"
+								datamodel = "[MyRealmWindow.GetRealmLaws]"
+								ignoreinvisible = yes
+								margin_left = 10
+
+								text_label_center = {
+									text = "MY_REALM_ADMIN_LAWS_HEADER"
+									using = Font_Size_Medium
+									default_format = "#low"
+								}
+								spacer = {
+									size = { 5 5 }
+								}
+								divider_light = {
+									layoutpolicy_horizontal = growing
+								}
+								spacer = {
+									size = { 5 15 }
+								}
+
+								item = {
+									vbox = {
+										layoutpolicy_vertical = expanding
+										datacontext = "[GuiLawGroup.GetLawGroup]"
+										visible = "[And(And( GuiLawGroup.GetLawGroup.HasFlag( 'admin_law' ), GuiLawGroup.IsAvailable ), Not(GetPlayer.GetGovernment.IsType('landless_adventurer_government')))]"
+										ignoreinvisible = yes
+										spacing = 3
+										margin_bottom = 10
+
+										text_label_center = {
+											text = "[LawGroup.GetName]"
+										}
+
+										hbox = {
+											datamodel = "[GuiLawGroup.GetLaws]"
+
+											background = {
+												texture = "gfx/lines/line_lifestyles_unavailable.dds"
+												margin = { -8 -12 }
+												tintcolor = { 0.7 0.5 0.25 1 }
+											}
+
+											item = {
+												icon_button_decorative = {
+													datacontext = "[GuiLaw.GetLaw]"
+													size = { 60 60 }
+													enabled = "[Or(GuiLaw.CanEnact, GuiLaw.IsEnacted)]"
+													down = "[GuiLaw.IsEnacted]"
+													alwaystransparent = "[GuiLaw.IsEnacted]"
+													onclick = "[GuiLaw.Enact]"
+													tooltipwidget = { pass_law_tooltip = {} }
+													using = tooltip_below
+
+													icon_button_decorative = {
+														size = { 54 54 }
+														parentanchor = center
+														alwaystransparent = yes
+													}
+
+													button_icon = {
+														visible = "[Not(GuiLaw.IsEnacted)]"
+														texture = "[Law.GetIcon]"
+														parentanchor = center
+														size = { 42 42 }
+														alwaystransparent = yes
+													}
+
+													icon = {
+														visible = "[And( GuiLaw.IsEnacted , Not( GuiLaw.CanEnact ) )]"
+														texture = "[Law.GetIcon]"
+														parentanchor = center
+														size = { 42 42 }
+														alwaystransparent = yes
+
+														using = Master_Button_Modify_Texture
+
+														blockoverride "master_color_frame" {
+															frame = 2
+														}
+													}
+												}
+											}
+										}
+									}
+								}
 							}
 						}
 					}
@@ -2435,12 +2591,14 @@ window = {
 					expand = { }
 				}
 			}
+			expand = {}
 		}
-	}
+		}
 
-	window_realm_old = {
-		alwaystransparent = no
-		visible = "[GetVariableSystem.Exists('ocr')]"
+		window_realm_old = {
+			alwaystransparent = no
+			visible = "[GetVariableSystem.Exists('ocr')]"
+		}
 	}
 }
 
@@ -2453,6 +2611,8 @@ types OCR {
 
 		tooltip = "VASSAL_EXPECTED_LEGITIMACY_TT"
 	}
+
+
 }
 
 ######################################################
@@ -2634,9 +2794,203 @@ types MyRealmWindow
 
 		tooltip = "VASSAL_EXPECTED_LEGITIMACY_TT"
 	}
+
+	type vbox_domicile_button = vbox
+	{
+		datacontext = "[Character.GetDomicile]"
+
+		margin = { 10 0 }
+
+		layoutpolicy_horizontal = expanding
+
+		background = {
+			fittype = centercrop
+			alpha = 0.7
+			texture = "[Domicile.GetType.GetIllustration]"
+			margin = { -10 0 }
+
+			modify_texture = {
+				texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
+				blend_mode = alphamultiply
+			}
+
+			modify_texture = {
+				texture = "gfx/interface/component_overlay/overlay_effect.dds"
+				blend_mode = overlay
+			}
+		}
+
+		button_standard_clean = {
+			layoutpolicy_horizontal = expanding
+			size = { 0 80 }
+
+			onclick = "[ToggleGameViewData( 'domicile', Domicile.Self )]"
+
+			background = {
+				using = Background_Button_Illustration
+				visible = "[IsGameViewOpen( 'domicile' )]"
+			}
+
+			using = Background_Vignette_Button
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				vbox = {
+					spacing = 0
+					margin = { 10 0 }
+
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					hbox = {
+						name = "domicile_header"
+						layoutpolicy_horizontal = expanding
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Domicile.GetType.IsDomicileType( 'estate' )]"
+
+							background = {
+								margin_left = 15
+								margin_right = 25
+								margin_top = 0
+								margin_bottom = 5
+
+								texture = "gfx/interface/component_tiles/tile_title_bg_01.dds"
+								spriteType = Corneredtiled
+								spriteborder = { 40 8 }
+								texture_density = 2
+
+								modify_texture = {
+									name = "mask"
+									texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
+									blend_mode = alphamultiply
+									mirror = horizontal
+								}
+							}
+
+							text_single = {
+								text = "[Domicile.GetMainLevelText]"
+							}
+
+							expand = {}
+						}
+
+						hbox = {
+							visible = "[Domicile.GetType.IsDomicileType( 'camp' )]"
+							margin_left = 52
+
+							background = {
+								margin_left = -37
+								margin_right = 25
+								margin_top = 0
+								margin_bottom = 5
+
+								texture = "gfx/interface/component_tiles/tile_title_bg_01.dds"
+								spriteType = Corneredtiled
+								spriteborder = { 40 8 }
+								texture_density = 2
+
+								modify_texture = {
+									name = "mask"
+									texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
+									blend_mode = alphamultiply
+									mirror = horizontal
+								}
+							}
+
+							text_single = {
+								datacontext = "[Character.GetDomicile]"
+								text = "[Domicile.GetMainLevelText]"
+							}
+						}
+					}
+
+					hbox = {
+						name = "domicile_construction_info"
+
+						layoutpolicy_horizontal = expanding
+
+						minimumsize = { 0 40 }
+
+						vbox = {
+							tooltip = "[Domicile.GetBuildingUnderConstruction.GetConstructionTooltip( Character.Self )]"
+							using = tooltip_ne
+
+							hbox = {
+
+								background = {
+									visible = "[Domicile.GetType.IsDomicileType( 'camp' )]"
+									margin_left = 15
+									margin_right = 25
+									margin_top = 0
+									margin_bottom = 3
+
+									texture = "gfx/interface/component_tiles/tile_title_bg_01.dds"
+									spriteType = Corneredtiled
+									spriteborder = { 40 8 }
+									texture_density = 2
+									alpha = 0.7
+
+									modify_texture = {
+										name = "mask"
+										texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
+										blend_mode = alphamultiply
+										mirror = horizontal
+										alpha = 0.1
+									}
+								}
+
+								text_single = {
+									text = "[Domicile.GetConstructionStatusText]"
+									align = nobaseline
+								}
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								progressbar_standard = {
+									name = "building_progressbar"
+									visible = "[Domicile.IsConstructing]"
+									alwaystransparent = yes
+
+									layoutpolicy_horizontal = expanding
+									maximumsize = { -1 15 }
+									value = "[Multiply_float( FixedPointToFloat( Domicile.GetConstructionProgress ), '(float)100' )]"
+									direction = horizontal
+								}
+
+								expand = {}
+							}
+						}
+
+						text_single = {
+							margin_right = 52
+							visible = "[Domicile.CanUpgradeMain]"
+							text = "[Domicile.GetUpgradeMainText]"
+							default_format = "#P"
+						}
+
+						expand = {
+							visible = "[Domicile.GetType.IsDomicileType( 'estate' )]"
+						}
+					}
+				}
+
+				hbox_access_domicile_button = {
+					visible = "[And( Character.HasDomicile, ObjectsEqual( Character.Self, GetPlayer ) )]"
+					margin_right = 10
+				}
+
+				expand = {}
+			}
+		}
+	}
 }
 
 
 template agot_show_law {
-	visible = "[And( Not( GuiLawGroup.GetLawGroup.HasFlag( 'realm_law' ) ), GuiLawGroup.IsAvailable )]"
+	visible = "[And(And( GuiLawGroup.GetLawGroup.HasFlag( 'admin_law' ), GuiLawGroup.IsAvailable ), Not(GetPlayer.GetGovernment.IsType('landless_adventurer_government')))]"
 }

@@ -145,7 +145,7 @@ widget = {
 		}
 	}
 
-	# suggestiosn
+	# suggestions
 	widget = {
 		size = { 100% 100% }
 		alwaystransparent = yes
@@ -235,22 +235,26 @@ widget = {
 		}
 	}
 
+	flowcontainer = {
+		visible = "[Is('combat_prediction_header')]"
+		background = { using = Background_Area_Border_Solid }
+		position = { 0 30 }
+		margin_left = 15
+		spacing = 3
+		text_single = {
+			raw_text = "[Get('combat_prediction_header')],"
+		}
+		text_single = {
+			raw_text = "[Get('combat_prediction_text')]."
+		}
+	}
+
 	# widget = {
 	# 	size = { 600 28 }
 	# 	background = { using = Background_Area_Border_Solid }
-	# 	visible = "[And(Is('combat_prediction_header'), IsGameViewOpen('army'))]"
 	# 	position = { 0 30 }
 	# 	scissor = yes
-	# 	flowcontainer = {
-	# 		margin_left = 15
-	# 		spacing = 3
-	# 		text_single = {
-	# 			raw_text = "[Get('combat_prediction_header')],"
-	# 		}
-	# 		text_single = {
-	# 			raw_text = "[Get('combat_prediction_text')]."
-	# 		}
-	# 	}
+	# 	visible = "[And(Is('combat_prediction_header'), IsGameViewOpen('army'))]"
 	# }
 
 
@@ -404,7 +408,7 @@ widget = {
 					blockoverride "maintab_button"
 					{
 						texture = "gfx/interface/skinned/hud_maintab/maintab_my_realm.dds"
-						onclick = "[ToggleGameViewData('my_realm', 'domain')]"
+						onclick = "[ToggleGameView('my_realm')]"
 						shortcut = "my_realm_window"
 						tooltip = "MY_REALM_BUTTON"
 						down = "[IsGameViewOpen('my_realm')]"
@@ -427,6 +431,7 @@ widget = {
 
 				widget_hud_main_tab = {
 					name = "tab_council"
+					visible = "[Not( IsLandlessAdventurer( GetPlayer ) )]"
 
 					blockoverride "maintab_button"
 					{
@@ -548,7 +553,7 @@ widget = {
 					datacontext = "[LocalPlayerCachedData.AccessNewArtifacts]"
 					datacontext = "[LocalPlayerCachedData.AccessCourtEvents]"
 					datacontext = "[Character.GetCourtGrandeurData]"
-					visible = "[And( And( Not( IsPauseMenuShown ), And(Or(Not(IsObserver), GetPlayer.IsValid), IsDefaultGUIMode)), HasDlcFeature( 'royal_court' ))]"
+					visible = "[And(And( And( Not( IsPauseMenuShown ), And(Or(Not(IsObserver), GetPlayer.IsValid), IsDefaultGUIMode)), HasDlcFeature( 'court_room_view' )), Not( IsLandlessAdventurer( GetPlayer )))]"
 					enabled = "[Character.HasRoyalCourt]"
 
 					allow_outside = yes
@@ -1331,6 +1336,44 @@ widget = {
 					expand = { }
 				}
 
+				hbox = {
+					name = "provisions"
+					layoutpolicy_horizontal = expanding
+					visible = "[IsLandlessAdventurer( GetPlayer )]"
+					datacontext = "[GetPlayer.GetDomicile]"
+					tooltip = "[Domicile.GetProvisionsBreakdown]"
+
+					button_gather_provisions = {}
+
+					expand = {}
+				}
+
+				#TODO influence levels
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					datacontext = "[InGameTopbar.GetInfluenceItem]"
+					name = "influence"
+					visible = "[GetPlayer.GetGovernment.HasRule( 'administrative' )]"
+
+					text_single = {
+						raw_text = "Influence: [GetPlayer.GetInfluence|0]."
+					}
+
+					text_single = {
+						raw_text = "[PlayerValueItem.GetCurrentLevelName],"
+					}
+
+					text_single = {
+						visible = "[PlayerValueItem.HasNextLevel]"
+						raw_text = " [PlayerValueItem.GetProgressTowardNextLevelLabel]."
+					}
+
+					tooltipwidget = {
+						widget_resource_value_tooltip = {}
+					}
+					expand = {}
+				}
+
 				button = {
 					datacontext = "[GetPlayer]"
 					layoutpolicy_horizontal = expanding
@@ -1467,7 +1510,7 @@ widget = {
 				button_text = {
 					layoutpolicy_horizontal = expanding
 					name = "legitimacy_button"
-					visible = "[LegitimacyType.IsValid]"
+					visible = "[And(LegitimacyType.IsValid, GetPlayer.GetGovernment.HasRule( 'legitimacy' ))]"
 					datacontext = "[GetPlayer]"
 					datacontext = "[Character.GetLegitimacyType]"
 					datacontext = "[Character.GetLegitimacyLevel]"
@@ -1919,1679 +1962,7 @@ widget = {
 	using = Animation_ShowHide_Quick
 
 	# vanilla bottom left
-	empty_screen = {
-		using = vanilla
-
-		state = {
-			name = a
-			trigger_when = "[LessThan_int32( GetZoomLevel, '(int32)5' )]"
-			on_finish = "[SetMapMode('realms')]"
-		}
-		state = {
-			name = b
-			trigger_when = "[GreaterThan_int32( GetZoomLevel, '(int32)4' )]"
-			on_finish = "[SetMapMode('realms_0')]"
-		}
-
-		state = {
-			name = _show
-			on_finish = "[PdxGuiTriggerAllAnimations('show_bottom_hud')]"
-		}
-
-		container = {
-			visible = "[And( Not( IsGameViewOpen( 'barbershop' ) ), And( GetPlayer.IsValid, Not( GetVariableSystem.Exists( 'hide_bottom_left_HUD' ) ) ) )]"
-			parentanchor = bottom|left
-			ignoreinvisible = yes
-
-			icon_hud_background = {
-				size = { 450 64 }
-				visible = "[IsDiarchyVisible]"
-			}
-
-			icon_hud_background = {
-				size = { 400 64 }
-				visible = "[Not( IsDiarchyVisible )]"
-			}
-		}
-
-		### BOTTOM LEFT CHARACTER PORTRAIT
-		container = {
-			datacontext = "[GetPlayer]"
-			visible = "[And( Not(IsGameViewOpen('barbershop')) , And(GetPlayer.IsValid, Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD'))))]"
-			visible_at_creation = no
-			parentanchor = bottom|left
-
-			state = {
-				name = show_bottom_hud
-				alpha = 1
-				next = _show
-			}
-
-			state = {
-				name = _show
-				using = Animation_Curve_Default
-				duration = 0.15
-
-				position = { 0 0 }
-				alpha = 1
-			}
-
-			state = {
-				name = _hide
-				using = Animation_Curve_Default
-				duration = 0.15
-
-				position = { 0 50 }
-				alpha = 0
-			}
-
-			portrait_hud = {
-				scale = 1.3
-				parentanchor = center
-				position = { -10 -30 }
-			}
-
-			icon = {
-				texture = "gfx/interface/hud/bottom_left_portrait_fade.dds"
-				parentanchor = bottom|left
-				color = { 0.12 0.12 0.12 1 }
-			}
-
-			icon = {
-				texture = "gfx/interface/hud/bottom_left_portrait_fade.dds"
-				parentanchor = bottom|left
-				color = { 0.15 0.15 0.15 0.3 }
-			}
-		}
-
-		## Bottom left tabs
-		flowcontainer = {
-			name = "side_bottom_left_tabs"
-			visible = "[And( Not( IsPauseMenuShown ), And(And(IsDefaultGUIMode, Character.IsValid), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD')))))]"
-			visible_at_creation = no
-			parentanchor = bottom|left
-			ignoreinvisible = yes
-			alwaystransparent = no
-			position = { -3 -100 }
-
-			widget = {
-				parentanchor = left|top
-				size = { 100% 150% }
-
-				widget = {
-					size = { 100% 100% }
-					position = { -24 -20}
-
-					Background = {
-						texture = "gfx/interface/skinned/hud_maintab_bg_middle.dds"
-						mirror = horizontal
-						spriteType = CorneredTiled
-						texture_density =  2
-						margin = { 0 -50 }
-					}
-
-					Background = {
-						spriteType = CorneredStretched
-						spriteborder_top = 100
-						parentanchor = top|right
-						texture_density = 2
-						size = { 50 100 }
-						texture = "gfx/interface/skinned/hud_maintab_bg_top.dds"
-						mirror = horizontal
-					}
-
-					Background = {
-						spriteType = CorneredStretched
-						spriteborder_bottom = 100
-						parentanchor = top|right
-						texture_density = 2
-						size = { 50 100 }
-						texture = "gfx/interface/skinned/hud_maintab_bg_bottom.dds"
-						mirror = horizontal
-					}
-
-					Background = {
-						size = { 100% 100% }
-						margin_bottom = 100
-						using = Background_Area_Dark
-
-						modify_texture = {
-							texture = "gfx/interface/component_masks/mask_fade_vertical_up.dds"
-							blend_mode = alphaMultiply
-						}
-
-					}
-				}
-			}
-
-			flowcontainer = {
-				parentanchor = bottom
-				ignoreinvisible = yes
-				direction = vertical
-
-				button_hud_character_bar = {
-					name = "legend_tab"
-
-					visible = "[HasDlcFeature( 'legends' )]"
-					onclick = "[ToggleGameView( 'legends' )]"
-
-					tooltipwidget = {
-						legends_hud_tooltip = {}
-					}
-
-					using = tooltip_es
-					tooltip_offset = { 20 0 }
-
-					highlight_icon = {
-						parentanchor = center
-						position = { 0 1 }
-						size = { 40 40 }
-						texture = "gfx/interface/icons/legend_hud.dds"
-						scale = 0.9
-
-						glow = {
-							color = { 0 0 0 0.8 }
-							glow_radius = 3
-							using = Glow_Standard
-						}
-					}
-				}
-
-				button_hud_character_bar = {
-					name = "player_culture_button_tutorial_uses_this"
-					datacontext = "[GetPlayer.GetCulture]"
-					onclick = "[OpenGameViewData( 'culture_window', Culture.GetID )]"
-
-					using = tooltip_es
-					tooltip_offset = { 20 0 }
-
-					tooltipwidget = {
-						culture_tooltip_click = {}
-					}
-
-					highlight_icon = {
-						parentanchor = center
-						position = { 0 1 }
-						size = { 40 40 }
-						texture = "gfx/interface/icons/icon_culture.dds"
-
-						glow = {
-							color = { 0 0 0 0.8 }
-							glow_radius = 3
-							using = Glow_Standard
-						}
-					}
-				}
-
-				button_hud_character_bar = {
-					name = "faith_button"
-					datacontext = "[GetPlayer.GetFaith]"
-					parentanchor = left
-
-					onclick = "[OpenGameViewData( 'faith', GetPlayer.GetFaith.GetID )]"
-
-					using = tooltip_es
-					tooltip_offset = { 20 0 }
-
-					tooltipwidget = {
-						faith_tooltip_click = {}
-					}
-
-					highlight_icon = {
-						texture = "[Faith.GetIcon]"
-						size = { 40 40 }
-						position = { 0 1 }
-						parentanchor = center
-
-						glow = {
-							color = { 0 0 0 0.8 }
-							glow_radius = 3
-							using = Glow_Standard
-						}
-					}
-				}
-
-				button_hud_character_bar = {
-					name = "house_button"
-					datacontext = "[GetPlayer.GetHouse]"
-					onclick = "[DefaultOnHouseCoatOfArmsClick(DynastyHouse.GetID)]"
-					parentanchor = left
-
-					using = tooltip_es
-					tooltip_offset = { 20 0 }
-
-					tooltipwidget = {
-						using = dynasty_house_tooltip
-					}
-
-					coa_house_tiny = {
-						parentanchor = center
-						position = { 0 1 }
-						scale = 0.92
-
-						blockoverride "coa_button"
-						{
-							alwaystransparent = yes
-						}
-
-						blockoverride "coa_tooltip"
-						{}
-					}
-				}
-			}
-		}
-
-		## Bottom left CoA
-		coa_realm_medium_crown = {
-			visible = "[And(Not(IsGameViewOpen('barbershop')), And(And(IsDefaultGUIMode, GetPlayer.IsRuler), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD'))))]"
-			visible_at_creation = no
-			parentanchor = bottom|left
-			state = {
-				name = show_bottom_hud
-				alpha = 1
-				next = _show
-			}
-
-			state = {
-				name = _show
-				using = Animation_Curve_Default
-				duration = 0.25
-
-				position = { 0 4 }
-				alpha = 1
-			}
-
-			state = {
-				name = _hide
-				using = Animation_Curve_Default
-				duration = 0.25
-
-				position = { 0 50 }
-				alpha = 0
-			}
-
-			blockoverride "coa_button"
-			{
-				tooltip = "[GetPlayer.GetDefaultRealmFlagTooltipPrimaryTitleClickInfo]"
-				onclick = "[DefaultOnCoatOfArmsClick(GetPlayer.GetPrimaryTitle.GetID)]"
-			}
-		}
-
-		### Lifestyle
-		flowcontainer = {
-			name = "bottom_left_bar"
-			visible = "[And( Not(IsGameViewOpen('barbershop')), And( Not( IsPauseMenuShown ), And(And(IsDefaultGUIMode, GetPlayer.IsValid), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD')))))]"
-			parentanchor = bottom|left
-			position = { 66 0 }
-			ignoreinvisible = yes
-			alwaystransparent = no
-
-			state = {
-				name = _show
-				using = Animation_Curve_Default
-				duration = 0.21
-
-				position = { 66 0 }
-				alpha = 1
-			}
-
-			state = {
-				name = _hide
-				using = Animation_Curve_Default
-				duration = 0.21
-
-				position = { 30 50 }
-				alpha = 0
-			}
-
-			spacer = {
-				size = { 4 0 }
-			}
-
-			button_normal = {
-				name = "legitimacy_button"
-				parentanchor = vcenter
-
-				datacontext = "[Character.GetLegitimacyType]"
-				datacontext = "[Character.GetLegitimacyLevel]"
-
-				visible = "[LegitimacyType.IsValid]"
-
-				using = tooltip_ne
-
-				tooltipwidget = {
-					legitimacy_hud_tooltip = {
-						datacontext = "[InGameBottomBar.GetLegitimacyBar]"
-					}
-				}
-
-				size = { 48 48 }
-
-				icon = {
-					texture = "gfx/interface/icons/activity_phases/button_activity_base.dds"
-					size = { 100% 100% }
-				}
-
-				icon = {
-					name = "progress_frame"
-					texture = "gfx/interface/progressbars/action_progress_frame.dds"
-					size = { 100% 100% }
-					#alpha = 0.5
-				}
-
-				icon = {
-					parentanchor = vcenter
-					position = { 6 0 }
-					size = { 36 36 }
-
-					texture = "gfx/interface/icons/legitimacy_level_icon.dds"
-					framesize = { 70 70 }
-					frame = "[IntToFrameIndex( LegitimacyLevel.GetIndex )]"
-
-					modify_texture = {
-						name = "lvl_increase"
-						texture = "gfx/interface/colors/gold.dds"
-						blend_mode = colordodge
-						alpha = 0
-					}
-
-					modify_texture = {
-						name = "lvl_decrease"
-						texture = "gfx/interface/colors/red.dds"
-						blend_mode = colordodge
-						alpha = 0
-					}
-
-					state = {
-						name = "legitimacy_level_increase"
-						next = "legitimacy_level_increase_2"
-
-						modify_texture = {
-							name = "lvl_increase"
-							alpha = 0
-						}
-					}
-
-					state = {
-						name = "legitimacy_level_increase_2"
-						next = "legitimacy_level_increase_3"
-						duration = 0.4
-						bezier = { 0.5 0 1 0.5 }
-
-						modify_texture = {
-							name = "lvl_increase"
-							alpha = 0.7
-						}
-					}
-
-					state = {
-						name = "legitimacy_level_increase_3"
-						duration = 0.5
-						bezier = { 0 0.5 0.5 1 }
-
-						modify_texture = {
-							name = "lvl_increase"
-							alpha = 0
-						}
-					}
-
-					state = {
-						name = "legitimacy_level_decrease"
-						next = "legitimacy_level_decrease_2"
-
-						modify_texture = {
-							name = "lvl_decrease"
-							alpha = 0
-						}
-					}
-
-					state = {
-						name = "legitimacy_level_decrease_2"
-						next = "legitimacy_level_decrease_3"
-						duration = 0.4
-						bezier = { 0.5 0 1 0.5 }
-
-						modify_texture = {
-							name = "lvl_decrease"
-							alpha = 0.7
-						}
-					}
-
-					state = {
-						name = "legitimacy_level_decrease_3"
-						duration = 0.5
-						bezier = { 0 0.5 0.5 1 }
-
-						modify_texture = {
-							name = "lvl_decrease"
-							alpha = 0
-						}
-					}
-				}
-
-				progresspie = {
-					name = "progress"
-					size = { 42 42 }
-
-					texture = "gfx/interface/progressbars/action_progress_thin_blue.dds"
-					framesize = { 128 128 }
-					frame = 2
-					value = "[InGameBottomBar.GetLegitimacyProgress]"
-					parentanchor = center
-
-					modify_texture = {
-						texture = "gfx/interface/colors/blue.dds"
-						blend_mode = normal
-					}
-				}
-			}
-
-			spacer = {
-				size = { 4 0 }
-			}
-
-			widget = {
-				name = "stress_widget"
-				size = { 110 55 }
-
-				widget = {
-					parentanchor = center
-					size = { 180 108 }
-
-					tooltip = "PLAYER_STRESS_TOOLTIP"
-					using = tooltip_ne
-
-					widget = {
-						name = "progressbar"
-						parentanchor = center
-						widgetanchor = left|vcenter
-						position = { -13 0 }
-						size = { 60 20 }
-
-						background = {
-							texture = "gfx/interface/colors/white.dds"
-							color = { 0.1 0.1 0.1 0.8 }
-						}
-
-						icon = {
-							visible = "[EqualTo_int32(GetPlayer.GetStressLevel, '(int32)2')]"
-							size = { 100% 100% }
-							texture = "gfx/interface/colors/white.dds"
-							color = { 1 0.1 0.1 0.2 }
-
-							using = Animation_ShowHide_Standard
-
-							state = {
-								name = a
-								next = b
-								trigger_on_create = yes
-
-								using = Animation_Curve_Default
-								duration = 0.8
-								alpha = 0
-							}
-
-							state = {
-								name = b
-								next = a
-
-								using = Animation_Curve_Default
-								duration = 1.5
-								alpha = 1
-							}
-						}
-
-						hbox = {
-							widget = {
-								layoutpolicy_horizontal = expanding
-								layoutpolicy_vertical = expanding
-								layoutstretchfactor_horizontal = "[GetProgressBarValueMaxScaled( GetPlayer.GetStressProgress, '(float)100', '(int32)60' )]"
-
-								progressbar_hud_stress = {
-									visible = "[GreaterThanOrEqualTo_int32(GetPlayer.GetStressLevel, '(int32)3')]"
-									visible_at_creation = no
-									size = { 100% 100% }
-
-									using = Animation_ShowHide_Standard
-
-									blockoverride "bar_color"
-									{
-										texture = "gfx/interface/colors/red.dds"
-									}
-
-									blockoverride "bar_color_flow"
-									{
-										texture = "gfx/interface/colors/gold.dds"
-										alpha = 0.7
-									}
-								}
-
-								progressbar_hud_stress = {
-									visible = "[EqualTo_int32(GetPlayer.GetStressLevel, '(int32)2')]"
-									visible_at_creation = no
-									size = { 100% 100% }
-
-									using = Animation_ShowHide_Standard
-
-									blockoverride "bar_color"
-									{
-										texture = "gfx/interface/colors/orange.dds"
-									}
-
-									blockoverride "bar_color_flow"
-									{
-										texture = "gfx/interface/colors/white.dds"
-										alpha = 0.3
-									}
-								}
-
-								progressbar_hud_stress = {
-									visible = "[EqualTo_int32(GetPlayer.GetStressLevel, '(int32)1')]"
-									visible_at_creation = no
-									size = { 100% 100% }
-
-									using = Animation_ShowHide_Standard
-
-									blockoverride "bar_color"
-									{
-										texture = "gfx/interface/colors/gold_darker.dds"
-									}
-
-									blockoverride "bar_color_flow"
-									{
-										texture = "gfx/interface/colors/white.dds"
-										alpha = 0.3
-									}
-								}
-
-								progressbar_hud_stress = {
-									visible = "[EqualTo_int32(GetPlayer.GetStressLevel, '(int32)0')]"
-									size = { 100% 100% }
-
-									using = Animation_ShowHide_Standard
-
-									blockoverride "bar_color"
-									{
-										texture = "gfx/interface/colors/blue.dds"
-									}
-
-									blockoverride "bar_color_flow"
-									{
-										texture = "gfx/interface/colors/white.dds"
-										alpha = 0.3
-									}
-								}
-							}
-
-							widget = {
-								layoutpolicy_horizontal = expanding
-								layoutpolicy_vertical = expanding
-								layoutstretchfactor_horizontal = "[GetProgressBarValueMaxOtherScaled( GetPlayer.GetStressProgress, '(float)100', '(int32)60' )]"
-							}
-						}
-					}
-
-					widget = {
-						size = { 100% 100% }
-
-						progressbar_hud_stress_glow = {
-							texture = "gfx/interface/hud/hud_stress_glow_red.dds"
-
-							blockoverride "animation_trigger_1"
-							{
-								name = "stress_level_increase"
-							}
-
-							blockoverride "animation_trigger_2"
-							{
-								name = "stress_increase"
-							}
-						}
-
-						progressbar_hud_stress_glow = {
-							texture = "gfx/interface/hud/hud_stress_glow_blue.dds"
-
-							blockoverride "animation_trigger_1" {
-								name = "stress_level_decrease"
-							}
-
-							blockoverride "animation_trigger_2"
-							{
-								name = "stress_decrease"
-							}
-						}
-
-						progressbar_hud_stress_glow = {
-							visible = "[EqualTo_int32(GetPlayer.GetStressLevel, '(int32)3')]"
-							texture = "gfx/interface/hud/hud_stress_glow_red.dds"
-
-							blockoverride "animation_trigger_1" {
-								name = "lvl3_fire"
-								trigger_on_create = yes
-							}
-
-							blockoverride "animation_trigger_2" {}
-							blockoverride "lvl_3" {}
-						}
-
-						icon = {
-							parentanchor = center
-							position = { -30 0 }
-							size = { 30 30 }
-							texture = "gfx/interface/colors/white.dds"
-							using = Color_Red
-
-
-							modify_texture = {
-								name = "mask_1"
-								texture = "gfx/interface/component_masks/mask_glow.dds"
-								blend_mode = alphamultiply
-								rotate_uv = 1
-							}
-
-							modify_texture = {
-								name = "mask_2"
-								texture = "gfx/interface/component_masks/mask_glow.dds"
-								blend_mode = alphamultiply
-								rotate_uv = -1
-							}
-
-							modify_texture = {
-								name = "mask_3"
-								texture = "gfx/interface/component_masks/mask_clouds.dds"
-								blend_mode = alphamultiply
-								alpha = 0.1
-							}
-
-							modify_texture = {
-								name = "mask_4"
-								texture = "gfx/interface/component_masks/mask_circle.dds"
-								blend_mode = mask
-							}
-
-							modify_texture = {
-								name = "mask_3"
-								texture = "gfx/interface/colors/gold.dds"
-								blend_mode = add
-							}
-
-							state = {
-								name = "stress_level_increase"
-								next = b
-
-								using = Animation_Curve_Default
-								scale = 1
-								alpha = 0
-							}
-
-							state = {
-								name = b
-								next = c
-
-								duration = 0.6
-								bezier = { 0.5 0 1 0.5 }
-
-								scale = 5
-								alpha = 0.7
-							}
-
-							state = {
-								name = c
-								duration = 0.3
-								alpha = 0
-								scale = 6
-							}
-
-							state = {
-								name = rotate_a
-								next = rotate_b
-								trigger_on_create = yes
-
-								modify_texture = {
-									name = "mask_1"
-									rotate_uv = 1
-								}
-							}
-
-							state = {
-								name = rotate_a
-								next = rotate_b
-
-								duration = 1
-
-								modify_texture = {
-									name = "mask_1"
-									rotate_uv = 180
-								}
-							}
-
-							state = {
-								name = rotate_a_2
-								next = rotate_b_2
-								trigger_on_create = yes
-
-								modify_texture = {
-									name = "mask_2"
-									rotate_uv = -1
-								}
-							}
-
-							state = {
-								name = rotate_a_2
-								next = rotate_b_2
-
-								duration = 1
-
-								modify_texture = {
-									name = "mask_2"
-									rotate_uv = -180
-								}
-							}
-
-							state = {
-								name = rotate_a_3
-								next = rotate_b_3
-								trigger_on_create = yes
-
-								modify_texture = {
-									name = "mask_3"
-									rotate_uv = 0
-									alpha = 0.1
-								}
-							}
-
-							state = {
-								name = rotate_a_3
-								next = rotate_b_3
-
-								duration = 1
-
-								modify_texture = {
-									name = "mask_3"
-									rotate_uv = 40
-									alpha = 0.8
-								}
-							}
-						}
-
-						icon = {
-							size = { 100% 100% }
-							texture = "gfx/interface/skinned/hud_stress_bg.dds"
-
-							icon = {
-								parentanchor = vcenter
-								position = { 41 0 }
-								size = { 35 35 }
-
-								texture = "gfx/interface/icons/stress/icon_stress_level.dds"
-								framesize = { 70 70 }
-								frame = "[IntToFrameIndex( GetPlayer.GetStressLevel )]"
-
-								modify_texture = {
-									visible = "[GreaterThanOrEqualTo_int32(GetPlayer.GetStressLevel, '(int32)2')]"
-									name = "lvl3_glow"
-									texture = "gfx/interface/colors/gold.dds"
-									blend_mode = colordodge
-									alpha = 0
-								}
-
-								modify_texture = {
-									name = "lvl_increase"
-									texture = "gfx/interface/colors/gold.dds"
-									blend_mode = colordodge
-									alpha = 0
-								}
-
-								state = {
-									name = a
-									next = b
-									duration = 0.6
-									trigger_on_create = yes
-									using = Animation_Curve_Default
-
-									modify_texture = {
-										name = "lvl3_glow"
-										alpha = 0.3
-									}
-								}
-
-								state = {
-									name = b
-									next = a
-									duration = 1.5
-									using = Animation_Curve_Default
-
-									modify_texture = {
-										name = "lvl3_glow"
-										alpha = 0
-									}
-								}
-
-								state = {
-									name = "stress_level_increase"
-									next = "stress_level_increase_2"
-
-									modify_texture = {
-										name = "lvl_increase"
-										alpha = 0
-									}
-								}
-
-								state = {
-									name = "stress_level_increase_2"
-									next = "stress_level_increase_3"
-									duration = 0.4
-									bezier = { 0.5 0 1 0.5 }
-
-									modify_texture = {
-										name = "lvl_increase"
-										alpha = 0.7
-									}
-								}
-
-								state = {
-									name = "stress_level_increase_3"
-									duration = 0.5
-									bezier = { 0 0.5 0.5 1 }
-
-									modify_texture = {
-										name = "lvl_increase"
-										alpha = 0
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-
-			spacer = {
-				size = { 9 0 }
-			}
-
-			flowcontainer = {
-				ignoreinvisible = yes
-				margin_bottom = 5
-
-				button_normal = {
-					name = "lifestyle_button"
-					visible = "[GetPlayer.IsAdult]"
-
-					tooltip = "PLAYER_LIFESTYLE_TOOLTIP"
-					using = tooltip_ne
-
-					onclick = "[OpenGameViewData( 'lifestyle', GetPlayer.GetID )]"
-					size = { 56 56 }
-
-					icon = {
-						texture = "gfx/interface/buttons/button_lifestyles_base.dds"
-						size = { 100% 100% }
-					}
-
-					icon = {
-						name = "progress_frame"
-						texture = "gfx/interface/progressbars/action_progress_frame.dds"
-						size = { 100% 100% }
-						alpha = 0.5
-					}
-
-					highlight_icon_lifestyle_focus = {
-						name = "tutorial_highlight_lifestyle_HUD_button"
-						texture = "[GetPlayer.GetFocus.GetIcon]"
-						alwaystransparent = yes
-						size = { 100% 100% }
-
-						modify_texture = {
-							texture = "gfx/interface/icons/focuses/hud_icon_mask.dds"
-							blend_mode = alphamultiply
-						}
-					}
-
-					icon = {
-						visible = "[Or(GetPlayer.CanPlayerChangeMyFocus, Not( GetPlayer.GetLifestyle.IsValid ))]"
-						size = { 100% 100% }
-						alwaystransparent = yes
-						texture = "[GetPlayer.GetFocus.GetIcon]"
-
-						modify_texture = {
-							texture = "gfx/interface/icons/focuses/hud_icon_mask.dds"
-							blend_mode = alphamultiply
-						}
-
-						modify_texture = {
-							texture = "gfx/interface/colors/gold.dds"
-							blend_mode = add
-
-						}
-
-						modify_texture = {
-							texture = "gfx/interface/colors/red.dds"
-							blend_mode = colordodge
-						}
-
-						state = {
-							name = a
-							next = b
-							alpha = 0
-							trigger_on_create = yes
-							duration = 1.2
-							using = Animation_Curve_Default
-						}
-
-						state = {
-							name = b
-							next = a
-							alpha = 0.8
-							duration = 0.6
-							using = Animation_Curve_Default
-						}
-					}
-
-					progresspie = {
-						name = "progress"
-						size = { 48 48 }
-						texture = "gfx/interface/progressbars/action_progress_thin.dds"
-						framesize = { 128 128 }
-						frame = 2
-						value = "[GetPlayer.GetLifestyleExperienceProgress( GetPlayer.GetLifestyle.Self )]"
-						widgetanchor = center
-						parentanchor = center
-						position = { 0 0 }
-						min = 0
-						max = 1
-					}
-
-					button_round = {
-						datacontext = "[GetPlayer]"
-						visible = "[And(GreaterThan_int32( Character.GetTotalPerkPoints, '(int32)0' ), Character.IsLocalPlayer)]"
-						parentanchor = bottom|right
-						position = { 7 3 }
-						size = { 28 28 }
-						framesize = { 82 82 }
-						upframe = 1
-						uphoverframe = 1
-						uppressedframe = 1
-						alwaystransparent = yes
-
-						text_single = {
-							parentanchor = center
-							datacontext = "[GetPlayer]"
-							text = "[Character.GetTotalPerkPoints]"
-							default_format = "#high"
-							max_width = 180
-							align = nobaseline
-
-							# animation_attention = {
-							# 	visible = "[GreaterThan_int32( GetPlayer.GetTotalPerkPoints, '(int32)0' )]"
-							# }
-						}
-					}
-
-					animation_sonar = {
-						texture = "gfx/interface/component_effects/effect_sonar_ring.dds"
-						visible = "[GreaterThan_int32( GetPlayer.GetTotalPerkPoints, '(int32)0' )]"
-					}
-				}
-
-				button_normal = {
-					name = "education_button"
-					visible = "[Not(GetPlayer.IsAdult)]"
-
-					tooltip = "PLAYER_EDUCATION_FOCUS_TOOLTIP"
-					using = tooltip_ne
-
-					onclick = "[ToggleGameViewData( 'character_focus', GetPlayer.GetID )]"
-					size = { 55 55 }
-
-					icon = {
-						texture = "gfx/interface/buttons/button_lifestyles_base.dds"
-						size = { 100% 100% }
-					}
-
-					highlight_icon_lifestyle_focus = {
-						texture = "[GetPlayer.GetFocus.GetIcon]"
-						onclick = "[ToggleGameViewData( 'character_focus', GetPlayer.GetID )]"
-						size = { 100% 100% }
-						gfxtype = togglepushbuttongfx
-						effectname = "NoHighlight"
-						framesize = { 140 140 }
-
-						modify_texture = {
-							texture = "gfx/interface/icons/focuses/hud_icon_mask.dds"
-							blend_mode = alphamultiply
-						}
-					}
-				}
-
-				button_open_inventory = {
-					name = "open_inventory_tutorial_uses_this"
-					size = { 55 55 }
-					datacontext = "[GetPlayer]"
-					blockoverride "highlight_icon_size"
-					{
-						size = { 40 40 }
-					}
-					widget_new_artifacts = {
-						size = { 15 15 }
-						parentanchor = bottom|right
-						visible = "[Or( GreaterThan_int32( LocalPlayerNewArtifacts.GetNumNewArtifactsOfCategory( 'inventory' ), '(int32)0' ), And( Not( GetPlayer.HasRoyalCourt ), GreaterThan_int32( LocalPlayerNewArtifacts.GetNumNewArtifactsOfCategory( 'court' ), '(int32)0' ) ) )]"
-					}
-				}
-
-				button_round = {
-					name = "open_diarchy_tutorial_uses_this"
-					parentanchor = left
-					onclick = "[ToggleGameViewData( 'diarchy', Character.GetID )]"
-					visible = "[IsDiarchyVisible]"
-					tooltip = "DIARCHY_WINDOW_OPEN_TOOLTIP"
-					size = { 55 55 }
-
-					icon = {
-						texture = "gfx/interface/buttons/button_lifestyles_base.dds"
-						size = { 100% 100% }
-					}
-
-					button = {
-						size = { 40 40 }
-						alwaystransparent = yes
-						parentanchor = center
-						texture = "gfx/interface/icons/scale_of_power.dds"
-					}
-				}
-			}
-
-			spacer = {
-				size = { 6 0 }
-			}
-
-			widget_stress_sounds = {}
-		}
-
-		flowcontainer = {
-			name = "bottom_left_bar_temporary_statuses"
-
-			datacontext = "[GetPlayer]"
-			datacontext = "[Character.GetInvolvedActivity]"
-
-			visible = "[And( Not( IsPauseMenuShown ), And(And(IsDefaultGUIMode, Character.IsValid), Not(GetVariableSystem.Exists( 'hide_bottom_left_HUD')))))]"
-			visible_at_creation = no
-			parentanchor = bottom|left
-			position = { 250 -70 }
-			ignoreinvisible = yes
-			alwaystransparent = no
-
-			flowcontainer = {
-				name = "involved_activity"
-
-				visible = "[And( Activity.IsValid, Not( Activity.IsComplete ) )]"
-				visible_at_creation = no
-
-				spacing = 8
-
-				activity_hud_button = {
-					name = "activity_button"
-				}
-
-				button_hud_travel = {
-					name = "activity_travel_button"
-					datacontext = "[Character.GetTravelPlan]"
-					visible = "[Character.IsTraveling]"
-					parentanchor = "vcenter"
-
-					text = "ACTIVITY_VIEW_TRAVEL"
-					tooltip = "TT_AWAY_FROM_CAPITAL_WIDGET"
-
-					max_width = 160
-
-					onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
-					onclick = "[Character.ZoomCameraTo]"
-				}
-			}
-
-			button_normal = {
-				name = "away_from_capital"
-				datacontext = "[Character.GetTravelPlan]"
-
-				visible_at_creation = no
-				visible = "[And( Character.IsTraveling, Or( Not( Activity.IsValid ), Activity.IsComplete ) ) )]"
-
-				size = { 60 60 }
-
-				onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
-				onclick = "[Character.ZoomCameraTo]"
-
-				tooltip = "TT_AWAY_FROM_CAPITAL_WIDGET"
-				using = tooltip_above
-
-				icon = {
-					texture = "gfx/interface/buttons/button_lifestyles_base.dds"
-					size = { 100% 100% }
-				}
-
-				icon = {
-					name = "progress_frame"
-					texture = "gfx/interface/progressbars/action_progress_frame.dds"
-					size = { 100% 100% }
-					parentanchor = center
-					alpha = 0.5
-				}
-
-				progresspie = {
-					name = "progress"
-					size = { 50 50 }
-					texture = "gfx/interface/progressbars/action_progress_thin.dds"
-					framesize = { 128 128 }
-					frame = 2
-					widgetanchor = center
-					parentanchor = center
-					value = "[TravelPlan.GetData.GetNextDestinationProgress]"
-					min = 0
-					max = 1
-				}
-
-				highlight_icon = {
-					texture = "gfx/interface/icons/travel/icon_travel_hud_placeholder.dds"
-					alwaystransparent = yes
-					size = { 45 45 }
-					parentanchor = center
-				}
-			}
-		}
-
-		######################################################
-		######### MAPMODES AND WARS AND INSPIRATIONS #########
-		######################################################
-
-		map_modes_debug = {
-			visible = "[And( InDebugMode, And(IsDefaultGUIMode, Not(IsRightWindowOpen)))]"
-			visible_at_creation = no
-			parentanchor = bottom|right
-			position = { 0 -220 }
-
-			filter_mouse = all
-			alwaystransparent = no
-			scale = 0.9
-		}
-
-		widget = { # Inspiration Details
-			visible = "[And( InGameBottomBar.HasSelectedInspiration, And( IsDefaultGUIMode, Not( IsRightWindowOpen ) ) )]"
-			visible_at_creation = no
-			datacontext = "[InGameBottomBar.GetSelectedInspiration]"
-			datacontext = "[Inspiration.GetOwner]"
-
-			parentanchor = bottom|right
-			position = { -200 -150 }
-			using = Window_Background_Subwindow
-
-			alwaystransparent = no
-			filter_mouse = all
-
-			state = {
-				name = _show
-				using = Animation_FadeIn_Quick
-				using = Sound_WindowShow_Standard
-			}
-
-			state = {
-				name = _hide
-				using = Animation_FadeOut_Quick
-				using = Sound_WindowHide_Standard
-			}
-
-			vbox = {
-				name = "selected_inspiration"
-				set_parent_size_to_minimum = yes
-				margin = { 4 4 }
-				margin_bottom = 20
-				spacing = 5
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-
-					header_pattern = {
-						layoutpolicy_horizontal = expanding
-
-						blockoverride "header_text"
-						{
-							text = "SELECTED_INSPIRATION_HEADER"
-						}
-
-						blockoverride "button_close"
-						{
-							onclick = "[InGameBottomBar.ClearSelectedInspiration]"
-						}
-
-						blockoverride "button_back"
-						{
-							visible = no
-						}
-					}
-				}
-
-				hbox = {
-					name = "selected_inspiration_data"
-					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
-					margin_left = 20
-
-
-					background = {
-						using = Background_Area
-						layoutpolicy_horizontal = expanding
-						margin_top = 14
-					}
-
-					portrait_shoulders = {
-						name = "inspiration_owner_portrait"
-
-						blockoverride "inspiration_status_icons"
-						{
-						}
-					}
-
-					vbox = {
-						name = "text"
-						layoutpolicy_horizontal = expanding
-						margin_left = 10
-						margin_bottom = 10
-						margin_top = -14
-
-						text_multi = {
-							name = "inspiration_text"
-							min_width = 300
-							max_width = 300
-							autoresize = yes
-							text = "SELECTED_INSPIRATION_TEXT"
-							margin_right = 10
-							margin_top = 4
-						}
-
-						spacer = {
-							size = { 0 6 }
-						}
-
-						hbox = {
-							name = "recuirt_owner"
-							layoutpolicy_horizontal = expanding
-							spacing = 5
-
-							text_single = {
-								text = "[Character.GetRelationToString( GetPlayer )]"
-								tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-							}
-
-							button_recruit_character = {}
-
-							warning_icon = {
-								name = "wants_to_leave"
-								visible = "[And( Character.CourtierWantsToLeaveCourt, Not( Character.IsImprisoned))]"
-								size = { 20 20 }
-								tooltip = "[Character.GetCourtierLeaveDescription]"
-							}
-
-							expand = {}
-						}
-
-						text_single = {
-							name = "gold_invested"
-							text = INSPIRATION_INVESTED_GOLD
-							layoutpolicy_horizontal = expanding
-							visible = "[Inspiration.GetSponsor.IsLocalPlayer]"
-						}
-					}
-				}
-
-
-				hbox = {
-					layoutpolicy_horizontal = expanding
-					margin_top = 4
-
-					button_primary = {
-						name = "sponsor_inspiration"
-						text = START_SPONSOR_INSPIRATION
-						visible = "[Not( Inspiration.GetSponsor.IsValid )]"
-
-						enabled = "[Character.IsPlayerInteractionValid( 'fund_inspiration_interaction' )]"
-						onclick = "[Character.OpenPlayerInteraction( 'fund_inspiration_interaction' )]"
-						tooltip = "[Character.GetPlayerInteractionTooltip( 'fund_inspiration_interaction' )]"
-					}
-				}
-
-				vbox = {
-					name = "inspiration_progress"
-					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
-					margin_bottom = -8
-					margin_top = -10
-					spacing = 5
-
-					visible = "[Inspiration.GetSponsor.IsValid]"
-
-					text_single = {
-						text = INSPIRATION_IN_PROGRESS
-					}
-
-					progressbar_segmented_chance = {
-						name = "progress_bar"
-						tooltip = "INSPIRATION_ITEM_PROGRESS_TOOLTIP"
-						datamodel = "[GetSegmentedProgressChanceBar( GetDefine( 'NInspiration', 'MAX_PROGRESS' ), GetDefine( 'NScheme', 'PROGRESS_FRAMES' ), Inspiration.GetProgress, Inspiration.GetProgressChance )]"
-					}
-
-					text_single = {
-						text = INSPIRATION_ESTIMATED_REMAINING
-						tooltip = INSPIRATION_ESTIMATED_TIME_TOOLTIP
-					}
-
-					expand = {
-						layoutpolicy_vertical = expanding
-					}
-				}
-			}
-		}
-
-		### Ongoing longer term objects and map modes
-		# eg: Wars, Schemes, Inspirations
-		flowcontainer = {
-			visible = "[And(IsDefaultGUIMode, Not(IsRightWindowOpen))]"
-			parentanchor = bottom|right
-			widgetanchor = top|right
-			position = { 0 -155 }
-			alwaystransparent = yes
-			ignoreinvisible = yes
-			filter_mouse = all
-			allow_outside = yes
-			spacing = 30
-
-			state = {
-				name = _show
-				using = Animation_FadeIn_Quick
-			}
-
-			state = {
-				name = _hide
-				using = Animation_FadeOut_Quick
-			}
-
-			# In progress systems
-			flowcontainer = {
-				name = "in_progress_systems"
-				ignoreinvisible = yes
-				margin_top = 15
-				visible = "[Not(IsGameViewOpen('barbershop'))]"
-
-				flowcontainer = {
-					name = "player_inspirations"
-					datamodel = "[GetPlayer.GetSponsoredInspirations]"
-					parentanchor = vcenter
-					spacing = 5
-					margin = { 5 0 }
-					allow_outside = yes
-
-					item = {
-						button_normal = {
-							datacontext = "[Inspiration.GetOwner]"
-							size = { 60 60 }
-							tooltip = "TT_INSPIRATION_WIDGET"
-							using = tooltip_above
-							onclick = "[InGameBottomBar.ToggleSelectedInspiration( Inspiration.Self )]"
-
-							icon = {
-								texture = "gfx/interface/buttons/button_lifestyles_base.dds"
-								size = { 100% 100% }
-							}
-
-							icon = {
-								visible = "[ObjectsEqual( InGameBottomBar.GetSelectedInspiration, Inspiration.Self )]"
-								texture = "gfx/interface/buttons/button_lifestyles_active_frame.dds"
-								size = { 100% 100% }
-							}
-
-							icon = {
-								name = "progress_frame"
-								texture = "gfx/interface/progressbars/action_progress_frame.dds"
-								size = { 100% 100% }
-								parentanchor = center
-								alpha = 0.5
-							}
-
-							progresspie = {
-								name = "progress"
-								visible = "[And( Inspiration.GetSponsor.IsValid, Not( Inspiration.IsComplete ) )]"
-
-								size = { 52 52  }
-								texture = "gfx/interface/progressbars/action_progress_thin.dds"
-								framesize = { 128 128 }
-								frame = 2
-
-								widgetanchor = center
-								parentanchor = center
-
-								min = 0
-								max = 100
-
-								value = "[Select_float( GreaterThan_int32( Inspiration.GetProgress, '(int32)0' ), CurrentAndMaxToProgressbarValueInt32( Inspiration.GetProgress, GetDefine( 'NInspiration', 'MAX_PROGRESS' ) ), '(float)2' )]"
-							}
-
-							highlight_icon = {
-								texture = "[Inspiration.GetType.GetIcon]"
-								alwaystransparent = yes
-								size = { 40 40 }
-								position = { 1 1 }
-								parentanchor = center
-							}
-						}
-					}
-				}
-
-				flowcontainer = {
-					name = "player_schemes"
-					datamodel = "[InGameBottomBar.GetSchemes]"
-					parentanchor = vcenter
-					spacing = 5
-					margin = { 5 0 }
-
-					item = {
-						button_normal = {
-							name = "tutorial_highlight_lifestyle_HUD_button"
-							onclick = "[BottomBarSchemeItem.OnClick]"
-							datacontext = "[BottomBarSchemeItem.GetScheme]"
-							tooltip = "BOTTOMBAR_SCHEME_TOOLTIP"
-							size = { 60 60 }
-
-							icon = {
-								texture = "gfx/interface/buttons/button_lifestyles_base.dds"
-								size = { 100% 100% }
-							}
-
-							icon = {
-								name = "progress_frame"
-								texture = "gfx/interface/progressbars/action_progress_frame.dds"
-								size = { 100% 100% }
-								parentanchor = center
-								alpha = 0.5
-							}
-
-							progresspie = {
-								name = "progress"
-								size = { 52 52 }
-								texture = "gfx/interface/progressbars/action_progress_thin.dds"
-								framesize = { 128 128 }
-								frame = 2
-								widgetanchor = center
-								parentanchor = center
-								value = "[Scheme.GetProgressBar]"
-								min = 0
-								max = 1
-							}
-
-							highlight_icon = {
-								texture = "[Scheme.GetSchemeType.GetIcon]"
-								alwaystransparent = yes
-								size = { 40 40 }
-								parentanchor = center
-							}
-						}
-					}
-				}
-
-				button_epidemics = {
-					# Epidemics in/near your realm
-					name = "epidemics_hud"
-					visible = "[Or( InGameBottomBar.HasGlobalNotificationEpidemic, Or( DataModelHasItems( InGameBottomBar.GetEpidemicsInRealm ), DataModelHasItems( InGameBottomBar.GetEpidemicsBorderingRealm ) ) )]"
-				}
-
-				button_raise_disband_armies = {
-					name = "tutorial_highlight_raise_troops"
-					visible = "[And( And( Character.IsAtWar, Not(Character.HasRaisedRegiments)), Not(IsGameViewOpen('barbershop')))]"
-					visible_at_creation = no
-
-					enabled = "[PlayerCanRaiseAnyRallyPoint]"
-					onclick = "[PlayerRaiseAllRegiments]"
-					clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_raise_army"
-
-					onclick = "[PdxGuiTriggerAllAnimations('button_army')]"
-
-					tooltip = "[GetPlayerRaiseAllTooltip]"
-
-					animation_aggressive = {}
-				}
-
-				button_raise_disband_armies = {
-					visible = "[And( PlayerShouldDisbandAll, Not(IsGameViewOpen('barbershop')))]"
-					visible_at_creation = no
-
-					onclick = "[PlayerDisbandAll]"
-					enabled = "[PlayerCanDisbandAll]"
-					clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_unit_army_disband"
-
-					blockoverride "text" {
-						text = "DISBAND_ALL"
-					}
-
-					tooltip = "[GetDisbandAllTooltip]"
-				}
-
-				spacer = {
-					datacontext = "[GetPlayer]"
-					visible = "[Or(And(Character.IsAtWar, Not(Character.HasRaisedRegiments)), PlayerShouldDisbandAll)]"
-
-					size = { 5 20 }
-				}
-
-				flowcontainer = {
-					name = "wars"
-					parentanchor = vcenter
-					ignoreinvisible = yes
-
-					flowcontainer = {
-						name = "great_holy_wars"
-						parentanchor = vcenter
-						ignoreinvisible = yes
-
-						flowcontainer = {
-							datamodel = "[GetPlayer.GetFaith.GetDefensiveGreatHolyWars]"
-							ignoreinvisible = yes
-							parentanchor = vcenter
-
-							item = {
-								button_ghw_banner = {
-									name = "defensive_ghw"
-									parentanchor = vcenter
-
-									blockoverride "ghw_tooltip"
-									{
-										tooltip = "GHW_OPEN_TOOLTIP_DEFENDER"
-										using = tooltip_ne
-									}
-								}
-							}
-						}
-
-						button_ghw_banner = {
-							name = "player_faith_ghw"
-							datacontext = "[GetPlayer.GetFaith.GetGreatHolyWar]"
-							visible = "[GetPlayer.GetFaith.HasOffensiveGreatHolyWar]"
-							visible_at_creation = no
-							parentanchor = vcenter
-
-							blockoverride "ghw_tooltip"
-							{
-								tooltip = "GHW_OPEN_TOOLTIP_ATTACKER"
-								using = tooltip_ne
-							}
-						}
-					}
-
-					flowcontainer = {
-						name = "raids_on_me"
-						datamodel = "[GetPlayer.GetHostileRaiders]"
-						parentanchor = vcenter
-
-						item = {
-							button_raid_banner = {
-								parentanchor = vcenter
-								tooltip = "RAID_ON_ME_TOOLTIP"
-							}
-						}
-					}
-
-					flowcontainer = {
-						name = "raids_by_me"
-						datamodel = "[GetPlayer.GetRaidTargets]"
-						parentanchor = vcenter
-
-						item = {
-							button_raid_banner = {
-								parentanchor = vcenter
-								tooltip = "RAID_BY_ME_TOOLTIP"
-							}
-						}
-					}
-
-					flowcontainer = {
-						name = "regular_wars"
-						datamodel = "[InGameBottomBar.GetWarItems]"
-						ignoreinvisible = yes
-
-						item = {
-							button_war_banner = {}
-						}
-					}
-				}
-
-				flowcontainer = {
-					name = "involved_struggles"
-					datamodel = "[GetPlayer.GetInvolvedStruggles]"
-					parentanchor = vcenter
-					ignoreinvisible = yes
-					margin_top = -15
-
-					item = {
-						button_struggle_banner = {}
-					}
-				}
-
-				flowcontainer = {
-					name = "interloper_struggles"
-					datamodel = "[GetPlayer.GetInterloperStruggles]"
-					parentanchor = vcenter
-					ignoreinvisible = yes
-					margin_top = -15
-
-					item = {
-						button_struggle_banner = {}
-					}
-				}
-			}
-
-			## Map Modes
-			map_modes = {
-				visible = "[Not(IsGameViewOpen('barbershop'))]"
-				filter_mouse = all
-				alwaystransparent = no
-			}
-		}
-	}
+	old_hud = {}
 
 	# ocr
 	empty_screen = {
@@ -3615,66 +1986,46 @@ widget = {
 
 			error_button = { }
 
-			# flowcontainer = {
-			# 	ignoreinvisible = yes
-			# 	direction = vertical
-			#
-			# 	datamodel = "[GetGlobalList('coordinates')]"
-			#
-			# 	item = {
-			# 		button_text = {
-			# 			datacontext = "[Scope.GetProvince]"
-			# 			using = prov_pan
-			# 			blockoverride "text" {
-			# 				raw_text = "[Province.GetID], [Province.GetNameNoTooltip]"
-			# 			}
-			# 		}
-			# 	}
-			# }
-
-			# text_single = {
-			# 	raw_text = "[GuiScope.ScriptValue('coordinates')]"
-			# }
-
 			flowcontainer = {
 				direction = vertical
 				ignoreinvisible = yes
-						alpha = 0
-						# widget = {
-						#     size = { 0 50 }
-						# }
-						text_single = {
-								raw_text = "[Get('toast_1')]"
-						}
-						text_multi = {
-								using = wide
-								autoresize = yes
-								raw_text = "[Get('toast_desc_1')]"
-						}
-						# not sure where this comes from
-						# widget = {
-						#     size = { 0 10 }
-						# }
-						widget = {
-								size = { 0 25 }
-								visible = "[Is('toast_extras')]"
-						}
-						text_single = {
-								raw_text = "Dismiss"
-						}
-
-						# widget = {
-						#     size = { 0 25 }
-						# }
-						# visible = "[Is('toasted')]"
-				visible = no
+				alpha = 0
+				# widget = {
+				#     size = { 0 50 }
+				# }
+				text_single = {
+						raw_text = "[Get('toast_1')]"
 				}
+				text_multi = {
+						using = wide
+						autoresize = yes
+						raw_text = "[Get('toast_desc_1')]"
+				}
+				# not sure where this comes from
+				# widget = {
+				#     size = { 0 10 }
+				# }
+				widget = {
+						size = { 0 25 }
+						visible = "[Is('toast_extras')]"
+				}
+				text_single = {
+						raw_text = "Dismiss"
+				}
+
+				# widget = {
+				#     size = { 0 25 }
+				# }
+				# visible = "[Is('toasted')]"
+				visible = no
+			}
 
 			# widget = {
 			# 	size = { 0 120 }
 			# 	visible = "[Is('toasted')]"
 			# }
 
+			# activity
 			flowcontainer = {
 				# margin_top = 50
 				direction = vertical
@@ -3702,6 +2053,7 @@ widget = {
 				}
 			}
 
+			# travel
 			flowcontainer = {
 				ignoreinvisible = yes
 				direction = vertical
@@ -3727,12 +2079,19 @@ widget = {
 						}
 					}
 
+					button = {
+						shortcut = map_mode_9
+						datacontext = "[GetPlayer.GetCurrentLocation]"
+						using = prov_pan
+						visible = "[Character.IsTraveling]"
+					}
+
 					button_text = {
 						using = prov_pan
 						datacontext = "[TravelPlanData.GetCurrentLocation]"
 						visible = "[Not(ObjectsEqual(MyCapital, Province.Self))]"
 						blockoverride "text" {
-							raw_text = "Currently in [TravelPlanData.GetCurrentLocation.GetName], [DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+							raw_text = "Currently in [TravelPlanData.GetCurrentLocation.GetName], [DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]. Shift Q to pan the camera."
 						}
 						button = {
 							shortcut = map_mode_9
@@ -3784,49 +2143,53 @@ widget = {
 					blockoverride "text" {
 						text = "ACTIVITY_VIEW_TRAVEL"
 					}
-					tooltip = "TT_AWAY_FROM_CAPITAL_WIDGET"
+					tooltip = "[SelectLocalization(Character.GetTravelPlan.GetData.IsTravelWithDomicile, 'TT_TRAVELING_WITH_DOMICILE_WIDGET', 'TT_AWAY_FROM_CAPITAL_WIDGET')]"
 
 					onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
 					onclick = "[Character.ZoomCameraTo]"
 				}
 			}
 
-			container = {
-				using = ocr_off
-				button_normal = {
-					name = "away_from_capital"
-					datacontext = "[Character.GetTravelPlan]"
+			flowcontainer = {
+				ignoreinvisible = yes
+				direction = vertical
+				visible = "[GetPlayer.HasDomicile]"
 
-					visible_at_creation = no
-					visible = "[And( Character.IsTraveling, Or( Not( Activity.IsValid ), Activity.IsComplete ) ) )]"
-
-					size = { 60 60 }
-
-					onclick = "[ToggleGameViewData('travel_planner', TravelPlan.GetID)]"
-					onclick = "[Character.ZoomCameraTo]"
-
-					tooltip = "TT_AWAY_FROM_CAPITAL_WIDGET"
-					using = tooltip_above
-
-					progresspie = {
-						name = "progress"
-						size = { 60 60 }
-						texture = "gfx/interface/progressbars/action_progress_thin.dds"
-						framesize = { 124 124 }
-						frame = 2
-						widgetanchor = top|hcenter
-						parentanchor = top|hcenter
-						value = "[TravelPlan.GetData.GetNextDestinationProgress]"
-						min = 0
-						max = 1
+				button_text = {
+					using = NoWindowsOpen
+					datacontext = "[GetPlayer.GetDomicile]"
+					onclick = "[ToggleGameViewData( 'domicile', Domicile.Self )]"
+					blockoverride "text" {
+						raw_text = "Your [Domicile.GetType.GetNameNoTooltip] is in [Domicile.GetLocation.GetTerrain.GetNameNoTooltip] of [Domicile.GetLocation.GetNameNoTooltip],"
 					}
+					blockoverride "extra" {
+						flowcontainer = {
+							ignoreinvisible = yes
+							spacing = 3
+							visible = "[IsLandlessAdventurer( GetPlayer )]"
+							datacontext = "[GetPlayer.GetDomicile]"
+							tooltip = "[Domicile.GetProvisionsBreakdown]"
 
-					highlight_icon = {
-						texture = "gfx/interface/icons/travel/icon_travel_hud_placeholder.dds"
-						alwaystransparent = yes
-						size = { 45 45 }
-						parentanchor = center
+							text_single = {
+								raw_text = "Provisions:"
+							}
+
+							text_single = {
+								raw_text = "[Domicile.GetProvisions|0] out of"
+							}
+
+							text_single = {
+								raw_text = "[Domicile.GetProvisionsMax]."
+							}
+						}
 					}
+					# blockoverride "extra" {
+					# 	text_single = {
+					# 		visible = "[Not(ObjectsEqual( Domicile.GetLocation, GetPlayer.GetCurrentLocation))]"
+					# 		datacontext = "[Domicile.GetLocation]"
+					# 		raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+					# 	}
+					# }
 				}
 			}
 		}
@@ -3888,6 +2251,11 @@ widget = {
 				using = Animation_FadeOut_Quick
 			}
 
+			text_single = {
+				visible = "[HasOpenSuccession( GetPlayer )]"
+				raw_text = "HAS_OPEN_SUCCESSION_SUB_TEXT"
+			}
+
 			button_text = {
 				background = { using = Background_Area_Border_Solid }
 				visible = "[And(GetVariableSystem.Exists('hide_tutorial'), GetTutorial.ShouldBeVisible)]"
@@ -3902,6 +2270,19 @@ widget = {
 				ignoreinvisible = yes
 				visible = "[And(IsDefaultGUIMode, Not(IsRightWindowOpen))]"
 				direction = vertical
+
+				#TODO can you have multiple contracts?
+				### Task Contacts ###
+				flowcontainer = {
+					background = { using = Background_Area_Border_Solid }
+					name = "task_contracts"
+					datamodel = "[GetPlayer.GetAcceptedTaskContracts]"
+					ignoreinvisible = yes
+
+					item = {
+						button_task_contract_banner_ocr = {}
+					}
+				}
 
 				## Wars
 				flowcontainer = {
@@ -4230,20 +2611,109 @@ widget = {
 						item = {
 							button_text = {
 									blockoverride "text" {
-										raw_text = "[BottomBarSchemeItem.GetScheme.GetSchemeType.GetTypeNameNoTooltip] [BottomBarSchemeItem.GetScheme.GetTarget.GetFirstNameNoTooltip] [Scheme.GetProgressBar|%0],"
+
 									}
 								blockoverride "extra" {
 									text_single = {
-										raw_text = "[BottomBarSchemeItem.GetScheme.GetTarget.GetOpinionOf(GetPlayer)|=] opinion,"
-										tooltip = "[BottomBarSchemeItem.GetScheme.GetTarget.GetOpinionBreakdownText(GetPlayer)]"
-										visible = "[Not(BottomBarSchemeItem.GetScheme.GetSchemeType.IsHostile)]"
+										visible = "[Scheme.IsExposed]"
+										raw_text = "game_concept_exposed"
+									}
+
+									text_single = {
+										raw_text = "[BottomBarSchemeItem.GetScheme.GetSchemeType.GetTypeNameNoTooltip]"
+									}
+
+									# Target
+									container = {
+
+										# Character Target
+										container = {
+											datacontext = "[Scheme.GetTargetCharacter]"
+											visible = "[Character.IsValid]"
+
+											text_single = {
+												raw_text = "[Character.GetFirstNameNoTooltip],"
+											}
+											text_single = {
+												raw_text = ""
+											}
+										}
+
+										# Title Target
+										container = {
+											datacontext = "[Scheme.GetTargetTitle]"
+											visible = "[Title.IsValid]"
+											text_single = {
+												raw_text = "[Title.GetNameNoTierNoTooltip]"
+											}
+										}
+
+										# Faith Target
+										container = {
+											datacontext = "[Scheme.GetTargetFaith]"
+											visible = "[Faith.IsValid]"
+											text_single = {
+												raw_text = "[Faith.GetNameNoTooltip]"
+											}
+										}
+
+										# Culture Target
+										container = {
+											datacontext = "[Scheme.GetTargetCulture]"
+											visible = "[Culture.IsValid]"
+
+											text_single = {
+												text = "[Culture.GetNameNoTooltip]"
+											}
+										}
+									}
+
+									text_single = {
+										visible = "[Scheme.GetSchemeType.IsBasic]"
+										raw_text = "[Scheme.GetProgressBar|%0],"
+									}
+
+
+									text_single = {
+										datacontext = "[Scheme.GetTargetCharacter]"
+										visible = "[And(And(Character.IsValid, Not(BottomBarSchemeItem.GetScheme.GetSchemeType.IsHostile)), Scheme.GetSchemeType.IsPersonal)]"
+
+										raw_text = "[Character.GetOpinionOf(GetPlayer)|=] opinion,"
+										tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
+									}
+
+									####
+									text_single = {
+										raw_text = "Chance is"
+										# [Scheme.GetSuccessChance]%
 									}
 									text_single = {
-										raw_text = "Chance [Scheme.GetSuccessChance]%,"
+										raw_text = "SCHEME_WIDGET_SUCCESS_CHANCE"
 									}
+									comma = {}
+									####
+
 									text_single = {
-										raw_text = "[Scheme.GetEstimatedTimeRemaining]."
+										visible = "[GreaterThan_int32( Scheme.GetAgentCharges, '(int32)0' )]"
+										raw_text = "advantages [Scheme.GetAgentCharges],"
 									}
+
+									text_single = {
+										visible = "[GreaterThan_int32( Scheme.GetAgentCharges, '(int32)4' )]"
+										raw_text = "can execute."
+									}
+
+									container = {
+										visible = "[And(Scheme.GetSchemeCountermeasureProtectingTarget.IsValid, Scheme.GetSchemeType.IsHostile)]"
+										ignoreinvisible = yes
+
+										text_single = {
+											visible = "[SchemeCountermeasureType.IsValid]"
+											datacontext = "[Scheme.GetSchemeCountermeasureProtectingTarget]"
+											raw_text = "countered by [SchemeCountermeasureType.GetName]."
+										}
+									}
+
 								}
 								onclick = "[BottomBarSchemeItem.OnClick]"
 								datacontext = "[BottomBarSchemeItem.GetScheme]"
@@ -4454,7 +2924,23 @@ widget = {
 							onclick = "[ToggleGameViewData('council_window', GetPlayer.GetID)]"
 							shortcut = "council_window"
 							onclick = "[Clear('extra_window')]"
+							visible = "[Not( IsLandlessAdventurer( GetPlayer ) )]"
 						}
+
+						button_text = {
+							name = "hud_camp_button"
+							widgetid = "hud_camp_button"
+							shortcut = "council_window"
+							datacontext = "[Character.GetDomicile]"
+							visible = "[Character.HasDomicile]"
+
+							onclick = "[ToggleGameViewData( 'domicile', Domicile.Self )]"
+							# tooltip = "[Domicile.GetMapPinTooltip( Character.Self )]"
+							blockoverride "text" {
+								raw_text = "Your [SelectLocalization(IsLandlessAdventurer( GetPlayer ), 'camp', 'estate')], F4."
+							}
+						}
+
 						button_text = {
 							blockoverride "text" {
 								raw_text = "[Localize('COURT_BUTTON')], F five."
@@ -4478,10 +2964,11 @@ widget = {
 							onclick = "[ToggleGameView('factions_window')]"
 							shortcut = "factions_window"
 							onclick = "[Clear('extra_window')]"
+							visible = "[Or( Not( IsLandlessAdventurer( GetPlayer ) ), GetPlayer.IsInAFaction)]"
 						}
 						button_text = {
 							blockoverride "text" {
-								raw_text = "[Localize('DECISIONS_BUTTON')], F8."
+								raw_text = "[Localize('DECISIONS_BUTTON')], F8." #TODO change to contracts? GetPlayer.GetGovernment.IsType( 'landless_adventurer_government' )
 							}
 							onclick = "[ToggleGameView('decisions')]"
 							shortcut = "decision_window"
@@ -4562,6 +3049,43 @@ widget = {
 										onclick = "[ToggleGameViewData('manage_tax_slots', GetPlayer.GetID)]"
 										onclick = "[Clear('extra_window')]"
 									}
+
+									# widget_hud_main_tab = {
+									# 	name = "tab_government_administration"
+									# 	visible = "[GetPlayer.GetTopLiege.GetGovernment.HasRule( 'administrative' )]"
+									#
+									# 	blockoverride "maintab_button"
+									# 	{
+									# 		texture = "gfx/interface/skinned/hud_maintab/maintab_administrative.dds"
+									#
+									# 		onclick = "[ToggleGameView( 'government_administration' )]"
+									# 		down = "[IsGameViewOpen( 'government_administration' )]"
+									#
+									# 		using = tooltip_ws
+									# 		tooltipwidget = {
+									# 			administrative_button_tooltip = {}
+									# 		}
+									# 	}
+									# }
+
+									# button_text = {
+									# 	name = "toggle_message_settings_button"
+									# 	text = "MESSAGE_SETTINGS_WINDOW_NAME"
+									# 	onclick = "[ToggleMessageSettings]"
+									# 	onclick = "[GetVariableSystem.Toggle( 'extra_buttons_expand' )]"
+									# 	tooltip = "MESSAGE_SETTINGS_WINDOW_TT"
+									# }
+
+									# button_text = {
+									# 	name = "toggle_music_player_button"
+									# 	raw_text = "MUSIC_PLAYER_NAME"
+									# 	onclick = "[ToggleMusicPlayer]"
+									# 	tooltip = "MUSIC_PLAYER_OPEN_PLAYER_TT"
+									# }
+
+									#TODO music and message settings
+
+									#TODO admin view
 
 								}
 							}
@@ -4717,7 +3241,6 @@ notifications_suggestions = {
 
 	attachto = {
 		widgetid = "suggestions_placer"
-		inherit_visibility = hidden
 	}
 }
 
@@ -6681,7 +5204,7 @@ types HUD
 						text = "ROYAL_COURT_STATUS_NEW_COURT_ARTIFACTS_BULLET"
 					}
 					cooltip_paragraph = {
-						visible = "[LessThan_int32( CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel )]"
+						visible = "[And(LessThan_int32( CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel ),HasDlcFeature( 'royal_court' ))]"
 						text = "ROYAL_COURT_STATUS_CGV_EXPECTATIONS_BULLET"
 					}
 					cooltip_paragraph = {
@@ -7362,5 +5885,13 @@ types HUD
 				}
 			}
 		}
+	}
+
+	type button_task_contract_banner_ocr = button_text {
+
+		blockoverride "text" {
+			raw_text = "Active contract: [TaskContract.GetType.GetName]."
+		}
+		onclick = "[ToggleGameViewData('task_contract', TaskContract.Self )]"
 	}
 }

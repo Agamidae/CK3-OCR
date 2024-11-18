@@ -73,6 +73,7 @@ window = {
 					hbox = {
 						layoutpolicy_horizontal = expanding
 						spacing = 3
+						datacontext = "[Title.GetHolder]"
 
 						text_single = {
 							visible = "[Not(Or(Title.IsMercenaryCompany, Or( Title.IsHolyOrder, Title.HasFaction )))]"
@@ -322,6 +323,7 @@ window = {
 						button_text = {
 							layoutpolicy_horizontal = expanding
 							shortcut = map_mode_1
+							visible = "[Not(IsLandlessAdventurer(GetPlayer))]"
 							onclick = "[Set('title_tabs', 'counties')]"
 							onclick = "[Click('filter_counties_title_you')]"
 							onclick = "[ClickAdd('counties_in_title', Title, GetPlayer)]"
@@ -532,6 +534,8 @@ window = {
 						}
 
 						button_text = {
+							datacontext = "[TitleViewWindow.GetHolding]"
+							onclick = "[TitleViewWindow.GoToHolding]"
 							layoutpolicy_horizontal = expanding
 							visible = "[And(TitleViewWindow.GetTitle.HasHolder,TitleViewWindow.GetTitle.IsLanded)]"
 							blockoverride "text" {
@@ -547,8 +551,23 @@ window = {
 								# 	raw_text = "AnyProvinceDistanceDirection"
 								# }
 							}
-							datacontext = "[TitleViewWindow.GetHolding]"
-							onclick = "[TitleViewWindow.GoToHolding]"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							name = "hud_camp_button"
+							widgetid = "hud_camp_button"
+							shortcut = "council_window"
+							datacontext = "[Title.GetHolder]"
+							datacontext = "[Character.GetDomicile]"
+							visible = "[And( Title.HasHolder, And( Character.HasDomicile, Not(DataModelHasItems(TitleViewWindow.GetVassalGroupItems)) ) )]"
+
+							onclick = "[ToggleGameViewData( 'domicile', Domicile.Self )]"
+							# tooltip = "[Domicile.GetMapPinTooltip( Character.Self )]"
+							blockoverride "text" {
+								raw_text = "Open [SelectLocalization(IsLandlessAdventurer( Character ), 'camp', 'estate')], Shift Q."
+							}
+							shortcut = map_mode_9
 						}
 
 						# capital
@@ -556,7 +575,7 @@ window = {
 							shortcut = map_mode_9
 							layoutpolicy_horizontal = expanding
 							datacontext = "[TitleViewWindow.GetTitle.GetPreferredCapital]"
-							visible = "[And( Title.HasHolder, Not( TitleViewWindow.GetTitle.HasFaction ) )]"
+							visible = "[And( And( Title.IsValid, Not( TitleViewWindow.GetTitle.HasFaction ) ), Not(TitleViewWindow.GetTitle.GetHolder.GetGovernment.IsType('landless_adventurer_government') ) )]"
 							blockoverride "pre" {
 								text_single = {
 									raw_text = "De Jure Capital,"
@@ -582,12 +601,12 @@ window = {
 
 						button_text = {
 							layoutpolicy_horizontal = expanding
+							onclick = "[ClickAdd('add_title_to_outliner', GetPlayer, Title)]"
 
 							shortcut = mapmode_empires_secondary
 							blockoverride "text" {
 								raw_text = "[Select_CString(ShowAdd('is_in_outliner', GetPlayer, Title), 'Unpin from', 'Pin to')] outliner, hotkey O."
 							}
-							onclick = "[ClickAdd('add_title_to_outliner', GetPlayer, Title)]"
 						}
 
 						widget = {
@@ -632,7 +651,6 @@ window = {
 								expand = { }
 							}
 
-
 							vbox = {
 								datacontext = "[TitleViewWindow.GetTitle]"
 								datacontext = "[Title.GetHolder]"
@@ -641,17 +659,48 @@ window = {
 								layoutpolicy_horizontal = expanding
 
 								button_text = {
+									name = "toggle_promote_candidate"
+									layoutpolicy_horizontal = expanding
+									visible = "[And( And( GreaterThan_int32( Title.GetTierFrame, '(int32)3' ), Not(TitleViewWindow.GetTitle.HasLaws) ), Character.IsPlayerInteractionValid('influence_candidacy_interaction') )]"
+									enabled = "[Character.IsPlayerInteractionValid('influence_candidacy_interaction')]"
+									tooltip = "[Character.GetPlayerInteractionTooltip('influence_candidacy_interaction')]"
+									onclick = "[Character.OpenPlayerInteractionWithTargetTitle( 'influence_candidacy_interaction', Title.Self )]"
+									blockoverride "disabled" {
+										visible = "[Not(Character.IsPlayerInteractionValid('influence_candidacy_interaction'))]"
+									}
+
+									blockoverride "text" {
+										raw_text = "influence_candidacy_interaction"
+									}
+								}
+
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									blockoverride "text" {
+										raw_text = "start_generate_claim_interaction"
+									}
+									name = "toggle_generate_claim"
+									visible = "[And( And( GreaterThan_int32( Title.GetTierFrame, '(int32)3' ), Not(TitleViewWindow.GetTitle.HasLaws) ), Character.IsPlayerInteractionValid('start_generate_claim_interaction') )]"
+
+									enabled = "[Character.IsPlayerInteractionValid('start_generate_claim_interaction')]"
+									tooltip = "[Character.GetPlayerInteractionTooltip('start_generate_claim_interaction')]"
+									onclick = "[Character.OpenPlayerInteraction('start_generate_claim_interaction')]"
+								}
+
+
+								button_text = {
+									name = "remove_law"
 									layoutpolicy_horizontal = expanding
 									visible = "[And( Character.IsLocalPlayer, TitleViewWindow.GetTitle.HasLaws )]"
+									enabled = "[IsValidCommand( TitleViewWindow.GetClearLaws )]"
+									onclick = "[CreateCommandPopup( TitleViewWindow.GetClearLaws )]"
+									tooltip = "[TitleViewWindow.GetClearLawsButtonTooltip]"
 									blockoverride "text" {
 										raw_text = "[Localize('TITLE_VIEW_CLEAR_LAWS')]."
 									}
 									blockoverride "disabled" {
-										visible = "[Not(TitleViewWindow.CanClearLaws)]"
+										visible = "[Not(IsValidCommand( TitleViewWindow.GetClearLaws ))]"
 									}
-									enabled = "[TitleViewWindow.CanClearLaws]"
-									onclick = "[TitleViewWindow.ClearLaws]"
-									tooltip = "[TitleViewWindow.GetClearLawsButtonTooltip]"
 								}
 
 								button_text = {
@@ -667,11 +716,11 @@ window = {
 								button_text = {
 									layoutpolicy_horizontal = expanding
 									name = "toggle_find_vassal"
+									visible = "[And( And( ObjectsEqual( Title.GetHolder, GetPlayer ), TitleViewWindow.GetTitle.CanUseFindVassal( GetPlayer ) ), Not( Title.IsLeasedOut))]"
 									shortcut = army_merge
 									blockoverride "text" {
 										raw_text = "[Localize('FIND_VASSAL_HEADER')], hotkey G."
 									}
-									visible = "[And( And( ObjectsEqual( Title.GetHolder, GetPlayer ), TitleViewWindow.GetTitle.CanUseFindVassal( GetPlayer ) ), Not( Title.IsLeasedOut))]"
 
 									onclick = "[TitleViewWindow.ToggleFindVassalListWindow]"
 									tooltip = "FIND_VASSAL_BUTTON_TOOLTIP"
@@ -690,11 +739,11 @@ window = {
 										raw_text = "[Localize('TITLE_VIEW_DESTROY_TITLE')]."
 										}
 									blockoverride "disabled" {
-										visible = "[Not(TitleViewWindow.CanTitleBeDestroyed)]"
+										visible = "[Not(IsValidCommand( TitleViewWindow.GetDestroyTitle ))]"
 									}
 									visible = "[TitleViewWindow.ShowDestroy]"
-									enabled = "[TitleViewWindow.CanTitleBeDestroyed]"
-									onclick = "[TitleViewWindow.DestroyTitle]"
+									enabled = "[IsValidCommand( TitleViewWindow.GetDestroyTitle )]"
+									onclick = "[CreateCommandPopup( TitleViewWindow.GetDestroyTitle )]"
 									tooltip = "[TitleViewWindow.GetDestroyTitleButtonTooltip]"
 								}
 
@@ -716,8 +765,12 @@ window = {
 									}
 									visible = "[And( Not(Character.IsLocalPlayer), TitleViewWindow.ShowUsurp )]"
 									using = agot_can_usurp
-									onclick = "[TitleViewWindow.UsurpTitle]"
+									onclick = "[CreateCommandPopup( TitleViewWindow.GetUsurpTitle )]"
 									tooltip = "[TitleViewWindow.GetUsurpTitleButtonTooltip]"
+									enabled = "[IsValidCommand( TitleViewWindow.GetUsurpTitle )]"
+									blockoverride "disabled" {
+										visible = "[Not(IsValidCommand( TitleViewWindow.GetUsurpTitle ))]"
+									}
 								}
 							}
 						}
@@ -741,7 +794,7 @@ window = {
 								}
 								onclick = "[TitleViewWindow.ToggleClaimants]"
 								# tooltip = "TITLE_CLAIMANTS_TOOLTIP"
-								visible = "[Title.CanHaveClaim]"
+								visible = "[And(Title.CanHaveClaim, Not(TitleViewWindow.GetTitle.GetHolder.GetGovernment.IsType('landless_adventurer_government') ) )]"
 								enabled = "[GreaterThan_int32( TitleViewWindow.GetNumberOfClaimants, '(int32)0' )]"
 							}
 
@@ -802,17 +855,18 @@ window = {
 
 							button_primary_text = {
 								layoutpolicy_horizontal = expanding
-								enabled = "[TitleViewWindow.CanTitleBeCreated]"
+								enabled = "[IsValidCommand( TitleViewWindow.GetCreateTitle )]"
+								onclick = "[CreateCommandPopup( TitleViewWindow.GetCreateTitle )]"
+
 								blockoverride "text" {
 									raw_text = "Create title"
 								}
 								blockoverride "disabled" {
-									visible = "[Not(TitleViewWindow.CanTitleBeCreated)]"
+									visible = "[Not(IsValidCommand( TitleViewWindow.GetCreateTitle ))]"
 								}
 								blockoverride "hotkey" {
-									visible = "[TitleViewWindow.CanTitleBeCreated]"
+									visible = "[IsValidCommand( TitleViewWindow.GetCreateTitle )]"
 								}
-								onclick = "[TitleViewWindow.CreateTitle]"
 								tooltip = "[TitleViewWindow.GetCreateTitleButtonTooltip]"
 							}
 
@@ -955,6 +1009,7 @@ window = {
 
 									fixedgridbox = {
 										layoutpolicy_horizontal = expanding
+										visible = "[Not( TitleViewWindow.ShowAppointment )]"
 										datamodel = "[TitleViewWindow.GetLineOfSuccession]"
 										maxverticalslots = 5
 										maxhorizontalslots = 1
@@ -976,6 +1031,20 @@ window = {
 											}
 										}
 									}
+
+									#TODO
+
+									hbox = {
+										layoutpolicy_horizontal = expanding
+										visible = "[TitleViewWindow.ShowAppointment]"
+
+										text_multi_wide = {
+											raw_text = "Work in progress: Succession in administrative realms is currently not shown"
+										}
+
+										expand = {}
+									}
+
 								}
 
 								expand = { }

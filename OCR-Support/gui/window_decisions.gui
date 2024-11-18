@@ -4,12 +4,11 @@ window = {
 	movable = no
 
 	size = { 100% 100% }
+	alwaystransparent = yes
 
 	state = {
 		name = _show
-		using = Animation_FadeIn_Quick
 		using = Sound_WindowShow_Standard
-		using = Window_Position_MainTab
 
 		# start_sound = {
 		# 	soundeffect = "event:/SFX/UI/Generic/rightTab/sfx_ui_window_rightTab_Decisions"
@@ -18,25 +17,41 @@ window = {
 
 	state = {
 		name = _hide
-		using = Animation_FadeOut_Quick
 		using = Sound_WindowHide_Standard
-		using = Window_Position_MainTab_Hide
 	}
+	oncreate = "[Set('decision_tab', 'decision')]"
 
-	window = {
-		using = Window_Size_CharacterList
-		visible = "[Not(GetVariableSystem.Exists('ocr'))]"
-		background = { using = Background_Area_Border_Solid }
-
-		vbox = {
-			using = ocr_margins
-
-			header_pattern = {
+	window_ocr = {
+		blockoverride "ocr_header" {
+			header_text = {
 				layoutpolicy_horizontal = expanding
 
 				blockoverride "header_text"
 				{
-					raw_text = "[GetDataModelSize(DecisionsView.GetDecisions)] Decisions."
+
+					datacontext = "[GetPlayer]"
+					raw_text = "DECISIONS_VIEW_TITLE_CONTAINER"
+				}
+				blockoverride "extra" {
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+
+
+						text_single = {
+							visible = "[Has('decision_tab', 'decision')]"
+							text = "DECISIONS_VIEW_DECISION_TAB_TITLE"
+						}
+
+						text_single = {
+							visible = "[Has('decision_tab', 'task_contract')]"
+							text = "DECISIONS_VIEW_CONTRACTS_TAB_TITLE"
+						}
+
+						text_single = {
+							raw_text = "tab."
+						}
+					}
 				}
 
 				blockoverride "button_close"
@@ -45,280 +60,181 @@ window = {
 				}
 			}
 
-			error_button = {
+			button_text = {
 				layoutpolicy_horizontal = expanding
-			}
-
-			button_checked_text = {
-				layoutpolicy_horizontal = expanding
-				shortcut = map_mode_11
-				onclick = "[Toggle('enabled_decisions')]"
-				blockoverride "visible" {
-					visible = "[Isnt('enabled_decisions')]"
-				}
-				blockoverride "text" {
-
-				}
+				shortcut = action_list
 				blockoverride "extra" {
 					text_single = {
-						raw_text = "Show only [CountItems] enabled decisions, Shift E."
-						hbox = {
-							datamodel = "[DecisionsView.GetDecisions]"
-							name = "items"
-							item = {
-								container = {
-									datacontext = "[DecisionsViewItem.GetDecision]"
-									visible = "[Decision.IsPossibleForPlayer]"
+						raw_text = "Switch to"
+					}
+					text_single = {
+						raw_text = "DECISIONS_VIEW_DECISION_TAB_TITLE"
+					}
+					text_single = {
+						raw_text = "tab, hotkey tab."
+					}
+				}
+				visible = "[Has('decision_tab', 'task_contract')]"
+				onclick = "[GetVariableSystem.Set( 'decision_tab', 'decision' )]"
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = action_list
+				visible = "[And(Or( GetPlayer.IsGovernor, IsLandlessAdventurer( GetPlayer ) ), Hasnt('decision_tab', 'task_contract'))]"
+				onclick = "[GetVariableSystem.Set( 'decision_tab', 'task_contract' )]"
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "Switch to"
+					}
+					text_single = {
+						raw_text = "DECISIONS_VIEW_CONTRACTS_TAB_TITLE"
+					}
+					text_single = {
+						raw_text = "tab, hotkey tab."
+					}
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[GetVariableSystem.HasValue( 'decision_tab', 'decision' )]"
+				button_checked_text = {
+					visible = no
+					layoutpolicy_horizontal = expanding
+					shortcut = map_mode_11
+					onclick = "[Toggle('enabled_decisions')]"
+					blockoverride "visible" {
+						visible = "[Isnt('enabled_decisions')]"
+					}
+					blockoverride "text" {
+
+					}
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "Show only enabled decisions, Shift E."
+						}
+					}
+				}
+
+				text_single = {
+					visible = "[Isnt('enabled_decisions')]"
+					layoutpolicy_horizontal = expanding
+					raw_text = "You may preview a decision even if it's disabled."
+				}
+			}
+		}
+
+		blockoverride "ocr_content" {
+			vbox = {
+				name = "decision_groups_container"
+				spacing = 5
+				visible = "[GetVariableSystem.HasValue( 'decision_tab', 'decision' )]"
+				layoutpolicy_horizontal = expanding
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					shortcut = map_mode_11
+					blockoverride "text" {
+						raw_text = "[GetDataModelSize(DecisionsView.GetDecisionGroupItems)] groups, collapse all with Shift E, expand all with E."
+					}
+					onclick = "[PdxGuiTriggerAllAnimations('collapse_decisions')]"
+				}
+
+				button = {
+					shortcut = map_mode_1
+					onclick = "[PdxGuiTriggerAllAnimations('expand_decisions')]"
+				}
+
+				datamodel = "[DecisionsView.GetDecisionGroupItems]"
+
+				item = {
+					vbox = {
+						datacontext = "[DecisionGroupItem.GetType]"
+
+						layoutpolicy_horizontal = expanding
+
+						oncreate = "[BindFoldOutContext]"
+						oncreate = "[PdxGuiFoldOut.Unfold]"
+
+						state = {
+							name = collapse_decisions
+							on_finish = "[PdxGuiFoldOut.Fold]"
+						}
+
+						state = {
+							name = expand_decisions
+							on_finish = "[PdxGuiFoldOut.Unfold]"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							onclick = "[PdxGuiFoldOut.Toggle]"
+							shortcuts_list = {
+								blockoverride "click" {
+									onclick = "[PdxGuiFoldOut.Toggle]"
+								}
+							}
+							blockoverride "text" {
+								raw_text = "[IndexNumber], [DecisionGroupItem.GetGroupTitle], [CollapseIf(PdxGuiFoldOut.IsFolded)]"
+							}
+						}
+
+						vbox = {
+							visible = "[PdxGuiFoldOut.IsUnfolded]"
+							layoutpolicy_horizontal = expanding
+
+							fixedgridbox = {
+								name = "decisions_in_group"
+								datamodel = "[DecisionGroupItem.GetDecisions]"
+
+								layoutpolicy_horizontal = expanding
+
+								addcolumn = 600
+								addrow = 25
+								#"[Select_float( , '(float)60.0', '(float)50.0' )]"
+
+								item = {
+									button_decision_entry_text = {
+										datacontext = "[DecisionsViewItem.GetDecision]"
+
+										onclick = "[DecisionsViewItem.OnSelect]"
+										onclick = "[PdxGuiTriggerAllAnimations('decisions_detail_refresh')]"
+									}
 								}
 							}
 						}
 					}
 				}
 			}
-
-			text_single = {
-				visible = "[Isnt('enabled_decisions')]"
+			vbox = {
 				layoutpolicy_horizontal = expanding
-				raw_text = "You may preview a decision even if it's disabled."
-			}
+				name = "tab_contracts"
+				visible = "[GetVariableSystem.HasValue( 'decision_tab', 'task_contract' )]"
 
-			scrollbox = {
-				name = "decision_scrollarea"
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 3
 
-				blockoverride "scrollbox_content"
-				{
-					name = "decisions_main_container"
-
-					vbox = {
-						visible = "[Is('enabled_decisions')]"
-						layoutpolicy_horizontal = expanding
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-
-							button_text = {
-								layoutpolicy_horizontal = expanding
-								shortcut = map_mode_1
-								onclick = "[Toggle('major_decisions')]"
-								blockoverride "pre" {
-									text_single = {
-										raw_text = "[CountItems]"
-
-										hbox = {
-											datamodel = "[DecisionsView.GetDecisions]"
-											name = "items"
-											item = {
-												container = {
-													datacontext = "[DecisionsViewItem.GetDecision]"
-													visible = "[And(Decision.IsMajor, Decision.IsPossibleForPlayer)]"
-												}
-											}
-										}
-									}
-								}
-								blockoverride "text" {
-									raw_text = "DECISIONS_VIEW_MAJOR_DECISIONS"
-								}
-								blockoverride "extra" {
-									comma = {}
-									text_single = {
-										raw_text = "[Collapse('major_decisions')] E."
-									}
-								}
-							}
-
-							text_single = {
-								visible = "[IsDataModelEmpty(DecisionsView.GetDecisions)]"
-								text = "DECISIONS_VIEW_MAJOR_NOT_AVAILABLE"
-							}
-
-							vbox = {
-								visible = "[Isnt('major_decisions')]"
-								name = "major_decisions"
-								datamodel = "[DecisionsView.GetDecisions]"
-								layoutpolicy_horizontal = expanding
-
-								item = {
-									button_decision_entry_text = {
-										# blockoverride "num" {
-										# }
-										shortcuts_list = {
-											blockoverride "click" {
-												onclick = "[DecisionsViewItem.OnSelect]"
-												onclick = "[PdxGuiTriggerAllAnimations('decisions_detail_refresh')]"
-											}
-										}
-										datacontext = "[DecisionsViewItem.GetDecision]"
-										visible = "[And(Decision.IsMajor, Decision.IsPossibleForPlayer)]"
-										layoutpolicy_horizontal = expanding
-
-										onclick = "[DecisionsViewItem.OnSelect]"
-										onclick = "[PdxGuiTriggerAllAnimations('decisions_detail_refresh')]"
-										down = "[DecisionsViewItem.IsSelected]"
-									}
-								}
-							}
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-
-							text_single = {
-								layoutpolicy_horizontal = expanding
-								raw_text = "[CountItems] Regular [Localize('DECISIONS_VIEW_DECISIONS')]."
-
-								hbox = {
-									datamodel = "[DecisionsView.GetDecisions]"
-									name = "items"
-									item = {
-										container = {
-											datacontext = "[DecisionsViewItem.GetDecision]"
-											visible = "[And(Not(Decision.IsMajor), Decision.IsPossibleForPlayer)]"
-										}
-									}
-								}
-							}
-
-							vbox = {
-								name = "regular_decisions"
-								datamodel = "[DecisionsView.GetDecisions]"
-								layoutpolicy_horizontal = expanding
-								# spacing = 5
-
-								item = {
-									button_decision_entry_text = {
-										# blockoverride "num" {
-										# 	# visible = "[Is('major_decisions')]"
-										# }
-										datacontext = "[DecisionsViewItem.GetDecision]"
-										visible = "[And(Not(Decision.IsMajor), Decision.IsPossibleForPlayer)]"
-										layoutpolicy_horizontal = expanding
-
-										onclick = "[DecisionsViewItem.OnSelect]"
-										onclick = "[PdxGuiTriggerAllAnimations('decisions_detail_refresh')]"
-										down = "[DecisionsViewItem.IsSelected]"
-									}
-								}
-							}
-						}
+					text_single = {
+						raw_text = "[GetDataModelSize(GetPlayer.GetAcceptedTaskContracts)]"
 					}
 
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						visible = "[Isnt('enabled_decisions')]"
-						vbox = {
-							layoutpolicy_horizontal = expanding
+					text_single = {
+						text = "DECISIONS_VIEW_ONGOING_CONTRACTS"
+					}
 
-							button_text = {
-								layoutpolicy_horizontal = expanding
-								shortcut = map_mode_1
-								onclick = "[Toggle('major_decisions')]"
-								blockoverride "pre" {
-									text_single = {
-										raw_text = "[CountItems]"
+					dot_l = {}
 
-										hbox = {
-											datamodel = "[DecisionsView.GetDecisions]"
-											name = "items"
-											item = {
-												container = {
-													datacontext = "[DecisionsViewItem.GetDecision]"
-													visible = "[Decision.IsMajor]"
-												}
-											}
-										}
-									}
-								}
-								blockoverride "text" {
-									raw_text = "DECISIONS_VIEW_MAJOR_DECISIONS"
-								}
-								blockoverride "extra" {
-									comma = {}
-									text_single = {
-										raw_text = "[Collapse('major_decisions')] E."
-									}
-								}
-							}
+					expand = {}
+				}
 
-							text_single = {
-								visible = "[IsDataModelEmpty(DecisionsView.GetDecisions)]"
-								text = "DECISIONS_VIEW_MAJOR_NOT_AVAILABLE"
-								default_format = "#low;italic"
-							}
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					datamodel = "[GetPlayer.GetAcceptedTaskContracts]"
 
-							vbox = {
-								visible = "[Isnt('major_decisions')]"
-								name = "major_decisions"
-								datamodel = "[DecisionsView.GetDecisions]"
-								layoutpolicy_horizontal = expanding
-								# spacing = 5
-
-								item = {
-									button_decision_entry_text = {
-										blockoverride "num" {
-										}
-										shortcuts_list = {
-											blockoverride "click" {
-												onclick = "[DecisionsViewItem.OnSelect]"
-												onclick = "[PdxGuiTriggerAllAnimations('decisions_detail_refresh')]"
-											}
-										}
-										datacontext = "[DecisionsViewItem.GetDecision]"
-										visible = "[Decision.IsMajor]"
-										layoutpolicy_horizontal = expanding
-
-										onclick = "[DecisionsViewItem.OnSelect]"
-										onclick = "[PdxGuiTriggerAllAnimations('decisions_detail_refresh')]"
-										down = "[DecisionsViewItem.IsSelected]"
-									}
-								}
-							}
-						}
-
-						vbox = {
-							name = "decisions_container"
-							layoutpolicy_horizontal = expanding
-							# spacing = 10
-
-							text_single = {
-								layoutpolicy_horizontal = expanding
-								raw_text = "[CountItems] Regular [Localize('DECISIONS_VIEW_DECISIONS')]."
-
-								hbox = {
-									datamodel = "[DecisionsView.GetDecisions]"
-									name = "items"
-									item = {
-										container = {
-											datacontext = "[DecisionsViewItem.GetDecision]"
-											visible = "[Not(Decision.IsMajor)]"
-										}
-									}
-								}
-							}
-							vbox = {
-								name = "regular_decisions"
-								datamodel = "[DecisionsView.GetDecisions]"
-								layoutpolicy_horizontal = expanding
-								# spacing = 5
-
-								item = {
-									button_decision_entry_text = {
-										# blockoverride "num" {
-										# 	# visible = "[Is('major_decisions')]"
-										# }
-										datacontext = "[DecisionsViewItem.GetDecision]"
-										visible = "[Not(Decision.IsMajor)]"
-										layoutpolicy_horizontal = expanding
-
-										onclick = "[DecisionsViewItem.OnSelect]"
-										onclick = "[PdxGuiTriggerAllAnimations('decisions_detail_refresh')]"
-										down = "[DecisionsViewItem.IsSelected]"
-									}
-								}
-							}
-						}
+					item = {
+						contract_item_ocr = {}
 					}
 				}
 			}
@@ -331,98 +247,8 @@ window = {
 }
 
 
-types Decisions
+types OCR
 {
-
-	type button_decision_entry = button_standard {
- 		size = { 300 45 }
-		tooltipwidget = {
-			decision_tooltip = {}
-		}
-
-		widget = {
- 			scissor = yes
- 			parentanchor = right|top
-
- 			block "size_illustration" {
- 				size = { 250 43 }
- 			}
-
- 			icon = {
- 				name = "illustration"
- 				parentanchor = right|top
- 				size = { 250 100 }
-
- 				mirror = horizontal
- 				texture = "[Decision.GetPicture]"
- 				alpha = 0.7
-
- 				visible = "[Decision.IsPossibleForPlayer]"
-
- 				using = Mask_Rough_Edges
-
- 				modify_texture = {
- 					texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
- 					blend_mode = alphamultiply
- 				}
- 			}
-
- 			highlight_icon = {
- 				parentanchor = right|top
- 				size = { 250 100 }
-
- 				mirror = horizontal
- 				texture = "[Decision.GetPicture]"
- 				alpha = 0.7
-
- 				visible = "[Not(Decision.IsPossibleForPlayer)]"
-
- 				effectname = "GreyedOut"
-
- 				tintcolor = { 0.6 0.6 0.6 0.7 }
-
- 				using = Mask_Rough_Edges
-
- 				modify_texture = {
- 					texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
- 					blend_mode = alphamultiply
- 				}
- 			}
- 		}
-
- 		hbox = {
- 			margin = { 20 0 }
- 			margin_right = 10
-
- 			text_single = {
- 				layoutpolicy_horizontal = growing
- 				name = "title"
- 				text = "[Decision.GetTitleForPlayer]"
- 				visible = "[Decision.IsPossibleForPlayer]"
- 				default_format = "#clickable"
- 				align = nobaseline
- 			}
-
- 			text_single = {
- 				layoutpolicy_horizontal = growing
- 				name = "title2"
- 				text = "[Decision.GetTitleForPlayer]"
- 				visible = "[Not(Decision.IsPossibleForPlayer)]"
- 				block "default_format" {
- 					default_format = "#low"
- 				}
- 				align = nobaseline
- 			}
-
- 			highlight_icon = {
- 				size = { 30 30 }
- 				name = "not_possible"
- 				texture = "gfx/interface/icons/symbols/icon_cross.dds"
- 				visible = "[Not(Decision.IsPossibleForPlayer)]"
- 			}
- 		}
- 	}
-
 	type button_decision_entry_text = button_text {
 		tooltipwidget = {
 			decision_tooltip = {}
@@ -441,12 +267,295 @@ types Decisions
 			visible = "[Not(Decision.IsPossibleForPlayer)]"
 		}
 	}
+
+	type button_court_ocr = button_text {
+		blockoverride "text" {
+			raw_text = "[Decision.GetTitleForPlayer]."
+		}
+
+		blockoverride "disabled" {
+			visible = "[Not(Decision.IsPossibleForPlayer)]"
+		}
+	}
+
+	type contract_item_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			onclick = "[ToggleGameViewData('task_contract', TaskContract.Self )]"
+			shortcuts_list = {
+				blockoverride "click" {
+					onclick = "[ToggleGameViewData('task_contract', TaskContract.Self )]"
+				}
+			}
+
+			blockoverride "extra" {
+				text_single = {
+					raw_text = "[IndexNumber],"
+				}
+				text_single = {
+					raw_text = "[TaskContract.GetType.GetName],"
+				}
+
+				text_single = {
+					raw_text = "Tier [AddTextIf(TaskContract.IsEasy, 'one')][AddTextIf(TaskContract.IsMedium, 'two')][AddTextIf(TaskContract.IsHard, 'three')]"
+				}
+
+				text_single = {
+					visible = "[TaskContract.IsCriminal]"
+					raw_text = "criminal"
+				}
+
+				text_single = {
+					raw_text = "contract,"
+				}
+
+				text_single = {
+					visible = "[ObjectsEqual(MyCapital, TaskContract.GetLocation)]"
+					raw_text = "at your [GetPlayer.GetDomicile.GetType.GetName]"
+				}
+
+				text_single = {
+					visible = "[Not(ObjectsEqual(MyCapital, TaskContract.GetLocation))]"
+					raw_text = "[DistanceTo(MyCapital, TaskContract.GetLocation)|0] [DaysTo(MyCapital, TaskContract.GetLocation)] [Direction(MyCapital, TaskContract.GetLocation)]."
+				}
+			}
+		}
+
+		# Contractor
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			datacontext = "[TaskContract.GetEmployer]"
+			visible = "[Character.IsValid]"
+			using = char_click
+			blockoverride "text" {
+				raw_text = "Contractor:"
+			}
+			blockoverride "extra" {
+				text_single = {
+					raw_text = "[Character.GetFirstNameNoTooltip] of"
+				}
+				text_single = {
+					raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+				}
+				text_single = {
+					raw_text = "opinion [Character.GetOpinionOf( GetPlayer )|=],"
+					tooltip = "[Character.GetOpinionBreakdownText( GetPlayer )]"
+				}
+				text_single = {
+					raw_text = "[Character.GetCulture.GetNameNoTooltip],"
+				}
+				text_single = {
+					raw_text = "[Character.GetFaith.GetAdjectiveNoTooltip]."
+				}
+			}
+		}
+
+		# no contractor
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			datacontext = "[TaskContract.GetEmployer]"
+			visible = "[Not(Character.IsValid)]"
+			raw_text = "No contractor."
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			text_multi_wide = {
+				text = "[TaskContract.GetTaskContractRequest]"
+			}
+
+			expand = {}
+		}
+
+		expand = {}
+	}
+}
+
+
+types Decisions
+{
+	type vbox_decision_group_foldout = vbox {
+		datacontext = "[DecisionGroupItem.GetType]"
+		spacing = 4
+
+		layoutpolicy_horizontal = expanding
+
+		oncreate = "[BindFoldOutContext]"
+		oncreate = "[PdxGuiFoldOut.Unfold]"
+
+		button_expandable_toggle_field = {
+			blockoverride "text"
+			{
+				text = "[DecisionGroupItem.GetGroupTitle]"
+			}
+		}
+
+		vbox = {
+			visible = "[PdxGuiFoldOut.IsUnfolded]"
+
+			layoutpolicy_horizontal = expanding
+
+			fixedgridbox = {
+				name = "decisions_in_group"
+				datamodel = "[DecisionGroupItem.GetDecisions]"
+
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				addcolumn = 527
+				addrow = "[Select_float( DecisionGroupType.HasTag('big_button'), '(float)60.0', '(float)50.0' )]"
+
+				item = {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						button_decision_entry = {
+							datacontext = "[DecisionsViewItem.GetDecision]"
+
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "button_size" {
+								minimumsize = "[Select_CVector2f( DecisionGroupType.HasTag('big_button'), '(CVector2f)527,55', '(CVector2f)527,45' )]"
+							}
+
+							blockoverride "size_illustration" {
+								minimumsize = "[Select_CVector2f( DecisionGroupType.HasTag('big_button'), '(CVector2f)527,51', '(CVector2f)527,41' )]"
+								position = { -2 0 }
+							}
+
+							blockoverride "decision_texture_icon" {
+								texture = "[DecisionsViewItem.GetDecisionPicture]"
+							}
+
+							blockoverride "decision_texture_highlight" {
+								texture = "[DecisionsViewItem.GetDecisionPicture]"
+							}
+
+							onclick = "[DecisionsViewItem.OnSelect]"
+							onclick = "[PdxGuiTriggerAllAnimations('decisions_detail_refresh')]"
+							down = "[DecisionsViewItem.IsSelected]"
+						}
+						expand = {}
+					}
+				}
+			}
+		}
+	}
+
+	type button_decision_entry = button_standard {
+		block "button_size" {
+			size = { 300 45 }
+		}
+
+		tooltipwidget = {
+			decision_tooltip = {}
+		}
+
+		widget = {
+			scissor = yes
+			parentanchor = right|vcenter
+
+			block "size_illustration" {
+				size = { 250 43 }
+			}
+
+			icon = {
+				name = "illustration"
+				visible = "[Decision.IsPossibleForPlayer]"
+				parentanchor = right|vcenter
+
+				alpha = 0.7
+				position = { -2 0 }
+				size = { 250 100 }
+				mirror = horizontal
+
+				block "decision_texture_icon" {
+					texture = "[Decision.GetPicture( GetPlayer.Self )]"
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+					blend_mode = alphamultiply
+				}
+			}
+
+			highlight_icon = {
+				visible = "[Not(Decision.IsPossibleForPlayer)]"
+				parentanchor = right|vcenter
+
+				size = { 250 100 }
+				mirror = horizontal
+				alpha = 0.7
+				effectname = "GreyedOut"
+				tintcolor = { 0.6 0.6 0.6 0.7 }
+
+				block "decision_texture_highlight" {
+					texture = "[Decision.GetPicture( GetPlayer.Self )]"
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+					blend_mode = alphamultiply
+				}
+			}
+
+			block "decision_vignette" {
+				icon = {
+					parentanchor = right|vcenter
+					size = { 99.3% 100% }
+
+					texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
+					spriteType = Corneredtiled
+					spriteborder = { 5 5 }
+				}
+			}
+		}
+
+		hbox = {
+			margin = { 20 0 }
+			margin_right = 10
+
+			text_single = {
+				name = "title"
+				visible = "[Decision.IsPossibleForPlayer]"
+				text = "[Decision.GetTitleForPlayer]"
+				layoutpolicy_horizontal = growing
+
+				align = nobaseline
+				default_format = "#clickable"
+			}
+
+			text_single = {
+				name = "title2"
+				visible = "[Not(Decision.IsPossibleForPlayer)]"
+				layoutpolicy_horizontal = growing
+				text = "[Decision.GetTitleForPlayer]"
+
+				align = nobaseline
+				block "default_format" {
+					default_format = "#low"
+				}
+			}
+
+			highlight_icon = {
+				name = "not_possible"
+				visible = "[Not(Decision.IsPossibleForPlayer)]"
+				size = { 30 30 }
+				texture = "gfx/interface/icons/symbols/icon_cross.dds"
+
+			}
+		}
+	}
 }
 
 types Court
 {
 	type button_court = button_standard {
 		size = { 300 45 }
+
 		tooltipwidget = {
 			decision_tooltip = {}
 		}
@@ -456,7 +565,7 @@ types Court
 			parentanchor = right|top
 
 			block "size_illustration" {
-				size = { 250 43 }
+				size = { 250 41 }
 			}
 
 			icon = {
@@ -465,7 +574,9 @@ types Court
 				size = { 250 100 }
 
 				mirror = horizontal
-				texture = "[Decision.GetPicture]"
+				block "decision_texture_icon" {
+					texture = "[Decision.GetPicture( GetPlayer.Self )]"
+				}
 				alpha = 0.7
 
 				visible = "[Decision.IsPossibleForPlayer]"
@@ -490,25 +601,37 @@ types Court
 			}
 
 			highlight_icon = {
-				parentanchor = right|top
-				size = { 250 100 }
-
-				mirror = horizontal
-				texture = "[Decision.GetPicture]"
-				alpha = 0.7
-
 				visible = "[Not(Decision.IsPossibleForPlayer)]"
+				parentanchor = right|top
+				alpha = 0.7
+				size = { 250 100 }
+				mirror = horizontal
 
 				effectname = "GreyedOut"
-
 				tintcolor = { 0.6 0.6 0.6 0.7 }
 
 				using = Mask_Rough_Edges
+
+				block "decision_texture_highlight" {
+					texture = "[Decision.GetPicture( GetPlayer.Self )]"
+				}
 
 				modify_texture = {
 					texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
 					blend_mode = alphamultiply
 				}
+			}
+
+			icon = {
+				parentanchor = center
+
+				block "vignette_size" {
+					size = { 496 36 }
+				}
+
+				texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
+				spriteType = Corneredtiled
+				spriteborder = { 5 5 }
 			}
 		}
 
@@ -528,6 +651,7 @@ types Court
 			text_single = {
 				layoutpolicy_horizontal = growing
 				name = "title2"
+
 				text = "[Decision.GetTitleForPlayer]"
 				visible = "[Not(Decision.IsPossibleForPlayer)]"
 				block "default_format" {
@@ -544,14 +668,406 @@ types Court
 			}
 		}
 	}
+}
+types Contract
+{
+	type contract_item = vbox {
+		layoutpolicy_horizontal = expanding
+		using = Background_Letter
 
-	type button_court_ocr = button_text {
-		blockoverride "text" {
-			raw_text = "[Decision.GetTitleForPlayer]."
+		widget = {
+			size = { 520 50 }
+
+			background = {
+				visible = "[Not(TaskContract.IsCriminal)]"
+				texture = "gfx/interface/window_contract/header_letter.dds"
+				alpha = 0.9
+				margin = { 4 2 }
+			}
+
+			background = {
+				visible = "[TaskContract.IsCriminal]"
+				texture = "gfx/interface/window_contract/header_letter_crime.dds"
+				alpha = 0.9
+				margin = { 4 2 }
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					margin_left = 8
+					margin_right = 10
+
+					### Contract icon
+					hbox = {
+						layoutpolicy_vertical = expanding
+
+						icon = {
+							name = "contract_icon"
+							size = { 56 56 }
+							texture = "[TaskContract.GetType.GetIcon]"
+						}
+
+						header_text = {
+							name = "header_text"
+							text = "[TaskContract.GetType.GetName]"
+							margin = { 4 0 }
+							margin_bottom = 15
+						}
+					}
+
+					expand = {}
+
+					### Contract Tier and Stars
+					hbox = {
+						layoutpolicy_vertical = expanding
+						margin_right = 10
+						margin_bottom = 15
+
+						background = {
+							using = Background_Area_Dark
+							alpha = 0.2
+							margin_bottom = -15
+
+							modify_texture = {
+								texture = "gfx/interface/component_masks/mask_fade_horizontal_thick.dds"
+								blend_mode = alphamultiply
+							}
+						}
+
+						text_single = {
+							text = "[SelectLocalization( IsLandlessAdventurer( TaskContract.GetTaker ) , 'TASK_CONTRACT_TIER' , 'GOVERNANCE_ISSUE_TIER')]"
+							default_format = "#italic"
+							margin_right = 5
+						}
+
+						### Filled Stars
+						icon_flat_standard_gold = {
+							name = "star_fill_easy"
+							size = { 22 22 }
+							texture = "gfx/interface/icons/flat_icons/star.dds"
+						}
+
+						icon_flat_standard_gold = {
+							name = "star_fill_medium"
+							visible = "[Or( TaskContract.IsMedium, TaskContract.IsHard )]"
+							size = { 22 22 }
+							texture = "gfx/interface/icons/flat_icons/star.dds"
+						}
+
+						icon_flat_standard_gold = {
+							name = "star_fill_hard"
+							visible = "[TaskContract.IsHard]"
+							size = { 22 22 }
+							texture = "gfx/interface/icons/flat_icons/star.dds"
+						}
+
+						### Empty Stars
+						icon_flat_standard_black = {
+							name = "star_empty_medium"
+							visible = "[TaskContract.IsEasy]"
+							size = { 22 22 }
+							texture = "gfx/interface/icons/flat_icons/star.dds"
+						}
+
+						icon_flat_standard_black = {
+							name = "star_empty_hard"
+							visible = "[Or( TaskContract.IsEasy, TaskContract.IsMedium )]"
+							size = { 22 22 }
+							texture = "gfx/interface/icons/flat_icons/star.dds"
+						}
+					}
+
+					blockoverride "header_text"
+					{
+					}
+				}
+			}
 		}
 
-		blockoverride "disabled" {
-			visible = "[Not(Decision.IsPossibleForPlayer)]"
+		hbox = {
+			margin = { 10 10 }
+			layoutpolicy_horizontal = expanding
+
+			background = {
+				using = Background_Area_Dark
+
+				texture = "gfx/interface/component_masks/patterns/mask_pattern_floral.dds"
+				margin_top = 5
+				alpha = 0.6
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_clouds.dds"
+					blend_mode = alphamultiply
+					spriteType = corneredTiled
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_scratches.dds"
+					blend_mode = alphamultiply
+					spriteType = corneredTiled
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_horizontal_middle_inverse.dds"
+					blend_mode = alphamultiply
+					alpha = 0.8
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_horizontal_right.dds"
+					blend_mode = alphamultiply
+					mirror = vertical
+					alpha = 0.2
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_fade_vertical_up.dds"
+					blend_mode = alphamultiply
+					mirror = vertical
+					alpha = 0.5
+				}
+			}
+
+			widget = {
+				size = { 160 160 }
+
+				datacontext = "[TaskContract.GetEmployer]"
+				visible = "[Character.IsValid]"
+
+				icon = {
+					name = "portrait_background"
+					size = { 192 200 }
+					position = { -10 -20 }
+					texture = "gfx/interface/window_legend_chronicle/marginalia_portrait_gold_bg.dds"
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/mask_clouds.dds"
+						blend_mode = alphamultiply
+						spriteType = corneredTiled
+						alpha = 0.5
+					}
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/mask_scratches.dds"
+						blend_mode = alphamultiply
+						spriteType = corneredTiled
+					}
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/mask_fade_textured_vertical_up.dds"
+						blend_mode = alphamultiply
+					}
+
+					modify_texture = {
+						name = "mask"
+						texture = "gfx/interface/component_masks/mask_fade_horizontal_middle_thick.dds"
+						blend_mode = alphamultiply
+					}
+
+					modify_texture = {
+						texture = "gfx/interface/component_masks/mask_seamless_torn_edge_vertical.dds"
+						spriteType = corneredtiled
+						spriteborder_right = 1080
+						blend_mode = alphamultiply
+					}
+
+					modify_texture = {
+						name = "mask"
+						texture = "gfx/interface/component_masks/mask_seamless_torn_edge_horizontal.dds"
+						spriteType = corneredtiled
+						spriteborder_top = 1080
+						blend_mode = alphamultiply
+					}
+				}
+
+				portrait_button = {
+					datacontext = "[TaskContract.GetEmployer]"
+					visible = "[Character.IsValid]"
+					size = { 175 210 }
+					position = { 0 -40 }
+
+					using = portrait_base
+
+					portrait_texture = "[Character.GetAnimatedPortrait( 'environment_hud', 'camera_torso', 'idle', PdxGetWidgetScreenSize( PdxGuiWidget.Self ) )]"
+					background_texture = "gfx/portraits/portrait_transparent.dds"
+					texture = "gfx/portraits/portrait_transparent.dds"
+					mask = "gfx/portraits/portrait_mask_body.dds"
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					widget = {
+						size = { 200 200 }
+
+
+						button = {
+							name = "name_plate"
+
+							parentanchor = bottom
+
+							size = { 150 32 }
+							position = { 10 -45 }
+							using = Background_Letter
+							alpha = 0.9
+
+							datacontext = "[TaskContract.GetEmployer]"
+							onclick = "[DefaultOnCharacterClick( Character.GetID )]"
+
+							tooltipwidget = {
+								container_character_tooltip = {}
+							}
+
+							text_multi = {
+								min_width = 115
+								max_width = 115
+								min_height = 32
+								max_height = 32
+
+								position = { 23 1 }
+
+								text = "[Character.GetFirstNameNoTooltip]"
+								default_format = "#light_background"
+								align = vcenter|nobaseline|center
+								using = Font_Type_Flavor
+								using = Text_Light_Background_Overrides
+							}
+						}
+
+						coa_realm_small_crown = {
+							datacontext = "[TaskContract.GetEmployer]"
+							visible = "[And(Character.IsAlive, Character.HasLandedTitles)]"
+							parentanchor = bottom|left
+							position = { -6 -37 }
+							scale = 0.8
+						}
+
+					}
+
+				}
+			}
+
+
+
+			### Contract desc
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				expand = {}
+
+				vbox = {
+
+					icon = {
+						name = "decal"
+						size = { 262 20 }
+						texture = "gfx/interface/window_legend_chronicle/marginalia_divider.dds"
+						alpha = 0.5
+						mirror = vertical
+					}
+
+					### Desc title
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						text_single = {
+							margin = { 0 8 }
+							max_width = 320
+
+							text = "[TaskContract.GetType.GetDescriptionTitle]"
+							using = Font_Type_Flavor
+							using = Font_Size_Medium
+							default_format = "#light_background"
+						}
+
+						expand = {}
+					}
+				}
+
+				vbox = {
+					spacing = 5
+
+					### Desc
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						margin_bottom = 10
+
+						text_multi = {
+							max_width = 320
+							autoresize = yes
+
+							text = "[TaskContract.GetTaskContractDescription]"
+							default_format = "#light_background;italic"
+						}
+
+						expand = {}
+					}
+
+					icon = {
+						name = "decal"
+						size = { 262 20 }
+						texture = "gfx/interface/window_legend_chronicle/marginalia_divider.dds"
+						alpha = 0.5
+					}
+				}
+
+				expand = {}
+			}
+
+			expand = {}
 		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			margin = { 20 10 }
+
+			background = {
+				margin = { -10 0}
+				using = Background_Area
+				alpha = 2
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/event_effect_mask.dds"
+					blend_mode = alphaMultiply
+					alpha = 1
+				}
+			}
+
+			text_multi = {
+				max_width = 500
+				autoresize = yes
+
+				text = "[TaskContract.GetTaskContractRequest]"
+				default_format = "#high;italic"
+			}
+
+		}
+
+
+		expand = {}
+
+		margin_bottom = 10
+
+		vbox = {
+			hbox = {
+				margin = {0 15}
+
+				button_primary = {
+					size = { 150 33 }
+					onclick = "[ToggleGameViewData('task_contract', TaskContract.Self )]"
+					text = "VIEW_CONTRACT"
+					using = tooltip_se
+				}
+			}
+
+		}
+
+		expand = {}
 	}
 }

@@ -330,7 +330,12 @@ types OCR {
 									raw_text = "Was"
 								}
 								text_single = {
+									visible = "[Not(IsLandlessAdventurer(Character))]"
 									raw_text = "[Character.Custom('BaseRankName')] of"
+								}
+								text_single = {
+									visible = "[IsLandlessAdventurer(Character)]"
+									raw_text = "[Character.GetTitleAsNameNoTooltip] of"
 								}
 
 								text_single = {
@@ -338,7 +343,7 @@ types OCR {
 								}
 
 								text_single = {
-									visible = "[Character.IsAlive]"
+									visible = "[And(Character.IsAlive, Not(IsLandlessAdventurer(Character)))]"
 									raw_text = "[Character.RealmSize] counties,"
 								}
 								text_single = {
@@ -443,8 +448,14 @@ types OCR {
 
 								text_single = {
 									datacontext = "[Character.GetCapitalLocation]"
-									visible = "[Not(Character.IsLocalPlayer)]"
+									visible = "[And(Not(Character.IsLocalPlayer), Not(ObjectsEqual(Province.GetID, MyCapital.GetID)))]"
 									raw_text = "AnyProvinceDistanceDirection"
+								}
+
+								text_single = {
+									datacontext = "[Character.GetCapitalLocation]"
+									visible = "[ObjectsEqual(Province.GetID, MyCapital.GetID)]"
+									raw_text = "Here"
 								}
 
 								text_single = {
@@ -494,6 +505,19 @@ types OCR {
 									}
 								}
 							}
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							visible = "[And(GetScriptedGui('is_land_province').IsShown( GuiScope.SetRoot( Character.GetCurrentLocation.MakeScope ).End ), IsLandlessAdventurer(Character))]"
+
+							blockoverride "text" {
+								raw_text = "Inside [Character.GetCurrentLocation.GetCounty.GetCount.GetPrimaryTitle.GetNameNoTooltip], [Character.GetCurrentLocation.GetCounty.GetCount.GetOpinionOf(Character.Self)|+] opinion of [Character.GetFirstNameNicknamedOrMe], Page up."
+							}
+
+							onclick = "[DefaultOnCharacterClick(Character.GetCurrentLocation.GetCounty.GetCount.GetID)]"
+							onclick = "[DefaultOnCharacterClick(Character.GetCurrentLocation.GetCounty.GetCount.GetID)]"
+							shortcut = "zoom_out"
 						}
 
 						#liege
@@ -964,7 +988,7 @@ types OCR {
 							blockoverride "text" {
 								raw_text = "[Character.MakeScope.ScriptValue('neighbours_sval')] adjacent rulers, Control A."
 							}
-							visible = "[And( GreaterThan_int32(Character.RealmSize, '(int32)0'), Character.IsAlive )]"
+							visible = "[And( And(GreaterThan_int32(Character.RealmSize, '(int32)0'), Not(IsLandlessAdventurer(Character))), Character.IsAlive)]"
 							onclick = "[GetVariableSystem.Set('expand_view', 'neighbours')]"
 							onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
 							using = expanded_view
@@ -1023,6 +1047,30 @@ types OCR {
 								text_single = {
 									visible = "[Not(EqualTo_CFixedPoint(Character.GetBalance, '(CFixedPoint)0'))]"
 									raw_text = "[Character.GetBalance|1=] a month."
+								}
+
+								#TODO
+								flowcontainer = {
+									ignoreinvisible = yes
+									spacing = 3
+
+									visible = "[IsLandlessAdventurer( Character )]"
+									datacontext = "[Character.GetDomicile]"
+									tooltip = "[Domicile.GetProvisionsBreakdown]"
+
+									button_gather_provisions = {}
+								}
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									spacing = 3
+									visible = "[Character.GetGovernment.HasRule( 'administrative' )]"
+
+									tooltip = "[Character.GetInfluenceTooltipWithBalance]"
+
+									text_single = {
+										raw_text = "Influence: [Character.GetInfluence|0]."
+									}
 								}
 							}
 						}
@@ -1565,7 +1613,7 @@ types OCR {
 						flowcontainer = {
 							ignoreinvisible = yes
 							direction = vertical
-							visible = "[Not(GetVariableSystem.Exists('counties_tabs'))]"
+							visible = "[And(Not(GetVariableSystem.Exists('counties_tabs')), Not(IsLandlessAdventurer(Character)))]"
 
 							button_text = {
 								datacontext = "[Character.GetFaith]"
@@ -1779,7 +1827,7 @@ types OCR {
 
 						#holdings
 						flowcontainer = {
-							visible = "[GetVariableSystem.HasValue('counties_tabs', 'holdings')]"
+							visible = "[And(GetVariableSystem.HasValue('counties_tabs', 'holdings'), Not(IsLandlessAdventurer(Character)))]"
 							direction = vertical
 							layoutpolicy_horizontal = expanding
 							ignoreinvisible = yes
@@ -2030,6 +2078,27 @@ types OCR {
 
 						text_single = {
 							raw_text = "[Character.GetPietyTooltipWithBalance]"
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							spacing = 3
+
+							visible = "[IsLandlessAdventurer( Character )]"
+							datacontext = "[Character.GetDomicile]"
+							tooltip = "[Domicile.GetProvisionsBreakdown]"
+
+							button_gather_provisions = {}
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							spacing = 3
+							visible = "[Character.GetGovernment.HasRule( 'administrative' )]"
+
+							text_single = {
+								raw_text = "Influence: [Character.GetInfluenceTooltipWithBalance]"
+							}
 						}
 
 						button_text = {
@@ -2986,6 +3055,21 @@ types OCR {
 								raw_text = "Victims, [GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'victim' ) ))]."
 							}
 
+							blockoverride "expand_button" { }
+						}
+
+						vbox_character_row_item_ocr = {
+							name = "grudges"
+							layoutpolicy_horizontal = expanding
+
+							blockoverride "portrait_datamodel" {
+								datamodel = "[CharacterWindow.GetRelationsOfType( GetRelation( 'grudge' ))]"
+							}
+
+							blockoverride "header_text"
+							{
+								raw_text = "Grudges, [GetDataModelSize(CharacterWindow.GetRelationsOfType( GetRelation( 'grudge' ) ))]."
+							}
 							blockoverride "expand_button" { }
 						}
 

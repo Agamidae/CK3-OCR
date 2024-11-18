@@ -649,8 +649,7 @@ types JominiMultiplayerIngame {
 		using = Window_Background_Popup
 		layer = confirmation
 
-		size = { 600 700 }
-		parentanchor = center
+		size = { 700 100% }
 
 		visible = "[DataModelHasItems( OosWindow.GetOosData )]"
 
@@ -658,9 +657,18 @@ types JominiMultiplayerIngame {
 			margin = { 10 10 }
 			spacing = 5
 
-			text_single = {
-				text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_HEADER"
-				autoresize = yes
+			header_text = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_HEADER"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[OosWindow.Continue]"
+				}
 			}
 
 			text_multi = {
@@ -686,68 +694,86 @@ types JominiMultiplayerIngame {
 				layoutpolicy_horizontal = expanding
 			}
 
-			scrollarea = {
+			button_primary_text = {
+				datacontext = "[OosWindow]"
+				blockoverride "text" {
+					text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_CONTINUE"
+				}
+				onclick = "[OosWindow.Continue]"
+				visible = "[JominiIsHostOrLocal]"
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[OosWindow]"
+				blockoverride "text" {
+					text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_CONTINUE"
+				}
+				onclick = "[OosWindow.Continue]"
+				visible = "[Not( JominiIsHostOrLocal )]"
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_EXIT_BUTTON"
+				}
+				onclick = "[OosWindow.GoToMenu]"
+				visible = "[JominiIsHostOrLocal]"
+			}
+
+			button_primary_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_EXIT_BUTTON"
+				}
+				onclick = "[OosWindow.GoToMenu]"
+				visible = "[Not( JominiIsHostOrLocal )]"
+			}
+
+			scrollbox = {
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding
-				scrollbarpolicy_horizontal = always_off
 
-				scrollbar_vertical = {
-					using = editor_vertical_scrollbar
-				}
+				blockoverride "scrollbox_content"
+				{
+					margin = { 5 5 }
+					layoutpolicy_horizontal = expanding
 
-				scrollwidget = {
 					vbox = {
-						vbox = {
-							margin = { 5 5 }
-							layoutpolicy_horizontal = expanding
-							datamodel = "[OosWindow.GetOosData]"
+						datamodel = "[OosWindow.GetOosData]"
+						layoutpolicy_horizontal = expanding
 
-							item = {
-								vbox = {
-									block "oos_item" {
+						item = {
+							vbox = {
+								block "oos_item" {
+									layoutpolicy_horizontal = expanding
+
+									text_single = {
+										text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_PLAYER_NAME"
+										max_width = 490
+										autoresize = yes
 										layoutpolicy_horizontal = expanding
+									}
 
-										text_single = {
-											text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_PLAYER_NAME"
-											max_width = 490
-											autoresize = yes
-											layoutpolicy_horizontal = expanding
-										}
+									text_single = {
+										text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_TYPE"
+										max_width = 490
+										autoresize = yes
+										layoutpolicy_horizontal = expanding
+									}
 
-										text_single = {
-											text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_TYPE"
-											max_width = 490
-											autoresize = yes
-											layoutpolicy_horizontal = expanding
-										}
-
-										text_single = {
-											text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_FOLDER"
-											max_width = 490
-											autoresize = yes
-											layoutpolicy_horizontal = expanding
-										}
+									text_single = {
+										text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_FOLDER"
+										max_width = 490
+										autoresize = yes
+										layoutpolicy_horizontal = expanding
 									}
 								}
 							}
 						}
-
-						expand = { }
 					}
 				}
-			}
-
-			button_standard = {
-				size = { 300 30 }
-				datacontext = "[OosWindow]"
-				text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_CONTINUE"
-				onclick = "[OosWindow.Continue]"
-			}
-
-			button_standard = {
-				size = { 300 30 }
-				text = "JOMINI_MULTIPLAYER_GUI_OOS_MESSAGE_EXIT_BUTTON"
-				onclick = "[OosWindow.GoToMenu]"
 			}
 		}
 	}
@@ -1670,18 +1696,6 @@ types JominiMultiplayerLobby
 			using = JominiLobbyViewModuleBackground
 		}
 
-
-		# text_multi = {
-		# 	layoutpolicy_horizontal = expanding
-		# 	layoutpolicy_vertical = expanding
-		# 	default_format = "#I"
-		# 	align = center
-		# 	margin = { 5 0 }
-		# 	text = "MULTIPLAYER_GUI_CLICK_TO_SELECT"
-		# 	visible = "[And( Not( LobbyView.HasSelectedPlayable ), Not( LobbyView.IsObserver ) )]"
-		# }
-
-
 		vbox = {
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
@@ -1707,14 +1721,530 @@ types JominiMultiplayerLobby
 
 		# Playable Selected
 		widget = {
-			visible = "[LobbyView.HasSelectedPlayable]"
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
 
 			vbox = {
+				datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter]"
 
-				block "selected_playable" {
+				state = {
+					name = "jomini_preselected_changed"
+					next = "preselected_shown"
+					alpha = 0.5
+					on_finish = "[PdxGuiTabs.SetTabByKey( 'character' )]"
 				}
+
+				state = {
+					name = "preselected_shown"
+					alpha = 1
+					duration = 0.5
+					using = Animation_Curve_Default
+
+					start_sound = {
+						soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_selected_playable"
+
+						soundparam = {
+							name = "click_index"
+							value = "[LobbyView.GetSelectionClickIndex]"
+						}
+
+						soundparam = {
+							name = "culture"
+							value = "[LobbyView.GetSelectedPlayable.GetCharacter.GetCulture.GetHeritage.GetAudioParameter]"
+						}
+					}
+				}
+
+				datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter]"
+
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					name = "tab_character"
+					datacontext = "[GetLobbyHelper]"
+					visible = "[And( Character.IsValid, LobbyView.HasSelectedPlayable )]"
+
+					state = {
+						name = _show
+						on_start = "[LobbyHelperWindow.SetLandlessTabSelected( '(bool)no' )]"
+					}
+					# using = show_selected_character_lobby
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						visible = "[Not(GetVariableSystem.Exists('sub_selection'))]"
+
+
+						#### MAIN PORTRAIT ###
+						vbox = {
+							layoutpolicy_horizontal = expanding
+
+							button_primary_text = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Not( IsPreparationLobby )]"
+								# And( LobbyView.CanControl( Character.GetPlayable ), Character.IsRuler )
+								blockoverride "text" {
+									raw_text = "Start game as [Character.GetUINameNoTooltip], [Character.GetAge] years"
+								}
+
+								blockoverride "disabled" {
+									visible = "[Not(And( LobbyView.CanControl( Character.GetPlayable ), Character.IsRuler ))]"
+								}
+
+								blockoverride "hotkey" {
+									visible = "[And( LobbyView.CanControl( Character.GetPlayable ), Character.IsRuler )]"
+								}
+
+								onclick = "[CloseGameView( 'find_title' )]"
+								onclick = "[LobbyView.Control( Character.GetPlayable )]"
+								onclick = "[LobbyView.Ready]"
+								enabled = "[And( LobbyView.CanControl( Character.GetPlayable ), Character.IsRuler )]"
+								tooltip = "[LobbyView.GetControlToolTip( Character.GetPlayable )]"
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "Errors: [NumberOrErrors]"
+								}
+								onclick = "[ClearErrorLog]"
+								visible = "[Not(ReleaseMode)]"
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								name = "select_and_customize_character"
+								datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter]"
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									margin = { 10 10 }
+									visible = "[Not( Or( Character.IsOtherPlayer, Character.IsLocalPlayer ) )]"
+
+									button_primary_text = {
+										layoutpolicy_horizontal = expanding
+										visible = "[And( GameIsMultiplayer, IsPreparationLobby )]"
+										blockoverride "text" {
+											text = "JOMINI_MULTIPLAYER_GUI_SELECT"
+										}
+										blockoverride "extra" {
+											text_single = {
+												raw_text = " [Character.GetFirstNameNoTooltip]"
+											}
+										}
+										blockoverride "disabled" {
+											visible = "[Not(LobbyView.CanControl( Character.GetPlayable ))]"
+										}
+										blockoverride "hotkey" {
+											visible = "[LobbyView.CanControl( Character.GetPlayable )]"
+										}
+
+										onclick = "[CloseGameView( 'find_title' )]"
+										onclick = "[LobbyView.Control( Character.GetPlayable )]"
+										tooltip = "[LobbyView.GetControlToolTip( Character.GetPlayable )]"
+										enabled = "[LobbyView.CanControl( Character.GetPlayable )]"
+									}
+								}
+
+								button_text = {
+									layoutpolicy_horizontal = expanding
+									datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter]"
+									blockoverride "text" {
+										raw_text = "[Localize('RULER_DESIGNER_OPEN')]."
+									}
+									onclick = "[LobbyView.UnReady]"
+									onclick = "[TryStartRulerDesigning( Character.Self, '(bool)no' )]"
+									visible = "[And(LobbyView.CanTryStartRulerDesigning( Character.Self ), IsPreparationLobby)]"
+									tooltip = "[LobbyView.GetTryStartRulerDesigningDesc( Character.Self )]"
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[Or(Or(Character.IsOtherPlayer, Character.IsLocalPlayer), And(Not(Character.IsValid), IsObserver))]"
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											name = "player"
+											visible = "[Character.IsOtherPlayer]"
+											raw_text = "[Localize('MULTIPLAYER_LOBBY_PLAYED_BY')]."
+											align = left
+											default_format = "#high"
+										}
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											name = "its_you"
+											visible = "[Character.IsLocalPlayer]"
+											raw_text = "[Localize('MULTIPLAYER_LOBBY_PLAYED_BY_YOU')]."
+											align = left
+											default_format = "#high"
+										}
+
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											visible = "[And(Not(Character.IsValid), IsObserver)]"
+											size = { 380 100 }
+											raw_text = "[Localize('MULTIPLAYER_LOBBY_PLAY_OBSERVER')]."
+										}
+									}
+								}
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+
+								hbox = {
+									spacing = 3
+									datamodel = "[Character.GetTraitIndices]"
+
+									item = {
+										text_single = {
+											layoutpolicy_horizontal = expanding
+											datacontext = "[GetTraitForIndex(int32.GetInt)]"
+											visible = "[Trait.IsPersonality]"
+											raw_text = "[Trait.GetName( GetNullCharacter )],"
+										}
+									}
+								}
+
+								hbox = {
+									text_single = {
+										datacontext = "[Character.GetFaith]"
+										text = "FAITH_LOBBY_WINDOW"
+										max_width = 220
+
+										tooltipwidget = { faith_tooltip_core_tenents = { } }
+
+										using = tooltip_ws
+									}
+
+									text_single = {
+										raw_text = ","
+									}
+
+									space = { }
+
+									text_single = {
+										datacontext = "[Character.GetCulture]"
+										text = "CULTURE_LOBBY_WINDOW"
+										max_width = 220
+
+										tooltipwidget = { ruler_designer_culture_tooltip = { } }
+
+										using = tooltip_ws
+									}
+
+									dot = { }
+								}
+
+								text_single = {
+									datacontext = "[Character.GetHouse]"
+									visible = "[Character.HasDynasty]"
+									raw_text = "House [DynastyHouse.GetBaseNameNoTooltip]."
+								}
+
+								expand = { }
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Not(Character.GetGovernment.IsType('landless_adventurer_government'))]"
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									spacing = 3
+									visible = "[Character.HasLandedTitles]"
+
+									text_single = {
+										raw_text = "[Character.GetMilitaryStrengthText] soldiers, [Character.RealmSize] counties."
+									}
+
+									text_single = {
+										name = "government_type"
+										raw_text = "[Character.GetGovernment.GetName] [Character.GetPrimaryTitle.GetRankConcept]."
+									}
+
+									expand = { }
+								}
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									visible = "[Or(Character.GetGovernment.IsType('landless_adventurer_government'), Character.GetGovernment.IsType('landless_adventurer_government'))]"
+									raw_text = "[Character.GetGovernment.GetName]."
+								}
+							}
+
+							hbox = {
+								visible = "[Character.GetGovernment.IsType('landless_adventurer_government')]"
+								layoutpolicy_horizontal = expanding
+
+								text_single = {
+									text = RULER_DESIGNER_CAMP_LOCATION
+								}
+
+								expand = {}
+							}
+
+							hbox = {
+								visible = "[And( Character.HasDomicile, Character.GetGovernment.IsType('administrative_government') )]"
+								layoutpolicy_horizontal = expanding
+
+								text_single = {
+									text = RULER_DESIGNER_ESTATE_LOCATION
+								}
+
+								expand = {}
+							}
+
+							realm_name = {
+								layoutpolicy_horizontal = expanding
+								datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter.GetLiege]"
+								visible = "[And(Character.IsValid, Not(Character.IsSelected))]"
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "Liege:"
+									}
+								}
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter.GetPlayerHeir]"
+								visible = "[Character.IsValid]"
+								raw_text = "Heir: [Character.GetUINameNoTooltip]."
+							}
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('playable_vassals')] playable vassals, hotkey E."
+							}
+							shortcut = map_mode_1
+							visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(Character.MakeScope).ScriptValue('playable_vassals'), '(CFixedPoint)0')]"
+							onclick = "[GetVariableSystem.Set('sub_selection', 'playable_vassals')]"
+							onclick = "[GetScriptedGui('playable_vassals').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
+						}
+
+						button_text = {
+							visible = "[Not(Character.GetGovernment.IsType('landless_adventurer_government'))]"
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "View playable neighbours, hotkey Control A."
+							}
+							shortcut = map_mode_6
+							onclick = "[GetVariableSystem.Set('sub_selection', 'playable_neighbours')]"
+							onclick = "[GetScriptedGui('playable_neighbours').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "Select another, hotkey B or Escape."
+							}
+							onclick = "[GetVariableSystem.Set('selected_character', 'yes')]"
+							shortcut = go_back
+							shortcut = close_window
+						}
+
+						button_text = {
+							name = "create_adventurer"
+							datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter]"
+							layoutpolicy_horizontal = expanding
+							datacontext = "[GetLobbyHelper]"
+
+							visible = "[And( Not( IsPreparationLobby ), LobbyView.CanMakeLandlessCharacter )]"
+
+							onclick = "[TryStartRulerDesigning( Character.Self, '(bool)yes' )]"
+							enabled = "[LobbyView.HasSelectedPlayable]"
+							tooltip = "[LobbyHelperWindow.GetTryStartLandlessDesigningDesc( LobbyView.HasSelectedPlayable )]"
+							tooltip_visible = "[Not(LobbyView.HasSelectedPlayable)]"
+
+							blockoverride "text" {
+								text = "RULER_DESIGNER_OPEN_LANDLESS"
+							}
+							blockoverride "disabled" {
+								visible = "[Not(LobbyView.HasSelectedPlayable)]"
+							}
+
+							blockoverride "extra" {
+								visible = "[LobbyView.CanTryStartRulerDesigning( Character.Self )]"
+								text_single = {
+									raw_text = " and start in [Character.GetCurrentLocation.GetNameNoTooltip]"
+								}
+							}
+							blockoverride "dot" {
+							}
+						}
+
+						button_text = {
+							name = "create_ruler"
+							datacontext = "[LobbyView.GetSelectedPlayable.GetCharacter]"
+							layoutpolicy_horizontal = expanding
+
+							visible = "[Not( IsPreparationLobby )]"
+
+							onclick = "[TryStartRulerDesigning( Character.Self, '(bool)no' )]"
+							enabled = "[LobbyView.CanTryStartRulerDesigning( Character.Self )]"
+
+							blockoverride "text" {
+								text = "RULER_DESIGNER_OPEN"
+							}
+							blockoverride "disabled" {
+								visible = "[Not(LobbyView.CanTryStartRulerDesigning( Character.Self ))]"
+							}
+
+							blockoverride "extra" {
+								visible = "[LobbyView.CanTryStartRulerDesigning( Character.Self )]"
+								text_single = {
+									raw_text = " and replace [Character.GetFirstNameNoTooltip]"
+									align = left
+								}
+								text_single = {
+									raw_text = ", hotkey Tab"
+									align = left
+								}
+							}
+							blockoverride "dot" {
+							}
+							shortcut = action_list
+						}
+
+						spacer = {
+							size = { 10 5 }
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+							visible = "[Character.HasDifficultyInfo]"
+
+							text_single = {
+								name = "difficulty_label"
+								layoutpolicy_horizontal = expanding
+								text = "MULTIPLAYER_LOBBY_DIFFICULTY_HEADER"
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_multi = {
+									name = "difficulty"
+									autoresize = yes
+									text = "MULTIPLAYER_LOBBY_DIFFICULTY_INFO_TEXT"
+									max_width = 680
+								}
+
+								expand = {}
+							}
+						}
+
+						expand = { }
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						visible = "[GetVariableSystem.Exists('sub_selection')]"
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+							visible = "[GetVariableSystem.HasValue('sub_selection', 'playable_vassals')]"
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "Vassals of [Character.GetTitledFirstNameNoTooltip]. Close with Escape or E."
+								}
+								onclick = "[GetVariableSystem.Clear('sub_selection')]"
+								shortcut = map_mode_1
+								shortcut = close_window
+							}
+
+							scrollbox = {
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+								blockoverride "scrollbox_margins" {
+									margin_top = 20
+								}
+
+								blockoverride "scrollbox_content" {
+									region_list = {
+										datamodel = "[Character.MakeScope.GetList('playable_vassals')]"
+										blockoverride "extra_click" {
+											onclick = "[GetVariableSystem.Clear('sub_selection')]"
+										}
+									}
+								}
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+							visible = "[GetVariableSystem.HasValue('sub_selection', 'playable_neighbours')]"
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "Neighbours of [Character.GetTitledFirstNameNoTooltip]. Close with Escape or Control A."
+								}
+								onclick = "[GetVariableSystem.Clear('sub_selection')]"
+								shortcut = map_mode_6
+								shortcut = close_window
+							}
+
+							scrollbox = {
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+								blockoverride "scrollbox_margins" {
+									margin_top = 20
+								}
+
+								blockoverride "scrollbox_content" {
+									region_list = {
+										datamodel = "[Character.MakeScope.GetList('adjacent_rulers')]"
+										blockoverride "extra_click" {
+											onclick = "[GetVariableSystem.Clear('sub_selection')]"
+										}
+										blockoverride "direction" {
+											text_single = {
+												raw_text = "[GuiScope.SetRoot(LobbyView.GetSelectedPlayable.GetCharacter.GetCapitalLocation.MakeScope).AddScope('second', Scope.GetCharacter.GetCapitalLocation.MakeScope).Custom('province_direction')],"
+											}
+										}
+									}
+									region_list = {
+										datamodel = "[Character.MakeScope.GetList('adjacent_vassals')]"
+										blockoverride "extra_click" {
+											onclick = "[GetVariableSystem.Clear('sub_selection')]"
+										}
+										blockoverride "direction" {
+											text_single = {
+												raw_text = "[GuiScope.SetRoot(LobbyView.GetSelectedPlayable.GetCharacter.GetCapitalLocation.MakeScope).AddScope('second', Scope.GetCharacter.GetCapitalLocation.MakeScope).Custom('province_direction')],"
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				vbox_selected_wasteland_locr = {}
 			}
 		}
 
@@ -1764,6 +2294,7 @@ types JominiMultiplayerLobby
 		button_text = {
 			layoutpolicy_horizontal = expanding
 			visible = "[And(And( IsPreparationLobby, PlayerIsHost ), LobbyView.CanStart)]"
+			onclick = "[CloseGameView( 'find_title' )]"
 			onclick = "[LobbyView.Start]"
 			enabled = "[LobbyView.CanStart]"
 			tooltip = "[LobbyView.StartToolTip]"
@@ -1890,22 +2421,11 @@ types JominiMultiplayerLobby
 	type JominiMultiplayerLobby = widget {
 		background = {
 			using = Background_Area_Border_Solid
-			alpha = 0.8
 			visible = "[Not(GetVariableSystem.Exists('ocr'))]"
 		}
 		alwaystransparent = no
 		name = "lobbyview"
-		size = { 100% 100% }
-
-		button_text = {
-			parentanchor = hcenter
-			blockoverride "text" {
-				raw_text = "Errors: [NumberOrErrors]"
-			}
-			onclick = "[ClearErrorLog]"
-			visible = "[And(Not(ReleaseMode), HasErrors)]"
-			# shortcut = confirm
-		}
+		size = { 700 100% }
 
 		block "left_panel"
 		{
@@ -1913,11 +2433,13 @@ types JominiMultiplayerLobby
 				parentanchor = right
 				block "left_panel_properties"
 				{
-					size = { 410 100% }
+					size = { 700 100% }
 				}
 
 				vbox = {
 					margin_right = 20
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
 
 					block "left_panel_content" {
 						using = Window_Background_Sidebar_Multiplayer_Left
@@ -1949,8 +2471,7 @@ types JominiMultiplayerLobby
 									layoutpolicy_horizontal = expanding
 								    blockoverride "text" {
 										text = "JOMINI_MULTIPLAYER_GUI_SHOW_PLAYERS"
-										align = left
-								    }
+							    }
 									blockoverride "extra" {
 										text_single = {
 											raw_text = ", tab 1"
@@ -2010,6 +2531,7 @@ types JominiMultiplayerLobby
 
 		# search prompt
 
+		# first view
 		flowcontainer = {
 			background = { using = Background_Area_Border_Solid }
 			margin = { 5 0 }
@@ -2018,6 +2540,13 @@ types JominiMultiplayerLobby
 
 			direction = vertical
 
+			button_text = {
+				blockoverride "text" {
+					raw_text = "Errors: [NumberOrErrors]"
+				}
+				onclick = "[ClearErrorLog]"
+				visible = "[Not(ReleaseMode)]"
+			}
 
 			button_text = {
 				visible = "[Character.IsValid]"
@@ -2074,6 +2603,15 @@ types JominiMultiplayerLobby
 			}
 
 			button_text = {
+				visible = "[HasDlcFeature( 'landless_playable' )]"
+				onclick = "[Set('landless_rulers', 'yes')]"
+				shortcut = explore_legends
+				blockoverride "text" {
+					raw_text = "Select a landless adventurer, L."
+				}
+			}
+
+			button_text = {
 				onclick = "[SetRandomPlayableObserverCharacter]"
 				onclick = "[GetVariableSystem.Clear('selected_character')]"
 				blockoverride "text" {
@@ -2092,6 +2630,7 @@ types JominiMultiplayerLobby
 				blockoverride "dot" {
 				}
 				onclick = "[LobbyView.ToggleObserve]"
+				onclick = "[CloseGameView( 'find_title' )]"
 			}
 
 			flowcontainer = {
@@ -2145,15 +2684,16 @@ types JominiMultiplayerLobby
 			}
 		}
 
+		# regions
 		widget = {
 			size = { 700 100% }
 			using = Window_Background_No_Edge
 			background = { using = Background_Area_Border_Solid }
 			alwaystransparent = no
+			visible = "[GetVariableSystem.Exists('regions')]"
 
 			#TODO
 
-			visible = "[GetVariableSystem.Exists('regions')]"
 
 			scrollbox = {
 				size = { 100% 100% }
@@ -2167,35 +2707,102 @@ types JominiMultiplayerLobby
 			}
 		}
 
-		block "right_panel"
-		{
-			widget = {
-				# parentanchor = top|right
-				# widgetanchor = top|right
-				visible = "[LobbyView.HasSelectedPlayable]"
+		# landless
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			visible = "[Is('landless_rulers')]"
+			background = { using = Background_Area_Border_Solid }
+			margin_left = 5
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "[GetDataModelSize(CharacterSelectionList.GetList)] landless rulers."
+			}
+
+			name = "tab_landless_rulers"
+			datacontext = "[LobbyHelperWindow.GetCharacterList]"
+			datacontext = "[GetLobbyHelper]"
+
+			state = {
+				name = _show
+				on_start = "[LobbyHelperWindow.SetLandlessTabSelected( '(bool)yes' )]"
+			}
+
+			state = {
+				name = _hide
+				on_start = "[LobbyHelperWindow.SetLandlessTabSelected( '(bool)no' )]"
+			}
 
 
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				onclick = "[Clear('landless_rulers')]"
+				shortcut = close_window
+				shortcut = go_back
+				blockoverride "text" {
+					raw_text = "Go back, escape or B."
+				}
+			}
 
-				block "right_panel_properties"
-				{
-					size = { 700 100% }
-					position = { -10 0 }
+			hbox_lobby_government_filter = { }
+
+			scrollbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				blockoverride "scrollbox_margins" {
 				}
 
-				vbox = {
-					using = Window_Background_Sidebar_Multiplayer_Right
-					background = { using = Background_Area_Border_Solid }
-					visible = "[Not(GetVariableSystem.Exists('selected_character'))]"
-					block "right_panel_content"
-					{
-						# JominiLobbyViewGameInfoPanel = { }
-						JominiLobbyViewPreparation = { }
-						JominiLobbyViewSelectionWidget = { }
+				blockoverride "scrollbox_content" {
+					vbox_character_list = {
+						name = "landless_rulers_list"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
 
+						blockoverride "list_item" {
+							button_landless_ruler_list_item_ocr = {
+								layoutpolicy_horizontal = expanding
+							}
+						}
 					}
 				}
 			}
+
+			expand = {}
 		}
+
+		# selected
+		widget = {
+			# visible = "[]"
+			visible = "[And(Not(GetVariableSystem.Exists('selected_character')), LobbyView.HasSelectedPlayable)]"
+			background = { using = Background_Area_Border_Solid }
+
+			block "right_panel_properties"
+			{
+				size = { 700 100% }
+				position = { -10 0 }
+			}
+
+			scrollbox = {
+				size = { 100% 100%}
+				blockoverride "scrollbox_content" {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						block "right_panel_content"
+						{
+							# JominiLobbyViewGameInfoPanel = { }
+							JominiLobbyViewPreparation = { } # this is the host start button for MP
+							JominiLobbyViewSelectionWidget = { }
+						}
+
+						expand = {}
+					}
+				}
+			}
+
+		}
+
 	}
 }
 
