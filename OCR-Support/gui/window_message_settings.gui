@@ -1,0 +1,1299 @@
+﻿window = {
+	datacontext = "[MessageSettingsWindow.GetCustomMessageWindow]"
+	name = "window_message_settings"
+	using = base_ocr_window
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+		on_finish = "[Clear('hide_search_results')]"
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+	}
+
+	window_ocr = {
+		blockoverride "ocr_header" {
+			header_text = {
+				name = "header"
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "MESSAGE_SETTINGS_WINDOW_NAME"
+				}
+				blockoverride "extra" {
+					hbox = {
+						spacing = 3
+						visible = "[And(Not(MessageSettingsWindow.IsTextFilterEmpty), Isnt('hide_search_results'))]"
+						comma = {}
+						text_single = {
+							raw_text = "[GetDataModelSize(MessageSettingsWindow.GetFilteredFilterItems)]"
+						}
+						text_single = {
+							raw_text = "search_results_ocr"
+						}
+					}
+
+					text_single = {
+						raw_text = "search results hidden,"
+						visible = "[And(Isnt('focused_message_group'), And(Not(MessageSettingsWindow.IsTextFilterEmpty), Is('hide_search_results')))]"
+					}
+
+					hbox = {
+						margin_left = -5
+						visible = "[And(Is('focused_message_group'), Or(MessageSettingsWindow.IsTextFilterEmpty, Is('hide_search_results')))]"
+						text_single = {
+							raw_text = "[Get('focused_message_group')]."
+						}
+					}
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[MessageSettingsWindow.CloseWithConfirmation]"
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Is('message_search_entry')]"
+
+				button = {
+					shortcut = close_window
+					onclick = "[Clear('message_search_entry')]"
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					raw_text = "start_typing_message_ocr"
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					editbox_search_field = {
+						min_width = 500
+						max_width = 500
+						visible = "[Is('message_search_entry')]"
+
+						blockoverride "editbox_properties"
+						{
+							raw_text = "[MessageSettingsWindow.GetTextFilter]"
+							ontextedited = "[MessageSettingsWindow.OnEditTextFilter]"
+							focus_on_visible = yes
+							onreturnpressed = "[Clear('message_search_entry')]"
+
+							# text_single = {
+							# 	raw_text = "message_search_tip_ocr"
+							# 	margin_left = 5
+							# 	visible = "[MessageSettingsWindow.IsTextFilterEmpty]"
+							# }
+						}
+					}
+
+					expand = {}
+				}
+			}
+
+			button_primary_text = {
+				layoutpolicy_horizontal = expanding
+				name = "apply_settings_button"
+				blockoverride "text" {
+					text = "MESSAGE_SETTINGS_WINDOW_APPLY"
+				}
+				onclick = "[MessageSettingsWindow.SaveAndClose]"
+				# tooltip = "MESSAGE_SETTINGS_WINDOW_APPLY_TT"
+				# using = tooltip_ne
+			}
+
+			button_text = {
+				shortcut = army_split_half
+				layoutpolicy_horizontal = expanding
+				visible = "[And(Isnt('message_search_entry'), Isnt('focused_message_group'))]"
+				onclick = "[Set('message_search_entry', 'yes')]"
+				onclick = "[Clear('hide_search_results')]"
+				blockoverride "text" {
+					raw_text = "Search for a message, F."
+				}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = close_window
+				visible = "[And(Not(MessageSettingsWindow.IsTextFilterEmpty), Isnt('hide_search_results'))]"
+				onclick = "[Set('hide_search_results', 'yes')]"
+				blockoverride "text" {
+					raw_text = "Close search results, Escape."
+				}
+			}
+
+			button_text = {
+				visible = "[Is('focused_message_group')]"
+				layoutpolicy_horizontal = expanding
+				name = "reset_settings_button"
+				blockoverride "text" {
+					text = "MESSAGE_SETTINGS_WINDOW_RESET"
+				}
+				onclick = "[MessageSettingsWindow.ResetToDefault]"
+				blockoverride "dot" {
+
+				}
+				# tooltip = "MESSAGE_SETTINGS_WINDOW_RESET_TT"
+				using = tooltip_ne
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[And(And(Or(MessageSettingsWindow.IsTextFilterEmpty, Is('hide_search_results')), Isnt('message_search_entry')), Isnt('focused_message_group'))]"
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					shortcut = map_mode_10
+					onclick = "[CustomMessageWindow.Toggle]"
+					tooltip = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_TT"
+					blockoverride "text" {
+						raw_text = "custom_message_ocr"
+					}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					name = "reset_settings_button"
+					blockoverride "text" {
+						text = "MESSAGE_SETTINGS_WINDOW_RESET"
+					}
+					onclick = "[MessageSettingsWindow.ResetToDefault]"
+					blockoverride "dot" {
+
+					}
+					# tooltip = "MESSAGE_SETTINGS_WINDOW_RESET_TT"
+					using = tooltip_ne
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					# shortcut = map_mode_11
+					# onclick = "[PdxGuiTriggerAllAnimations('collapse_message_groups')]"
+					blockoverride "text" {
+						raw_text = "[GetDataModelSize(MessageSettingsWindow.GetMessageGroupItems)] groups,"
+					}
+					# blockoverride "extra" {
+					# 	text_single = {
+					# 		raw_text = "Collapse all, Shift E."
+					# 	}
+					# }
+				}
+			}
+		}
+
+		blockoverride "ocr_content" {
+			vbox = {
+				name = "message_groups_container"
+				visible = "[Or(MessageSettingsWindow.IsTextFilterEmpty, Is('hide_search_results'))]"
+				spacing = 5
+
+				# button = {
+				# 	shortcut = close_window
+				# 	onclick = "[Set('hide_search_results', 'yes')]"
+				# }
+
+				layoutpolicy_horizontal = expanding
+
+				datamodel = "[MessageSettingsWindow.GetMessageGroupItems]"
+				item = {
+					vbox_message_group_foldout_ocr = {}
+				}
+			}
+
+			vbox = {
+				name = "serach_text_filter_container"
+				visible = "[And(Not( MessageSettingsWindow.IsTextFilterEmpty ), Isnt('hide_search_results'))]"
+
+				layoutpolicy_horizontal = expanding
+
+				datamodel = "[MessageSettingsWindow.GetFilteredFilterItems]"
+				item = {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						hbox_message_settings_filter_item_ocr = {}
+						expand = {}
+					}
+				}
+			}
+		}
+	}
+
+	window_message_settings_old = {
+		using = vanilla
+	}
+
+	window = {
+		using = base_ocr_window
+		name = "custom_message_window"
+		layer = confirmation
+		datacontext = "[MessageSettingsWindow.GetCustomMessageWindow]"
+		visible = "[CustomMessageWindow.IsVisible]"
+
+		state = {
+			name = _show
+			on_start = "[Set('stop_message_entry', 'yes')]"
+			on_finish = "[Clear('stop_message_entry')]"
+		}
+
+		window_message_settings_custom_ocr = {
+		}
+
+		window_message_settings_custom = {
+			using = vanilla
+		}
+	}
+}
+
+types MessageSettingsTypes {
+	type text_message_settings_column_header = text_single {
+		align = center|nobaseline
+
+		background = {
+			margin_left = 40
+			margin_right = 40
+
+			texture = "gfx/interface/component_tiles/tile_title_bg_01.dds"
+			spriteType = Corneredtiled
+			spriteborder = { 40 8 }
+			texture_density = 2
+
+			modify_texture = {
+				name = "mask"
+				texture = "gfx/interface/component_masks/mask_fade_horizontal_middle_thick.dds"
+				spriteType = Corneredstretched
+				spriteborder = { 0 0 }
+				blend_mode = alphamultiply
+			}
+		}
+	}
+
+	type hbox_message_settings_filter_item = hbox {
+		margin_left = 4
+		layoutpolicy_horizontal = expanding
+
+		background = {
+			using = Background_Area_Characterlist
+		}
+
+		text_single = {
+			default_format = "#medium"
+			align = left
+			margin_left = 0
+			margin_right = 40
+			margin_bottom = 5
+			fontsize_min = 12
+			max_width = 395
+
+			layoutpolicy_horizontal = expanding
+
+			text = "[MessageFilterItem.GetName]"
+
+			tooltip = "[MessageFilterItem.GetTooltip]"
+			using = tooltip_ne
+		}
+
+		expand = {}
+
+		dropdown_menu_standard =
+		{
+			blockoverride "dropdown_properties"
+			{
+				datamodel = "[MessageFilterItem.GetValidOptions]"
+				onselectionchanged = "[MessageFilterItem.OnSelectOption]"
+				selectedindex = "[MessageFilterItem.GetHoveredIndex]"
+			}
+
+			blockoverride "dropdown_size"
+			{
+				size = { 150 32 }
+			}
+
+			blockoverride "dropdown_list_maxsize"
+			{
+				maximumsize = { 141 200 }
+			}
+
+			blockoverride "dropdown_active_item_properties"
+			{
+				text = "[NotificationOption.GetName|U]"
+			}
+
+			blockoverride "dropdown_item_properties"
+			{
+				text = "[NotificationOption.GetName|U]"
+			}
+		}
+
+		button_checkbox = {
+			name = "toggle_auto_pause"
+
+			checked = "[MessageFilterItem.HasAutoPause]"
+			onclick = "[MessageFilterItem.ToggleAutoPause]"
+			tooltip = "MESSAGE_SETTINGS_WINDOW_TOGGLE_AUTO_PAUSE_TT"
+		}
+	}
+
+	type vbox_message_group_foldout = vbox {
+		datacontext = "[MessageGroupItem.GetType]"
+		spacing = 4
+
+		layoutpolicy_horizontal = expanding
+
+		oncreate = "[BindFoldOutContext]"
+		oncreate = "[PdxGuiFoldOut.Unfold]"
+
+		button_expandable_toggle_field = {
+			blockoverride "text"
+			{
+				text = "[MessageGroupItem.GetGroupTitle]"
+			}
+		}
+
+		vbox = {
+			visible = "[PdxGuiFoldOut.IsUnfolded]"
+
+			layoutpolicy_horizontal = expanding
+
+			fixedgridbox = {
+				name = "filters_in_group"
+
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				addcolumn = 575
+				addrow = 34
+
+				datamodel = "[MessageGroupItem.GetFilterItems]"
+				item = {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						hbox_message_settings_filter_item = {}
+						expand = {}
+					}
+				}
+			}
+		}
+	}
+
+	type window_message_settings_custom = window  {
+		name = "custom_message_window"
+		parentanchor = center
+		position = { 0 -80 }
+		size = { 400 510 }
+
+		layer = confirmation
+		movable = yes
+
+		using = Window_Background_Subwindow
+
+		vbox = {
+			spacing = 15
+
+			layoutpolicy_vertical = expanding
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_TITLE"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[CustomMessageWindow.Close]"
+				}
+			}
+
+			editbox_standard_with_label = {
+				margin = { 30 0 }
+
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "editbox_label"
+				{
+					text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_EDIT_TITLE"
+				}
+
+				blockoverride "editbox_properties"
+				{
+					name = "custom_message"
+
+					multiline = no
+					maxcharacters = 40
+					focus_on_visible = yes
+
+					text = "[CustomMessageWindow.GetTitle]"
+					ontextedited = "[CustomMessageWindow.OnEditTitle]"
+				}
+			}
+
+			editbox_standard_with_label = {
+				margin = { 30 0 }
+
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "editbox_label"
+				{
+					text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_EDIT_DESC"
+				}
+
+				blockoverride "editbox_properties"
+				{
+					name = "custom_message"
+
+					multiline = yes
+
+					text = "[CustomMessageWindow.GetDescription]"
+					ontextedited = "[CustomMessageWindow.OnEditDescription]"
+				}
+			}
+
+			hbox = {
+				name = "custom_message_date"
+				margin = { 30 0 }
+
+				layoutpolicy_horizontal = expanding
+
+				vbox = {
+					text_label_left = {
+						text = "[CustomMessageWindow.GetArrivalDate]"
+					}
+				}
+
+				expand = {}
+			}
+
+			hbox = {
+				spacing = 6
+
+				### SET ARRIVAL DAYS
+				hbox = {
+					margin = { 2 0 }
+					spacing = 6
+					layoutpolicy_horizontal = expanding
+
+					button_round = {
+						size = { 24 24 }
+
+						enabled = "[Not( CustomMessageWindow.MessageArrivesToday )]"
+						onclick = "[CustomMessageWindow.AddDays( '(int32)-1' )]"
+
+						button_minus_small = {
+							name = "decrease_day"
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+
+					text_single = {
+						name = "select_day"
+
+						text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_DAY"
+
+						default_format = "#high"
+						align = nobaseline|center
+						min_width = 25
+					}
+
+					button_round = {
+						size = { 24 24 }
+
+						onclick = "[CustomMessageWindow.AddDays( '(int32)1' )]"
+
+						button_plus_small = {
+							name = "increase_day"
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+				}
+
+				divider_light = {
+					layoutpolicy_vertical = expanding
+				}
+
+				### SET ARRIVAL MONTHS
+				hbox = {
+					margin = { 2 0 }
+					spacing = 6
+					layoutpolicy_horizontal = expanding
+
+					button_round = {
+						size = { 24 24 }
+
+						enabled = "[Not( CustomMessageWindow.MessageArrivesToday )]"
+						onclick = "[CustomMessageWindow.AddMonths( '(int32)-1' )]"
+
+						button_minus_small = {
+							name = "decrease_month"
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+
+					text_single = {
+						name = "select_month"
+
+						text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_MONTH"
+
+						default_format = "#high"
+						align = nobaseline|center
+						min_width = 25
+					}
+
+					button_round = {
+						size = { 24 24 }
+
+						onclick = "[CustomMessageWindow.AddMonths( '(int32)1' )]"
+
+						button_plus_small = {
+							name = "increase_month"
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+				}
+
+				divider_light = {
+					layoutpolicy_vertical = expanding
+				}
+
+				### SET ARRIVAL YEARS
+				hbox = {
+					margin = { 2 0 }
+					spacing = 6
+					layoutpolicy_horizontal = expanding
+
+					button_round = {
+						size = { 24 24 }
+
+						enabled = "[Not( CustomMessageWindow.MessageArrivesToday )]"
+						onclick = "[CustomMessageWindow.AddYears( '(int32)-1' )]"
+
+						button_minus_small = {
+							name = "decrease_year"
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+
+					text_single = {
+						name = "select_year"
+
+						text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_YEAR"
+
+						default_format = "#high"
+						align = nobaseline|center
+						min_width = 25
+					}
+
+					button_round = {
+						size = { 24 24 }
+
+						onclick = "[CustomMessageWindow.AddYears( '(int32)1' )]"
+
+						button_plus_small = {
+							name = "increase_year"
+							parentanchor = center
+							alwaystransparent = yes
+						}
+					}
+				}
+			}
+
+			hbox = {
+				name = "custom_message_buttons"
+				margin_top = 8
+				spacing = 22
+
+				button_standard = {
+					name = "discard_custom_message"
+					size = { 155 33 }
+
+					text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_DISCARD"
+
+					onclick = "[CustomMessageWindow.Reset]"
+					tooltip = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_DISCARD_TT"
+					using = tooltip_ne
+				}
+
+				button_primary = {
+					name = "send_custom_message"
+					size = { 155 33 }
+
+					text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_SEND"
+
+					onclick = "[CustomMessageWindow.SendMessage( GetPlayer, GetPlayer )]"
+					onclick = "[CustomMessageWindow.Toggle]"
+					tooltip = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_SEND_TT"
+					using = tooltip_ne
+				}
+			}
+
+			expand = {}
+		}
+	}
+}
+
+types VANILLA {
+	type window_message_settings_old = window {
+		parentanchor = center
+		size = { 690 720 }
+
+		allow_outside = yes
+
+		using = Window_Size_MainTab
+		using = Window_Background
+		using = Window_Decoration_Spike
+
+		vbox = {
+			using = Window_Margins
+
+			### Header ###
+			header_pattern = {
+				name = "header"
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "MESSAGE_SETTINGS_WINDOW_NAME"
+				}
+
+				blockoverride "extra_buttons"
+				{
+					button_outliner = {
+						size = { 30 30 }
+
+						onclick = "[CustomMessageWindow.Toggle]"
+						tooltip = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_TT"
+					}
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[MessageSettingsWindow.CloseWithConfirmation]"
+				}
+			}
+
+			expand = {}
+
+			### Column Heders ###
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				margin_bottom = 3
+
+				hbox = {
+					min_width = 208
+					max_width = 208
+					margin_left = 20
+
+					layoutpolicy_horizontal = expanding
+					text_label_left = {
+
+						text = "MESSAGE_SETTINGS_WINDOW_COLUMN_FILTER_TYPE"
+						tooltip = "MESSAGE_SETTINGS_WINDOW_COLUMN_FILTER_TYPE_TT"
+						using = tooltip_ne
+					}
+					expand = {}
+				}
+
+				editbox_search_field = {
+					min_width = 190
+					max_width = 190
+
+					blockoverride "editbox_properties"
+					{
+						text = "[MessageSettingsWindow.GetTextFilter]"
+						ontextedited = "[MessageSettingsWindow.OnEditTextFilter]"
+					}
+				}
+
+				hbox = {
+					min_width = 130
+					max_width = 130
+
+					layoutpolicy_horizontal = expanding
+					text_message_settings_column_header = {
+
+						text = "MESSAGE_SETTINGS_WINDOW_COLUMN_APPEARANCE"
+						tooltip = "MESSAGE_SETTINGS_WINDOW_COLUMN_APPEARANCE_TT"
+						using = tooltip_ne
+					}
+				}
+				hbox = {
+					min_width = 30
+					max_width = 30
+					margin_right = 15
+
+					layoutpolicy_horizontal = expanding
+					text_message_settings_column_header = {
+
+						text = "MESSAGE_SETTINGS_WINDOW_COLUMN_AUTO_PAUSE"
+						tooltip = "MESSAGE_SETTINGS_WINDOW_COLUMN_AUTO_PAUSE_TT"
+						using = tooltip_ne
+					}
+				}
+			}
+
+			### Message Groups and Filters List ###
+			scrollbox = {
+				name = "message_group_scrollarea"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "scrollbox_background_fade" {}
+				blockoverride "scrollbox_content"
+				{
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					vbox = {
+						name = "message_groups_container"
+						visible = "[MessageSettingsWindow.IsTextFilterEmpty]"
+						spacing = 2
+
+						layoutpolicy_horizontal = expanding
+
+						datamodel = "[MessageSettingsWindow.GetMessageGroupItems]"
+						item = {
+							vbox_message_group_foldout = {}
+						}
+					}
+					vbox = {
+						name = "serach_text_filter_container"
+						visible = "[Not( MessageSettingsWindow.IsTextFilterEmpty )]"
+						spacing = 2
+
+						layoutpolicy_horizontal = expanding
+
+						datamodel = "[MessageSettingsWindow.GetFilteredFilterItems]"
+						item = {
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								hbox_message_settings_filter_item = {}
+								expand = {}
+							}
+						}
+					}
+				}
+				blockoverride "scrollbox_expand" {
+					expand = {}
+				}
+			}
+
+			expand = {}
+
+			### Footer ###
+			vbox = {
+				name = "footer"
+				margin = { 0 12 }
+
+				hbox = {
+					spacing = 22
+
+					button_standard = {
+						name = "reset_settings_button"
+
+						text = "MESSAGE_SETTINGS_WINDOW_RESET"
+						size = { 155 33 }
+						onclick = "[MessageSettingsWindow.ResetToDefault]"
+						tooltip = "MESSAGE_SETTINGS_WINDOW_RESET_TT"
+						using = tooltip_ne
+					}
+
+					button_primary = {
+						name = "apply_settings_button"
+
+						text = "MESSAGE_SETTINGS_WINDOW_APPLY"
+						size = { 155 33 }
+						onclick = "[MessageSettingsWindow.SaveAndClose]"
+						tooltip = "MESSAGE_SETTINGS_WINDOW_APPLY_TT"
+						using = tooltip_ne
+					}
+				}
+			}
+		}
+	}
+}
+
+types OCR {
+	type window_message_settings_custom_ocr = window_ocr {
+		blockoverride "ocr_header" {
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				# shortcut = map_mode_15
+				shortcut = confirm
+				onclick = "[CustomMessageWindow.SendMessage( GetPlayer, GetPlayer )]"
+				onclick = "[CustomMessageWindow.Toggle]"
+				blockoverride "pre" {
+					text_single = {
+						alwaystransparent = yes
+						raw_text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_TITLE"
+					}
+					comma = {}
+				}
+				blockoverride "text" {
+					raw_text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_SEND"
+				}
+				blockoverride "extra" {
+					comma = {}
+					text_single = {
+						raw_text = "Enter."
+					}
+				}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = map_mode_5
+				blockoverride "text" {
+					text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_DISCARD"
+				}
+				blockoverride "extra" {
+					comma = {}
+					text_single = {
+						raw_text = "Control Q."
+					}
+				}
+				onclick = "[CustomMessageWindow.Reset]"
+				tooltip = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_DISCARD_TT"
+				using = tooltip_ne
+			}
+
+			button = {
+				shortcut = close_window
+				onclick = "[CustomMessageWindow.Close]"
+			}
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				spacing = 5
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Is('stop_message_entry')]"
+					shortcut = army_split_half
+					onclick = "[Clear('stop_message_entry')]"
+					blockoverride "text" {
+						raw_text = "Edit title and description, F."
+					}
+				}
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+					visible = "[Is('stop_message_entry')]"
+					layoutpolicy_horizontal = expanding
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+
+						text_single = {
+							raw_text = "title_custom_message_ocr"
+						}
+					}
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+
+						text_single = {
+							raw_text = "desc_custom_message_ocr"
+						}
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					visible = "[Isnt('stop_message_entry')]"
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "write_message_type_tip_ocr"
+						visible = "[StringIsEmpty(CustomMessageWindow.GetTitle)]"
+					}
+
+					editbox_standard_with_label = {
+						visible = "[And(Isnt('stop_message_entry'), CustomMessageWindow.IsVisible)]"
+						layoutpolicy_horizontal = expanding
+
+						blockoverride "editbox_label"
+						{
+							text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_EDIT_TITLE"
+							layoutpolicy_horizontal = expanding
+						}
+
+						blockoverride "editbox_properties"
+						{
+							name = "custom_message"
+
+							multiline = no
+							maxcharacters = 100
+							focus_on_visible = yes
+
+							text = "[CustomMessageWindow.GetTitle]"
+							ontextedited = "[CustomMessageWindow.OnEditTitle]"
+
+							text_single = {
+								visible = "[StringIsEmpty(CustomMessageWindow.GetTitle)]"
+								raw_text = "editbox_tip_ocr"
+								margin_left = 5
+							}
+						}
+					}
+
+					editbox_standard_with_label = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						blockoverride "editbox_label"
+						{
+							layoutpolicy_horizontal = expanding
+							text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_EDIT_DESC"
+						}
+
+						blockoverride "editbox_properties"
+						{
+							name = "custom_message"
+
+							multiline = yes
+
+							text = "[CustomMessageWindow.GetDescription]"
+							ontextedited = "[CustomMessageWindow.OnEditDescription]"
+
+							text_single = {
+								visible = "[StringIsEmpty(CustomMessageWindow.GetDescription)]"
+								raw_text = "editbox_tip_ocr"
+								margin_left = 5
+							}
+						}
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = close_window
+						onclick = "[Set('stop_message_entry', 'yes')]"
+						blockoverride "text" {
+							raw_text = "stop_text_edit_ocr"
+						}
+					}
+				}
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+					layoutpolicy_horizontal = expanding
+
+					text_single = {
+						text = "[CustomMessageWindow.GetArrivalDate]"
+					}
+
+					text_single = {
+						raw_text = "today_date_ocr"
+					}
+
+					widget = {
+						size = { 0 10 }
+					}
+
+					text_single = {
+						raw_text = "edit_date_ocr"
+					}
+
+					button_text = {
+						enabled = "[Not( CustomMessageWindow.MessageArrivesToday )]"
+						onclick = "[CustomMessageWindow.AddDays( '(int32)-1' )]"
+						onrightclick = "[CustomMessageWindow.AddDays( '(int32)-5' )]"
+						shortcut = decrease_speed_2
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_DAY"
+							}
+
+							comma = {}
+
+							text_single = {
+								visible = "[CustomMessageWindow.MessageArrivesToday]"
+								raw_text = "cant"
+							}
+							text_single = {
+								raw_text = "decrease_one_ocr"
+							}
+
+							text_single = {
+								raw_text = "Z."
+							}
+						}
+					}
+
+					button_text = {
+						onclick = "[CustomMessageWindow.AddDays( '(int32)1' )]"
+						onrightclick = "[CustomMessageWindow.AddDays( '(int32)5' )]"
+						shortcut = increase_speed_2
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_DAY"
+							}
+
+							comma = {}
+
+							text_single = {
+								raw_text = "increase_one_ocr"
+							}
+
+							text_single = {
+								raw_text = "X."
+							}
+						}
+					}
+
+					button_text = {
+						onclick = "[CustomMessageWindow.AddMonths( '(int32)-1' )]"
+						onrightclick = "[CustomMessageWindow.AddMonths( '(int32)-5' )]"
+						shortcut = character_finder
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_MONTH"
+							}
+
+							comma = {}
+
+							text_single = {
+								raw_text = "decrease_one_ocr"
+							}
+
+							text_single = {
+								raw_text = "C."
+							}
+						}
+					}
+
+					button_text = {
+						onclick = "[CustomMessageWindow.AddMonths( '(int32)1' )]"
+						onrightclick = "[CustomMessageWindow.AddMonths( '(int32)5' )]"
+						shortcut = find_title_shortcut
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_MONTH"
+							}
+
+							comma = {}
+
+							text_single = {
+								raw_text = "increase_one_ocr"
+							}
+
+							text_single = {
+								raw_text = "V."
+							}
+						}
+					}
+
+					button_text = {
+						onclick = "[CustomMessageWindow.AddYears( '(int32)-1' )]"
+						onrightclick = "[CustomMessageWindow.AddYears( '(int32)-5' )]"
+						shortcut = army_merge
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_YEAR"
+							}
+
+							comma = {}
+
+							text_single = {
+								raw_text = "decrease_one_ocr"
+							}
+
+							text_single = {
+								raw_text = "G."
+							}
+						}
+					}
+
+					button_text = {
+						onclick = "[CustomMessageWindow.AddYears( '(int32)1' )]"
+						onrightclick = "[CustomMessageWindow.AddYears( '(int32)5' )]"
+						shortcut = army_create_new
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "MESSAGE_SETTINGS_WINDOW_CUSTOM_MESSAGE_YEAR"
+							}
+
+							comma = {}
+
+							text_single = {
+								raw_text = "increase_one_ocr"
+							}
+
+							text_single = {
+								raw_text = "H."
+							}
+						}
+					}
+
+					text_single = {
+						text = "[CustomMessageWindow.GetArrivalDate]"
+					}
+				}
+
+				expand = {}
+			}
+		}
+	}
+
+	type hbox_message_settings_filter_item_ocr = hbox {
+		layoutpolicy_horizontal = expanding
+
+		# widget = {
+		# 	flowcontainer = {
+		# 		datamodel = "[MessageFilterItem.GetValidOptions]"
+		# 		ignoreinvisible = yes
+		# 		resizeparent = yes
+		# 		item = {
+		# 			text_single = {
+		# 				minimumsize = { 0 33 }
+		# 				raw_text = "[MessageFilterItem.GetName], [NotificationOption.GetName|U]."
+		# 				alpha = 0
+		# 				visible = "[IsIndexFirst]"
+		# 			}
+		# 		}
+		# 	}
+		#
+		# }
+
+		# button_text = {
+		# 	onclick = "[MessageFilterItem.ToggleAutoPause]"
+		# 	# tooltip = "MESSAGE_SETTINGS_WINDOW_TOGGLE_AUTO_PAUSE_TT"
+		#
+		# 	blockoverride "text" {
+		# 		raw_text = "[SelectLocalization(MessageFilterItem.HasAutoPause, 'will_pause_ocr', 'wont_pause_ocr')]"
+		# 	}
+		# }
+
+		dropdown_menu_standard =
+		{
+			blockoverride "dropdown_properties"
+			{
+				datamodel = "[MessageFilterItem.GetValidOptions]"
+				onselectionchanged = "[MessageFilterItem.OnSelectOption]"
+				selectedindex = "[MessageFilterItem.GetHoveredIndex]"
+			}
+
+			blockoverride "dropdown_size"
+			{
+				size = { 500 40 }
+			}
+
+			blockoverride "dropdown_list_maxsize"
+			{
+				maximumsize = { 491 400 }
+			}
+
+			blockoverride "dropdown_active_item_properties"
+			{
+				flowcontainer = {
+					ignoreinvisible = yes
+					text_single = {
+						raw_text = "[Add_int32(PdxGuiWidget.AccessParent.AccessParent.AccessParent.AccessParent.GetIndexInDataModel, '(int32)1')],[MessageFilterItem.GetName], [NotificationOption.GetName|U]."
+					}
+
+					button_text = {
+						onclick = "[MessageFilterItem.ToggleAutoPause]"
+						# tooltip = "MESSAGE_SETTINGS_WINDOW_TOGGLE_AUTO_PAUSE_TT"
+
+						blockoverride "text" {
+							raw_text = "[SelectLocalization(MessageFilterItem.HasAutoPause, 'will_pause_ocr', 'wont_pause_ocr')]"
+						}
+					}
+				}
+				margin_top = 6
+				# tooltip = "[MessageFilterItem.GetTooltip]"
+				# [Add_int32(PdxGuiWidget.AccessParent.AccessParent.GetIndexInDataModel, '(int32)1')],
+			}
+
+			blockoverride "dropdown_item_properties"
+			{
+				text = "[NotificationOption.GetName|U]" # TODO name?
+			}
+		}
+
+
+		expand = {}
+	}
+
+	type vbox_message_group_foldout_ocr = vbox {
+		datacontext = "[MessageGroupItem.GetType]"
+		layoutpolicy_horizontal = expanding
+		visible = "[Or(Has('focused_message_group', MessageGroupItem.GetGroupTitle), Isnt('focused_message_group'))]"
+
+		# oncreate = "[BindFoldOutContext]"
+		# oncreate = "[PdxGuiFoldOut.Unfold]"
+
+		# state = {
+		# 	name = collapse_message_groups
+		# 	on_finish = "[PdxGuiFoldOut.Fold]"
+		# }
+		#
+		# state = {
+		# 	name = expand_message_groups
+		# 	on_finish = "[PdxGuiFoldOut.Unfold]"
+		# }
+
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Isnt('focused_message_group')]"
+			onclick = "[Set('focused_message_group', MessageGroupItem.GetGroupTitle)]"
+			blockoverride "text" {
+				raw_text = "[MessageGroupItem.GetGroupTitle]"
+			}
+			# [CollapseIf(Not(PdxGuiFoldOut.IsUnfolded))]
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			visible = "[Has('focused_message_group', MessageGroupItem.GetGroupTitle)]"
+			button = {
+				shortcut = close_window
+				onclick = "[Clear('focused_message_group')]"
+			}
+
+			fixedgridbox = {
+				name = "filters_in_group"
+
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				addcolumn = 575
+				addrow = 25
+
+				datamodel = "[MessageGroupItem.GetFilterItems]"
+				item = {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						hbox_message_settings_filter_item_ocr = {}
+
+						expand = {}
+					}
+				}
+			}
+		}
+	}
+}
