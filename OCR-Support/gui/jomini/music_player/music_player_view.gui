@@ -1,111 +1,214 @@
 ﻿window = {
 	name = "JominiMusicPlayerView"
 	visible = no
+	using = base_ocr_window
 	layer = top
-	parentanchor = center
-	movable = yes
-	allow_outside = yes
 
-	using = Window_Background
-	using = Window_Decoration
+	window_ocr = {
+		blockoverride "ocr_header" {
 
-	size = { 800 -1 }
-
-	state = {
-		name = _show
-		using = Animation_FadeIn_Quick
-		using = Sound_WindowShow_Small
-	}
-
-	state = {
-		name = _hide
-		using = Animation_FadeOut_Quick
-		using = Sound_WindowShow_Small
-	}
-
-	vbox = {
-		name = "contents"
-		resizeparent = yes
-
-		using = Window_Margins
-
-		header_pattern = {
-			name = "header"
-			layoutpolicy_horizontal = expanding
-
-			blockoverride "header_text" {
-				text = "MUSIC_PLAYER"
-			}
-
-			blockoverride "button_close"
-			{
+			button = {
+				shortcut = close_window
 				onclick = "[ToggleMusicPlayer]"
-				tooltip = "CLOSE_TOOLTIP"
-			}
-		}
-
-		hbox = {
-			name = "playback_controller"
-			layoutpolicy_horizontal = expanding
-
-			margin = { 20 5 }
-
-			background = {
-				using = Background_Area_ExtraDark
 			}
 
-			widget = {
-				name = "controller_buttons"
-				size = { 680 60  }
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 3
 
-				widget_track_name = {
-					parentanchor = left|vcenter
+				text_single = {
+					raw_text = "MUSIC_PLAYER"
 				}
 
-				widget = {
-					parentanchor = hcenter|vcenter
-					size = { 90 60 }
+				dot_l = {}
 
-					hbox = {
+				text_single = {
+					visible = "[Is('focused_album')]"
+					raw_text = "[Get('focused_album')], [GetDataModelSize(MusicPlayer.AccessTracksFromSelectedCategory)] tracks."
+				}
+
+				expand = {}
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				visible = "[MusicPlayer.IsPlayingTrackSelectable]"
+				raw_text = "[AddTextIf(MusicPlayer.IsPlaying, 'Playing: ')][MusicPlayer.GetPlayingTrackName]."
+			}
+
+			flowcontainer = {
+				layoutpolicy_horizontal = expanding
+				ignoreinvisible = yes
+				direction = vertical
+				visible = "[Isnt('focused_album')]"
+
+				button_text = {
+					onclick = "[MusicPlayer.OnTogglePlayPause]"
+					shortcut = army_split_half
+					blockoverride "text" {
+						raw_text = "[SelectLocalization( MusicPlayer.IsPlaying, 'MUSIC_PLAYER_PAUSE_TT', 'MUSIC_PLAYER_PLAY_TT')], F."
+					}
+				}
+
+				button_text = {
+					shortcut = find_title_shortcut
+					onclick = "[MusicPlayer.OnNextTrack]"
+					blockoverride "text" {
+						raw_text = "Next track, V."
+					}
+				}
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					spacing = 3
+
+					text_single = {
+						raw_text = "MUSIC_PLAYER_VOLUME_LABEL"
+					}
+					text_single = {
+						raw_text = "MUSIC_PLAYER_VOLUME_VALUE"
+					}
+				}
+
+				scrollbar = {
+					name = "music_player_volume_slider_scrollbar"
+					direction = vertical
+					size = { 200 50 }
+					value = "[MusicPlayer.GetVolume]"
+
+					min = 0.0
+					max = 1.0
+					step = 0.1
+					wheelstep = 0.1
+
+					onvaluechanged = "[MusicPlayer.SetVolume]"
+
+					track = {
+						button = {}
+					}
+
+					slider = {
+						button = {}
+					}
+
+					dec_button = {
+						button = {
+							size = { 200 25 }
+							text_single = {
+								position = { 5 2 }
+								raw_text = "Decrease volume,"
+							}
+						}
+					}
+
+					inc_button = {
+						button = {
+							size = { 200 25 }
+							text_single = {
+								position = { 5 2 }
+								raw_text = "Increase volume,"
+							}
+						}
+					}
+				}
+
+				text_single = {
+					raw_text = "[GetDataModelSize(MusicPlayer.AccessCategories)] categories, click to open, right-click to disable."
+				}
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Is('focused_album')]"
+				raw_text = "Click to play, right-click to disable."
+			}
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datamodel = "[MusicPlayer.AccessCategories]"
+				visible = "[Isnt('focused_album')]"
+
+				item = {
+					button_text = {
 						layoutpolicy_horizontal = expanding
+						# checked = "[MusicPlayerCategory.IsEnabled]"
+						onrightclick = "[MusicPlayer.OnToggleCategoryEnabled( MusicPlayerCategory.AccessSelf )]"
+						onclick = "[MusicPlayer.OnSelectCategory( MusicPlayerCategory.AccessSelf )]"
+						onclick = "[Set('focused_album', MusicPlayerCategory.GetName)]"
 
-						button_music_player_pause = {}
+						shortcuts_list = {
+							blockoverride "click" {
+								onclick = "[MusicPlayer.OnSelectCategory( MusicPlayerCategory.AccessSelf )]"
+								onclick = "[Set('focused_album', MusicPlayerCategory.GetName)]"
+							}
+						}
 
-						button_music_player_play = {}
+						blockoverride "num" {}
 
-						button_music_player_skip = {}
-					}
-				}
+						blockoverride "text" {
+							raw_text = "[MusicPlayerCategory.GetName],"
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[GetDataModelSize(MusicPlayerCategory.GetTracks)]"
+							}
+							text_single = {
+								visible = "[IsIndexFirst]"
+								raw_text = "tracks"
+							}
 
-				widget = {
-					name = "controller_settings"
-					parentanchor = right|vcenter
-					position = { 0 -3 }
-					size = { 200 40 }
+							dot_l = {}
 
-					vbox_music_player_volume_setting = {
-						name = "music_player_volume_slider"
-					}
-
-					vbox_music_player_density_setting = {
-						name = "music_player_density"
-						visible = no # this setting is unused in CK3
+							text_single = {
+								raw_text = "[SelectLocalization(MusicPlayerCategory.IsEnabled, 'MUSIC_PLAYER_CATEGORY_ENABLED_CK3', 'MUSIC_PLAYER_CATEGORY_DISABLED_CK3')]."
+							}
+						}
 					}
 				}
 			}
 
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Is('focused_album')]"
+				datamodel = "[MusicPlayer.AccessTracksFromSelectedCategory]"
 
+				button = {
+					shortcut = close_window
+					onclick = "[Clear('focused_album')]"
+				}
+
+				item = {
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[MusicPlayer.OnSelectAndPlayTrack( MusicTrack.Self )]"
+						onrightclick = "[MusicPlayer.OnToggleTrackEnabled( MusicTrack.AccessSelf )]"
+						blockoverride "num" {}
+						shortcuts_list = {
+							blockoverride "click" {
+								onclick = "[MusicPlayer.OnSelectAndPlayTrack( MusicTrack.Self )]"
+							}
+						}
+						blockoverride "text" {
+							raw_text = "[MusicTrack.GetName],"
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[SelectLocalization(MusicTrack.IsEnabled, 'MUSIC_PLAYER_CATEGORY_ENABLED_CK3', 'MUSIC_PLAYER_CATEGORY_DISABLED_CK3')]."
+							}
+							text_single = {
+								visible = "[MusicTrack.IsPlaying]"
+								raw_text = "playing,"
+							}
+						}
+					}
+				}
+			}
 		}
+	}
 
-		hbox = {
-			name = "music_player_contents"
-			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
-
-			vbox_categories = {}
-
-			vbox_tracks_from_category = {}
-		}
+	window_music_player_old = {
+		using = vanilla
 	}
 }
 
@@ -552,6 +655,117 @@ types MusicPlayerTypes
 						}
 					}
 				}
+			}
+		}
+	}
+}
+
+
+types VANILLA {
+	type window_music_player_old = window {
+		parentanchor = center
+		movable = yes
+		allow_outside = yes
+
+		using = Window_Background
+		using = Window_Decoration
+
+		size = { 800 -1 }
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+			using = Sound_WindowShow_Small
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+			using = Sound_WindowShow_Small
+		}
+
+		vbox = {
+			name = "contents"
+			resizeparent = yes
+
+			using = Window_Margins
+
+			header_pattern = {
+				name = "header"
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text" {
+					text = "MUSIC_PLAYER"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[ToggleMusicPlayer]"
+					tooltip = "CLOSE_TOOLTIP"
+				}
+			}
+
+			hbox = {
+				name = "playback_controller"
+				layoutpolicy_horizontal = expanding
+
+				margin = { 20 5 }
+
+				background = {
+					using = Background_Area_ExtraDark
+				}
+
+				widget = {
+					name = "controller_buttons"
+					size = { 680 60  }
+
+					widget_track_name = {
+						parentanchor = left|vcenter
+					}
+
+					widget = {
+						parentanchor = hcenter|vcenter
+						size = { 90 60 }
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							button_music_player_pause = {}
+
+							button_music_player_play = {}
+
+							button_music_player_skip = {}
+						}
+					}
+
+					widget = {
+						name = "controller_settings"
+						parentanchor = right|vcenter
+						position = { 0 -3 }
+						size = { 200 40 }
+
+						vbox_music_player_volume_setting = {
+							name = "music_player_volume_slider"
+						}
+
+						vbox_music_player_density_setting = {
+							name = "music_player_density"
+							visible = no # this setting is unused in CK3
+						}
+					}
+				}
+
+
+			}
+
+			hbox = {
+				name = "music_player_contents"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				vbox_categories = {}
+
+				vbox_tracks_from_category = {}
 			}
 		}
 	}
