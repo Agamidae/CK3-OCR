@@ -3,6 +3,10 @@
 	movable = no
 	using = base_ocr_window
 	layer = middle
+	state = {
+		name = _show
+		position = { 0 0 }
+	}
 
 	state = {
 		name = hide_maa_window
@@ -12,6 +16,7 @@
 		name = show_maa_window
 		position = { 0 0 }
 	}
+
 
 	datacontext = "[TravelRouteEditWindow.GetTravelPlanData]"
 
@@ -80,13 +85,20 @@
 
 					vbox = {
 						layoutpolicy_horizontal = expanding
-						button_primary_text = {
+						button_text = {
 							layoutpolicy_horizontal = expanding
 							visible = "[TravelRouteEditWindow.HasTravelStarted]"
 							blockoverride "text" {
 								text = CANCEL
 							}
+							blockoverride "extra" {
+								comma = {}
+								text_single = {
+									raw_text = "Escape"
+								}
+							}
 							onclick = "[TravelRouteEditWindow.Close]"
+							shortcut = close_window
 						}
 
 						button_primary_text = {
@@ -112,95 +124,79 @@
 			}
 		}
 		blockoverride "ocr_content" {
-			vbox = {
-				# visible = "[Not(TravelRouteEditWindow.IsSelectingProvince)]"
+			button_fixed_departure_ocr = {
 				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
+				# layoutpolicy_vertical = shrinking
+			}
 
-				scrollbox = {
-					name = "route_scroll"
-					layoutpolicy_vertical = expanding
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				# layoutpolicy_vertical = expanding
+
+				datamodel = "[TravelPlanData.GetDestinations]"
+
+				text_single = {
+					visible = "[Isnt('adding_poi_here')]"
 					layoutpolicy_horizontal = expanding
+					raw_text = "[GetDataModelSize(TravelPlanData.GetDestinations)] destinations:"
+				}
 
-					blockoverride "scrollbox_content"
-					{
-
-						button_fixed_departure_ocr = {
-							layoutpolicy_horizontal = expanding
-						}
+				item = {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						# layoutpolicy_vertical = expanding
 
 						vbox = {
+							name = "detours_between_destinations"
+							visible = "[Not( IsDataModelEmpty( TravelPlanDestination.GetWaypoints ) )]"
+
 							layoutpolicy_horizontal = expanding
-
-							datamodel = "[TravelPlanData.GetDestinations]"
-
+							datamodel = "[TravelPlanDestination.GetWaypoints]"
 
 							text_single = {
-								visible = "[Isnt('adding_poi_here')]"
+								visible = "[Not(TravelRouteEditWindow.IsSelectingProvince)]"
 								layoutpolicy_horizontal = expanding
-								raw_text = "[GetDataModelSize(TravelPlanData.GetDestinations)] destinations:"
+								raw_text = "[GetDataModelSize(TravelPlanDestination.GetWaypoints)] Detours:"
 							}
 
 							item = {
 								vbox = {
 									layoutpolicy_horizontal = expanding
+									# visible = Not(TravelRouteEditWindow.IsSelectingProvince)
 
-									vbox = {
-										name = "detours_between_destinations"
-										visible = "[Not( IsDataModelEmpty( TravelPlanDestination.GetWaypoints ) )]"
-
-										layoutpolicy_horizontal = expanding
-										datamodel = "[TravelPlanDestination.GetWaypoints]"
-
-										text_single = {
-											visible = "[Not(TravelRouteEditWindow.IsSelectingProvince)]"
-											layoutpolicy_horizontal = expanding
-											raw_text = "[GetDataModelSize(TravelPlanDestination.GetWaypoints)] Detours:"
-										}
-
-										item = {
-											vbox = {
-												layoutpolicy_horizontal = expanding
-												# visible = Not(TravelRouteEditWindow.IsSelectingProvince)
-
-												hbox_added_detour_ocr = {
-													layoutpolicy_horizontal = expanding
-												}
-											}
-										}
-									}
-
-									button_fixed_destination_ocr = {
+									hbox_added_detour_ocr = {
 										layoutpolicy_horizontal = expanding
 									}
 								}
 							}
 						}
 
-						button_text = {
-							visible = "[Not(TravelRouteEditWindow.IsSelectingProvince)]"
+						button_fixed_destination_ocr = {
 							layoutpolicy_horizontal = expanding
-						    blockoverride "text" {
-						        raw_text = "Remove all detours, X."
-						    }
-							onclick = "[Set('remove_all_detours', 'yes')]"
-							shortcut = increase_speed_2
-
-							state = {
-								name = remove_detours
-								delay = 0.3
-								on_finish = "[Clear('remove_all_detours')]"
-								trigger_when = "[Is('remove_all_detours')]"
-							}
+							# layoutpolicy_vertical = expanding
 						}
 					}
 				}
+				expand = {}
+			}
 
-				# text_multi_wide = {
-				# 	name = "instruction_text"
-				#
-				# 	text = "TRAVEL_EDIT_ROUTE_INSTRUCTION"
-				# }
+			expand = {}
+
+			button_text = {
+				visible = "[Not(TravelRouteEditWindow.IsSelectingProvince)]"
+				layoutpolicy_horizontal = expanding
+					blockoverride "text" {
+							raw_text = "Remove all detours, X."
+					}
+				onclick = "[Set('remove_all_detours', 'yes')]"
+				shortcut = increase_speed_2
+
+				state = {
+					name = remove_detours
+					delay = 0.3
+					on_finish = "[Clear('remove_all_detours')]"
+					trigger_when = "[Is('remove_all_detours')]"
+				}
 			}
 
 			vbox = {
@@ -447,7 +443,7 @@ types OCR
 		datacontext = "[TravelPlanData.GetDepartureLocation]"
 		datacontext = "[Province.GetTitle]"
 		layoutpolicy_horizontal = expanding
-		layoutpolicy_vertical = expanding
+		# layoutpolicy_vertical = expanding
 		visible = "[Or(Isnt('adding_poi_here'), EqualTo_string(Get('adding_poi_here'), Province.GetNameNoTooltip))]"
 
 		using = State_Title_MouseEntry
@@ -456,7 +452,7 @@ types OCR
 			layoutpolicy_horizontal = expanding
 			visible = "[Isnt('adding_poi_here')]"
 			hbox = {
-			    layoutpolicy_horizontal = expanding
+		    layoutpolicy_horizontal = expanding
 				spacing = 3
 
 				text_single = {
@@ -827,7 +823,7 @@ types TravelRouteEditTypes
 
 	type vbox_detour_selection = vbox {
 		layoutpolicy_horizontal = expanding
-		layoutpolicy_vertical = expanding
+		# layoutpolicy_vertical = expanding
 
 		visible = "[TravelRouteEditWindow.IsSelectingProvince]"
 
@@ -875,7 +871,7 @@ types TravelRouteEditTypes
 		}
 
 		vbox_select_from_map = {
-			layoutpolicy_vertical = expanding
+			# layoutpolicy_vertical = expanding
 			blockoverride "maa" {
 			}
 			blockoverride "action" {
@@ -884,7 +880,7 @@ types TravelRouteEditTypes
 			}
 			blockoverride "sorting" {
 				text_single = {
-					raw_text = "within 2 months of [Province.GetNameNoTooltip]," #TODO destination
+					raw_text = "within 4 months of [Province.GetNameNoTooltip]," #TODO destination
 				}
 			}
 		}

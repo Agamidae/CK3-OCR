@@ -11,6 +11,23 @@ window = {
 	allow_outside = yes
 	using = base_ocr_window
 	layer = middle
+	movable = no
+
+	datacontext = "[MatchmakerInteractionWindow.GetCharacterList]"
+	using = datacontext_marriage_default
+
+	state = {
+		name = "resize"
+	  on_finish = "[GetScriptedGui('reset_marriage_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+	  trigger_when = "[PageReset('marriage_page', CharacterSelectionList.GetList)]"
+	}
+
+	state = {
+		name = "reset"
+	  on_finish = "[GetScriptedGui('reset_marriage_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+		trigger_on_create = yes
+	}
+
 
 	state = {
 		name = ocr
@@ -30,6 +47,7 @@ window = {
 		using = Animation_FadeIn_Quick
 		using = Sound_WindowShow_Standard
 		on_finish = "[Clear('hide_interaction')]"
+		on_finish = "[GetScriptedGui('reset_marriage_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 	}
 
 	state = {
@@ -42,36 +60,51 @@ window = {
 		blockoverride "show_window" {
 			visible = "[Or(Isnt('hide_interaction'), And(Is('hide_interaction'), Not(IsGameViewOpen('character'))))]"
 		}
+		blockoverride "ocr_margins" {
+			margin = { 5 5 }
+			margin_top = 30
+		}
 		blockoverride "ocr_header" {
-			header_pattern_interaction = {
+			button = {
+				shortcut = close_window
+				onclick = "[MatchmakerInteractionWindow.Close]"
+			}
+			button = {
+				shortcut = go_back
+				shortcut = close_window
+				visible = "[MarriageInteractionWindow.CanClear]"
+				onclick = "[MatchmakerInteractionWindow.OnClear]"
+			}
+			datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
+
+			hbox = {
 				layoutpolicy_horizontal = expanding
-
-				blockoverride "header_text"
-				{
-
-				}
-
-				blockoverride "button_close"
-				{
-					onclick = "[MatchmakerInteractionWindow.Close]"
-
-				}
-
-				blockoverride "button_back"
-				{
-					size = { 0 0 }
-					visible = "[MarriageInteractionWindow.CanClear]"
-					onclick = "[MatchmakerInteractionWindow.OnClear]"
-					tooltip = "CLEAR_MARRIED_CHARACTERS"
-				}
-				datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
-
+				spacing = 3
+				margin_left = 10
 				text_single = {
-					layoutpolicy_horizontal = expanding
 					raw_text = "[CharacterInteractionConfirmationWindow.GetSendName][AddTextIf(MarriageInfo.IsMatrilineal, ', Matrilineal')]."
 				}
-			}
 
+				datacontext = "[MatchmakerInteractionWindow.GetCharacterList]"
+				using = datacontext_marriage_default
+
+				text_single = {
+					visible = "[Not(MatchmakerInteractionWindow.HasPickedCharacters)]"
+					margin_right = 3
+					raw_text = "Showing characters from [PageStart('marriage_page')] to [PageEnd('marriage_page', GetPlayer.MakeScope.Var('marriage_page_size').GetValue, CharacterSelectionList.GetList)],"
+				}
+
+				button_text = {
+					visible = "[Not(MatchmakerInteractionWindow.HasPickedCharacters)]"
+					shortcut = army_merge
+					onclick = "[GetScriptedGui('resize_marriage_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					blockoverride "text" {
+						margin_left = -5
+						raw_text = "Show [Select_CString(EqualTo_CFixedPoint(GetPlayer.MakeScope.Var('marriage_page_size').GetValue, '(CFixedPoint)10'), '5', '10')] per page, G."
+					}
+				}
+				expand = {}
+			}
 		}
 		blockoverride "ocr_content" {
 
@@ -99,7 +132,6 @@ window = {
 
 						blockoverride "bg_illustration"
 						{
-							texture = "[Illustration.GetTexture( CharacterInteractionConfirmationWindow.GetActor.MakeScope )]"
 						}
 
 						blockoverride "left_small_portrait"
@@ -193,12 +225,15 @@ window = {
 						}
 					}
 
-					text_multi = {
-						name = "marriage_info"
-						minimumsize = { 650 -1 }
-						maximumsize = { 650 -1 }
-						autoresize = yes
-						text = "MARRIAGE_INFO"
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						text_multi_wide = {
+							name = "marriage_info"
+							text = "MARRIAGE_INFO"
+						}
+
+						expand = {}
 					}
 
 					vbox = {
@@ -207,25 +242,24 @@ window = {
 
 						visible = "[Not( MatchOffer.IsSameSex )]"
 
-						text_multi = {
-							name = "matrilineal_desc"
+						hbox = {
 							layoutpolicy_horizontal = expanding
-							max_width = 630
-							min_width = 630
-							autoresize = yes
-							text = "[MarriageInfo.GetMatrilinealDesc]"
+
+							text_multi_wide = {
+								name = "matrilineal_desc"
+								text = "[MarriageInfo.GetMatrilinealDesc]"
+							}
+
+							expand = {}
 						}
 
 						text_single = {
 							name = "inbreeding_risk"
 							visible = "[MatchOffer.HasInbreedingRisk]"
-							max_width = 630
-							min_width = 630
 							text = "MATCH_OFFER_INBREEDING_WARNING"
-							default_format = "#low"
+							layoutpolicy_horizontal = expanding
 						}
 					}
-
 				}
 
 				vbox = {
@@ -263,8 +297,6 @@ window = {
 
 					blockoverride "bg_illustration"
 					{
-						texture = "[Illustration.GetTexture( CharacterInteractionConfirmationWindow.GetActor.MakeScope )]"
-						alpha = 0.1
 					}
 
 					blockoverride "left_small_portrait"
@@ -342,7 +374,7 @@ window = {
 							datacontext = "[MarriageInteractionWindow.GetMarriageInfo.GetBaseOffer]"
 							datacontext = "[MatchmakerInteractionWindow.GetActorToMatch]"
 
-							raw_text = "[Character.GetFirstNamePossessiveNoTooltip] gains [MatchOffer.GetActorPrestige|+0] prestige." #TODO
+							raw_text = "[Character.GetFirstNameNoTooltip] gains [MatchOffer.GetActorPrestige|+0] prestige."
 							tooltip = "MARRIAGE_PRESTIGE_TOOLTIP_OUR"
 						}
 
@@ -352,7 +384,7 @@ window = {
 							datacontext = "[MarriageInteractionWindow.GetMarriageInfo.GetBaseOffer]"
 							datacontext = "[MatchmakerInteractionWindow.GetRecipientToMatch]"
 
-							raw_text = "[Character.GetFirstNamePossessiveNoTooltip] gains [MatchOffer.GetRecipientPrestige|+0] prestige." #TODO
+							raw_text = "[Character.GetFirstNameNoTooltip] gains [MatchOffer.GetRecipientPrestige|+0] prestige."
 							tooltip = "MARRIAGE_PRESTIGE_TOOLTIP_THEIR"
 						}
 					}
@@ -361,34 +393,16 @@ window = {
 				vbox = {
 					name = "marriage_info_and_send_offer"
 					visible = "[MatchmakerInteractionWindow.HasPickedCharacters]"
-					layoutpolicy_vertical = expanding
+					datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
+					datacontext = "[CharacterInteractionConfirmationWindow.GetEffectsDescription]"
 					layoutpolicy_horizontal = expanding
 
-					scrollbox = {
-						layoutpolicy_vertical = expanding
+					vbox_marriage_interaction_marriage_details = {
+						datacontext = "[MarriageInfo.GetBaseOffer]"
 						layoutpolicy_horizontal = expanding
-
-						blockoverride = "scrollbox_content"
-						{
-							## Info about marriage after picking characters
-							name = "info_about_marriage"
-
-							vbox = {
-								datacontext = "[MarriageInteractionWindow.GetMarriageInfo]"
-								datacontext = "[CharacterInteractionConfirmationWindow.GetEffectsDescription]"
-								layoutpolicy_horizontal = expanding
-								margin = { 10 10 }
-								spacing = 10
-
-								vbox_marriage_interaction_marriage_details = {
-									datacontext = "[MarriageInfo.GetBaseOffer]"
-									layoutpolicy_horizontal = expanding
-								}
-
-								vbox_character_interaction_effects_contents = {}
-							}
-						}
 					}
+
+					vbox_character_interaction_effects_contents = {}
 				}
 
 				### Character List
@@ -397,7 +411,6 @@ window = {
 					visible = "[Not(MatchmakerInteractionWindow.HasPickedCharacters)]"
 					layoutpolicy_vertical = expanding
 					layoutpolicy_horizontal = expanding
-					spacing = 5
 
 					vbox = {
 						layoutpolicy_horizontal = expanding
@@ -444,6 +457,8 @@ window = {
 							blockoverride "text"
 							{
 								text = "MARRIAGE_GRAND_WEDDING_TOGGLE"
+								align = nobaseline
+								margin_left = 3
 							}
 						}
 					}
@@ -453,7 +468,24 @@ window = {
 						using = datacontext_marriage_default
 						layoutpolicy_vertical = expanding
 						layoutpolicy_horizontal = expanding
+						# hotkeys for sorting by skill
+						blockoverride "sort" {
+							onclick = "[GetScriptedGui('reset_marriage_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						}
+						blockoverride "reset_page" {
+							on_finish = "[GetScriptedGui('reset_marriage_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						}
+						blockoverride "reverse_order" {
+							shortcut = mapmode_house_secondary
+						}
+						blockoverride "toggle_text" {
+							text_single = {
+								raw_text = "Toggle: Shift D."
+							}
+						}
 
+						blockoverride "pre_count" {
+						}
 
 						blockoverride "container_implementation" {
 							vbox = {
@@ -464,7 +496,7 @@ window = {
 									addrow = 66
 									# name = "characters_grid"
 									datamodel_reuse_widgets = yes
-									datamodel = "[CharacterSelectionList.GetList]"
+									datamodel = "[PageModel('marriage_page', FixedPointToInt(GetPlayer.MakeScope.Var('marriage_page_size').GetValue), CharacterSelectionList.GetList)]"
 									visible = "[And(Not(CharacterSelectionList.IsBuildingList), Isnt('ocr'))]"
 
 									item = {
@@ -504,6 +536,48 @@ window = {
 											}
 										}
 									}
+								}
+
+								vbox = {
+								  layoutpolicy_horizontal = expanding
+									visible = "[And(Not(CharacterSelectionList.IsBuildingList), Isnt('ocr'))]"
+
+									hbox = {
+								    layoutpolicy_horizontal = expanding
+								    spacing = 3
+								    visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('marriage_page').GetValue, '(CFixedPoint)0' )]"
+
+								    button_text = {
+								      blockoverride "text" {
+								        raw_text = "Previous [GetPlayer.MakeScope.Var('marriage_page_size').GetValue|0], Z."
+								      }
+								      onclick = "[GetScriptedGui('prev_marriage_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+								      shortcut = decrease_speed_2
+								      using = paper_flip_back_ocr
+								    }
+
+								    button_text = {
+								      onclick = "[GetScriptedGui('reset_marriage_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+								      shortcut = map_mode_18
+								      using = paper_flip_back_ocr
+								      blockoverride "text" {
+								        raw_text = "To start, Control R."
+								      }
+								    }
+
+								    expand = {}
+								  }
+
+								  button_text = {
+								    layoutpolicy_horizontal = expanding
+										using = paper_flip_forward_ocr
+								    blockoverride "text" {
+								      raw_text = "Next [GetPlayer.MakeScope.Var('marriage_page_size').GetValue|0], X"
+								    }
+								    onclick = "[GetScriptedGui('next_marriage_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+								    shortcut = increase_speed_2
+								    visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( CharacterSelectionList.GetList ), FixedPointToInt(GetPlayer.MakeScope.Var('marriage_page').GetValue )), FixedPointToInt(GetPlayer.MakeScope.Var('marriage_page_size').GetValue) )]"
+								  }
 								}
 
 								fixedgridbox = {
@@ -588,6 +662,8 @@ window = {
 						}
 					}
 				}
+
+				expand = {}
 			}
 		}
 	}
@@ -737,9 +813,18 @@ types OCR {
 
 								block "pre_name" { }
 
+								# text_single = {
+								# 	raw_text = "[Add_int32(CharacterListItem.GetOrderIndex, '(int32)1')]"
+								# 	visible = "[GetVariableSystem.Exists('index')]"
+								# }
+
 								text_single = {
-									raw_text = "[Add_int32(CharacterListItem.GetOrderIndex, '(int32)1')]"
-									visible = "[GetVariableSystem.Exists('index')]"
+								  block "page_index" {
+										alwaystransparent = yes
+										margin_left = 3
+										margin_right = -3
+								    raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, Add_int32(FixedPointToInt( GetPlayer.MakeScope.Var('marriage_page').GetValue ), '(int32)1'))],"
+								  }
 								}
 
 								# sorted skill

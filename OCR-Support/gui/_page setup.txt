@@ -1,125 +1,81 @@
+
+# 'template_page' = variable name, the first item on the current page, so 5, 10, 15, etc
+# template_datamodel = our datamodel
+# PageReset checks if the datamodel is smaller than our selected paged item
+# XX_number = amount per page
+
+# TODO!
+# 1. replace template_page
+# 2. replace template_datamodel
+# 3. replace XX_number
+# 4. make sguis for reset, next and prev
+
 state = {
-    on_finish = "[GetScriptedGui('reset_page').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
-    trigger_when = "[PageReset('rules_page', DATAMODEL)]"
+  name = "fix"
+  on_finish = "[GetScriptedGui('reset_template_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+  trigger_when = "[PageReset('template_page', template_datamodel)]"
+}
+# reset if we paged too far and showing an item outside of the datamodel
+#PageReset = LessThan_int32( GetDataModelSize( template_datamodel ), FixedPointToInt(GetPlayer.MakeScope.Var('template_page').GetValue ))
+
+state = {
+  name = "reset"
+  on_finish = "[GetScriptedGui('reset_template_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+  trigger_on_create = yes
 }
 
+# if we have sorting, reset when changing it
+onselectionchanged = "[GetScriptedGui('reset_template_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+onclick = "[GetScriptedGui('reset_template_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 
-vbox = {
-	layoutpolicy_horizontal = expanding
 
-	text_single = {
-        layoutpolicy_horizontal = expanding
-        raw_text = "Showing rules from [PageStart('rules_page')] to [PageEnd('rules_page', '(CFixedPoint)20', DATAMODEL)]."
-        margin_left = 5
-    }
+text_single = {
+  layoutpolicy_horizontal = expanding
+  raw_text = "Showing items from [PageStart('template_page')] to [PageEnd('template_page', '(CFixedPoint)XX_number', template_datamodel)],"
+}
+  # raw_text = "[IndexNumber]"
 
-	vbox = {
-		layoutpolicy_horizontal = expanding
+# PageStart = Add_CFixedPoint(GetPlayer.MakeScope.Var('template_page').GetValue, '(CFixedPoint)1')
+# adding one since we count from 0 in script
+# PageEnd = Min_CFixedPoint(Add_CFixedPoint(GetPlayer.MakeScope.Var( 'template_page' ).GetValue, MAX ), IntToFixedPoint(GetDataModelSize( template_datamodel )))
+# adding amount per page, but limiting to the datamodel size if we're at the end
 
-		button_text = {
-			layoutpolicy_horizontal = expanding
-			blockoverride "text" {
-				raw_text = "Previous 20, Page Up."
-			}
-			visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('rules_page').GetValue, '(CFixedPoint)0' )]"
-			onclick = "[GetScriptedGui('prev_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('page', MakeScopeFlag('rules_page')).End )]"
-			shortcut = zoom_out
-		}
 
-		button_text = {
-			layoutpolicy_horizontal = expanding
-			blockoverride "text" {
-				raw_text = "Next 20, Page Down."
-			}
-			onclick = "[GetScriptedGui('next_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('page', MakeScopeFlag('rules_page')).End )]"
-			shortcut = zoom_in
-			visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( DATAMODEL ), FixedPointToInt(GetPlayer.MakeScope.Var('rules_page').GetValue )), '(int32)19' )]"
-		}
-	}
+datamodel = "[PageModel('template_page', '(int32)XX_number', template_datamodel)]"
+
+# INDEX
+text_single = {
+  block "page_index" {
+    raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, Add_int32(FixedPointToInt( GetPlayer.MakeScope.Var('template_page').GetValue ), '(int32)1'))]."
+  }
 }
 
 vbox = {
+  layoutpolicy_horizontal = expanding
+
+  button_text = {
     layoutpolicy_horizontal = expanding
-    datamodel = "[PageModel('rules_page', '(int32)20', DATAMODEL)]"
-}
+    blockoverride "text" {
+      raw_text = "Previous XX_number, Z."
+    }
+    visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('template_page').GetValue, '(CFixedPoint)0' )]"
+    onclick = "[GetScriptedGui('prev_template_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+    shortcut = decrease_speed_2
+    using = paper_flip_back_ocr
+  }
 
-
-
-vbox = {
+  button_text = {
     layoutpolicy_horizontal = expanding
-    layoutpolicy_vertical = expanding
-
-    vbox = {
-        layoutpolicy_horizontal = expanding
-
-        text_single = {
-            layoutpolicy_horizontal = expanding
-            raw_text = "Showing items from [Add_CFixedPoint(GetPlayer.MakeScope.Var('vassal_page').GetValue, '(CFixedPoint)1')] to [Min_CFixedPoint(Add_CFixedPoint(GetPlayer.MakeScope.Var('vassal_page').GetValue, '(CFixedPoint)5'), IntToFixedPoint(GetDataModelSize( MyRealmWindow.GetVassals )))]."
-            margin_left = 5
-        }
-
-        expand = { }
+    blockoverride "text" {
+      raw_text = "Next XX_number, X."
     }
-
-    fixedgridbox = {
-        layoutpolicy_horizontal = expanding
-        # datacontext = "[MyRealmWindow.GetVassals]"
-        # datamodel = "[MyRealmWindow.GetVassals]"
-        # datamodel = "[MyRealmWindow.GetVassals]"
-        datamodel = "[DataModelSubSpan( MyRealmWindow.GetVassals, FixedPointToInt( GetPlayer.MakeScope.Var('vassal_page').GetValue ), Min_int32(Subtract_int32( GetDataModelSize( MyRealmWindow.GetVassals ), FixedPointToInt(GetPlayer.MakeScope.Var('vassal_page').GetValue )), '(int32)5')) ]"
-
-        # visible = "[Not(CharacterSelectionList.IsBuildingList)]"
-        addcolumn = 545
-        addrow = 140
-        setitemsizefromcell = yes
-
-        item = {
-            widget_vassal_list_item_ocr = {
-                onclick = "[MyRealmWindow.Close]"
-                datacontext = "[MyRealmWindowVassalItem.GetCharacter]"
-                datacontext = "[MyRealmWindow.GetVassalInfo( Character.Self )]"
-                datacontext = "[MyRealmWindowVassalItem.GetContract]"
-
-                blockoverride "feudal_contract_button_round"
-                {
-                    onclick = "[MyRealmWindow.SendButtonClickedTelemetry( 'vassal_contract' )]"
-                }
-
-                blockoverride "vassal_portrait"
-                {
-                    portrait_shoulders = { }
-                }
-                blockoverride "pre_name" {
-                    text_single = {
-                        raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, Add_int32(FixedPointToInt( GetPlayer.MakeScope.Var('vassal_page').GetValue ), '(int32)1'))]."
-                    }
-                }
-            }
-        }
-    }
-
-    vbox = {
-        layoutpolicy_horizontal = expanding
-
-        button_text = {
-            layoutpolicy_horizontal = expanding
-            blockoverride "text" {
-                raw_text = "Previous 5, Page Up"
-            }
-            visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('vassal_page').GetValue, '(CFixedPoint)0' )]"
-            onclick = "[GetScriptedGui('prev_vassal_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-            shortcut = zoom_out
-        }
-
-        button_text = {
-            layoutpolicy_horizontal = expanding
-            blockoverride "text" {
-                raw_text = "Next 5, Page Down"
-            }
-            onclick = "[GetScriptedGui('next_vassal_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-            shortcut = zoom_in
-            visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( MyRealmWindow.GetVassals ), FixedPointToInt(GetPlayer.MakeScope.Var('vassal_page').GetValue )), '(int32)4' )]"
-        }
-    }
-    expand = { }
+    onclick = "[GetScriptedGui('next_template_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+    visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( template_datamodel ), FixedPointToInt(GetPlayer.MakeScope.Var('template_page').GetValue )), '(int32)XX_number' )]"
+    shortcut = increase_speed_2
+    using = paper_flip_forward_ocr
+  }
 }
+
+# 20 - 15 > 5
+# only available until we reach the end
+# datamodel size - current page = is it bigger than per page amount

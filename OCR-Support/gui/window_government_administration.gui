@@ -1,0 +1,3755 @@
+﻿window = {
+	name = "government_administration_window"
+	widgetid = "government_administration_window"
+	visible = "[And( IsGameViewOpen('government_administration'), IsDefaultGUIMode )]"
+	using = base_ocr_window
+
+
+	window_ocr = {
+		state = {
+			on_finish = "[GetScriptedGui('reset_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+			trigger_when = "[PageReset('admin_page', AdministrativeHouseItem.GetControlledThemes)]"
+		}
+		blockoverride "ocr_header" {
+			header_text = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "header_text" {
+					raw_text = "ADMINISTRATIVE_GOVERNMENT_HEADER"
+				}
+				blockoverride "dot" {
+					visible = no
+				}
+				blockoverride "extra" {
+					comma = {}
+					text_single = {
+						visible = "[Isnt('admin_tab')]"
+						raw_text = "themes tab,"
+					}
+					#TODO unassigned number?
+				}
+			}
+			button = {
+				shortcut = close_window
+				onclick = "[GovernmentAdministrationWindow.Close]"
+			}
+
+			datacontext = "[GovernmentAdministrationWindow.GetTitle]"
+			datacontext = "[Title.GetHolder]"
+
+			flowcontainer = {
+				ignoreinvisible = yes
+				direction = vertical
+				layoutpolicy_horizontal = expanding
+
+				button_text = {
+					datacontext = "[GetDecisionWithKey('change_state_faith')]"
+					enabled = "[Decision.IsShownForPlayer]"
+
+					onclick = "[OpenGameViewData( 'decision_detail', Decision.Self )]"
+
+					blockoverride "text" {
+						text = "[state_faith|E]"
+						alwaystransparent = yes
+					}
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "is [Title.GetStateFaith.GetNameNoTooltip],"
+						}
+						text_single = {
+							raw_text = "bav_counties_of_wrong_faith"
+						}
+						comma = {}
+						text_single = {
+							visible = "[Decision.IsShownForPlayer]"
+							tooltip = "[Decision.GetShortDescForPlayer]"
+							raw_text = "click to change."
+						}
+					}
+				}
+
+				button_text = {
+					datacontext = "[GetDecisionWithKey('adopt_state_faith')]"
+					visible = "[Decision.IsShownForPlayer]"
+					onclick = "[OpenGameViewData( 'decision_detail', Decision.Self )]"
+					# tooltip = "[Decision.GetShortDescForPlayer]"
+					blockoverride "text" {
+						raw_text = "[Decision.GetName]"
+					}
+				}
+
+				#TODO interactions
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					spacing = 7
+
+					dropdown_menu_standard = {
+
+						blockoverride "dropdown_properties"
+						{
+							datamodel = "[GovernmentAdministrationWindow.GetOrderOptions]"
+							onselectionchanged = "[GovernmentAdministrationWindow.SortThemes]"
+							onselectionchanged = "[GetScriptedGui('reset_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							selectedindex = "[GovernmentAdministrationWindow.GetSortSelectedIndex]"
+						}
+
+						blockoverride "dropdown_active_item_properties"
+						{
+							raw_text = "Sorted by [ThemeOrderOption.GetName], in [Select_CString(Not(GovernmentAdministrationWindow.GetSortOrder), 'descending', 'ascending')] order, toggle X."
+						}
+
+						blockoverride "dropdown_item_properties"
+						{
+							text = "[ThemeOrderOption.GetName]"
+						}
+					}
+
+					button_text = {
+						shortcut = increase_speed_2
+						blockoverride "text" {
+							raw_text = ""
+						}
+						onclick = "[GovernmentAdministrationWindow.ReverseSortOrder]"
+					}
+				}
+
+				button_checked_text = {
+					shortcut = army_create_new
+					onclick = "[GovernmentAdministrationWindow.ToggleGroupByHouse]"
+					blockoverride "visible"
+					{
+						visible = "[Not(GovernmentAdministrationWindow.ShouldGroupByHouse)]"
+					}
+
+					blockoverride "text"
+					{
+						text = "ADMIN_WINDOW_THEME_GROUP_BY_HOUSE"
+						margin_left = -3
+					}
+					blockoverride "extra" {
+						spacing = 3
+						comma = {}
+						text_single = {
+							raw_text = "H."
+						}
+					}
+				}
+			}
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Isnt('admin_tab')]"
+
+				vbox = {
+					name = "house_list"
+					datamodel = "[GovernmentAdministrationWindow.GetHousesWithThemes]"
+
+					layoutpolicy_horizontal = expanding
+
+					item = {
+						vbox = {
+							datacontext = "[AdministrativeHouseItem.GetHouse]"
+							layoutpolicy_horizontal = expanding
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								datacontext = "[AdministrativeHouseItem.GetHouse]"
+								onclick = "[GovernmentAdministrationWindow.ToggleCollapseHouse( DynastyHouse.Self )]"
+
+								blockoverride "text" {
+									raw_text = "[GetDataModelSize(AdministrativeHouseItem.GetControlledThemes)]"
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = "[SelectLocalization(DynastyHouse.IsValid, SelectLocalization(GovernmentAdministrationWindow.ShouldGroupByHouse, 'ADMIN_WINDOW_HOUSE_DROPDOWN', 'ADMIN_WINDOW_ASSIGNED_THEME'), 'ADMIN_WINDOW_UNASSIGNED_THEME')],"
+									}
+									text_single = {
+										raw_text = "[CollapseIf(Not(GovernmentAdministrationWindow.IsHouseCollapsed( DynastyHouse.Self )))]"
+									}
+								}
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[GovernmentAdministrationWindow.IsHouseCollapsed( AdministrativeHouseItem.GetHouse )]"
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[GreaterThan_int32(GetDataModelSize(AdministrativeHouseItem.GetControlledThemes), '(int32)10')]"
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "Showing items from [PageStart('admin_page')] to [PageEnd('admin_page', '(CFixedPoint)10', AdministrativeHouseItem.GetControlledThemes)]."
+										margin_left = 5
+									}
+
+									dynamicgridbox = {
+										name = "assigned_themes_list"
+										datamodel = "[PageModel('admin_page', '(int32)10', AdministrativeHouseItem.GetControlledThemes)]"
+										layoutpolicy_horizontal = expanding
+										ignoreinvisible = yes
+
+										item = {
+											widget_theme_item_ocr = {
+												datacontext = "[AdministrativeThemeItem.GetTitle]"
+												visible = "[AdministrativeThemeItem.ShouldShowTitle]"
+											}
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "Previous 10, Page Up"
+											}
+											visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('admin_page').GetValue, '(CFixedPoint)0' )]"
+											onclick = "[GetScriptedGui('prev_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+											shortcut = zoom_out
+										}
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "Next 10, Page Down"
+											}
+											onclick = "[GetScriptedGui('next_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+											shortcut = zoom_in
+											visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( AdministrativeHouseItem.GetControlledThemes ), FixedPointToInt(GetPlayer.MakeScope.Var('admin_page').GetValue )), '(int32)10' )]"
+										}
+									}
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[LessThanOrEqualTo_int32(GetDataModelSize(AdministrativeHouseItem.GetControlledThemes), '(int32)10')]"
+
+									dynamicgridbox = {
+										name = "assigned_themes_list"
+										datamodel = "[AdministrativeHouseItem.GetControlledThemes]"
+										layoutpolicy_horizontal = expanding
+										ignoreinvisible = yes
+
+										item = {
+											widget_theme_item_ocr = {
+												blockoverride "admin_index" {
+													raw_text = "[IndexNumber],"
+												}
+												datacontext = "[AdministrativeThemeItem.GetTitle]"
+												visible = "[AdministrativeThemeItem.ShouldShowTitle]"
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	government_administration_window_old = {}
+}
+
+types OCR
+{
+	type widget_empty_governor_portrait_ocr = widget
+	{
+		background = {
+			using = Background_Area_Solid
+
+			modify_texture = {
+				texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
+				blend_mode = alphamultiply
+				alpha = 0.2
+				mirror = vertical
+			}
+		}
+
+		widget = {
+			size = { 100% 100% }
+
+			background = {
+				texture = "gfx/portraits/portrait_frame.dds"
+				using = Color_Grey
+				margin = { -4 -4 }
+				alpha = 0.5
+			}
+		}
+
+		button = {
+			size = { 100% 100% }
+			using = Placeholder_Inactive_Button
+
+			# TODO_CODE: Open create title and assign based on whether or not the emperor holds this title.
+			#onclick = ""
+
+			state = {
+				name = _mouse_hierarchy_enter
+				on_start = "[PdxGuiWidget.FindChild('highlight_frame').TriggerAnimation('show')]"
+			}
+
+			state = {
+				name = _mouse_hierarchy_leave
+				on_start = "[PdxGuiWidget.FindChild('highlight_frame').TriggerAnimation('hide')]"
+			}
+
+			highlight_icon = {
+				name = "portrait_unknown_head_small_glow"
+				parentanchor = center
+				position = { 3 -9 }
+				gfxtype = framedbuttongfx
+				effectname = "NoHighlight"
+				texture = "gfx/portraits/unknown_portraits/button_unknown_head.dds"
+				size = { 80 100 }
+				framesize = { 384 480 }
+				upframe = 1
+				overframe = 2
+			}
+
+			button_plus = {
+				alwaystransparent = yes
+				parentanchor = center
+			}
+
+			widget = {
+				name = "highlight_frame"
+				size = { 100% 100% }
+				alwaystransparent = yes
+				alpha = 0
+
+				state = {
+					name = "show"
+					alpha = 1
+				}
+
+				state = {
+					name = "hide"
+					alpha = 0
+				}
+
+				background = {
+					size = { 100% 100% }
+					texture = "gfx/portraits/portrait_frame.dds"
+					using = Color_Grey
+					alpha = 0.7
+					margin = { -4 -4 }
+				}
+			}
+		}
+	}
+
+	type button_unassigned_county_item_ocr = button_standard_list
+	{
+		layoutpolicy_horizontal = expanding
+
+		button_ignore = none
+
+		raw_tooltip = "#X Not yet implemented button.#!"
+		default_format = "#X"
+
+		background = {
+			using = Background_Area_Border
+			using = Background_Frame_Gold
+		}
+
+		hbox = {
+			position = { 0 -5 }
+			margin = { 8 0 }
+
+			coa_title_tiny_crown = { }
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+
+				text = "[Title.GetNameNoTooltip]"
+			}
+
+			expand = { }
+
+			button_plus = { }
+		}
+	}
+
+	type vbox_house_theme_list_ocr = vbox
+	{
+		layoutpolicy_vertical = expanding
+		layoutpolicy_horizontal = expanding
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			coa_house_tiny = {
+				visible = "[And(DynastyHouse.IsValid, GovernmentAdministrationWindow.ShouldGroupByHouse)]"
+			}
+
+			button_expandable_toggle_field = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[AdministrativeHouseItem.GetHouse]"
+
+				blockoverride "onclick"
+				{
+					onclick = "[GovernmentAdministrationWindow.ToggleCollapseHouse( DynastyHouse.Self )]"
+				}
+
+				blockoverride "button_expand"
+				{
+					frame = "[BoolTo1And2( GovernmentAdministrationWindow.IsHouseCollapsed( DynastyHouse.Self ) )]"
+				}
+
+				blockoverride "text"
+				{
+					text = "[SelectLocalization(DynastyHouse.IsValid, SelectLocalization(GovernmentAdministrationWindow.ShouldGroupByHouse, 'ADMIN_WINDOW_HOUSE_DROPDOWN', 'ADMIN_WINDOW_ASSIGNED_THEME'), 'ADMIN_WINDOW_UNASSIGNED_THEME')]"
+				}
+			}
+		}
+
+		dynamicgridbox = {
+			name = "assigned_themes_list"
+			datamodel = "[AdministrativeHouseItem.GetControlledThemes]"
+			visible = "[GovernmentAdministrationWindow.IsHouseCollapsed( AdministrativeHouseItem.GetHouse )]"
+			layoutpolicy_horizontal = expanding
+
+			datamodel_wrap = 3
+			flipdirection = yes
+			ignoreinvisible = yes
+			item = {
+				widget_theme_item = {
+					datacontext = "[AdministrativeThemeItem.GetTitle]"
+					visible = "[AdministrativeThemeItem.ShouldShowTitle]"
+				}
+			}
+		}
+	}
+
+	type widget_theme_item_ocr = widget
+	{
+		size = { 500 90 }
+
+		button_text = {
+			resizeparent = yes
+			datacontext = "[Title.GetHolder]"
+			blockoverride "extra" {
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing  = 3
+
+						text_single = {
+							block "admin_index" {
+								raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, Add_int32(FixedPointToInt( GetPlayer.MakeScope.Var('admin_page').GetValue ), '(int32)1'))],"
+							}
+						}
+
+
+						text_single = {
+							raw_text = "[Title.GetNameNoTierNoTooltip],"
+						}
+
+						flowcontainer = {
+							visible = "[Character.IsValid]"
+							ignoreinvisible = yes
+							spacing = 3
+
+							text_single = {
+								visible = "[Not(IsAdministrativeRuler(Title.GetHolder))]"
+								raw_text = "[Title.GetHolder.GetGovernment.GetNameNoTooltip],"
+							}
+						}
+
+						# text_single = {
+						# 	raw_text = "[Title.MakeScope.ScriptValue('counties_in_title_de_facto')|0] counties."
+						# }
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							visible = "[Character.IsValid]"
+							spacing = 3
+
+							text_single = {
+								raw_text = "[GuiScope.SetRoot(Title.MakeScope).AddScope('player', Character.MakeScope).ScriptValue('your_counties_in_title')] counties,"
+							}
+
+							# text_single = {
+							# 	raw_text = "out of [Title.MakeScope.ScriptValue('counties_in_title')]."
+							# }
+						}
+
+						text_single = {
+							visible = "[Not(Character.IsValid)]" # shouldn't happen? dunno
+							raw_text = "[Title.MakeScope.ScriptValue('counties_in_title_de_facto')] counties,"
+						}
+
+						text_single = {
+							visible = "[Not(ObjectsEqual(MyCapital, Province.Self))]"
+							datacontext = "[Title.GetPreferredCapital.GetProvince]"
+							raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)],"
+						}
+
+						text_single = {
+							datacontext = "[Title.GetPreferredCapital.GetProvince]"
+							visible = "[ObjectsEqual(MyCapital, Province.Self)]"
+							raw_text = "your capital,"
+						}
+
+						text_single = {
+							visible = "[Not(Title.GetHolder.IsValid)]"
+							raw_text = "no holder!"
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							spacing = 3
+
+							visible = "[Character.IsValid]"
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								visible = "[Character.GetHouse.IsValid]"
+								spacing = 3
+
+								text_single = {
+									raw_text = "held by"
+								}
+
+								text_single = {
+									visible = "[And(ObjectsEqual(Character.GetHouse, GetPlayer.GetHouse), Not(Character.IsLocalPlayer))]"
+									raw_text = "your kin,"
+								}
+							}
+
+							text_single = {
+								raw_text = "[Character.GetFirstNameOrMeNoTooltip],"
+							}
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								visible = "[Character.GetHouse.IsValid]"
+
+								text_single = {
+									visible = "[Not(ObjectsEqual(Character.GetHouse, GetPlayer.GetHouse))]"
+									raw_text = "[Character.GetHouse.GetNameNoTooltip]."
+								}
+							}
+
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+
+						# alive text
+						flowcontainer = {
+							visible = "[Title.GetHolder.IsValid]"
+							datacontext = "[Title.GetHolder]"
+							datacontext = "[Title.GetHolder.GetVassalContract]"
+							spacing = 3
+							ignoreinvisible = yes
+
+							text_single = {
+								visible = "[IsAdministrativeRuler( Title.GetHolder )]"
+								raw_text = "[Character.MakeScope.ScriptValue( 'governor_efficiency_presented')|0]% efficiency,"
+								tooltip = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT
+							}
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								visible = "[And(Not( Title.GetHolder.IsIndependentRuler ), IsAdministrativeRuler( Title.GetHolder ))]"
+								spacing = 3
+								datacontext = "[Title.GetHolder]"
+								margin_left = -3
+
+								text_single = {
+									raw_text = "[Title.GetHolder.GetVassalContract.GetShortObligationLevelNameWithHighlightFor('administrative_themes')],"
+								}
+							}
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								spacing = 3
+								visible = "[Not(Title.GetHolder.IsIndependentRuler)]"
+								text_single = {
+									raw_text = "Tax:  [Character.MakeScope.ScriptValue('bav_tax_to_liege')|1v],"
+								}
+
+								text_single = {
+									raw_text = "Levies, [Character.MakeScope.ScriptValue('bav_levies_to_liege')|0v],"
+								}
+							}
+
+							text_single = {
+								raw_text = "[Title.GetTotalTitleMAATroopsDesc],"
+								visible = "[Not(DataModelHasItems(Title.GetControlledMAA))]"
+							}
+
+							text_single = {
+								visible = "[DataModelHasItems(Title.GetControlledMAA)]"
+								raw_text = "Men at arms: [Title.MakeScope.ScriptValue('bav_conrtolled_title_maa')|v0],"
+
+								tooltipwidget = {
+									container = {
+										alwaystransparent = no
+
+										using = DefaultTooltipBackground
+
+										flowcontainer = {
+											margin = { 15 15 }
+											ignoreinvisible = yes
+											direction = vertical
+											datamodel = "[Title.GetControlledMAA]"
+
+											item = {
+												flowcontainer = {
+													ignoreinvisible = yes
+													spacing = 3
+
+													text_single = {
+														raw_text = "[Regiment.GetMAAType.GetNameNoTooltip] [Regiment.MakeScope.ScriptValue('bav_maa_current_size')]/[Regiment.GetMaxCount], [Regiment.GetMAAChunkCount]."
+													}
+
+													tooltipwidget = {
+														using = regiment_container_text_tooltip
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+
+							text_single = {
+								visible = "[DataModelHasItems(Title.GetControlledMAA)]"
+								raw_text = "[GetDataModelSize(Title.GetControlledMAA)] of [Add_CFixedPoint(Character.MakeScope.ScriptValue('bav_maa_title_cap'), Select_CFixedPoint(EqualTo_string(Character.GetHouse.GetHousePowerBonus.GetName, GetHousePowerBonus('army_quartermasters').GetName), '(CFixedPoint)1', '(CFixedPoint)0'))],"
+							}
+
+							# overlappingitembox = {
+							# 	# layoutpolicy_vertical = expanding
+							# 	size = { 40 18 }
+							# 	visible = "[DataModelHasItems(Title.GetControlledMAA)]"
+							#
+							# 	datamodel = "[Title.GetControlledMAA]"
+							#
+							# 	item = {
+							# 		icon = {
+							# 			size = { 25 25 }
+							# 			texture = "[Regiment.GetMAAType.GetIcon]"
+							# 			tooltipwidget = {
+							# 				using = regiment_container_text_tooltip
+							# 			}
+							# 		}
+							# 	}
+							# }
+
+
+							flowcontainer = {
+								visible = "[IsAdministrativeRuler( Title.GetHolder )]"
+								ignoreinvisible = yes
+
+
+								text_single = {
+									visible = "[Title.GetHolder.IsIndependentRuler]"
+									text = ADMIN_WINDOW_THEME_IMPERIAL_LANDS
+
+									max_width = 140
+								}
+							}
+
+							flowcontainer = {
+								visible = "[Character.IsValid]"
+								ignoreinvisible = yes
+								spacing = 3
+
+								text_single = {
+									visible = "[And( And( And( Not( IsAdministrativeRuler( Character ) ), Character.IsValid ), Character.GetLiege.IsPlayer ), Character.IsPlayerInteractionValid('demand_admin_interaction') )]"
+									raw_text = "click to convert to admin,"
+								}
+							}
+						}
+
+						# dead text
+						# flowcontainer = {
+						# 	visible = "[Not(Title.GetHolder.IsValid)]"
+						# 	datacontext = "[Title.GetHolder]"
+						#
+						# 	text_single = {
+						# 		raw_text = "[Character.MakeScope.ScriptValue( 'governor_efficiency_presented')|0]"
+						# 		tooltip = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT
+						# 	}
+						# }
+					}
+				}
+			}
+		}
+
+		button = {
+			name = "open_detail_button"
+			visible = "[IsAdministrativeRuler(Title.GetHolder)]"
+			size = { 100% 100% }
+			onclick = "[ToggleAdminVassalDetailView( Title.Self )]"
+			down = "[IsAdminVassalDetailViewShown( Title.Self )]"
+		}
+
+		button = {
+			visible = "[Or( Not(Title.GetHolder.IsValid),  And( And( Not( IsAdministrativeRuler( Title.GetHolder )), Not(Title.GetHolder.IsPlayerInteractionValid('demand_admin_interaction'))), Title.GetHolder.GetLiege.IsPlayer  ) ) ]"
+			size = { 100% 100% }
+			onclick = "[DefaultOnCoatOfArmsClick(Title.GetID)]"
+		}
+
+		button = {
+			name = "demand_admin_interaction_button"
+			datacontext = "[Title.GetHolder]"
+			visible = "[And( And( And( Not( IsAdministrativeRuler( Character ) ), Character.IsValid ), Character.GetLiege.IsPlayer ), Character.IsPlayerInteractionValid('demand_admin_interaction') )]"
+			size = { 100% 100% }
+			tooltip = "[Character.GetPlayerInteractionTooltip('demand_admin_interaction')]"
+			onclick = "[Character.OpenPlayerInteraction('demand_admin_interaction')]"
+		}
+
+		# tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_THEME_TT"
+		# tooltip_visible = "[AdministrativeThemeItem.ShouldShowTooltip]"
+		using = tooltip_ne
+	}
+
+	type hbox_theme_contract_obligation_result_ocr = hbox
+	{
+		layoutpolicy_horizontal = expanding
+		spacing = 8
+
+		text_single = {
+			text = ADMIN_WINDOW_THEME_ADMINISTRATION_LEVIES
+		}
+
+		text_single = {
+			text = ADMIN_WINDOW_THEME_ADMINISTRATION_TAXES
+		}
+	}
+
+	type button_modify_theme_ocr = button_round {
+		visible = "[Character.IsPlayerInteractionShown('admin_liege_modify_vassal_contract_interaction')]"
+		enabled = "[Character.IsPlayerInteractionValid('admin_liege_modify_vassal_contract_interaction')]"
+
+		onclick = "[Character.OpenPlayerInteraction('admin_liege_modify_vassal_contract_interaction')]"
+		onclick = "[Character.PanCameraTo]"
+
+		tooltip = "[Character.GetPlayerInteractionTooltip('admin_liege_modify_vassal_contract_interaction')]"
+
+		block "feudal_contract_button_round" {}
+
+		button_add_laws = {
+			alwaystransparent = yes
+			parentanchor = center
+		}
+	}
+
+	type button_replace_governor_ocr = button_round {
+		using = Placeholder_Inactive_Button
+
+		tooltip = "REPLACE_GOVERNOR_TOOLTIP"
+
+		button_change = {
+			parentanchor = center
+		}
+	}
+
+	type button_revoke_theme_ocr = button_round {
+		enabled = "[Character.IsPlayerInteractionValid('revoke_title_interaction')]"
+
+		onclick = "[Character.OpenPlayerInteraction('revoke_title_interaction')]"
+		onclick = "[Character.PanCameraTo]"
+
+		tooltip = "[Character.GetPlayerInteractionTooltip('revoke_title_interaction')]"
+
+		button_cancel = {
+			alwaystransparent = yes
+			parentanchor = center
+		}
+	}
+
+	type vbox_themes_list_ocr = vbox
+	{
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+
+		using = Animation_Tab_Switch
+
+		vbox = {
+			name = "house_list"
+			datamodel = "[GovernmentAdministrationWindow.GetHousesWithThemes]"
+
+			layoutpolicy_horizontal = expanding
+
+			item = {
+				vbox_house_theme_list = {
+					datacontext = "[AdministrativeHouseItem.GetHouse]"
+					layoutpolicy_horizontal = expanding
+				}
+			}
+		}
+
+		expand = { }
+	}
+}
+
+types OCR
+{
+	type widget_house_member_item_ocr = widget {
+		datacontext = "[CharacterListItem.GetCharacter]"
+
+		hbox = {
+			portrait_head = {}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					# Name and age
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						margin = { 0 3 }
+						margin_left = 5
+						margin_right = 10
+
+						background = {
+							using = Background_Area_Characterlist
+						}
+
+						background = {
+							using = Background_Area_Dark
+
+							modify_texture = {
+								texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
+								blend_mode = alphamultiply
+								alpha = 1
+								rotate_uv = 90
+								mirror = vertical
+							}
+						}
+
+						hbox = {
+							margin_left = 3
+							layoutpolicy_horizontal = expanding
+							maximumsize = { 338 -1 }
+
+							text_single = {
+								using = Font_Size_Medium
+								layoutpolicy_horizontal = expanding
+								align = nobaseline
+								text = "[Character.GetUINameNoTooltip|U]"
+								autoresize = no
+								fontsize_min = 14
+							}
+
+							block "character_relation"
+							{
+								hbox = {
+									visible = "[And(Character.HasRelationTo( GetPlayer ), Not(Character.IsPlayer))]"
+									text_single = {
+										raw_text = "•"
+										align = nobaseline
+										margin = { 5 0 }
+									}
+
+									text_single = {
+										name = "character_relation"
+										text = "[Character.GetRelationToString( GetPlayer )]"
+										tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+										default_format = "#low"
+										align = nobaseline
+										fontsize_min = 14
+										max_width = 180
+									}
+								}
+							}
+
+							expand = {}
+						}
+
+						hbox = {
+							using = character_age_or_death_text
+						}
+						expand = {}
+					}
+
+					### BOTTOM ROW ###
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+							block "additional_info_kill_list" {}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_label_left = {
+									margin_left = 10
+									max_width = 250
+
+									layoutpolicy_horizontal = expanding
+
+									text = "ADMINISTRATIVE_GOVERNMENT_INVESTMENT_CAP"
+
+									tooltipwidget = {
+										widget_value_breakdown_tooltip = {
+											datacontext = "[GovernmentAdministrationWindow.GetInvestmentCapTooltip( Character.Self )]"
+										}
+									}
+								}
+								expand = {}
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+
+								background = {
+									using = Background_Area_Dark
+									alpha = 0.5
+									margin = { 0 2 }
+								}
+
+								hbox = {
+									visible = "[IsAdministrativeRuler( Character )]"
+
+									layoutpolicy_horizontal = expanding
+
+									fixedgridbox = {
+										flipdirection = yes
+										addrow = 60
+										addcolumn = 38
+										maxverticalslots = 1
+										datamodel_wrap = 9
+
+										datamodel = "[Character.GetTitles]"
+										item = {
+											coa_title_tiny_crown = {
+												visible = "[GreaterThan_int32( Title.GetTierFrame, '(int32)3' )]" # Show only Duke or Emperor
+
+												icon = {
+													name = "has_laws"
+													visible = "[Title.HasLaws]"
+													parentanchor = bottom|right
+													size = { 25 25 }
+													position = { 5 0 }
+													texture = "gfx/interface/icons/title_status/icon_title_law.dds"
+												}
+
+												using = tooltip_ne
+											}
+										}
+									}
+									expand = {}
+								}
+
+								expand = {}
+
+								vbox = {
+									icon = {
+										size = { 32 32 }
+										texture = "gfx/interface/icons/icon_skill_governor_efficiency.dds"
+									}
+
+									text_single = {
+										text = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALUE"
+										align = nobaseline
+									}
+
+									tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT"
+									using = tooltip_ne
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	type vbox_family_group_foldout_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+
+		oncreate = "[BindFoldOutContext]"
+		oncreate = "[PdxGuiFoldOut.Unfold]"
+
+		button_expandable_toggle_field = {
+			blockoverride "text"
+			{
+				text = "[AdminFamilyGroupItem.GetName]"
+			}
+		}
+
+		vbox = {
+			visible = "[PdxGuiFoldOut.IsUnfolded]"
+
+			layoutpolicy_horizontal = expanding
+
+			fixedgridbox = {
+				name = "families_in_group"
+
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				addcolumn = 525
+				addrow = 120
+
+				datamodel = "[AdminFamilyGroupItem.GetFamilyItems]"
+				item = {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						button_family_group_item = {}
+						expand = {}
+					}
+				}
+			}
+		}
+	}
+
+	type button_family_group_item_ocr = button
+	{
+		size = { 525 110 }
+		datacontext = "[AdminHouseItem.GetHouse]"
+		datacontext = "[DynastyHouse.GetHeadOfHouse]"
+		onclick = "[GovernmentAdministrationWindow.SelectFeaturedHouse( DynastyHouse.Self )]"
+
+		background = {
+			visible = "[ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse )]"
+			margin = { 4 4 }
+			using = Background_Area_Admin_Purple
+		}
+
+		background = {
+			visible = "[DynastyHouse.IsDominant]"
+			margin = { 4 4 }
+			using = Background_Area_Admin_Orange
+		}
+
+		background = {
+			visible = "[And( And( DynastyHouse.IsPowerful, Not( DynastyHouse.IsDominant ) ), Not( ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse ) ) )]"
+			margin = { 4 4 }
+			using = Background_Area_Admin_Blue
+		}
+
+		background = {
+			texture = "gfx/interface/window_administrative_government/family_decoration.dds"
+			spriteType = Corneredtiled
+			margin_bottom = 2
+			spriteborder_bottom = 14
+			texture_density = 1.5
+			alpha = 0.1
+			using = Mask_Rough_Edges
+		}
+
+		background = {
+			texture = "gfx/interface/window_administrative_government/family_decoration.dds"
+			spriteType = Corneredtiled
+			margin_top = 2
+			spriteborder_top = 14
+			texture_density = 1.5
+			alpha = 0.1
+			using = Mask_Rough_Edges
+		}
+
+		background = {
+			texture = "gfx/interface/component_masks/patterns/mask_pattern_02.dds"
+			spriteType = corneredtiled
+			color = { 0.1 0.1 0.12 1 }
+			texture_density = 0.75
+			margin = { 0 -10 }
+			alpha = 0.2
+
+			using = Mask_Rough_Edges
+
+			modify_texture = {
+				texture = "gfx/interface/component_masks/mask_clouds.dds"
+				blend_mode = alphamultiply
+				spriteType = corneredTiled
+				alpha = 0.5
+			}
+
+			modify_texture = {
+				texture = "gfx/interface/component_masks/mask_scratches.dds"
+				blend_mode = alphamultiply
+				spriteType = corneredTiled
+			}
+		}
+
+		background = {
+			spriteType = Corneredtiled
+			texture_density = 2
+			visible = "[ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse )]"
+			texture = "gfx/interface/window_administrative_government/imperial_family_decoration.dds"
+			spriteborder = { 212 0 }
+
+			using = Mask_Rough_Edges
+
+			modify_texture = {
+				blend_mode = alphaMultiply
+				texture = "gfx/interface/component_masks/mask_horizontal_extended.dds"
+			}
+		}
+
+		background = {
+			spriteType = Corneredtiled
+			texture_density = 2
+			visible = "[DynastyHouse.IsDominant]"
+			texture = "gfx/interface/window_administrative_government/dominant_family_decoration.dds"
+			spriteborder = { 212 0 }
+
+			using = Mask_Rough_Edges
+
+			modify_texture = {
+				blend_mode = alphaMultiply
+				texture = "gfx/interface/component_masks/mask_horizontal_extended.dds"
+			}
+		}
+
+		background = {
+			spriteType = Corneredtiled
+			texture_density = 2
+			visible = "[And( And( DynastyHouse.IsPowerful, Not( DynastyHouse.IsDominant ) ), Not( ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse ) ) )]"
+			texture = "gfx/interface/window_administrative_government/powerful_family_decoration.dds"
+			spriteborder = { 212 0 }
+
+			using = Mask_Rough_Edges
+
+			modify_texture = {
+				blend_mode = alphaMultiply
+				texture = "gfx/interface/component_masks/mask_horizontal_extended.dds"
+			}
+		}
+
+		background = {
+			visible = "[DynastyHouse.GetHeadOfHouse.IsPlayer]"
+			using = Background_Area_Border
+			using = Background_Frame_Gold
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			margin_left = 12
+			margin_right = 12
+
+			coa_house_medium = {
+
+				widget = {
+					size = { 92% 32 }
+					parentanchor = bottom|hcenter
+					position = { 0 -14}
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/rating_banner.dds"
+					}
+
+					tooltipwidget = {
+						widget_value_breakdown_tooltip = {
+							datacontext = "[GovernmentAdministrationWindow.GetHousePowerTooltip( DynastyHouse.Self )]"
+						}
+					}
+
+					text_single = {
+						parentanchor = center
+						position = { 0 -1 }
+						max_width = 250
+						align = nobaseline
+
+						text = "[DynastyHouse.GetHousePower]"
+
+						default_format = "#light_background"
+					}
+				}
+
+				powerful_family_bonus = {
+					parentanchor = top|right
+				}
+			}
+
+			hbox = {
+				margin_left = 8
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				datacontext = "[DynastyHouse.GetHeadOfHouse]"
+
+				vbox = {
+					spacing = 2
+					margin_left = 8
+					margin_top = 8
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							max_width = 250
+							text = "ADMINISTRATIVE_GOVERNMENT_HOUSE_WITH_NAME"
+						}
+						expand = {}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						text_single = {
+							max_width = 250
+							layoutpolicy_horizontal = expanding
+							text = "ADMINISTRATIVE_GOVERNMENT_HOUSE_HEAD"
+						}
+						expand = {}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						margin_top = 4
+						datacontext = "[DynastyHouse.GetHeadOfHouse]"
+
+						hbox_access_domicile_button = {
+							datacontext = "[DynastyHouse.GetHeadOfHouse]"
+							visible = "[Character.HasDomicile]"
+
+						}
+
+						button_round = {
+							visible = "[And( Character.HasDomicile, Not( DynastyHouse.GetHeadOfHouse.IsPlayer ) )]"
+							enabled = "[Character.IsPlayerInteractionValid('start_raid_estate_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('start_raid_estate_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('start_raid_estate_interaction')]"
+
+							button_army_toggle_raiding = {
+								parentanchor = center
+								alwaystransparent = yes
+							}
+						}
+
+						button_round = {
+							visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
+							enabled = "[Character.IsPlayerInteractionValid('start_slander_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('start_slander_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('start_slander_interaction')]"
+
+							button_slander = {
+								parentanchor = center
+								alwaystransparent = yes
+							}
+						}
+
+						button_round = {
+							visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
+							enabled = "[Character.IsPlayerInteractionValid('start_challenge_status_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('start_challenge_status_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('start_challenge_status_interaction')]"
+
+							button_challenge_status = {
+								parentanchor = center
+								alwaystransparent = yes
+							}
+						}
+
+						button_round = {
+							visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
+							enabled = "[Character.IsPlayerInteractionValid('request_appointment_support')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('request_appointment_support')]"
+							onclick = "[Character.OpenPlayerInteraction('request_appointment_support')]"
+
+							button_request_appointment_support = {
+								parentanchor = center
+								alwaystransparent = yes
+							}
+						}
+
+						expand = {}
+					}
+					expand = {}
+				}
+
+				portrait_head_small = {
+					blockoverride "portrait_button"
+					{
+						using = tooltip_ws
+					}
+					blockoverride "glow_visible"
+					{
+						visible = no
+					}
+				}
+			}
+		}
+	}
+}
+
+types BAV {
+	type widget_theme_item_bav = widget
+	{
+		size = { 520 58 }
+		state = {
+			name = _mouse_hierarchy_enter
+			on_start = "[PdxGuiWidget.FindChild('theme_glow').TriggerAnimation('appear')]"
+		}
+
+		state = {
+			name = _mouse_hierarchy_leave
+			on_start = "[PdxGuiWidget.FindChild('theme_glow').TriggerAnimation('disappear')]"
+		}
+
+		datacontext = "[Title.GetHolder]"
+
+		button = {
+			name = "open_detail_button"
+			visible = "[And(Not( GetVariableSystem.Exists( 'admin_vassal_details_refresh' ) ), IsAdministrativeRuler(Title.GetHolder))]"
+			size = { 100% 100% }
+
+			onclick = "[ToggleAdminVassalDetailView( Title.Self )]"
+			onrightclick = "[Character.PanCameraTo]"
+			button_ignore = none
+			# onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+			down = "[IsAdminVassalDetailViewShown( Title.Self )]"
+			onclick = "[Character.PanCameraTo]"
+		}
+
+		button = {
+			name = "refresh_detail_button"
+			visible = "[And(GetVariableSystem.Exists( 'admin_vassal_details_refresh' ),IsAdministrativeRuler(Title.GetHolder))]"
+			size = { 100% 100% }
+
+			onclick = "[PdxGuiTriggerAllAnimations('admin_vassal_details_refresh')]"
+			down = "[IsAdminVassalDetailViewShown( Title.Self )]"
+
+			state = {
+				name = _mouse_click
+				delay = 0.2
+				on_finish = "[ToggleAdminVassalDetailView( Title.Self )]"
+			}
+		}
+
+		button = {
+			visible = "[Or( Not(Title.GetHolder.IsValid),  And( And( Not( IsAdministrativeRuler( Title.GetHolder )), Not(Title.GetHolder.IsPlayerInteractionValid('demand_admin_interaction'))), Title.GetHolder.GetLiege.IsPlayer  ) ) ]"
+			size = { 100% 100% }
+			onclick = "[DefaultOnCoatOfArmsClick(Title.GetID)]"
+		}
+
+		button = {
+			name = "demand_admin_interaction_button"
+			datacontext = "[Title.GetHolder]"
+			visible = "[And( And( And( Not( IsAdministrativeRuler( Character ) ), Character.IsValid ), Character.GetLiege.IsPlayer ), Character.IsPlayerInteractionValid('demand_admin_interaction') )]"
+			size = { 100% 100% }
+			tooltip = "[Character.GetPlayerInteractionTooltip('demand_admin_interaction')]"
+			onclick = "[Character.OpenPlayerInteraction('demand_admin_interaction')]"
+		}
+
+		background = {
+			visible = "[Title.GetHolder.IsPlayer]"
+			using = Background_Area_Border
+			using = Background_Frame_Gold
+		}
+
+		icon = {
+			name = "theme_glow"
+			parentanchor = center
+			size = { 105% 105% }
+			texture = "gfx/interface/window_theme_administration/admin_theme_glow.dds"
+			alpha = 0
+
+			state = {
+				name = appear
+				using = Animation_Curve_Default
+				duration = 0.2
+				position = { 0 0 }
+				alpha = 0.7
+				scale = 1.01
+			}
+
+			state = {
+				name = disappear
+				using = Animation_Curve_Default
+				duration = 0.2
+				position = { 0 0 }
+				alpha = 0
+				scale = 0.97
+			}
+		}
+
+		widget = {
+			size = { 100% 100% }
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					bottomtotop = yes # in order to put the header background on top
+
+					# bottom
+					widget = {
+						layoutpolicy_horizontal = expanding
+						size = { 0 38 }
+
+
+
+						# alive background
+						widget = {
+							name = "theme_type_title"
+							datacontext = "[Title.GetHolder]"
+							visible = "[Title.GetHolder.IsValid]"
+
+							size = { 100% 100% }
+
+							background = {
+								texture = "gfx/interface/colors/black.dds"
+								using = Mask_Rough_Edges
+								alpha = 0.8
+								margin_bottom = 2
+							}
+
+							background = {
+								texture = "gfx/interface/colors/blue.dds"
+								color = { 0.5 0.6 0.65 1 }
+								using = Mask_Rough_Edges
+
+								visible = "[IsAdministrativeRuler(Title.GetHolder)]"
+
+								modify_texture = {
+									texture = "gfx/interface/component_overlay/seamless_noise.dds"
+									blend_mode = overlay
+									spriteType = CorneredTiled
+
+									alpha = 0.1
+								}
+							}
+
+							background = {
+								texture = "gfx/interface/colors/red.dds"
+								color = { 0.4 0.7 0.7 1 }
+								using = Mask_Rough_Edges
+
+								visible = "[Not(IsAdministrativeRuler(Title.GetHolder))]"
+
+								modify_texture = {
+									texture = "gfx/interface/component_overlay/seamless_noise.dds"
+									blend_mode = overlay
+									spriteType = CorneredTiled
+
+									alpha = 0.3
+								}
+							}
+
+							background = {
+								texture = "gfx/interface/colors/black.dds"
+								using = Mask_Rough_Edges
+								alpha = 0.1
+								margin_bottom = 2
+							}
+
+							background = {
+								visible = no
+								texture = "[Title.GetPreferredCapital.GetProvince.GetTerrain.GetIllustration]"
+								fittype = centercrop
+								# alpha = 0.7
+
+								modify_texture = {
+									blend_mode = alphaMultiply
+									texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
+									# mirror = horizontal
+								}
+								modify_texture = {
+									blend_mode = alphaMultiply
+									texture = "gfx/interface/component_masks/mask_fade_horizontal.dds"
+									mirror = horizontal
+								}
+							}
+						}
+
+						# dead background
+						widget = {
+							datacontext = "[Title.GetHolder]"
+							visible = "[Not(Title.GetHolder.IsValid)]"
+
+							size = { 100% 100% }
+							parentanchor = bottom
+
+							background = {
+								texture = "gfx/interface/colors/black.dds"
+								using = Mask_Rough_Edges
+								alpha = 0.8
+
+								margin_bottom = 2
+							}
+
+							background = {
+								texture = "gfx/interface/colors/grey.dds"
+								color = { 0.6 0.6 0.6 1 }
+								using = Mask_Rough_Edges
+
+								modify_texture = {
+									texture = "gfx/interface/component_overlay/seamless_noise.dds"
+									blend_mode = overlay
+									spriteType = CorneredTiled
+
+									alpha = 0.2
+								}
+							}
+						}
+
+						# coa
+						widget = {
+							name = "background"
+							scissor = yes
+							size = { 100% 100% }
+							alpha = 0.3
+							position = { 50 0 }
+
+							coat_of_arms_icon = {
+								size = { 128 128 }
+								coat_of_arms = "[Title.GetTitleCoA.GetTexture('(int32)230','(int32)230')]"
+								coat_of_arms_slot = "[Title.GetTitleCoA.GetSlot('(int32)230','(int32)230')]"
+								coat_of_arms_mask = "gfx/interface/coat_of_arms/designer_mask.dds"
+
+								color = { 1 1 1 0.5 }
+
+								modify_texture = {
+									texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
+									rotate_uv = 1.08
+									translate_uv = { 0.3 0 }
+									blend_mode = alphamultiply
+								}
+
+								using = Mask_Rough_Edges
+							}
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+							margin = { 60 0 }
+							margin_right = 100
+
+							# alive text
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Title.GetHolder.IsValid]"
+								datacontext = "[Title.GetHolder]"
+								datacontext = "[Title.GetHolder.GetVassalContract]"
+
+								text_single = {
+									raw_text = "@gold_icon! [Character.MakeScope.ScriptValue('bav_tax_to_liege')|1v]"
+									alpha = "[Select_float(  LessThan_CFixedPoint(Character.MakeScope.ScriptValue('bav_tax_to_liege'), '(CFixedPoint)0.1'), '(float)0.5', '(float)1.0' )]"
+									min_width = 60
+									max_width = 60
+								}
+
+								text_single = {
+									raw_text = "@soldier_icon! [Character.MakeScope.ScriptValue('bav_levies_to_liege')|0v]"
+									alpha = "[Select_float(  LessThan_CFixedPoint(Character.MakeScope.ScriptValue('bav_levies_to_liege'), '(CFixedPoint)0.1'), '(float)0.5', '(float)1.0' )]"
+									min_width = 60
+									max_width = 60
+								}
+
+
+								text_single = {
+									raw_text = "[Title.GetTotalTitleMAATroopsDesc]"
+									visible = "[Not(DataModelHasItems(Title.GetControlledMAA))]"
+									max_width = 100
+									alpha = "[Select_float( DataModelHasItems(Title.GetControlledMAA), '(float)1.0', '(float)0.7' )]"
+
+								}
+
+								text_single = {
+									visible = "[DataModelHasItems(Title.GetControlledMAA)]"
+									raw_text = "[Title.MakeScope.ScriptValue('bav_conrtolled_title_maa')|v0]"
+									min_width = 30
+									max_width = 30
+
+									tooltipwidget = {
+										container = {
+											alwaystransparent = no
+
+											using = DefaultTooltipBackground
+
+											flowcontainer = {
+												margin = { 15 15 }
+												ignoreinvisible = yes
+												direction = vertical
+												datamodel = "[Title.GetControlledMAA]"
+
+												item = {
+													flowcontainer = {
+														ignoreinvisible = yes
+														spacing = 3
+														icon = {
+															size = { 25 25 }
+															texture = "[Regiment.GetMAAType.GetIcon]"
+														}
+
+														text_single = {
+															raw_text = "[Regiment.GetMAAType.GetNameNoTooltip] [Regiment.MakeScope.ScriptValue('bav_maa_current_size')]/[Regiment.GetMaxCount], [Regiment.GetMAAChunkCount]"
+														}
+
+														tooltipwidget = {
+															using = regiment_container_text_tooltip
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+
+								spacer = {
+									size = { 5 0 }
+								}
+
+								text_single = {
+									visible = "[DataModelHasItems(Title.GetControlledMAA)]"
+									raw_text = "[GetDataModelSize(Title.GetControlledMAA)]/[Add_CFixedPoint(Character.MakeScope.ScriptValue('bav_maa_title_cap'), Select_CFixedPoint(EqualTo_string(Character.GetHouse.GetHousePowerBonus.GetName, GetHousePowerBonus('army_quartermasters').GetName), '(CFixedPoint)1', '(CFixedPoint)0'))]"
+									align = right
+									min_width = 20
+									max_width = 20
+								}
+
+								spacer = {
+									size = { 3 0 }
+								}
+
+								# text_single = {
+								# 	raw_text = "[GetHousePowerBonus('army_quartermasters').GetName]"
+								# }
+
+
+								overlappingitembox = {
+									# layoutpolicy_vertical = expanding
+									size = { 40 18 }
+									visible = "[DataModelHasItems(Title.GetControlledMAA)]"
+
+									datamodel = "[Title.GetControlledMAA]"
+
+									item = {
+										icon = {
+											size = { 25 25 }
+											texture = "[Regiment.GetMAAType.GetIcon]"
+											tooltipwidget = {
+												using = regiment_container_text_tooltip
+											}
+										}
+									}
+								}
+
+								expand = {
+								}
+
+								hbox = {
+									visible = "[IsAdministrativeRuler( Title.GetHolder )]"
+
+									hbox = {
+										visible = "[Not( Title.GetHolder.IsIndependentRuler )]"
+										spacing = 5
+										datacontext = "[Title.GetHolder]"
+
+										# TODO
+										button_round = {
+											size = { 30 30 }
+											datacontext = "[Title.GetHolder.GetLiege]"
+											visible = "[And(Title.GetHolder.IsPlayer,Title.GetHolder.GetLiege.IsValid)]"
+											enabled = "[Character.IsPlayerInteractionValid('admin_vassal_modify_vassal_contract_interaction')]"
+											tooltip = "[Character.GetPlayerInteractionTooltip('admin_vassal_modify_vassal_contract_interaction')]"
+											onclick = "[Character.OpenPlayerInteraction('admin_vassal_modify_vassal_contract_interaction')]"
+
+											text_single = {
+												alwaystransparent = yes
+												text = ADMIN_WINDOW_THEME_ADMINISTRATION_TYPE_TEXT_ICON
+												parentanchor = center
+												scale = 1.2
+												position = { 0 -2 }
+												alpha = "[Select_float( Character.IsPlayerInteractionValid('admin_vassal_modify_vassal_contract_interaction'), '(float)1.0', '(float)0.5' )]"
+											}
+
+											blockoverride "button_bg_color"
+											{
+												color = { 0.5 0.5 0.7 1 }
+												alpha = 0.1
+											}
+										}
+
+										button_round = {
+											size = { 26 26 }
+											visible = "[Character.IsPlayerInteractionShown('admin_liege_modify_vassal_contract_interaction')]"
+											enabled = "[Character.IsPlayerInteractionValid('admin_liege_modify_vassal_contract_interaction')]"
+
+											onclick = "[Character.OpenPlayerInteraction('admin_liege_modify_vassal_contract_interaction')]"
+											onclick = "[Character.PanCameraTo]"
+											blockoverride "button_bg_color"
+											{
+												color = { 0.5 0.5 0.7 1 }
+												alpha = 0.1
+											}
+
+											tooltip = "[Character.GetPlayerInteractionTooltip('admin_liege_modify_vassal_contract_interaction')]"
+
+											text_single = {
+												alwaystransparent = yes
+												text = ADMIN_WINDOW_THEME_ADMINISTRATION_TYPE_TEXT_ICON
+												parentanchor = center
+												scale = 1.2
+												position = { 0 -2 }
+												alpha = "[Select_float( Character.IsPlayerInteractionValid('admin_liege_modify_vassal_contract_interaction'), '(float)1.0', '(float)0.5' )]"
+											}
+										}
+
+										button_round = {
+											size = { 26 26 }
+											visible = "[Character.IsPlayerInteractionShown('give_vassal_directive_interaction')]"
+											enabled = "[Character.IsPlayerInteractionValid('give_vassal_directive_interaction')]"
+											onclick = "[Character.OpenPlayerInteraction('give_vassal_directive_interaction')]"
+											tooltip = "[Character.GetPlayerInteractionTooltip('give_vassal_directive_interaction')]"
+
+											blockoverride "button_bg_color"
+											{
+												color = { 0.5 0.5 0.7 1 }
+												alpha = 0.1
+											}
+
+											text_single = {
+											 	visible = "[Title.GetHolder.IsPlayerInteractionShown('give_vassal_directive_interaction')]"
+											 	text = "[Title.GetHolder.Custom('vassal_directive_icon')]"
+											 	# tooltip = "[Title.GetHolder.Custom('vassal_directive_text')]"
+											 	using = tooltip_se
+												alwaystransparent = yes
+												position = { 0 -6 }
+												alpha = "[Select_float( Character.IsPlayerInteractionValid('give_vassal_directive_interaction'), '(float)1.0', '(float)0.5' )]"
+											}
+
+											using = tooltip_se
+										}
+										#
+										# text_single = {
+										# 	text = ADMIN_WINDOW_THEME_ADMINISTRATION_TYPE_TEXT_ICON
+										# 	max_width = 90
+										# }
+										# text_single = {
+										# 	visible = "[Title.GetHolder.IsPlayerInteractionShown('give_vassal_directive_interaction')]"
+										# 	text = "[Title.GetHolder.Custom('vassal_directive_icon')]"
+										# 	tooltip = "[Title.GetHolder.Custom('vassal_directive_text')]"
+										# 	using = tooltip_se
+										#
+										# }
+
+										# spacer = {
+										# 	size = { 5 0 }
+										# }
+
+										text_single = {
+											text = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY
+											tooltip = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT
+											default_format = "#low"
+											align = right
+											max_width = 60
+											min_width = 60
+										}
+									}
+
+									text_single = {
+										visible = "[Title.GetHolder.IsIndependentRuler]"
+										text = ADMIN_WINDOW_THEME_IMPERIAL_LANDS
+
+										max_width = 140
+									}
+								}
+
+								# wrong type
+								hbox = {
+									visible = "[Not(IsAdministrativeRuler(Title.GetHolder))]"
+									margin_top = 6
+
+									text_single = {
+										text = "ADMIN_WINDOW_VASSAL_GOVERNMENT_TYPE"
+
+									}
+								}
+
+								hbox = {
+									spacing = 3
+									margin_top = 5
+									ignoreinvisible = no
+									visible = no
+
+									# succession
+									widget = {
+										size = { 28 28 }
+
+										widget = {
+											name = "no_valid_successor"
+											size = { 100% 100% }
+
+											visible = "[And( And( And( Title.HasHolder, Not( AdministrativeThemeItem.HasValidSuccessor ) ), Not( Title.GetHolder.IsIndependentRuler ) ), IsAdministrativeRuler( Title.GetHolder ) )]"
+
+											tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_NO_VALID_SUCCESSOR_TT"
+
+											background = {
+												texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+											}
+
+											button_heir = {
+												parentanchor = center
+												position = { 0 -8 }
+												alwaystransparent = yes
+											}
+										}
+
+										widget = {
+											name = "no_investment_has_candidate_winning"
+											size = { 100% 100% }
+
+											visible = "[And( And( Not( AdministrativeThemeItem.HasLocalPlayerInvested ), AdministrativeThemeItem.HasLocalPlayerCandidate ), AdministrativeThemeItem.HasLocalPlayerCandidateInFirst )]"
+
+											tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_WINNING_TT"
+
+											background = {
+												texture = "gfx/interface/window_theme_administration/admin_theme_sucession.dds"
+											}
+
+											button_house = {
+												parentanchor = center
+												position = { 0 -8 }
+												alwaystransparent = yes
+											}
+										}
+
+										widget = {
+											name = "no_investment_has_candidate_losing"
+											size = { 100% 100% }
+
+											visible = "[And( And( Not( AdministrativeThemeItem.HasLocalPlayerInvested ), AdministrativeThemeItem.HasLocalPlayerCandidate ), Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+											tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_LOSING_TT"
+
+											background = {
+												texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+											}
+
+											button_house = {
+												parentanchor = center
+												position = { 0 -8 }
+												alwaystransparent = yes
+											}
+										}
+
+										widget = {
+											name = "invested_winning"
+											size = { 100% 100% }
+
+											visible = "[And( AdministrativeThemeItem.HasLocalPlayerInvested, AdministrativeThemeItem.HasLocalPlayerCandidateInFirst )]"
+
+											tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_WINNING_TT"
+
+											background = {
+												texture = "gfx/interface/window_theme_administration/admin_theme_sucession.dds"
+											}
+
+											button_promote_candidate = {
+												parentanchor = center
+												position = { 0 -8 }
+												alwaystransparent = yes
+											}
+										}
+
+										widget = {
+											name = "invested_losing"
+											size = { 100% 100% }
+
+											visible = "[And( AdministrativeThemeItem.HasLocalPlayerInvested, Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+											tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_LOSING_TT"
+
+											background = {
+												texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+											}
+
+											button_promote_candidate = {
+												parentanchor = center
+												position = { 0 -8 }
+												alwaystransparent = yes
+											}
+										}
+									}
+
+									# house
+									widget = {
+										name = "governing_house_coat_of_arms"
+										size = { 32 32 }
+
+										datacontext = "[Title.GetHolder.GetHouse]"
+										visible = "[Title.HasHolder]"
+
+										# background = {
+										# 	texture = "gfx/interface/window_theme_administration/admin_theme_coa_holder.dds"
+										# }
+
+										coa_house_tiny = {
+											scale = 0.75
+											parentanchor = center
+											position = { 0 -5 }
+										}
+									}
+								}
+							}
+
+							# dead text
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Not(Title.GetHolder.IsValid)]"
+								datacontext = "[Title.GetHolder]"
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										text = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY
+										margin_left = 4
+
+										tooltip = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT
+									}
+
+									expand = {}
+								}
+
+								expand = {}
+							}
+						}
+					}
+
+					# header
+					widget = {
+						size = { 0 18 }
+						layoutpolicy_horizontal = expanding
+
+						background = {
+							margin_bottom = 14
+							margin_top = 1
+							visible = "[Title.HasHolder]"
+							texture = "gfx/interface/window_theme_administration/admin_theme_banner.dds"
+						}
+
+						background = {
+							margin_bottom = 14
+							margin_top = 1
+							visible = "[Not(Title.HasHolder)]"
+							texture = "gfx/interface/window_theme_administration/admin_theme_banner_gray.dds"
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							margin = { 50 0 }
+							margin_right = 100
+
+							widget = {
+								size = { 40 20 }
+								allow_outside = yes
+
+								widget = {
+									size = { 40 34 }
+									allow_outside = yes
+
+									widget = {
+										name = "no_valid_successor"
+										size = { 100% 100% }
+
+										visible = "[And( And( And( Title.HasHolder, Not( AdministrativeThemeItem.HasValidSuccessor ) ), Not( Title.GetHolder.IsIndependentRuler ) ), IsAdministrativeRuler( Title.GetHolder ) )]"
+
+										tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_NO_VALID_SUCCESSOR_TT"
+
+										background = {
+											texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+										}
+
+										button_heir = {
+											parentanchor = center
+											position = { 0 -8 }
+											size = { 24 24  }
+											alwaystransparent = yes
+										}
+									}
+
+									widget = {
+										name = "no_investment_has_candidate_winning"
+										size = { 100% 100% }
+
+										visible = "[And( And( Not( AdministrativeThemeItem.HasLocalPlayerInvested ), AdministrativeThemeItem.HasLocalPlayerCandidate ), AdministrativeThemeItem.HasLocalPlayerCandidateInFirst )]"
+
+										tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_WINNING_TT"
+
+										background = {
+											texture = "gfx/interface/window_theme_administration/admin_theme_sucession.dds"
+										}
+
+										button_house = {
+											size = { 24 24 }
+											parentanchor = center
+											position = { 0 -4 }
+											alwaystransparent = yes
+										}
+									}
+
+									widget = {
+										name = "no_investment_has_candidate_losing"
+										size = { 100% 100% }
+
+										visible = "[And( And( Not( AdministrativeThemeItem.HasLocalPlayerInvested ), AdministrativeThemeItem.HasLocalPlayerCandidate ), Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+										tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_LOSING_TT"
+
+										background = {
+											texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+										}
+
+										button_house = {
+											size = { 24 24 }
+											parentanchor = center
+											position = { 0 -4 }
+											alwaystransparent = yes
+										}
+									}
+
+									widget = {
+										name = "invested_winning"
+										size = { 100% 100% }
+
+										visible = "[And( AdministrativeThemeItem.HasLocalPlayerInvested, AdministrativeThemeItem.HasLocalPlayerCandidateInFirst )]"
+
+										tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_WINNING_TT"
+
+										background = {
+											texture = "gfx/interface/window_theme_administration/admin_theme_sucession.dds"
+										}
+
+										button_promote_candidate = {
+											size = { 24 24 }
+											parentanchor = center
+											position = { 0 -4 }
+											alwaystransparent = yes
+										}
+									}
+
+									widget = {
+										name = "invested_losing"
+										size = { 100% 100% }
+
+										visible = "[And( AdministrativeThemeItem.HasLocalPlayerInvested, Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+										tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_LOSING_TT"
+
+										background = {
+											texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+										}
+
+										button_promote_candidate = {
+											size = { 24 24 }
+											parentanchor = center
+											position = { 0 -4 }
+											alwaystransparent = yes
+										}
+									}
+								}
+							}
+
+							spacer = {
+								size = { 5 0 }
+							}
+
+							text_single = {
+								text = ADMIN_WINDOW_THEME_NAME
+								default_format = "#high"
+								alpha = 0.75
+								max_width = 210
+							}
+
+							expand = {}
+
+							text_single = {
+								visible = "[Title.HasHolder]"
+								raw_text = "[Title.GetHolder.GetFirstNameNoTooltip]"
+								max_width = 210
+							}
+
+							hbox = {
+								visible = no
+								text_single = {
+									visible = "[Character.IsValid]"
+									max_width = 45
+									fontsize = 13
+									margin = { 3 0 }
+
+									tooltipwidget = character_opinion_tooltip
+									using = tooltip_es
+									default_format = "#high"
+									text = "[Character.GetOpinionOf( GetPlayer )|=]"
+									# fonttintcolor = "[Character.GetOpinionOfTint( GetPlayer )]"
+
+									text_single = {
+										visible = "[Character.IsValid]"
+										max_width = 45
+										fontsize = 13
+										margin = { 3 0 }
+
+										tooltipwidget = character_opinion_tooltip
+										using = tooltip_es
+										default_format = "#high"
+										text = "[Character.GetOpinionOf( GetPlayer )|=]"
+										fonttintcolor = "[Character.GetOpinionOfTint( GetPlayer )]"
+										alpha = 0.6
+									}
+								}
+								widget = {
+									size = { 16 16 }
+									visible = "[Character.ShouldShowDreadEffectIcon]"
+									icon = {
+										position = { 0 3 }
+										name = "dread"
+										size = { 16 16 }
+										texture = "gfx/interface/icons/portraits/dread_values.dds"
+										framesize = { 40 40 }
+										frame = "[Character.GetPlayerDreadEffectIconFrame]"
+										tooltip = "[Character.GetPlayerDreadEffectTooltip]"
+									}
+								}
+							}
+
+
+							widget = {
+								size = { 40 20 }
+								visible = no
+								allow_outside = yes
+
+								widget = {
+									visible = no
+									size = { 40 40 }
+									allow_outside = yes
+
+									widget = {
+										name = "no_valid_successor"
+										size = { 40 40 }
+
+										visible = "[And( And( And( Title.HasHolder, Not( AdministrativeThemeItem.HasValidSuccessor ) ), Not( Title.GetHolder.IsIndependentRuler ) ), IsAdministrativeRuler( Title.GetHolder ) )]"
+
+										tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_NO_VALID_SUCCESSOR_TT"
+
+										background = {
+											texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+										}
+
+										button_heir = {
+											parentanchor = center
+											position = { 0 -8 }
+											size = { 24 24 }
+											alwaystransparent = yes
+										}
+									}
+
+									widget = {
+										name = "no_investment_has_candidate_winning"
+										size = { 40 40 }
+
+										visible = "[And( And( Not( AdministrativeThemeItem.HasLocalPlayerInvested ), AdministrativeThemeItem.HasLocalPlayerCandidate ), AdministrativeThemeItem.HasLocalPlayerCandidateInFirst )]"
+
+										tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_WINNING_TT"
+
+										background = {
+											texture = "gfx/interface/window_theme_administration/admin_theme_sucession.dds"
+										}
+
+										button_house = {
+											size = { 24 24 }
+											parentanchor = center
+											position = { 0 -8 }
+											alwaystransparent = yes
+										}
+									}
+
+									widget = {
+										name = "no_investment_has_candidate_losing"
+										size = { 40 40 }
+
+										visible = "[And( And( Not( AdministrativeThemeItem.HasLocalPlayerInvested ), AdministrativeThemeItem.HasLocalPlayerCandidate ), Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+										tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_LOSING_TT"
+
+										background = {
+											texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+										}
+
+										button_house = {
+											size = { 24 24 }
+											parentanchor = center
+											position = { 0 -8 }
+											alwaystransparent = yes
+										}
+									}
+
+									widget = {
+										name = "invested_winning"
+										size = { 40 40 }
+
+										visible = "[And( AdministrativeThemeItem.HasLocalPlayerInvested, AdministrativeThemeItem.HasLocalPlayerCandidateInFirst )]"
+
+										tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_WINNING_TT"
+
+										background = {
+											texture = "gfx/interface/window_theme_administration/admin_theme_sucession.dds"
+										}
+
+										button_promote_candidate = {
+											size = { 24 24 }
+											parentanchor = center
+											position = { 0 -8 }
+											alwaystransparent = yes
+										}
+									}
+
+									widget = {
+										name = "invested_losing"
+										size = { 100% 100% }
+
+										visible = "[And( AdministrativeThemeItem.HasLocalPlayerInvested, Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+										tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_LOSING_TT"
+
+										background = {
+											texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+										}
+
+										button_promote_candidate = {
+											size = { 24 24 }
+											parentanchor = center
+											position = { 0 -8 }
+											alwaystransparent = yes
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			# coa and portrait, here to overlap everything else
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				alwaystransparent = yes
+				spacing = -4
+
+				widget = {
+					size = { 50 60 }
+					scissor = yes
+
+					widget = {
+						size = { 56 56 }
+						position = { 0 0 }
+						parentanchor = hcenter
+
+						coat_of_arms_icon = {
+							parentanchor = top|hcenter
+							size = { 100% 100% }
+							coat_of_arms = "[Title.GetTitleCoA.GetTexture('(int32)256','(int32)256')]"
+							coat_of_arms_slot = "[Title.GetTitleCoA.GetSlot('(int32)256','(int32)256')]"
+							coat_of_arms_mask = "gfx/interface/window_theme_administration/admin_theme_mask.dds"
+							alpha = 1
+
+							modify_texture = {
+								texture = "gfx/interface/coat_of_arms/coa_overlay.dds"
+								blend_mode = overlay
+								spritetype = corneredTiled
+							}
+
+							# modify_texture = {
+							# 	texture = "gfx/interface/component_masks/mask_glow.dds"
+							# 	blend_mode = alphaMultiply
+							# 	alpha = 0.3
+							# }
+
+							modify_texture = {
+								texture = "gfx/interface/colors/black.dds"
+								blend_mode = normal
+								alpha = 0.5
+
+								visible = "[Not(Title.GetHolder.IsValid)]"
+							}
+
+							modify_texture = {
+								texture = "gfx/interface/colors/black.dds"
+								blend_mode = normal
+								alpha = 0.2
+							}
+						}
+					}
+				}
+
+				expand = {}
+
+				widget = {
+					size = { 45 50 }
+					# layoutpolicy_vertical = expanding
+					alwaystransparent = yes
+
+					widget = {
+						scissor = yes
+						size = { 60 100% }
+						alwaystransparent = yes
+						position = { 0 -2 }
+
+						portrait_map = {
+							position = { -10 5 }
+							# portrait_opinion_small = {
+							# 	parentanchor = bottom|hcenter
+							# 	scale = 1.5
+							# 	position = { 0 -15 }
+							# }
+							scale = 0.7
+							visible = "[Title.HasHolder]"
+							datacontext = "[Title.GetHolder]"
+							parentanchor = center
+						}
+					}
+				}
+
+				widget = {
+					name = "governing_house_coat_of_arms"
+					size = { 50 58 }
+
+					datacontext = "[Title.GetHolder.GetHouse]"
+					visible = "[Title.HasHolder]"
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/admin_theme_coa_holder.dds"
+					}
+
+					coa_house_tiny = {
+						scale = 0.9
+						parentanchor = center
+						position = { 0 -6 }
+					}
+				}
+			}
+		}
+
+		icon = {
+			parentanchor = top
+			size = { 58 10 }
+			position = { -4 0 }
+			texture = "gfx/interface/window_theme_administration/admin_theme_coa_header.dds"
+		}
+
+		widget = {
+			size = { 40 20 }
+			allow_outside = yes
+			position = { -11 0 }
+			visible = no
+			# parentanchor = hcenter
+
+			widget = {
+				size = { 40 40 }
+				allow_outside = yes
+
+				widget = {
+					name = "no_valid_successor"
+					size = { 40 40 }
+
+					visible = "[And( And( And( Title.HasHolder, Not( AdministrativeThemeItem.HasValidSuccessor ) ), Not( Title.GetHolder.IsIndependentRuler ) ), IsAdministrativeRuler( Title.GetHolder ) )]"
+
+					tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_NO_VALID_SUCCESSOR_TT"
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+					}
+
+					button_heir = {
+						parentanchor = center
+						position = { 0 -8 }
+						size = { 24 24 }
+						alwaystransparent = yes
+					}
+				}
+
+				widget = {
+					name = "no_investment_has_candidate_winning"
+					size = { 40 40 }
+
+					visible = "[And( And( Not( AdministrativeThemeItem.HasLocalPlayerInvested ), AdministrativeThemeItem.HasLocalPlayerCandidate ), AdministrativeThemeItem.HasLocalPlayerCandidateInFirst )]"
+
+					tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_WINNING_TT"
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/admin_theme_sucession.dds"
+					}
+
+					button_house = {
+						size = { 24 24 }
+						parentanchor = center
+						position = { 0 -8 }
+						alwaystransparent = yes
+					}
+				}
+
+				widget = {
+					name = "no_investment_has_candidate_losing"
+					size = { 40 40 }
+
+					visible = "[And( And( Not( AdministrativeThemeItem.HasLocalPlayerInvested ), AdministrativeThemeItem.HasLocalPlayerCandidate ), Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+					tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_LOSING_TT"
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+					}
+
+					button_house = {
+						size = { 24 24 }
+						parentanchor = center
+						position = { 0 -8 }
+						alwaystransparent = yes
+					}
+				}
+
+				widget = {
+					name = "invested_winning"
+					size = { 40 40 }
+
+					visible = "[And( AdministrativeThemeItem.HasLocalPlayerInvested, AdministrativeThemeItem.HasLocalPlayerCandidateInFirst )]"
+
+					tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_WINNING_TT"
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/admin_theme_sucession.dds"
+					}
+
+					button_promote_candidate = {
+						size = { 24 24 }
+						parentanchor = center
+						position = { 0 -8 }
+						alwaystransparent = yes
+					}
+				}
+
+				widget = {
+					name = "invested_losing"
+					size = { 100% 100% }
+
+					visible = "[And( AdministrativeThemeItem.HasLocalPlayerInvested, Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+					tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_LOSING_TT"
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+					}
+
+					button_promote_candidate = {
+						size = { 24 24 }
+						parentanchor = center
+						position = { 0 -8 }
+						alwaystransparent = yes
+					}
+				}
+			}
+		}
+
+		# tooltip = "[AdministrativeThemeItem.GetTooltip]"
+		# tooltip_visible = "[Not( StringIsEmpty( AdministrativeThemeItem.GetTooltip ) )]"
+		using = tooltip_ne
+	}
+}
+
+types GovernmentAdministrationThemes
+{
+	type widget_empty_governor_portrait = widget
+	{
+		background = {
+			using = Background_Area_Solid
+
+			modify_texture = {
+				texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
+				blend_mode = alphamultiply
+				alpha = 0.2
+				mirror = vertical
+			}
+		}
+
+		widget = {
+			size = { 100% 100% }
+
+			background = {
+				texture = "gfx/portraits/portrait_frame.dds"
+				using = Color_Grey
+				margin = { -4 -4 }
+				alpha = 0.5
+			}
+		}
+
+		button = {
+			size = { 100% 100% }
+			using = Placeholder_Inactive_Button
+
+			# TODO_CODE: Open create title and assign based on whether or not the emperor holds this title.
+			#onclick = ""
+
+			state = {
+				name = _mouse_hierarchy_enter
+				on_start = "[PdxGuiWidget.FindChild('highlight_frame').TriggerAnimation('show')]"
+			}
+
+			state = {
+				name = _mouse_hierarchy_leave
+				on_start = "[PdxGuiWidget.FindChild('highlight_frame').TriggerAnimation('hide')]"
+			}
+
+			highlight_icon = {
+				name = "portrait_unknown_head_small_glow"
+				parentanchor = center
+				position = { 3 -9 }
+				gfxtype = framedbuttongfx
+				effectname = "NoHighlight"
+				texture = "gfx/portraits/unknown_portraits/button_unknown_head.dds"
+				size = { 80 100 }
+				framesize = { 384 480 }
+				upframe = 1
+				overframe = 2
+			}
+
+			button_plus = {
+				alwaystransparent = yes
+				parentanchor = center
+			}
+
+			widget = {
+				name = "highlight_frame"
+				size = { 100% 100% }
+				alwaystransparent = yes
+				alpha = 0
+
+				state = {
+					name = "show"
+					alpha = 1
+				}
+
+				state = {
+					name = "hide"
+					alpha = 0
+				}
+
+				background = {
+					size = { 100% 100% }
+					texture = "gfx/portraits/portrait_frame.dds"
+					using = Color_Grey
+					alpha = 0.7
+					margin = { -4 -4 }
+				}
+			}
+		}
+	}
+
+	type button_unassigned_county_item = button_standard_list
+	{
+		layoutpolicy_horizontal = expanding
+
+		button_ignore = none
+
+		raw_tooltip = "#X Not yet implemented button.#!"
+		default_format = "#X"
+
+		background = {
+			using = Background_Area_Border
+			using = Background_Frame_Gold
+		}
+
+		hbox = {
+			position = { 0 -5 }
+			margin = { 8 0 }
+
+			coa_title_tiny_crown = { }
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+
+				text = "[Title.GetNameNoTooltip]"
+			}
+
+			expand = { }
+
+			button_plus = { }
+		}
+	}
+
+	type vbox_house_theme_list = vbox
+	{
+		layoutpolicy_vertical = expanding
+		layoutpolicy_horizontal = expanding
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			coa_house_tiny = {
+				visible = "[And(DynastyHouse.IsValid, GovernmentAdministrationWindow.ShouldGroupByHouse)]"
+			}
+
+			button_expandable_toggle_field = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[AdministrativeHouseItem.GetHouse]"
+
+				blockoverride "onclick"
+				{
+					onclick = "[GovernmentAdministrationWindow.ToggleCollapseHouse( DynastyHouse.Self )]"
+				}
+
+				blockoverride "button_expand"
+				{
+					frame = "[BoolTo1And2( GovernmentAdministrationWindow.IsHouseCollapsed( DynastyHouse.Self ) )]"
+				}
+
+				blockoverride "text"
+				{
+					raw_text = "[GetDataModelSize(AdministrativeHouseItem.GetControlledThemes)] [SelectLocalization(DynastyHouse.IsValid, SelectLocalization(GovernmentAdministrationWindow.ShouldGroupByHouse, 'ADMIN_WINDOW_HOUSE_DROPDOWN', 'ADMIN_WINDOW_ASSIGNED_THEME'), 'ADMIN_WINDOW_UNASSIGNED_THEME')]"
+				}
+			}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			visible = "[GovernmentAdministrationWindow.IsHouseCollapsed( AdministrativeHouseItem.GetHouse )]"
+
+			fixedgridbox = {
+				datamodel = "[AdministrativeHouseItem.GetControlledThemes]"
+				visible = "[Not(GetVariableSystem.Exists('big_theme_widgets'))]"
+				layoutpolicy_horizontal = expanding
+				addcolumn = 520
+				addrow = 62
+
+				# flipdirection = yes
+				ignoreinvisible = yes
+
+				item = {
+					widget_theme_item_bav = {
+						datacontext = "[AdministrativeThemeItem.GetTitle]"
+						visible = "[AdministrativeThemeItem.ShouldShowTitle]"
+					}
+				}
+			}
+
+			dynamicgridbox = {
+				datamodel = "[AdministrativeHouseItem.GetControlledThemes]"
+				visible = "[GetVariableSystem.Exists('big_theme_widgets')]"
+				layoutpolicy_horizontal = expanding
+
+				datamodel_wrap = 3
+				flipdirection = yes
+				ignoreinvisible = yes
+				item = {
+					widget_theme_item = {
+						datacontext = "[AdministrativeThemeItem.GetTitle]"
+						visible = "[AdministrativeThemeItem.ShouldShowTitle]"
+					}
+				}
+			}
+
+
+		}
+
+	}
+
+	type widget_theme_item = widget
+	{
+		size = { 176 176 }
+		state = {
+			name = _mouse_hierarchy_enter
+			on_start = "[PdxGuiWidget.FindChild('theme_glow').TriggerAnimation('appear')]"
+		}
+
+		state = {
+			name = _mouse_hierarchy_leave
+			on_start = "[PdxGuiWidget.FindChild('theme_glow').TriggerAnimation('disappear')]"
+		}
+
+		button = {
+			name = "open_detail_button"
+			visible = "[And(Not( GetVariableSystem.Exists( 'admin_vassal_details_refresh' ) ), IsAdministrativeRuler(Title.GetHolder))]"
+			size = { 100% 100% }
+
+			onclick = "[ToggleAdminVassalDetailView( Title.Self )]"
+			down = "[IsAdminVassalDetailViewShown( Title.Self )]"
+		}
+
+		button = {
+			name = "refresh_detail_button"
+			visible = "[And(GetVariableSystem.Exists( 'admin_vassal_details_refresh' ),IsAdministrativeRuler(Title.GetHolder))]"
+			size = { 100% 100% }
+
+			onclick = "[PdxGuiTriggerAllAnimations('admin_vassal_details_refresh')]"
+			down = "[IsAdminVassalDetailViewShown( Title.Self )]"
+
+			state = {
+				name = _mouse_click
+				delay = 0.2
+				on_finish = "[ToggleAdminVassalDetailView( Title.Self )]"
+			}
+		}
+
+		button = {
+			visible = "[Or( Not(Title.GetHolder.IsValid),  And( And( Not( IsAdministrativeRuler( Title.GetHolder )), Not(Title.GetHolder.IsPlayerInteractionValid('demand_admin_interaction'))), Title.GetHolder.GetLiege.IsPlayer  ) ) ]"
+			size = { 100% 100% }
+			onclick = "[DefaultOnCoatOfArmsClick(Title.GetID)]"
+		}
+
+		button = {
+			name = "demand_admin_interaction_button"
+			datacontext = "[Title.GetHolder]"
+			visible = "[And( And( And( Not( IsAdministrativeRuler( Character ) ), Character.IsValid ), Character.GetLiege.IsPlayer ), Character.IsPlayerInteractionValid('demand_admin_interaction') )]"
+			size = { 100% 100% }
+			tooltip = "[Character.GetPlayerInteractionTooltip('demand_admin_interaction')]"
+			onclick = "[Character.OpenPlayerInteraction('demand_admin_interaction')]"
+		}
+
+		background = {
+			visible = "[Title.GetHolder.IsPlayer]"
+			using = Background_Area_Border
+			using = Background_Frame_Gold
+		}
+
+		widget = {
+			parentanchor = center
+			size = { 164 164 }
+
+			icon = {
+				size = { 100% 100% }
+				texture = "gfx/interface/window_theme_administration/admin_theme_coa_title.dds"
+			}
+
+			coat_of_arms_icon = { #Dynasty
+				parentanchor = top|hcenter
+				size = { 100% 100% }
+				coat_of_arms = "[Title.GetTitleCoA.GetTexture('(int32)256','(int32)256')]"
+				coat_of_arms_slot = "[Title.GetTitleCoA.GetSlot('(int32)256','(int32)256')]"
+				coat_of_arms_mask = "gfx/interface/window_theme_administration/admin_theme_mask.dds"
+				alpha = 0.8
+
+				modify_texture = {
+					texture = "gfx/interface/coat_of_arms/coa_overlay.dds"
+					blend_mode = overlay
+					spritetype = corneredTiled
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_glow.dds"
+					blend_mode = alphaMultiply
+					alpha = 0.6
+				}
+
+				modify_texture = {
+					texture = "gfx/interface/colors/black.dds"
+					blend_mode = normal
+					alpha = 0.5
+
+					visible = "[Not(Title.GetHolder.IsValid)]"
+				}
+			}
+
+			icon = {
+				name = "theme_glow"
+				parentanchor = center
+				size = { 100% 100% }
+				texture = "gfx/interface/window_theme_administration/admin_theme_glow.dds"
+				alpha = 0
+
+				state = {
+					name = appear
+					using = Animation_Curve_Default
+					duration = 0.2
+					position = { 0 0 }
+					alpha = 0.7
+					scale = 1.01
+				}
+
+				state = {
+					name = disappear
+					using = Animation_Curve_Default
+					duration = 0.2
+					position = { 0 0 }
+					alpha = 0
+					scale = 0.97
+				}
+			}
+
+			icon = {
+				parentanchor = top
+				size = { 100% 10 }
+				texture = "gfx/interface/window_theme_administration/admin_theme_coa_header.dds"
+			}
+
+			widget = {
+				name = "governing_house_coat_of_arms"
+				parentanchor = top|right
+				position = { -10 0 }
+				size = { 56 64 }
+
+				datacontext = "[Title.GetHolder.GetHouse]"
+				visible = "[Title.HasHolder]"
+
+				background = {
+					texture = "gfx/interface/window_theme_administration/admin_theme_coa_holder.dds"
+				}
+
+				coa_house_tiny = {
+					parentanchor = center
+					position = { 1 -8 }
+				}
+			}
+
+			widget = {
+				position = { 4 0 }
+				parentanchor = top|left
+				size = { 56 64 }
+
+				widget = {
+					name = "no_valid_successor"
+					size = { 100% 100% }
+
+					visible = "[And( And( And( Title.HasHolder, Not( AdministrativeThemeItem.HasValidSuccessor ) ), Not( Title.GetHolder.IsIndependentRuler ) ), IsAdministrativeRuler( Title.GetHolder ) )]"
+
+					tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_NO_VALID_SUCCESSOR_TT"
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+					}
+
+					button_heir = {
+						parentanchor = center
+						position = { 0 -8 }
+						alwaystransparent = yes
+					}
+				}
+
+				widget = {
+					name = "no_investment_has_candidate_winning"
+					size = { 100% 100% }
+
+					visible = "[And( Not( AdministrativeThemeItem.HasLocalPlayerIndependentSelfInFirst ), And( And( AdministrativeThemeItem.HasLocalPlayerCandidate, Not( AdministrativeThemeItem.HasLocalPlayerInvestedInTopCandidate ) ), AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+					tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_WINNING_TT"
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/admin_theme_sucession.dds"
+					}
+
+					button_house = {
+						parentanchor = center
+						position = { 0 -8 }
+						alwaystransparent = yes
+					}
+				}
+
+				widget = {
+					name = "no_investment_has_candidate_losing"
+					size = { 100% 100% }
+
+					visible = "[And( Not( AdministrativeThemeItem.HasLocalPlayerIndependentSelfInFirst ), And( And( AdministrativeThemeItem.HasLocalPlayerCandidate, Not( AdministrativeThemeItem.HasLocalPlayerInvestedInTopCandidate ) ), Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) ) )]"
+
+					tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_LOSING_TT"
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+					}
+
+					button_house = {
+						parentanchor = center
+						position = { 0 -8 }
+						alwaystransparent = yes
+					}
+				}
+
+				widget = {
+					name = "invested_winning"
+					size = { 100% 100% }
+
+					visible = "[And( Not( AdministrativeThemeItem.HasLocalPlayerIndependentSelfInFirst ), And( And( AdministrativeThemeItem.HasLocalPlayerCandidate, AdministrativeThemeItem.HasLocalPlayerInvestedInTopCandidate ), AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+					tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_WINNING_TT"
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/admin_theme_sucession.dds"
+					}
+
+					button_promote_candidate = {
+						parentanchor = center
+						position = { 0 -8 }
+						alwaystransparent = yes
+					}
+				}
+
+				widget = {
+					name = "invested_losing"
+					size = { 100% 100% }
+
+					visible = "[And( Not( AdministrativeThemeItem.HasLocalPlayerIndependentSelfInFirst ), And( And( AdministrativeThemeItem.HasLocalPlayerCandidate, AdministrativeThemeItem.HasLocalPlayerInvestedInTopCandidate ), Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) ) )]"
+
+					tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_LOSING_TT"
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/admin_theme_no_sucession.dds"
+					}
+
+					button_promote_candidate = {
+						parentanchor = center
+						position = { 0 -8 }
+						alwaystransparent = yes
+					}
+				}
+			}
+
+			widget = {
+				name = "theme_type_title"
+				datacontext = "[Title.GetHolder]"
+				visible = "[Title.GetHolder.IsValid]"
+
+				size = { 100% 48}
+				parentanchor = bottom
+				position = { 0 -16 }
+
+				background = {
+					texture = "gfx/interface/colors/black.dds"
+					using = Mask_Rough_Edges
+					alpha = 0.8
+
+					margin_bottom = 2
+				}
+
+				background = {
+					texture = "gfx/interface/colors/blue.dds"
+					color = { 0.5 0.6 0.65 1 }
+					using = Mask_Rough_Edges
+
+					visible = "[IsAdministrativeRuler(Title.GetHolder)]"
+
+					modify_texture = {
+						texture = "gfx/interface/component_overlay/seamless_noise.dds"
+						blend_mode = overlay
+						spriteType = CorneredTiled
+
+						alpha = 0.1
+					}
+				}
+
+				background = {
+					texture = "gfx/interface/colors/red.dds"
+					color = { 0.4 0.7 0.7 1 }
+					using = Mask_Rough_Edges
+
+					visible = "[Not(IsAdministrativeRuler(Title.GetHolder))]"
+
+					modify_texture = {
+						texture = "gfx/interface/component_overlay/seamless_noise.dds"
+						blend_mode = overlay
+						spriteType = CorneredTiled
+
+						alpha = 0.3
+					}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					margin = { 4 0 }
+					margin_top = 8
+					margin_right = 10
+
+					visible = "[IsAdministrativeRuler( Title.GetHolder )]"
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not( Title.GetHolder.IsIndependentRuler )]"
+
+						spacing = 3
+
+						text_single = {
+
+							text = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY
+							tooltip = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT
+							default_format = "#low"
+
+							max_width = 80
+						}
+
+						expand = {}
+
+						text_single = {
+							text = ADMIN_WINDOW_THEME_ADMINISTRATION_TYPE_TEXT_ICON
+							max_width = 90
+						}
+
+						text_single = {
+							fontsize = 12
+							fontsize_min = 11
+							visible = "[Title.GetHolder.IsPlayerInteractionShown('give_vassal_directive_interaction')]"
+							text = "[Title.GetHolder.Custom('vassal_directive_icon')]"
+							tooltip = "[Title.GetHolder.Custom('vassal_directive_text')]"
+							using = tooltip_se
+						}
+					}
+
+					text_single = {
+						visible = "[Title.GetHolder.IsIndependentRuler]"
+
+						text = ADMIN_WINDOW_THEME_IMPERIAL_LANDS
+						#default_format = "#low"
+
+						max_width = 140
+					}
+				}
+
+				hbox = {
+					visible = "[Not(IsAdministrativeRuler(Title.GetHolder))]"
+					layoutpolicy_horizontal = expanding
+					margin_top = 6
+
+					text_single = {
+						text = "ADMIN_WINDOW_VASSAL_GOVERNMENT_TYPE"
+					}
+				}
+			}
+
+			widget = {
+				datacontext = "[Title.GetHolder]"
+				visible = "[Not(Title.GetHolder.IsValid)]"
+
+				size = { 100% 48 }
+				parentanchor = bottom
+				position = { 0 -16 }
+
+				background = {
+					texture = "gfx/interface/colors/black.dds"
+					using = Mask_Rough_Edges
+					alpha = 0.8
+
+					margin_bottom = 2
+				}
+
+				background = {
+					texture = "gfx/interface/colors/grey.dds"
+					color = { 0.6 0.6 0.6 1 }
+					using = Mask_Rough_Edges
+
+					modify_texture = {
+						texture = "gfx/interface/component_overlay/seamless_noise.dds"
+						blend_mode = overlay
+						spriteType = CorneredTiled
+
+						alpha = 0.2
+					}
+				}
+
+				text_single = {
+					parentanchor = center
+					position = { 0 4 }
+					layoutpolicy_horizontal = expanding
+					text = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY
+					margin_left = 4
+
+					tooltip = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT
+				}
+			}
+
+			widget = {
+				parentanchor = bottom
+				position = { 0 -40 }
+				size = { 100% 48 }
+
+				background = {
+					visible = "[Title.HasHolder]"
+					texture = "gfx/interface/window_theme_administration/admin_theme_banner.dds"
+				}
+
+				background = {
+					visible = "[Not(Title.HasHolder)]"
+					texture = "gfx/interface/window_theme_administration/admin_theme_banner_gray.dds"
+				}
+
+				text_single = {
+					parentanchor = center
+					position = { 0 -4 }
+					layoutpolicy_horizontal = expanding
+					text = ADMIN_WINDOW_THEME_NAME
+					default_format = "#high"
+					max_width = 150
+				}
+			}
+		}
+
+		tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_THEME_TT"
+		tooltip_visible = "[AdministrativeThemeItem.ShouldShowTooltip]"
+		using = tooltip_ne
+	}
+
+	type hbox_theme_contract_obligation_result = hbox
+	{
+		layoutpolicy_horizontal = expanding
+		spacing = 8
+
+		text_single = {
+			text = ADMIN_WINDOW_THEME_ADMINISTRATION_LEVIES
+		}
+
+		text_single = {
+			text = ADMIN_WINDOW_THEME_ADMINISTRATION_TAXES
+		}
+	}
+
+	type button_modify_theme = button_round {
+		visible = "[Character.IsPlayerInteractionShown('admin_liege_modify_vassal_contract_interaction')]"
+		enabled = "[Character.IsPlayerInteractionValid('admin_liege_modify_vassal_contract_interaction')]"
+
+		onclick = "[Character.OpenPlayerInteraction('admin_liege_modify_vassal_contract_interaction')]"
+		onclick = "[Character.PanCameraTo]"
+
+		tooltip = "[Character.GetPlayerInteractionTooltip('admin_liege_modify_vassal_contract_interaction')]"
+
+		block "feudal_contract_button_round" {}
+
+		button_add_laws = {
+			alwaystransparent = yes
+			parentanchor = center
+		}
+	}
+
+	type button_replace_governor = button_round {
+		using = Placeholder_Inactive_Button
+
+		tooltip = "REPLACE_GOVERNOR_TOOLTIP"
+
+		button_change = {
+			parentanchor = center
+		}
+	}
+
+	type button_revoke_theme = button_round {
+		enabled = "[Character.IsPlayerInteractionValid('revoke_title_interaction')]"
+
+		onclick = "[Character.OpenPlayerInteraction('revoke_title_interaction')]"
+		onclick = "[Character.PanCameraTo]"
+
+		tooltip = "[Character.GetPlayerInteractionTooltip('revoke_title_interaction')]"
+
+		button_cancel = {
+			alwaystransparent = yes
+			parentanchor = center
+		}
+	}
+
+	type vbox_themes_list = vbox
+	{
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+
+		using = Animation_Tab_Switch
+
+		vbox = {
+			name = "house_list"
+			datamodel = "[GovernmentAdministrationWindow.GetHousesWithThemes]"
+
+			layoutpolicy_horizontal = expanding
+
+			item = {
+				vbox_house_theme_list = {
+					datacontext = "[AdministrativeHouseItem.GetHouse]"
+					layoutpolicy_horizontal = expanding
+				}
+			}
+		}
+
+		expand = { }
+	}
+}
+
+types GovernmentAdministration
+{
+	type widget_house_member_item = widget {
+		datacontext = "[CharacterListItem.GetCharacter]"
+
+		hbox = {
+			portrait_head = {}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					# Name and age
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						margin = { 0 3 }
+						margin_left = 5
+						margin_right = 10
+
+						background = {
+							using = Background_Area_Characterlist
+						}
+
+						background = {
+							using = Background_Area_Dark
+
+							modify_texture = {
+								texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
+								blend_mode = alphamultiply
+								alpha = 1
+								rotate_uv = 90
+								mirror = vertical
+							}
+						}
+
+						hbox = {
+							margin_left = 3
+							layoutpolicy_horizontal = expanding
+							maximumsize = { 338 -1 }
+
+							text_single = {
+								using = Font_Size_Medium
+								layoutpolicy_horizontal = expanding
+								align = nobaseline
+								text = "[Character.GetUINameNoTooltip|U]"
+								autoresize = no
+								fontsize_min = 14
+							}
+
+							block "character_relation"
+							{
+								hbox = {
+									visible = "[And(Character.HasRelationTo( GetPlayer ), Not(Character.IsPlayer))]"
+									text_single = {
+										raw_text = "•"
+										align = nobaseline
+										margin = { 5 0 }
+									}
+
+									text_single = {
+										name = "character_relation"
+										text = "[Character.GetRelationToString( GetPlayer )]"
+										tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+										default_format = "#low"
+										align = nobaseline
+										fontsize_min = 14
+										max_width = 180
+									}
+								}
+							}
+
+							expand = {}
+						}
+
+						hbox = {
+							using = character_age_or_death_text
+						}
+						expand = {}
+					}
+
+					### BOTTOM ROW ###
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+							block "additional_info_kill_list" {}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_label_left = {
+									margin_left = 10
+									max_width = 250
+
+									layoutpolicy_horizontal = expanding
+
+									text = "ADMINISTRATIVE_GOVERNMENT_INVESTMENT_CAP"
+
+									tooltipwidget = {
+										widget_value_breakdown_tooltip = {
+											datacontext = "[GovernmentAdministrationWindow.GetInvestmentCapTooltip( Character.Self )]"
+										}
+									}
+								}
+								expand = {}
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+
+								background = {
+									using = Background_Area_Dark
+									alpha = 0.5
+									margin = { 0 2 }
+								}
+
+								hbox = {
+									visible = "[IsAdministrativeRuler( Character )]"
+
+									layoutpolicy_horizontal = expanding
+
+									fixedgridbox = {
+										flipdirection = yes
+										addrow = 60
+										addcolumn = 38
+										maxverticalslots = 1
+										datamodel_wrap = 9
+
+										datamodel = "[Character.GetTitles]"
+										item = {
+											coa_title_tiny_crown = {
+												visible = "[GreaterThan_int32( Title.GetTierFrame, '(int32)3' )]" # Show only Duke or Emperor
+
+												icon = {
+													name = "has_laws"
+													visible = "[Title.HasLaws]"
+													parentanchor = bottom|right
+													size = { 25 25 }
+													position = { 5 0 }
+													texture = "gfx/interface/icons/title_status/icon_title_law.dds"
+												}
+
+												using = tooltip_ne
+											}
+										}
+									}
+									expand = {}
+								}
+
+								expand = {}
+
+								vbox = {
+									icon = {
+										size = { 32 32 }
+										texture = "gfx/interface/icons/icon_skill_governor_efficiency.dds"
+									}
+
+									text_single = {
+										text = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALUE"
+										align = nobaseline
+									}
+
+									tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT"
+									using = tooltip_ne
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	type vbox_family_group_foldout = vbox {
+		layoutpolicy_horizontal = expanding
+
+		oncreate = "[BindFoldOutContext]"
+		oncreate = "[PdxGuiFoldOut.Unfold]"
+
+		button_expandable_toggle_field = {
+			blockoverride "text"
+			{
+				text = "[AdminFamilyGroupItem.GetName]"
+			}
+		}
+
+		vbox = {
+			visible = "[PdxGuiFoldOut.IsUnfolded]"
+
+			layoutpolicy_horizontal = expanding
+
+			fixedgridbox = {
+				name = "families_in_group"
+
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				addcolumn = 525
+				addrow = 120
+
+				datamodel = "[AdminFamilyGroupItem.GetFamilyItems]"
+				item = {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						button_family_group_item = {}
+						expand = {}
+					}
+				}
+			}
+		}
+	}
+
+	type button_family_group_item = button
+	{
+		size = { 525 110 }
+		datacontext = "[AdminHouseItem.GetHouse]"
+		datacontext = "[DynastyHouse.GetHeadOfHouse]"
+		onclick = "[GovernmentAdministrationWindow.SelectFeaturedHouse( DynastyHouse.Self )]"
+
+		background = {
+			visible = "[ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse )]"
+			margin = { 4 4 }
+			using = Background_Area_Admin_Purple
+		}
+
+		background = {
+			visible = "[DynastyHouse.IsDominant]"
+			margin = { 4 4 }
+			using = Background_Area_Admin_Orange
+		}
+
+		background = {
+			visible = "[And( And( DynastyHouse.IsPowerful, Not( DynastyHouse.IsDominant ) ), Not( ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse ) ) )]"
+			margin = { 4 4 }
+			using = Background_Area_Admin_Blue
+		}
+
+		background = {
+			texture = "gfx/interface/window_administrative_government/family_decoration.dds"
+			spriteType = Corneredtiled
+			margin_bottom = 2
+			spriteborder_bottom = 14
+			texture_density = 1.5
+			alpha = 0.1
+			using = Mask_Rough_Edges
+		}
+
+		background = {
+			texture = "gfx/interface/window_administrative_government/family_decoration.dds"
+			spriteType = Corneredtiled
+			margin_top = 2
+			spriteborder_top = 14
+			texture_density = 1.5
+			alpha = 0.1
+			using = Mask_Rough_Edges
+		}
+
+		background = {
+			texture = "gfx/interface/component_masks/patterns/mask_pattern_02.dds"
+			spriteType = corneredtiled
+			color = { 0.1 0.1 0.12 1 }
+			texture_density = 0.75
+			margin = { 0 -10 }
+			alpha = 0.2
+
+			using = Mask_Rough_Edges
+
+			modify_texture = {
+				texture = "gfx/interface/component_masks/mask_clouds.dds"
+				blend_mode = alphamultiply
+				spriteType = corneredTiled
+				alpha = 0.5
+			}
+
+			modify_texture = {
+				texture = "gfx/interface/component_masks/mask_scratches.dds"
+				blend_mode = alphamultiply
+				spriteType = corneredTiled
+			}
+		}
+
+		background = {
+			spriteType = Corneredtiled
+			texture_density = 2
+			visible = "[ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse )]"
+			texture = "gfx/interface/window_administrative_government/imperial_family_decoration.dds"
+			spriteborder = { 212 0 }
+
+			using = Mask_Rough_Edges
+
+			modify_texture = {
+				blend_mode = alphaMultiply
+				texture = "gfx/interface/component_masks/mask_horizontal_extended.dds"
+			}
+		}
+
+		background = {
+			spriteType = Corneredtiled
+			texture_density = 2
+			visible = "[DynastyHouse.IsDominant]"
+			texture = "gfx/interface/window_administrative_government/dominant_family_decoration.dds"
+			spriteborder = { 212 0 }
+
+			using = Mask_Rough_Edges
+
+			modify_texture = {
+				blend_mode = alphaMultiply
+				texture = "gfx/interface/component_masks/mask_horizontal_extended.dds"
+			}
+		}
+
+		background = {
+			spriteType = Corneredtiled
+			texture_density = 2
+			visible = "[And( And( DynastyHouse.IsPowerful, Not( DynastyHouse.IsDominant ) ), Not( ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse ) ) )]"
+			texture = "gfx/interface/window_administrative_government/powerful_family_decoration.dds"
+			spriteborder = { 212 0 }
+
+			using = Mask_Rough_Edges
+
+			modify_texture = {
+				blend_mode = alphaMultiply
+				texture = "gfx/interface/component_masks/mask_horizontal_extended.dds"
+			}
+		}
+
+		background = {
+			visible = "[DynastyHouse.GetHeadOfHouse.IsPlayer]"
+			using = Background_Area_Border
+			using = Background_Frame_Gold
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+			margin_left = 12
+			margin_right = 12
+
+			coa_house_medium = {
+
+				widget = {
+					size = { 92% 32 }
+					parentanchor = bottom|hcenter
+					position = { 0 -14}
+
+					background = {
+						texture = "gfx/interface/window_theme_administration/rating_banner.dds"
+					}
+
+					tooltipwidget = {
+						widget_value_breakdown_tooltip = {
+							datacontext = "[GovernmentAdministrationWindow.GetHousePowerTooltip( DynastyHouse.Self )]"
+						}
+					}
+
+					text_single = {
+						parentanchor = center
+						position = { 0 -1 }
+						max_width = 250
+						align = nobaseline
+
+						text = "[DynastyHouse.GetHousePower]"
+
+						default_format = "#light_background"
+					}
+				}
+
+				powerful_family_bonus = {
+					parentanchor = top|right
+				}
+			}
+
+			hbox = {
+				margin_left = 8
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				datacontext = "[DynastyHouse.GetHeadOfHouse]"
+
+				vbox = {
+					spacing = 2
+					margin_left = 8
+					margin_top = 8
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							max_width = 250
+							text = "ADMINISTRATIVE_GOVERNMENT_HOUSE_WITH_NAME"
+						}
+						expand = {}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						text_single = {
+							max_width = 250
+							layoutpolicy_horizontal = expanding
+							text = "ADMINISTRATIVE_GOVERNMENT_HOUSE_HEAD"
+						}
+						expand = {}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						margin_top = 4
+						datacontext = "[DynastyHouse.GetHeadOfHouse]"
+
+						hbox_access_domicile_button = {
+							datacontext = "[DynastyHouse.GetHeadOfHouse]"
+							visible = "[Character.HasDomicile]"
+
+						}
+
+						button_round = {
+							visible = "[And( Character.HasDomicile, Not( DynastyHouse.GetHeadOfHouse.IsPlayer ) )]"
+							enabled = "[Character.IsPlayerInteractionValid('start_raid_estate_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('start_raid_estate_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('start_raid_estate_interaction')]"
+
+							button_army_toggle_raiding = {
+								parentanchor = center
+								alwaystransparent = yes
+							}
+						}
+
+						button_round = {
+							visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
+							enabled = "[Character.IsPlayerInteractionValid('start_slander_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('start_slander_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('start_slander_interaction')]"
+
+							button_slander = {
+								parentanchor = center
+								alwaystransparent = yes
+							}
+						}
+
+						button_round = {
+							visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
+							enabled = "[Character.IsPlayerInteractionValid('start_challenge_status_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('start_challenge_status_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('start_challenge_status_interaction')]"
+
+							button_challenge_status = {
+								parentanchor = center
+								alwaystransparent = yes
+							}
+						}
+
+						button_round = {
+							visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
+							enabled = "[Character.IsPlayerInteractionValid('request_appointment_support')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('request_appointment_support')]"
+							onclick = "[Character.OpenPlayerInteraction('request_appointment_support')]"
+
+							button_request_appointment_support = {
+								parentanchor = center
+								alwaystransparent = yes
+							}
+						}
+
+						expand = {}
+					}
+					expand = {}
+				}
+
+				portrait_head_small = {
+					blockoverride "portrait_button"
+					{
+						using = tooltip_ws
+					}
+					blockoverride "glow_visible"
+					{
+						visible = no
+					}
+				}
+			}
+		}
+	}
+}
+
+template Background_Area_Admin_Purple {
+	texture = "gfx/interface/colors/grey.dds"
+
+	using = Mask_Rough_Edges
+	color = { 0.5 0.1 0.5 0.6 }
+
+	modify_texture = {
+		blend_mode = alphaMultiply
+		texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+		alpha = 0.5
+	}
+	modify_texture = {
+		texture = "gfx/interface/component_masks/mask_clouds.dds"
+		blend_mode = alphamultiply
+		spriteType = corneredTiled
+		alpha = 0.5
+	}
+
+	modify_texture = {
+		texture = "gfx/interface/component_masks/mask_scratches.dds"
+		blend_mode = alphamultiply
+		spriteType = corneredTiled
+	}
+}
+
+template Background_Area_Admin_Blue {
+	texture = "gfx/interface/colors/grey.dds"
+
+	using = Mask_Rough_Edges
+	color = { 0 0.635 0.9 0.3 }
+
+	modify_texture = {
+		blend_mode = alphaMultiply
+		texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+		alpha = 0.5
+	}
+	modify_texture = {
+		texture = "gfx/interface/component_masks/mask_clouds.dds"
+		blend_mode = alphamultiply
+		spriteType = corneredTiled
+		alpha = 0.5
+	}
+
+	modify_texture = {
+		texture = "gfx/interface/component_masks/mask_scratches.dds"
+		blend_mode = alphamultiply
+		spriteType = corneredTiled
+	}
+}
+
+template Background_Area_Admin_Orange {
+	texture = "gfx/interface/colors/grey.dds"
+
+	using = Mask_Rough_Edges
+	color = { 1 0.5 0.1 0.6 }
+
+	modify_texture = {
+		blend_mode = alphaMultiply
+		texture = "gfx/interface/component_masks/mask_fade_horizontal_extended.dds"
+		alpha = 0.5
+	}
+
+	modify_texture = {
+		texture = "gfx/interface/component_masks/mask_clouds.dds"
+		blend_mode = alphamultiply
+		spriteType = corneredTiled
+		alpha = 0.5
+	}
+
+	modify_texture = {
+		texture = "gfx/interface/component_masks/mask_scratches.dds"
+		blend_mode = alphamultiply
+		spriteType = corneredTiled
+	}
+}
+
+template Expand_Admin_Themes {
+	on_start = "[GetVariableSystem.Set( 'admin_gov_unassigned_counties_list', 'true' )]"
+	on_start = "[GetVariableSystem.Set( 'admin_gov_assigned_duchy_themes_list', 'true' )]"
+	on_start = "[GetVariableSystem.Set( 'admin_gov_unassigned_duchy_themes_list', 'true' )]"
+}

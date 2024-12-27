@@ -85,42 +85,166 @@ widget = {
 	size = { 100% 100% }
 	layer = top
 
-	# daily sound
-	widget = {
-		visible = "[And(Not(GetVariableSystem.Exists('daily_sound')), Isnt('ocr'))]"
+	# test stuff
+	flowcontainer = {
+		ignoreinvisible = yes
+		spacing = 5
+		parentanchor = bottom
+		visible = no#"[Not(InReleaseMode)]"
 
+		button_text = {
+			shortcut = speed_1
+			blockoverride "text" {
+				raw_text = "daily tick"
+			}
+			clicksound = "event:/daily_tick_ocr"
+		}
+
+
+		button_text = {
+			shortcut = speed_2
+			blockoverride "text" {
+				raw_text = "money in"
+			}
+			blockoverride "extra" {
+				text_single = {
+					visible = "[GreaterThan_CFixedPoint(GetPlayer.GetBalance, '(CFixedPoint)0')]"
+					raw_text = "ON"
+				}
+			}
+			clicksound = "event:/money_in_ocr"
+		}
+
+		button_text = {
+			shortcut = speed_3
+			blockoverride "text" {
+				raw_text = "money out"
+			}
+			blockoverride "extra" {
+				text_single = {
+					visible = "[Not(GreaterThan_CFixedPoint(GetPlayer.GetBalance, '(CFixedPoint)0'))]"
+					raw_text = "ON"
+				}
+			}
+			clicksound = "event:/money_out_ocr"
+		}
+
+		spacer = {}
+
+
+		button_text = {
+			shortcut = speed_4
+			blockoverride "text" {
+				raw_text = "loud tick"
+			}
+			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_decrement"
+		}
+
+		button_text = {
+			shortcut = speed_5
+			blockoverride "text" {
+				raw_text = "confirm"
+			}
+			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+		}
+
+		button_text = {
+			blockoverride "text" {
+				raw_text = "flip ff"
+			}
+			using = paper_flip_forward_ocr
+		}
+
+		button_text = {
+			blockoverride "text" {
+				raw_text = "flip back"
+			}
+			using = paper_flip_back_ocr
+		}
+	}
+
+	# tick sounds
+	widget = {
+		visible = "[GetPlayer.IsValid]"
+
+		# daily sound
 		widget = {
-			visible = "[Not(GetVariableSystem.Exists('daily_sound_loud'))]"
-			state = {
-				name = daily_tick
-				start_sound = {
-					soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
+			visible = "[GetScriptedGui('daily_sound').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+
+			widget = {
+				visible = "[And(Not(GetPlayer.MakeScope.Var('daily_sound_loud').IsSet), Not(GetPlayer.MakeScope.Var('daily_sound_medium').IsSet))]"
+				state = {
+					name = daily_tick
+					start_sound = {
+						# soundeffect = "event:/daily_tick_ocr"
+						soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
+					}
+				}
+			}
+
+			widget = {
+				visible = "[GetPlayer.MakeScope.Var('daily_sound_medium').IsSet]"
+				state = {
+					name = daily_tick
+					start_sound = {
+						soundeffect = "event:/daily_tick_ocr"
+						# soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
+					}
+				}
+			}
+
+			widget = {
+				visible = "[GetPlayer.MakeScope.Var('daily_sound_loud').IsSet]"
+				state = {
+					name = daily_tick
+					start_sound = {
+						soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_decrement"
+					}
 				}
 			}
 		}
 
+		# monthly sound
 		widget = {
-			visible = "[GetVariableSystem.Exists('daily_sound_loud')]"
-			state = {
-				name = daily_tick
-				start_sound = {
-					soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_decrement"
+			visible = "[GetScriptedGui('monthly_sound').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+
+			widget = {
+				visible = "[Not(GetPlayer.MakeScope.Var('monthly_sound_confirm').IsSet)]"
+				widget = {
+					visible = "[GreaterThan_CFixedPoint(GetPlayer.GetBalance, '(CFixedPoint)0')]"
+					state = {
+						name = monthly_tick
+						start_sound = {
+							# soundeffect = "event:/SFX/UI/Character/Lifestyle/sfx_ui_character_lifestyle_stewardship_lifestyle"
+							# soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+							soundeffect = "event:/money_in_ocr"
+						}
+					}
+				}
+				widget = {
+					visible = "[Not(GreaterThan_CFixedPoint(GetPlayer.GetBalance, '(CFixedPoint)0'))]"
+					state = {
+						name = monthly_tick
+						start_sound = {
+							soundeffect = "event:/money_out_ocr"
+						}
+					}
+				}
+			}
+
+			widget = {
+				visible = "[GetPlayer.MakeScope.Var('monthly_sound_confirm').IsSet]"
+				state = {
+					name = monthly_tick
+					start_sound = {
+						# soundeffect = "event:/SFX/UI/Character/Lifestyle/sfx_ui_character_lifestyle_stewardship_lifestyle"
+						soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+					}
 				}
 			}
 		}
 	}
 
-	# monthly sound
-	widget = {
-		visible = "[And(Not(GetVariableSystem.Exists('monthly_sound')), Isnt('ocr'))]"
-		state = {
-			name = monthly_tick
-			start_sound = {
-				# soundeffect = "event:/SFX/UI/Character/Lifestyle/sfx_ui_character_lifestyle_stewardship_lifestyle"
-				soundeffect = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
-			}
-		}
-	}
 
 	### Alerts
 	notifications_alerts = {
@@ -492,6 +616,7 @@ widget = {
 
 				widget_hud_main_tab = {
 					name = "tab_factions"
+					visible = "[Or( Not( IsLandlessAdventurer( GetPlayer ) ), GetPlayer.IsInAFaction)]"
 
 					blockoverride "maintab_button"
 					{
@@ -522,6 +647,7 @@ widget = {
 			vbox = {
 				widget_hud_main_tab = {
 					name = "tab_decisions"
+					visible = "[Not(GetPlayer.GetGovernment.IsType( 'landless_adventurer_government' ))]"
 
 					blockoverride "maintab_button"
 					{
@@ -529,7 +655,22 @@ widget = {
 
 						onclick = "[ToggleGameView('decisions')]"
 						shortcut = "decision_window"
-						tooltip = "DECISIONS_BUTTON"
+						tooltip = "DECISIONS_BUTTON_CONTAINER"
+						down = "[IsGameViewOpen('decisions')]"
+					}
+				}
+
+				widget_hud_main_tab = {
+					name = "tab_contracts"
+					visible = "[GetPlayer.GetGovernment.IsType( 'landless_adventurer_government' )]"
+
+					blockoverride "maintab_button"
+					{
+						texture = "gfx/interface/skinned/hud_maintab/maintab_contracts.dds"
+
+						onclick = "[ToggleGameView('decisions')]"
+						shortcut = "decision_window"
+						tooltip = "DECISIONS_BUTTON_CONTAINER"
 						down = "[IsGameViewOpen('decisions')]"
 					}
 				}
@@ -554,7 +695,7 @@ widget = {
 					datacontext = "[LocalPlayerCachedData.AccessNewArtifacts]"
 					datacontext = "[LocalPlayerCachedData.AccessCourtEvents]"
 					datacontext = "[Character.GetCourtGrandeurData]"
-					visible = "[And(And( And( Not( IsPauseMenuShown ), And(Or(Not(IsObserver), GetPlayer.IsValid), IsDefaultGUIMode)), HasDlcFeature( 'court_room_view' )), Not( IsLandlessAdventurer( GetPlayer )))]"
+					visible = "[And(And( And( Not( IsPauseMenuShown ), And(Or(Not(IsObserver), GetPlayer.IsValid), IsDefaultGUIMode)), HasDlcFeature( 'court_room_view' )), Not( IsLandlessAdventurer( GetPlayer ) ))]"
 					enabled = "[Character.HasRoyalCourt]"
 
 					allow_outside = yes
@@ -676,7 +817,7 @@ widget = {
 						}
 
 						icon = {
-							visible = "[GreaterThan_int32( GetPlayer.GetUnassignedVassalsCount, '(int32)0' )]"
+							visible = "[Or( Or( GreaterThan_int32( Character.GetUnassignedVassalsCount, '(int32)0' ), Not( Character.HasTaxSlots ) ), GreaterThan_int32( Character.GetTaxSlotsWithoutTaxCollectorCount, '(int32)0' ) )]"
 							size = { 25 25 }
 							position = { -5 5}
 							texture = "gfx/interface/icons/symbols/icon_warning.dds"
@@ -713,6 +854,24 @@ widget = {
 									using = Animation_Curve_Default
 								}
 							}
+						}
+					}
+				}
+
+				widget_hud_main_tab = {
+					name = "tab_government_administration"
+					visible = "[GetPlayer.GetTopLiege.GetGovernment.HasRule( 'administrative' )]"
+
+					blockoverride "maintab_button"
+					{
+						texture = "gfx/interface/skinned/hud_maintab/maintab_administrative.dds"
+
+						onclick = "[ToggleGameView( 'government_administration' )]"
+						down = "[IsGameViewOpen( 'government_administration' )]"
+
+						using = tooltip_ws
+						tooltipwidget = {
+							administrative_button_tooltip = {}
 						}
 					}
 				}
@@ -890,13 +1049,54 @@ widget = {
 		vbox = {
 			alwaystransparent = no
 			filter_mouse = all
-			margin_top = 15
-			margin_bottom = 20
-			visible = "[GetVariableSystem.Exists('ocr')]"
+			visible = "[And(Not(IsGameViewOpen('barbershop')),Is('ocr'))]"
+			margin = { 5 10 }
+
+			Background = {
+				visible = "[And(Not(IsRightWindowOpen) , Not(IsGameViewOpen('barbershop')) )]"
+				texture = "gfx/interface/skinned/hud_maintab_bg_middle.dds"
+				spriteType = CorneredTiled
+				texture_density =  2
+				margin = { 0 -50 }
+			}
+
+			Background = {
+				visible = "[And(Not(IsRightWindowOpen) , Not(IsGameViewOpen('barbershop')) )]"
+				spriteType = CorneredStretched
+				spriteborder_top = 100
+				parentanchor = top|right
+				texture_density = 2
+				size = { 50 100 }
+				texture = "gfx/interface/skinned/hud_maintab_bg_top.dds"
+			}
+
+			Background = {
+				visible = "[And(Not(IsRightWindowOpen) , Not(IsGameViewOpen('barbershop')) )]"
+				spriteType = CorneredStretched
+				spriteborder_bottom = 100
+				parentanchor = top|right
+				texture_density = 2
+				size = { 50 100 }
+				texture = "gfx/interface/skinned/hud_maintab_bg_bottom.dds"
+			}
 
 			vbox = {
+				state = {
+					name = _show
+					alpha = 1
+					duration = 0.1
+					using = Animation_Curve_Default
+				}
+
+				state = {
+					name = _hide
+					duration = 0.6
+					alpha = 0
+					using = Animation_Curve_Default
+				}
+
 				widget_hud_main_tab = {
-					name = "tab_my_realm"
+					name = "tab_my_realm_tutorial_uses_this"
 
 					blockoverride "maintab_button"
 					{
@@ -905,16 +1105,6 @@ widget = {
 						shortcut = "my_realm_window"
 						tooltip = "MY_REALM_BUTTON"
 						down = "[IsGameViewOpen('my_realm')]"
-					}
-
-					state = {
-						name = _mouse_hierarchy_enter
-						on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_my_realm_leave','hud_tab_glow_my_realm_enter')]"
-					}
-
-					state = {
-						name = _mouse_hierarchy_leave
-						on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_my_realm_enter','hud_tab_glow_my_realm_leave')]"
 					}
 				}
 
@@ -930,20 +1120,11 @@ widget = {
 						tooltip = "MILITARY_BUTTON"
 						down = "[IsGameViewOpen('military')]"
 					}
-
-					state = {
-						name = _mouse_hierarchy_enter
-						on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_military_leave','hud_tab_glow_military_enter')]"
-					}
-
-					state = {
-						name = _mouse_hierarchy_leave
-						on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_military_enter','hud_tab_glow_military_leave')]"
-					}
 				}
 
 				widget_hud_main_tab = {
 					name = "tab_council"
+					visible = "[Not( IsLandlessAdventurer( GetPlayer ) )]"
 
 					blockoverride "maintab_button"
 					{
@@ -953,16 +1134,6 @@ widget = {
 						shortcut = "council_window"
 						tooltip = "COUNCIL_BUTTON"
 						down = "[IsGameViewOpen('council_window')]"
-					}
-
-					state = {
-						name = _mouse_hierarchy_enter
-						on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_council_leave','hud_tab_glow_council_enter')]"
-					}
-
-					state = {
-						name = _mouse_hierarchy_leave
-						on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_council_enter','hud_tab_glow_council_leave')]"
 					}
 				}
 			}
@@ -974,7 +1145,6 @@ widget = {
 				icon = {
 					visible = "[And( Not( IsPauseMenuShown ), And(Or(Not(IsObserver), GetPlayer.IsValid), IsDefaultGUIMode))]"
 					parentanchor = right|vcenter
-					position = { -5 0 }
 					texture = "gfx/interface/skinned/hud_spike_big.dds"
 					size = { 25 15 }
 
@@ -983,219 +1153,293 @@ widget = {
 			}
 
 			vbox = {
-				vbox = {
-					widget_hud_main_tab = {
-						name = "tab_court_tutorial_uses_this"
+				widget_hud_main_tab = {
+					name = "tab_court_tutorial_uses_this"
 
-						blockoverride "maintab_button"
-						{
-							texture = "gfx/interface/skinned/hud_maintab/maintab_court.dds"
+					blockoverride "maintab_button"
+					{
+						texture = "gfx/interface/skinned/hud_maintab/maintab_court.dds"
 
-							onclick = "[ToggleGameViewData( 'court_window', GetPlayer.GetID )]"
-							shortcut = "court_window"
-							tooltip = "COURT_BUTTON"
-							down = "[IsGameViewOpen( 'court_window' )]"
-						}
+						onclick = "[ToggleGameViewData( 'court_window', GetPlayer.GetID )]"
+						shortcut = "court_window"
+						tooltip = "COURT_BUTTON"
+						down = "[IsGameViewOpen( 'court_window' )]"
+					}
+				}
 
-						state = {
-							name = _mouse_hierarchy_enter
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_court_leave','hud_tab_glow_court_enter')]"
-						}
+				widget_hud_main_tab = {
+					name = "tab_intrigue"
 
-						state = {
-							name = _mouse_hierarchy_leave
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_court_enter','hud_tab_glow_court_leave')]"
-						}
+					blockoverride "maintab_button"
+					{
+						texture = "gfx/interface/skinned/hud_maintab/maintab_intrigue.dds"
+
+						onclick = "[ToggleGameViewData('intrigue_window', GetPlayer.GetID)]"
+						shortcut = "intrigue_window"
+						tooltip = "INTRIGUE_BUTTON"
+						down = "[IsGameViewOpen('intrigue_window')]"
 					}
 
-					widget_hud_main_tab = {
-						name = "tab_intrigue"
+				}
 
-						blockoverride "maintab_button"
-						{
-							texture = "gfx/interface/skinned/hud_maintab/maintab_intrigue.dds"
+				widget_hud_main_tab = {
+					name = "tab_factions"
+					visible = "[Or( Not( IsLandlessAdventurer( GetPlayer ) ), GetPlayer.IsInAFaction)]"
 
-							onclick = "[ToggleGameViewData('intrigue_window', GetPlayer.GetID)]"
-							shortcut = "intrigue_window"
-							tooltip = "INTRIGUE_BUTTON"
-							down = "[IsGameViewOpen('intrigue_window')]"
-						}
+					blockoverride "maintab_button"
+					{
+						texture = "gfx/interface/skinned/hud_maintab/maintab_factions.dds"
 
-						state = {
-							name = _mouse_hierarchy_enter
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_intrigue_leave','hud_tab_glow_intrigue_enter')]"
-						}
+						onclick = "[ToggleGameView('factions_window')]"
+						shortcut = "factions_window"
+						tooltip = "FACTION_BUTTON"
+						down = "[IsGameViewOpen('factions_window')]"
+					}
+				}
+			}
 
-						state = {
-							name = _mouse_hierarchy_leave
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_intrigue_enter','hud_tab_glow_intrigue_leave')]"
-						}
+			widget = {
+				layoutpolicy_horizontal = expanding
+				size = { 0 15 }
+
+				icon = {
+					visible = "[And( Not( IsPauseMenuShown ), And(Or(Not(IsObserver), GetPlayer.IsValid), IsDefaultGUIMode))]"
+					parentanchor = right|vcenter
+					texture = "gfx/interface/skinned/hud_spike_big.dds"
+					size = { 25 15 }
+
+					using = Animation_ShowHide_Standard
+				}
+			}
+
+			vbox = {
+				widget_hud_main_tab = {
+					name = "tab_decisions"
+					visible = "[Not(GetPlayer.GetGovernment.IsType( 'landless_adventurer_government' ))]"
+
+					blockoverride "maintab_button"
+					{
+						texture = "gfx/interface/skinned/hud_maintab/maintab_decisions.dds"
+
+						onclick = "[ToggleGameView('decisions')]"
+						shortcut = "decision_window"
+						tooltip = "DECISIONS_BUTTON_CONTAINER"
+						down = "[IsGameViewOpen('decisions')]"
+					}
+				}
+
+				widget_hud_main_tab = {
+					name = "tab_contracts"
+					visible = "[GetPlayer.GetGovernment.IsType( 'landless_adventurer_government' )]"
+
+					blockoverride "maintab_button"
+					{
+						texture = "gfx/interface/skinned/hud_maintab/maintab_contracts.dds"
+
+						onclick = "[ToggleGameView('decisions')]"
+						shortcut = "decision_window"
+						tooltip = "DECISIONS_BUTTON_CONTAINER"
+						down = "[IsGameViewOpen('decisions')]"
+					}
+				}
+
+				widget_hud_main_tab = {
+					name = "tab_activities"
+
+					blockoverride "maintab_button"
+					{
+						texture = "gfx/interface/skinned/hud_maintab/maintab_activities.dds"
+
+						onclick = "[ToggleGameView('activity_list_window')]"
+						shortcut = "activity_list_window"
+						tooltip = "ACTIVITY_LIST_BUTTON"
+						down = "[IsGameViewOpen('activity_list_window')]"
+					}
+				}
+
+				widget_hud_main_tab = {
+					datacontext = "[GetPlayer]"
+					datacontext = "[AccessLocalPlayerCachedData]"
+					datacontext = "[LocalPlayerCachedData.AccessNewArtifacts]"
+					datacontext = "[LocalPlayerCachedData.AccessCourtEvents]"
+					datacontext = "[Character.GetCourtGrandeurData]"
+					visible = "[And(And( And( Not( IsPauseMenuShown ), And(Or(Not(IsObserver), GetPlayer.IsValid), IsDefaultGUIMode)), HasDlcFeature( 'court_room_view' )), Not( IsLandlessAdventurer( GetPlayer ) ))]"
+					enabled = "[Character.HasRoyalCourt]"
+
+					allow_outside = yes
+					name = "royal_court_button_tutorial_uses_this"
+
+					tooltipwidget = {
+						container_royal_court_tooltip = {}
 					}
 
-					widget_hud_main_tab = {
-						name = "tab_factions"
+					blockoverride "maintab_button"
+					{
+						texture = "gfx/interface/skinned/hud_maintab/maintab_courtview.dds"
+						onclick = "[Character.OpenRoyalCourtView( 'throne' )]"
 
-						blockoverride "maintab_button"
-						{
-							texture = "gfx/interface/skinned/hud_maintab/maintab_factions.dds"
+						# Looping glow when you have unhandled court events or first get your royal court
+						using = Animation_Glow_Pulse
 
-							onclick = "[ToggleGameView('factions_window')]"
-							shortcut = "factions_window"
-							tooltip = "FACTION_BUTTON"
-							down = "[IsGameViewOpen('factions_window')]"
+						glow = {
+							glow_radius = 8
+							using = Glow_Standard
+							using = Color_Bright_Yellow
+							visible = "[Or( And( Character.HasRoyalCourt, Not( LocalPlayerCachedData.HasEverOpenedRoyalCourt ) ), GreaterThan_int32( LocalPlayerCourtEvents.GetNumberCourtEvents, '(int32)0' ) )]"
+						}
+
+						# Pulse when you get a new pending court event
+						state = {
+							name = "pending_court_event_start"
+							next = "pending_court_event_a"
+							position_x = 0
+							duration = 0.2
+							size = { 45 45 }
+							using = Animation_Curve_Default
+							trigger_when = "[GreaterThan_int32( Character.GetNumPendingCourtEvents, '(int32)0' )]"
+
+							start_sound = {
+								soundeffect = "event:/DLC/EP1/SFX/UI/Notifications/royal_court_event_available"
+							}
 						}
 
 						state = {
-							name = _mouse_hierarchy_enter
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_factions_leave','hud_tab_glow_factions_enter')]"
+							name = "pending_court_event_a"
+							next = "pending_court_event_b"
+							position_x = -30
+							duration = 0.45
+							size = { 85 85 }
+							using = Animation_Curve_Default
 						}
 
 						state = {
-							name = _mouse_hierarchy_leave
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_factions_enter','hud_tab_glow_factions_leave')]"
+							name = "pending_court_event_b"
+							position_x = 0
+							duration = 0.25
+							size = { 45 45 }
+							bezier = { 0.43 0 0.2 2.2 }
+						}
+
+						flowcontainer = {
+							position = { -5 0 }
+							direction = vertical
+							ignoreinvisible = yes
+							visible = "[Character.HasRoyalCourt]"
+							datacontext = "[GetPlayer]"
+
+							widget_royal_court_notification = {
+								visible = "[And( GreaterThanOrEqualTo_int32( CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel ), Or( GreaterThan_int32( LocalPlayerNewArtifacts.GetNumNewArtifactsOfCategory( 'court' ), '(int32)0' ), Or( GreaterThan_int32( LocalPlayerCourtEvents.GetNumberCourtEvents, '(int32)0' ), GreaterThan_int32( Character.GetNumPendingCourtEvents, '(int32)0' ) ) ) )]"
+							}
+
+							widget_below_cgv_expectations = {
+								visible = "[LessThan_int32( CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel )]"
+							}
 						}
 					}
+				}
 
-					widget_hud_main_tab = {
-						name = "tab_decisions"
+				widget_hud_main_tab = {
+					name = "tab_tax_jurisdiction"
+					datacontext = "[GetPlayer]"
+					enabled = "[Character.HasTaxSlots]"
+					visible = "[GetPlayer.GetGovernment.IsType( 'clan_government' )]"
 
-						blockoverride "maintab_button"
-						{
-							texture = "gfx/interface/skinned/hud_maintab/maintab_decisions.dds"
+					blockoverride "maintab_button"
+					{
+						texture = "gfx/interface/skinned/hud_maintab/maintab_tax_jurisdictions.dds"
 
-							onclick = "[ToggleGameView('decisions')]"
-							shortcut = "decision_window"
-							tooltip = "DECISIONS_BUTTON"
-							down = "[IsGameViewOpen('decisions')]"
-						}
+						onclick = "[ToggleGameViewData('manage_tax_slots', GetPlayer.GetID)]"
+						down = "[IsGameViewOpen('manage_tax_slots')]"
 
-						state = {
-							name = _mouse_hierarchy_enter
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_decisions_leave','hud_tab_glow_decisions_enter')]"
-						}
-
-						state = {
-							name = _mouse_hierarchy_leave
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_decisions_enter','hud_tab_glow_decisions_leave')]"
-						}
-					}
-
-					widget_hud_main_tab = {
-						name = "tab_activities"
-
-						blockoverride "maintab_button"
-						{
-							texture = "gfx/interface/skinned/hud_maintab/maintab_activities.dds"
-
-							onclick = "[ToggleGameView('activity_list_window')]"
-							shortcut = "activity_list_window"
-							tooltip = "ACTIVITY_LIST_BUTTON"
-							down = "[IsGameViewOpen('activity_list_window')]"
-						}
-
-						state = {
-							name = _mouse_hierarchy_enter
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_activities_leave','hud_tab_glow_activities_enter')]"
-						}
-
-						state = {
-							name = _mouse_hierarchy_leave
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_activities_enter','hud_tab_glow_activities_leave')]"
-						}
-					}
-
-					widget_hud_main_tab = {
-						datacontext = "[GetPlayer]"
-						datacontext = "[AccessLocalPlayerCachedData]"
-						datacontext = "[LocalPlayerCachedData.AccessNewArtifacts]"
-						datacontext = "[LocalPlayerCachedData.AccessCourtEvents]"
-						datacontext = "[Character.GetCourtGrandeurData]"
-						visible = "[And( And( Not( IsPauseMenuShown ), And(Or(Not(IsObserver), GetPlayer.IsValid), IsDefaultGUIMode)), HasDlcFeature( 'royal_court' ))]"
-						enabled = "[Character.HasRoyalCourt]"
-
-						allow_outside = yes
-						name = "royal_court_button_tutorial_uses_this"
-
+						using = tooltip_ws
 						tooltipwidget = {
-							container_royal_court_tooltip = {}
+							tax_jurisdictions_button_tooltip = {}
 						}
 
-						state = {
-							name = _mouse_hierarchy_enter
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_courtview_leave','hud_tab_glow_courtview_enter')]"
-							alpha = 1
-						}
-
-						state = {
-							name = _mouse_hierarchy_leave
-							on_start = "[PdxGuiInterruptThenTriggerAllAnimations('hud_tab_glow_courtview_enter','hud_tab_glow_courtview_leave')]"
-							alpha = 1
-						}
-
-						blockoverride "maintab_button"
-						{
-							texture = "gfx/interface/skinned/hud_maintab/maintab_courtview.dds"
-							onclick = "[Character.OpenRoyalCourtView( 'throne' )]"
-
-							# Looping glow when you have unhandled court events or first get your royal court
-							using = Animation_Glow_Pulse
+						icon = {
+							size = { 100% 100% }
+							visible = "[GreaterThan_int32( GetPlayer.GetUnassignedVassalsCount, '(int32)0' )]"
+							texture = "gfx/interface/skinned/hud_maintab/maintab_tax_jurisdictions.dds"
 
 							glow = {
 								glow_radius = 8
 								using = Glow_Standard
-								using = Color_Bright_Yellow
-								visible = "[Or( And( Character.HasRoyalCourt, Not( LocalPlayerCachedData.HasEverOpenedRoyalCourt ) ), GreaterThan_int32( LocalPlayerCourtEvents.GetNumberCourtEvents, '(int32)0' ) )]"
+								using = Color_Red
 							}
-
-							# Pulse when you get a new pending court event
 							state = {
-								name = "pending_court_event_start"
-								next = "pending_court_event_a"
-								position_x = 0
-								duration = 0.2
-								size = { 45 45 }
-								using = Animation_Curve_Default
-								trigger_when = "[GreaterThan_int32( Character.GetNumPendingCourtEvents, '(int32)0' )]"
-
-								start_sound = {
-									soundeffect = "event:/DLC/EP1/SFX/UI/Notifications/royal_court_event_available"
-								}
-							}
-
-							state = {
-								name = "pending_court_event_a"
-								next = "pending_court_event_b"
-								position_x = -30
-								duration = 0.45
-								size = { 85 85 }
+								name = a
+								next = b
+								alpha = 0.3
+								trigger_on_create = yes
+								duration = 1.2
 								using = Animation_Curve_Default
 							}
 
 							state = {
-								name = "pending_court_event_b"
-								position_x = 0
-								duration = 0.25
-								size = { 45 45 }
-								bezier = { 0.43 0 0.2 2.2 }
+								name = b
+								next = a
+								alpha = 0.5
+								duration = 0.6
+								using = Animation_Curve_Default
 							}
+						}
 
-							flowcontainer = {
-								position = { 0 6 }
-								parentanchor = bottom|hcenter
-								widgetanchor = center
-								direction = vertical
-								ignoreinvisible = yes
-								visible = "[Character.HasRoyalCourt]"
-								datacontext = "[GetPlayer]"
+						icon = {
+							visible = "[Or( Or( GreaterThan_int32( Character.GetUnassignedVassalsCount, '(int32)0' ), Not( Character.HasTaxSlots ) ), GreaterThan_int32( Character.GetTaxSlotsWithoutTaxCollectorCount, '(int32)0' ) )]"
+							size = { 25 25 }
+							position = { -5 5}
+							texture = "gfx/interface/icons/symbols/icon_warning.dds"
 
-								widget_royal_court_notification = {
-									visible = "[And( GreaterThanOrEqualTo_int32( CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel ), Or( GreaterThan_int32( LocalPlayerNewArtifacts.GetNumNewArtifactsOfCategory( 'court' ), '(int32)0' ), Or( GreaterThan_int32( LocalPlayerCourtEvents.GetNumberCourtEvents, '(int32)0' ), GreaterThan_int32( Character.GetNumPendingCourtEvents, '(int32)0' ) ) ) )]"
+							icon = {
+								size = { 100% 100% }
+								alwaystransparent = yes
+								texture = "gfx/interface/icons/symbols/icon_warning.dds"
+
+								modify_texture = {
+									texture = "gfx/interface/icons/focuses/hud_icon_mask.dds"
+									blend_mode = alphamultiply
 								}
 
-								widget_below_cgv_expectations = {
-									visible = "[LessThan_int32( CourtGrandeurData.GetCurrentLevel, CourtGrandeurData.GetMinimumExpectedLevel )]"
+								modify_texture = {
+									texture = "gfx/interface/colors/red.dds"
+									blend_mode = colordodge
+								}
+
+								state = {
+									name = a
+									next = b
+									alpha = 0
+									trigger_on_create = yes
+									duration = 1.2
+									using = Animation_Curve_Default
+								}
+
+								state = {
+									name = b
+									next = a
+									alpha = 0.8
+									duration = 0.6
+									using = Animation_Curve_Default
 								}
 							}
+						}
+					}
+				}
+
+				widget_hud_main_tab = {
+					name = "tab_government_administration"
+					visible = "[GetPlayer.GetTopLiege.GetGovernment.HasRule( 'administrative' )]"
+
+					blockoverride "maintab_button"
+					{
+						texture = "gfx/interface/skinned/hud_maintab/maintab_administrative.dds"
+
+						onclick = "[ToggleGameView( 'government_administration' )]"
+						down = "[IsGameViewOpen( 'government_administration' )]"
+
+						using = tooltip_ws
+						tooltipwidget = {
+							administrative_button_tooltip = {}
 						}
 					}
 				}
@@ -1919,6 +2163,7 @@ icon = {
 		button_text = {
 		    blockoverride "text" {
 				raw_text = "[Localize('CURRENT_DATE')]."
+				margin_left = 5
 		    }
 			tooltip = "CURRENT_DATE_TOOLTIP"
 			onclick = "[OnPause]"
@@ -1951,11 +2196,6 @@ widget = {
 	layer = bottom
 	datacontext = "[GetPlayer]"
 
-	# button = {
-	# 	shortcut = mapmode_house_secondary
-	# 	onclick = "[PdxGuiTriggerAllAnimations('dismiss_feed')]"
-	# }
-	#
 	# state = {
 	# 	name = dismiss_feed
 	# }
@@ -3101,7 +3341,7 @@ widget = {
 							visible = "[Character.HasRoyalCourt]"
 							onclick = "[Character.OpenRoyalCourtView( 'characters' )]"
 								blockoverride "text" {
-										raw_text = "Royal court, Control Q."
+										raw_text = "Royal court, Control R."
 								}
 						}
 
@@ -4745,6 +4985,7 @@ types HUD
 		filter_mouse = all
 		alwaystransparent = no
 		layer = top
+		background = { using = Background_Area_Border_Solid }
 
 		using = Animation_ShowHide_Quick
 
@@ -5349,6 +5590,23 @@ types HUD
 						max_width = 320
 					}
 				}
+			}
+			expand = {}
+		}
+	}
+
+	type administrative_button_tooltip = widget {
+		alwaystransparent = no
+		datacontext = "[GetPlayer]"
+
+		vbox = {
+			using = Background_Tooltip
+			spacing = 10
+			margin = { 20 10 }
+			parentanchor = right|vcenter
+			text_single = {
+				text = "ADMINISTRATIVE_BUTTON"
+				layoutpolicy_horizontal = expanding
 			}
 			expand = {}
 		}

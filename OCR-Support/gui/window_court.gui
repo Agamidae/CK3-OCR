@@ -49,11 +49,11 @@ window = {
 
 			header_pattern = {
 				layoutpolicy_horizontal = expanding
+				visible = "[Not(GetVariableSystem.Exists('court_tabs'))]"
 
 				blockoverride "header_text"
 				{
 					raw_text = "Court. 3 Windows:"
-					visible = "[Not(GetVariableSystem.Exists('court_tabs'))]"
 				}
 
 				blockoverride "button_close"
@@ -166,10 +166,34 @@ window = {
 						# spacing = 15
 						# margin_top = 15
 
-						text_single = {
-							raw_text = "COUNCIL_WINDOW_GUESTS_AND_COURTIERS"
+						hbox = {
 							layoutpolicy_horizontal = expanding
-							autoresize = no
+
+							text_single = {
+								raw_text = "COUNCIL_WINDOW_GUESTS_AND_COURTIERS"
+							}
+							datacontext = "[CourtWindow.GetCourt]"
+
+							spacing = 3
+							hbox = {
+							  spacing = 3
+								comma = {}
+
+							  text_single = {
+							    raw_text = "from [PageStart('court_window_page')] to [PageEnd('court_window_page', GetPlayer.MakeScope.Var('court_window_page_size').GetValue, CharacterSelectionList.GetList)],"
+							  }
+
+							  button_text = {
+							    shortcut = army_merge
+							    onclick = "[GetScriptedGui('resize_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							    blockoverride "text" {
+							      margin_left = -5
+							      raw_text = "Show [Select_CString(EqualTo_CFixedPoint(GetPlayer.MakeScope.Var('court_window_page_size').GetValue, '(CFixedPoint)10'), '5', '10')] per page, G."
+							    }
+							  }
+							}
+
+							expand = {}
 						}
 
 						vbox = {
@@ -209,6 +233,33 @@ window = {
 								# minimumsize = { -1 800 }
 								datacontext = "[CourtWindow.GetCourt]"
 
+								state = {
+								  name = "reset"
+								  on_finish = "[GetScriptedGui('reset_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+								  trigger_when = "[Or(Or(PageReset('court_window_page', CharacterSelectionList.GetList), Not(GetPlayer.MakeScope.Var('court_window_page_size').IsSet)), Not(GetPlayer.MakeScope.Var('court_window_page').IsSet))]"
+								}
+								blockoverride "sort" {
+								  onclick = "[GetScriptedGui('reset_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+								}
+								blockoverride "reset_page" {
+								  on_finish = "[GetScriptedGui('reset_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+								}
+								blockoverride "reverse_order" {
+								  shortcut = mapmode_house_secondary
+								}
+								blockoverride "toggle_text" {
+								  text_single = {
+								    raw_text = "Toggle: Shift D."
+								  }
+								}
+								blockoverride "widget_index" {
+								  text_single = {
+								    alwaystransparent = yes
+								    margin_left = 3
+								    raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, Add_int32(FixedPointToInt( GetPlayer.MakeScope.Var('court_window_page').GetValue ), '(int32)1'))],"
+								  }
+								}
+
 								blockoverride "sort_dropdown" {
 									dropdown_sort_characterlist = {
 										# unique name needed to distinct from prisoner sort options
@@ -226,17 +277,22 @@ window = {
 								blockoverride "container_implementation" {
 									fixedgridbox = {
 										name = "characters_grid"
-										datamodel = "[CharacterSelectionList.GetList]"
+										datamodel = "[PageModel('court_window_page', FixedPointToInt(GetPlayer.MakeScope.Var('court_window_page_size').GetValue), CharacterSelectionList.GetList)]"
 										visible = "[Not(CharacterSelectionList.IsBuildingList)]"
 										addcolumn = 600
-										addrow = 90
+										addrow = 70
 										setitemsizefromcell = yes
+										layoutpolicy_horizontal = expanding
 
 										item = {
 											widget_character_list_item_finder_ocr = {
 												blockoverride "click" {
 													onclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
 													onrightclick = "[DefaultOnCharacterRightClick(CharacterListItem.GetCharacter.GetID)]"
+												}
+												blockoverride "relation_top" {}
+												blockoverride "relation_middle" {
+													visible = no
 												}
 												blockoverride "action_buttons" { }
 												datacontext = "[CharacterListItem.GetCharacter]"
@@ -251,6 +307,47 @@ window = {
 												}
 											}
 										}
+									}
+
+									vbox = {
+									  layoutpolicy_horizontal = expanding
+
+									  hbox = {
+									    layoutpolicy_horizontal = expanding
+									    spacing = 3
+									    visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('court_window_page').GetValue, '(CFixedPoint)0' )]"
+
+									    button_text = {
+									      blockoverride "text" {
+									        raw_text = "Previous [GetPlayer.MakeScope.Var('court_window_page_size').GetValue|0], Z."
+									      }
+									      onclick = "[GetScriptedGui('prev_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+									      shortcut = decrease_speed_2
+									      using = paper_flip_back_ocr
+									    }
+
+									    button_text = {
+									      onclick = "[GetScriptedGui('reset_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+									      shortcut = map_mode_18
+									      using = paper_flip_back_ocr
+									      blockoverride "text" {
+									        raw_text = "To start, Control R."
+									      }
+									    }
+
+									    expand = {}
+									  }
+
+									  button_text = {
+									    layoutpolicy_horizontal = expanding
+									    blockoverride "text" {
+									      raw_text = "Next [GetPlayer.MakeScope.Var('court_window_page_size').GetValue|0], X."
+									    }
+									    onclick = "[GetScriptedGui('next_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+									    visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( CharacterSelectionList.GetList ), FixedPointToInt(GetPlayer.MakeScope.Var('court_window_page').GetValue )), FixedPointToInt(GetPlayer.MakeScope.Var('court_window_page_size').GetValue) )]"
+									    using = paper_flip_forward_ocr
+									    shortcut = increase_speed_2
+									  }
 									}
 								}
 							}

@@ -68,17 +68,34 @@ types OCR {
 							layoutpolicy_horizontal = expanding
 							spacing = 3
 
-
 							block "pre_name" { }
 
-							text_single = {
-								raw_text = "VassalName"
+							block "widget_index" {}
+
+							block "vassal_name" {
+								text_single = {
+									raw_text = "[Character.GetFirstNameNoTooltip],"
+								}
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									spacing = 3
+									visible = "[Character.GetPrimaryTitle.IsValid]"
+
+									text_single = {
+										visible = "[GreaterThan_int32( Character.RealmSize, '(int32)0')]"
+										raw_text = "[Character.GetTitleAsNameNoTooltip]"
+									}
+									text_single = {
+										raw_text = "of [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+									}
+								}
 							}
 
 							text_single = {
 								raw_text = "[Character.RealmSize] counties."
 								tooltip = "REALM_WINDOW_SIZE_TT"
-								visible = "[NotEqualTo_int32(Character.GetPrimaryTitle.GetTierFrame, '(int32)2')]" #nonbaron
+								# visible = "[NotEqualTo_int32(Character.GetPrimaryTitle.GetTierFrame, '(int32)2')]" #nonbaron
 							}
 
 							text_single = {
@@ -506,16 +523,13 @@ types OCR {
 								layoutpolicy_horizontal = expanding
 								spacing = 3
 
-								background = {
-									using = Background_Area_Characterlist
-									alpha = 0.4
-								}
-
 								block "pre_name" { }
 
-								text_single = {
-									raw_text = "[Add_int32(CharacterListItem.GetOrderIndex, '(int32)1')]"
-									visible = "[GetVariableSystem.Exists('index')]"
+								block "widget_index" {
+									text_single = {
+										raw_text = "[Add_int32(CharacterListItem.GetOrderIndex, '(int32)1')]"
+										visible = "[GetVariableSystem.Exists('index')]"
+									}
 								}
 
 								# sorted skill
@@ -578,6 +592,36 @@ types OCR {
 									align = left
 								}
 
+								hbox = {
+									layoutpolicy_horizontal = expanding
+									block "relation_top" {
+										visible = no
+									}
+
+									text_single = {
+										name = "character_relation"
+										raw_text = "[Character.GetRelationToString( GetPlayer )]."
+										tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+										align = left
+										fontsize_min = 14
+										max_width = 260
+									}
+
+									# expand = { }
+									text_single = {
+										block "court_window" {
+											visible = "[And(Character.GetLiege.IsValid, Not(ObjectsEqual(Character.GetLiege, CharacterWindow.GetCharacter)))]"
+										}
+										raw_text = "[Character.GetRelationToString( Character.GetLiege )]."
+										tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+										align = left
+										fontsize_min = 14
+										margin_left = 5
+									}
+
+									expand = { }
+								}
+
 								block "top_bar" { }
 
 								expand = { }
@@ -587,6 +631,7 @@ types OCR {
 
 							hbox = {
 								layoutpolicy_horizontal = expanding
+								block "relation_middle" {}
 								# visible = "[And(Character.HasRelationTo( GetPlayer ), Not(Character.IsPlayer))]"
 
 								# for the courties
@@ -1049,6 +1094,7 @@ types Lists
 				size = { 100% 100% }
 
 				button_drop = {
+					allow_outside = yes
 					text = ""
 					hbox = {
 						margin_left = 15
@@ -1069,6 +1115,7 @@ types Lists
 								raw_text = "[CharacterListSortItem.GetName]."
 							}
 						}
+						block "sort_text_extra" {}
 						expand = { }
 					}
 				}
@@ -1121,6 +1168,11 @@ types Lists
 				autoresizescrollarea = yes
 				scrollbarpolicy_horizontal = always_off
 				using = TooltipFocus
+
+				state = {
+					name = _show
+					block "reset_page" {}
+				}
 
 				using = Background_DropDown
 
@@ -1385,43 +1437,6 @@ types Lists
 		hbox = {
 			layoutpolicy_horizontal = expanding
 
-			button_text = {
-				name = "filters"
-				# size = { 25 25 }
-
-				down = "[CharacterSelectionList.FiltersShown]"
-				# frame = "[BoolTo1And2(CharacterSelectionList.IsAllDefault)]"
-				onclick = "[CharacterSelectionList.OnToggleFilters]"
-				shortcut = army_split_half
-
-				# tooltip = "TOGGLE_FILTERS"
-				using = tooltip_nw
-
-				# button_search = {
-				# 	alwaystransparent = yes
-				# 	parentanchor = center
-				# 	size = { 20 20 }
-				# }
-
-				block "filters_visible" { }
-
-				blockoverride "text" {
-					raw_text = "Filters[AddTextIf(CharacterSelectionList.FiltersShown, ', opened')][AddTextIf(Not(CharacterSelectionList.IsAllDefault), ', applied')] F:"
-					# using : becuse it gives a better pause than a dot. Dunno why
-				}
-
-			}
-
-			button_text = {
-				# size = { 200 25 }
-				# name = "drop_filters"
-				visible = "[Not(CharacterSelectionList.IsAllDefault)]"
-				blockoverride "text" {
-					raw_text = "Reset." #CHARACTER_RESET_FILTERS
-				}
-				onclick = "[CharacterSelectionList.OnResetFilters]"
-			}
-
 			block "sort_dropdown" {
 				dropdown_sort_characterlist = {
 				}
@@ -1429,63 +1444,80 @@ types Lists
 			expand = { }
 		}
 
-		block "skill_sort_buttons"
-		{
-			hbox = {
-				visible = "[Not(IsGameViewOpen('character'))]"
-				layoutpolicy_horizontal = expanding
-				spacing = 1
-				text_single = {
-					raw_text = "Use number keys to sort by skills and Shift W for prowess."
-					align = left
-				}
-				button_text = {
-				    blockoverride "text" {
-				        # raw_text = "Diplomacy 1,"
-				    }
-					onclick = "[CharacterSelectionList.SortBySkill('(int32)0')]"
-					shortcut = speed_1
-				}
-
-				button_text = {
-				    blockoverride "text" {
-				        # raw_text = "Martial 2,"
-				    }
-					onclick = "[CharacterSelectionList.SortBySkill('(int32)1')]"
-					shortcut = speed_2
-				}
-				button_text = {
-				    blockoverride "text" {
-				        # raw_text = "Stewardship 3,"
-				    }
-					onclick = "[CharacterSelectionList.SortBySkill('(int32)2')]"
-					shortcut = speed_3
-				}
-				button_text = {
-				    blockoverride "text" {
-				        # raw_text = "Intrigue 4,"
-				    }
-					onclick = "[CharacterSelectionList.SortBySkill('(int32)3')]"
-					shortcut = speed_4
-				}
-
-				button_text = {
-				    blockoverride "text" {
-				        # raw_text = "Learning 5."
-				    }
-					onclick = "[CharacterSelectionList.SortBySkill('(int32)4')]"
-					shortcut = speed_5
-				}
-				button_text = {
-				    blockoverride "text" {
-				        # raw_text = "Prowess 5."
-				    }
-					onclick = "[CharacterSelectionList.SortBySkill('(int32)5')]"
-					shortcut = map_mode_10
-				}
-				expand = { }
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 3
+			block "filters_sort" {
+				filter_buttons = {}
 			}
+
+			block "skill_sort_buttons"
+			{
+				hbox = {
+					visible = "[Not(IsGameViewOpen('character'))]"
+					layoutpolicy_horizontal = expanding
+					spacing = 1
+					text_single = {
+						raw_text = "Use number keys to sort by skills and Shift W for prowess."
+						align = left
+					}
+					button_text = {
+						blockoverride "text" {
+							# raw_text = "Diplomacy 1,"
+						}
+						block "sort" {}
+						onclick = "[CharacterSelectionList.SortBySkill('(int32)0')]"
+						shortcut = speed_1
+					}
+
+					button_text = {
+						blockoverride "text" {
+							# raw_text = "Martial 2,"
+						}
+						block "sort" {}
+						onclick = "[CharacterSelectionList.SortBySkill('(int32)1')]"
+						shortcut = speed_2
+					}
+					button_text = {
+						blockoverride "text" {
+							# raw_text = "Stewardship 3,"
+						}
+						block "sort" {}
+						onclick = "[CharacterSelectionList.SortBySkill('(int32)2')]"
+						shortcut = speed_3
+					}
+					button_text = {
+						blockoverride "text" {
+							# raw_text = "Intrigue 4,"
+						}
+						block "sort" {}
+						onclick = "[CharacterSelectionList.SortBySkill('(int32)3')]"
+						shortcut = speed_4
+					}
+
+					button_text = {
+						blockoverride "text" {
+							# raw_text = "Learning 5."
+						}
+						block "sort" {}
+						onclick = "[CharacterSelectionList.SortBySkill('(int32)4')]"
+						shortcut = speed_5
+					}
+					button_text = {
+						blockoverride "text" {
+							# raw_text = "Prowess 5."
+						}
+						block "sort" {}
+						onclick = "[CharacterSelectionList.SortBySkill('(int32)5')]"
+						shortcut = map_mode_10
+					}
+					expand = { }
+				}
+			}
+
+			expand = {}
 		}
+
 	}
 
 	type vbox_character_list = vbox {
@@ -1497,19 +1529,20 @@ types Lists
 				layoutpolicy_horizontal = expanding
 			}
 		}
-
-		hbox = {
-			layoutpolicy_horizontal = expanding
+		blockoverride "sort_text_extra" {
 			button_text = {
 				name = "sort_order"
 				onclick = "[CharacterSelectionList.RevertSortOrder]"
+				block "sort" {}
+				block "reverse_order" {}
 
 				blockoverride "text" {
-					raw_text = "In [Select_CString(CharacterSelectionList.GetSortOrder, 'ascending', 'descending')] order. Toggle."
+					raw_text = "In [Select_CString(CharacterSelectionList.GetSortOrder, 'ascending', 'descending')] order."
 				}
-
+				blockoverride "extra" {
+					block "toggle_text" {}
+				}
 			}
-			expand = { }
 		}
 
 		block "special_character" { }
@@ -1521,6 +1554,7 @@ types Lists
 				# visible = "[DataModelHasItems(CharacterSelectionList.GetList)]"
 				# margin_bottom = 8
 				# spacing = 5
+				block "pre_count" {}
 
 				text_single = {
 					name = "character_count"
@@ -1625,5 +1659,44 @@ types Lists
 		# 	alwaystransparent = yes
 		# 	parentanchor = center
 		# }
+	}
+
+	type filter_buttons = hbox {
+		spacing = 3
+		margin_right = 3
+		button_text = {
+			name = "filters"
+
+			down = "[CharacterSelectionList.FiltersShown]"
+			# frame = "[BoolTo1And2(CharacterSelectionList.IsAllDefault)]"
+			onclick = "[CharacterSelectionList.OnToggleFilters]"
+			shortcut = army_split_half
+
+			block "filters_visible" { }
+
+			blockoverride "text" {
+				raw_text = "Filters[AddTextIf(CharacterSelectionList.FiltersShown, ', opened')][AddTextIf(Not(CharacterSelectionList.IsAllDefault), ', applied')] F."
+			}
+		}
+
+		button_text = {
+			visible = "[Not(CharacterSelectionList.IsAllDefault)]"
+			blockoverride "text" {
+				raw_text = "Reset." #CHARACTER_RESET_FILTERS
+			}
+			onclick = "[CharacterSelectionList.OnResetFilters]"
+		}
+	}
+}
+
+
+template reverse_order_key {
+	blockoverride "reverse_order" {
+		shortcut = mapmode_house_secondary
+	}
+	blockoverride "toggle_text" {
+		text_single = {
+			raw_text = "Toggle: Shift D."
+		}
 	}
 }
