@@ -13,6 +13,7 @@ window = {
 		on_start = "[PdxGuiWidget.FindChild('game_rules_window').TriggerAnimation('appear')]"
 		on_finish = "[Clear('game_rules_list')]"
 		on_finish = "[Clear('rules_page')]"
+		on_finish = "[Clear('show_all_rule_pages')]"
 	}
 
 	state = {
@@ -197,15 +198,27 @@ window = {
 						vbox = {
 							layoutpolicy_horizontal = expanding
 
+							button = {
+								shortcut = action_list
+								# to not accidentally switch to any ruler view
+							}
+
 							vbox = {
 								visible = "[GreaterThan_int32(GetDataModelSize(JominiGameRules.GetVisibleSettings), '(int32)40')]"
 								layoutpolicy_horizontal = expanding
 								datamodel = "[DataModelFirst(JominiGameRules.GetVisibleSettings, FixedPointToInt(Add_CFixedPoint(Divide_CFixedPoint(IntToFixedPoint(GetDataModelSize(JominiGameRules.GetVisibleSettings)), '(CFixedPoint)40'), '(CFixedPoint)0.99')))]"
+								# total size / 40 (per page) + 0.99 so we have one more
+								# so 79 /40 = 1.975 + 0.99 = 2.975 = 2 pages
 
-								text_single = {
+
+								button_text = {
 									layoutpolicy_horizontal = expanding
-									raw_text = "Rule pages:"
-									visible = "[Isnt('rules_page')]"
+									shortcut = map_mode_18
+									onclick = "[SetOrToggle('show_all_rule_pages', 'yes')]"
+
+									blockoverride "text" {
+										raw_text = "[Select_CString(Is('rules_page'), 'Show pages, Control R', 'Rule pages']."
+									}
 								}
 
 								item = {
@@ -213,7 +226,7 @@ window = {
 										layoutpolicy_horizontal = expanding
 
 										hbox = {
-											visible = "[Isnt('rules_page')]"
+											visible = "[Or(Isnt('rules_page'), Is('show_all_rule_pages'))]"
 											layoutpolicy_horizontal = expanding
 
 											button_text = {
@@ -240,14 +253,13 @@ window = {
 														onclick = "[PdxGuiWidget.AccessParent.AccessParent.AccessParent.AccessParent.FindChild('rules').Show]"
 														onclick = "[PdxGuiWidget.AccessParent.AccessParent.AccessParent.AccessParent.FindChild('hide_rules').Show]"
 														# onclick = "[PdxGuiWidget.Hide]"
-
 													}
 												}
 											}
 										}
 
 										button_text = {
-											visible = no
+											# visible = no
 											state = {
 												trigger_when = "[Isnt('rules_page')]"
 												name = "hide_rules"
@@ -271,6 +283,11 @@ window = {
 												trigger_when = "[Isnt('rules_page')]"
 												name = "hide_rules"
 												on_finish = "[PdxGuiWidget.Hide]"
+											}
+
+											state = {
+												name = "show_rules"
+												on_finish = "[PdxGuiWidget.Show]"
 											}
 											name = "rules"
 											layoutpolicy_horizontal = expanding
