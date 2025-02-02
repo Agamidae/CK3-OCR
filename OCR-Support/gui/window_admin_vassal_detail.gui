@@ -1,951 +1,734 @@
 window = {
 	name = "admin_vassal_detail_view"
 	widgetid = "admin_vassal_detail_view"
-	parentanchor = top|right
-	position = { -610 0 }
-	size = { 605 100% }
-
-	movable = yes
-	layer = middle
-
-	using = Window_Background
-	using = Window_Decoration
+	using = base_ocr_window
 
 	state = {
 		name = _show
-		using = Animation_FadeIn_Quick
+		# using = Animation_FadeIn_Quick
 		# position_x = -610
 		on_start = "[GetVariableSystem.Set( 'admin_vassal_detail_view_open', 'true'  )]"
+		on_finish = "[GetScriptedGui('bordering_realm_theme').Execute( GuiScope.SetRoot( Title.MakeScope ).End )]"
+		on_finish = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+
 	}
 
 	state = {
 		name = _hide
-		using = Animation_FadeOut_Quick
+		# using = Animation_FadeOut_Quick
 		# position_x = -580
 		on_start = "[GetVariableSystem.Clear( 'admin_vassal_detail_view_open' )]"
 	}
 
-	vbox = {
-		layoutpolicy_horizontal = expanding
-		layoutpolicy_vertical = expanding
-		using = Window_Margins
+	admin_vassal_detail_view_old = {}
+	datacontext = "[AdminVassalDetailView.GetTitle]"
+	datacontext = "[AdminVassalDetailView.GetGovernor]"
+	datacontext = "[Title.GetPreferredCapital.GetProvince]"
 
-		datacontext = "[AdminVassalDetailView.GetTitle]"
-		datacontext = "[AdminVassalDetailView.GetGovernor]"
+	window_ocr = {
 
-		header_pattern = {
-			layoutpolicy_horizontal = expanding
-
-			blockoverride "header_text"
-			{
-				text = "[Title.GetNameNoTooltip]"
-			}
-
-			blockoverride "button_close"
-			{
-				onclick = "[AdminVassalDetailView.Close]"
+		blockoverride "ocr_header" {
+			button_text = {
+				using = title_click
+				layoutpolicy_horizontal = expanding
+				blockoverride "text" {
+					raw_text = "[Title.GetNameNoTooltip],"
+				}
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "[Title.GetRankConcept] [title_tier|E],"
+					}
+					text_single = {
+						visible = "[Not(ObjectsEqual(MyCapital, Province.Self))]"
+						raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)],"
+					}
+					text_single = {
+						raw_text = "click to open title view."
+					}
+				}
 			}
 
 			button = {
-				onclick = "[ClearErrorLog]"
-				shortcut = action_list
+				onclick = "[AdminVassalDetailView.Close]"
+				shortcut = close_window
 			}
 
-			# text_single = {
-			# 	position = { 0 10 }
-			# 	raw_text = "Errors: [NumberOrErrors]"
-			# }
-		}
-
-		hbox = {
-			layoutpolicy_horizontal = expanding
-
-			button_tab = {
+			flowcontainer = {
+				ignoreinvisible = yes
 				layoutpolicy_horizontal = expanding
-				onclick = "[GetVariableSystem.Clear('theme_tabs')]"
-				down = "[Not(GetVariableSystem.Exists('theme_tabs'))]"
-				raw_text = "Main"
-			}
-			button_tab = {
-				layoutpolicy_horizontal = expanding
-				onclick = "[GetVariableSystem.Set('theme_tabs', 'graphs')]"
-				down = "[GetVariableSystem.HasValue('theme_tabs', 'graphs')]"
-				raw_text = "Graphs"
-			}
-		}
+				visible = "[DataModelHasItems(Title.MakeScope.GetList('bordering_realms'))]"
 
-		scrollbox = {
-			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
-			blockoverride "scrollbox_background" {
-			}
-			blockoverride "scrollbox_margins" {
-				margin_right = 20
-			}
-			blockoverride "scrollbox_content" {
+				# button_text = {
+				# 	onclick = "[GetScriptedGui('bordering_realm_theme').Execute( GuiScope.SetRoot( Title.MakeScope ).End )]"
+				#
+				# 	blockoverride "text" {
+				# 		raw_text = "refresh"
+				# 	}
+				# }
 
-				vbox = {
-					layoutpolicy_horizontal = expanding
+				flowcontainer = {
+					ignoreinvisible = yes
+					spacing = 3
 
-					visible = "[Not(GetVariableSystem.Exists('theme_tabs'))]"
-
-					state = {
-						name = "admin_vassal_details_refresh"
-						alpha = 0
-						duration = 0.2
-						next = "b"
-						using = Animation_Curve_Default
+					text_single = {
+						raw_text = "Borders"
 					}
 
-					state = {
-						name = "b"
-						alpha = 1
-						duration = 0.2
-						using = Animation_Curve_Default
-					}
+					datamodel = "[DataModelFirst(Title.MakeScope.GetList('bordering_realms'), Min_int32('(int32)2', GetDataModelSize(Title.MakeScope.GetList('bordering_realms'))))]"
 
-					widget = {
-						name = "background"
-
-						coat_of_arms_icon = {
-							size = { 128 128 }
-							coat_of_arms = "[Title.GetTitleCoA.GetTexture('(int32)230','(int32)230')]"
-							coat_of_arms_slot = "[Title.GetTitleCoA.GetSlot('(int32)230','(int32)230')]"
-							coat_of_arms_mask = "gfx/interface/coat_of_arms/designer_mask.dds"
-
-							color = { 1 1 1 0.5 }
-
-							modify_texture = {
-								texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
-								rotate_uv = 1.08
-								translate_uv = { 0.3 0 }
-								blend_mode = alphamultiply
-							}
-
-							using = Mask_Rough_Edges
-						}
-					}
-
-					hbox = {
-						name = "header_details"
-						layoutpolicy_horizontal = expanding
-						margin = { 10 10 }
-						spacing = 10
-
-						coa_title_medium_crown = { }
-
-						expand = {}
-
-						vbox = {
-
-							hbox = {
-								visible = "[Not( Character.IsIndependentRuler )]"
-								margin = { 12 8 }
-								spacing = 8
-
-								background = {
-									using = Background_Area_Dark
-									alpha = 0.75
-								}
-
+					item = {
+						button_text = {
+							using = char_click
+							datacontext = "[Scope.GetCharacter]"
+							blockoverride "pre" {
+								margin_left = 1
 								text_single = {
-									name = "administration_type"
-									layoutpolicy_horizontal = expanding
-									align = top
-									text = ADMIN_WINDOW_THEME_ADMINISTRATION_TYPE
-								}
-
-								button_modify_theme = { }
-
-								button_round = {
-									datacontext = "[Title.GetHolder.GetLiege]"
-									visible = "[And(Title.GetHolder.IsPlayer,Title.GetHolder.GetLiege.IsValid)]"
-									enabled = "[Character.IsPlayerInteractionValid('admin_vassal_modify_vassal_contract_interaction')]"
-									tooltip = "[Character.GetPlayerInteractionTooltip('admin_vassal_modify_vassal_contract_interaction')]"
-									onclick = "[Character.OpenPlayerInteraction('admin_vassal_modify_vassal_contract_interaction')]"
-
-									button_add_laws = {
-										parentanchor = center
-										alwaystransparent = yes
-									}
-								}
-								button_round = {
-									visible = "[Character.IsPlayerInteractionShown('give_vassal_directive_interaction')]"
-									enabled = "[Character.IsPlayerInteractionValid('give_vassal_directive_interaction')]"
-									onclick = "[Character.OpenPlayerInteraction('give_vassal_directive_interaction')]"
-									tooltip = "[Character.GetPlayerInteractionTooltip('give_vassal_directive_interaction')]"
-
-									block "give_directive_button_round" {}
-
-									button_give_directive = {
-										alwaystransparent = yes
-										parentanchor = center
-									}
-									using = tooltip_se
-								}
-								vbox = {
-									margin_top = -11
-									text_single = {
-										visible = "[Character.IsPlayerInteractionShown('give_vassal_directive_interaction')]"
-										text = "[Character.Custom('vassal_directive_icon')]"
-										tooltip = "[Character.Custom('vassal_directive_text')]"
-										using = tooltip_se
-									}
+									visible = "[Not(IsIndexFirst)]"
+									raw_text = "and"
 								}
 							}
-
-							text_label_left = {
-								visible = "[Character.IsIndependentRuler]"
-								text = ADMIN_WINDOW_THEME_IMPERIAL_LANDS_HEADER
-							}
-
-							text_single = {
-								name = "tier_info"
-								layoutpolicy_horizontal = expanding
-								text = ADMIN_VASSAL_DETAILS_TITLE_TIER
-							}
-
-							text_single = {
-								name = "theme_size"
-								layoutpolicy_horizontal = expanding
-								raw_text = ADMIN_WINDOW_THEME_COUNTIES
+							blockoverride "text" {
+								raw_text = "[Character.GetPrimaryTitle.GetNameNoTooltip]"
 							}
 						}
-						expand = {}
-						expand = {}
-
-
-					}
-
-					vbox = {
-						name = "contribution_info"
-						layoutpolicy_horizontal = expanding
-						margin = { 0 12 }
-						spacing = 4
-
-						background ={
-							using = Background_Area
-						}
-
-						text_label_center = {
-							text = ADMIN_VASSAL_DETAILS_INCOME_HEADER
-
-							background = {
-								using = Background_Area
-							}
-						}
-
-						text_single = {
-							visible = "[Not( Character.IsIndependentRuler )]"
-							text = ADMIN_VASSAL_DETAILS_INCOME_DESCRIPTION
-							default_format = "#low"
-						}
-
-						text_multi = {
-							visible = "[Character.IsIndependentRuler]"
-							layoutpolicy_horizontal = expanding
-							max_width = 360
-
-							align = center
-							text = ADMIN_VASSAL_THEME_IMPERIAL_LANDS_INCOME_TOP_LIEGE
-							default_format = "#low"
-						}
-
-						hbox = {
-							spacing = 10
-							datacontext = "[Title.GetHolder.GetVassalContract]"
-
-							# text_single = {
-							# 	raw_text = "Paid to liege:"
-							# 	autoresize = no
-							# 	size = { 120 22 }
-							# 	align = nobaseline
-							# }
-
-							icon_gold = {
-								size = { 32 32 }
-							}
-
-							progressbar_standard = {
-								size = { 90 25 }
-								value = "[FixedPointToProgressbarValue(VassalContract.GetTaxRatioForLiege)]"
-
-								text_single = {
-									parentanchor = center
-									text = "ADMIN_VASSAL_DETAILS_TAX_CONTRIBUTION"
-									default_format = "#high"
-									align = nobaseline
-								}
-
-								using = tooltip_ws
-							}
-
-							flowcontainer = {
-								ignoreinvisible = yes
-								spacing = 5
-
-								text_single = {
-									visible = "[GreaterThan_CFixedPoint(VassalContract.GetTaxRatioForLiege, '(CFixedPoint)0')]"
-									raw_text = "[Divide_CFixedPoint(AdminVassalDetailView.GetTaxContribution, VassalContract.GetTaxRatioForLiege)|1]"
-									align = nobaseline
-								}
-							}
-
-
-							spacer = {
-								size = { 32 -1 }
-							}
-
-							icon_soldiers = {
-								size = { 32 32 }
-							}
-
-							progressbar_standard = {
-								size = { 90 25 }
-								value = "[FixedPointToProgressbarValue(VassalContract.GetLevyRatioForLiege)]"
-
-								text_single = {
-									parentanchor = center
-									text = "ADMIN_VASSAL_DETAILS_LEVY_CONTRIBUTION"
-									default_format = "#high"
-									align = nobaseline
-								}
-
-								using = tooltip_ws
-							}
-
-							flowcontainer = {
-								ignoreinvisible = yes
-								spacing = 5
-
-								text_single = {
-									visible = "[GreaterThan_CFixedPoint(VassalContract.GetLevyRatioForLiege, '(CFixedPoint)0')]"
-									raw_text = "[Divide_CFixedPoint(AdminVassalDetailView.GetLevyContribution, VassalContract.GetLevyRatioForLiege)|0]"
-									align = nobaseline
-								}
-							}
-						}
-
-						hbox = {
-							visible = no
-							spacing = 16
-
-							text_single = {
-								raw_text = "income:"
-								autoresize = no
-								size = { 120 22 }
-								align = nobaseline
-							}
-
-							icon_gold = {
-								size = { 32 32 }
-							}
-
-							text_label_center = {
-								min_width = 80
-								raw_text = " "
-								flowcontainer = {
-									ignoreinvisible = yes
-									spacing = 15
-									datacontext = "[Title.GetHolder.GetVassalContract]"
-
-									text_single = {
-										visible = "[GreaterThan_CFixedPoint(VassalContract.GetTaxRatioForLiege, '(CFixedPoint)0')]"
-										raw_text = "[Divide_CFixedPoint(AdminVassalDetailView.GetTaxContribution, VassalContract.GetTaxRatioForLiege)|1v]"
-									}
-									text_single = {
-										visible = "[EqualTo_CFixedPoint(VassalContract.GetTaxRatioForLiege, '(CFixedPoint)0')]"
-										raw_text = "N/A"
-									}
-								}
-							}
-
-							spacer = {
-								size = { 32 -1 }
-							}
-
-							icon_soldiers = {
-								size = { 32 32 }
-							}
-
-							text_label_center = {
-								min_width = 80
-								raw_text = " "
-								flowcontainer = {
-									ignoreinvisible = yes
-									spacing = 15
-									datacontext = "[Title.GetHolder.GetVassalContract]"
-
-									text_single = {
-										visible = "[GreaterThan_CFixedPoint(VassalContract.GetTaxRatioForLiege, '(CFixedPoint)0')]"
-										raw_text = "[Divide_CFixedPoint(AdminVassalDetailView.GetLevyContribution, VassalContract.GetLevyRatioForLiege)|0v]"
-									}
-									text_single = {
-										visible = "[EqualTo_CFixedPoint(VassalContract.GetLevyRatioForLiege, '(CFixedPoint)0')]"
-										raw_text = "N/A"
-									}
-								}
-							}
-						}
-					}
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
-						spacing = 15
-						margin = { 10 10 }
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-							spacing = 5
-							margin_left = 25
-
-							text_single = {
-								raw_text = "BANNER_MEN_AT_ARMS_LABEL"
-							}
-
-							# [GetDataModelSize(Title.GetControlledMAA)]
-
-							text_single = {
-								raw_text = "[Title.GetTotalTitleMAATroopsDesc]"
-							}
-							expand = {}
-
-							text_single = {
-								visible = "[DataModelHasItems(Title.GetControlledMAA)]"
-								raw_text = "[GetDataModelSize(Title.GetControlledMAA)]/[Add_CFixedPoint(Character.MakeScope.ScriptValue('bav_maa_title_cap'), Select_CFixedPoint(EqualTo_string(Character.GetHouse.GetHousePowerBonus.GetName, GetHousePowerBonus('army_quartermasters').GetName), '(CFixedPoint)1', '(CFixedPoint)0'))]"
-								align = right
-								margin_right = 25
-							}
-						}
-
-						hbox = {
-							layoutpolicy_horizontal = expanding
-
-							background = { using = Background_Area margin = { 10 5 } }
-
-							fixedgridbox = {
-								addcolumn = 250
-								addrow = 96
-								# datamodel_wrap = 5
-								setitemsizefromcell = yes
-								flipdirection = yes
-								maxhorizontalslots = 2
-
-								datamodel = "[Title.GetControlledMAA]"
-
-								item = {
-									widget = {
-										container_maa_item_more_info = {
-											parentanchor = hcenter
-										}
-									}
-								}
-							}
-
-							# expand = {}
-						}
-
-						# hbox = {
-						# 	layoutpolicy_horizontal = expanding
-						# 	spacing = 10
-						# 	expand = {}
-						#
-						# 	button_standard = {
-						# 		raw_text = "Transfer"
-						# 		enabled = "[Title.CanTransferTitleMaaControlToLocalPlayer]"
-						# 		onclick = "[Title.TransferMaaControlToLocalPlayer]"
-						# 	}
-						#
-						# 	button_standard = {
-						# 		raw_text = "Return"
-						# 		enabled = "[Title.CanReturnTitleMaaToOwner]"
-						# 		onclick = "[Title.ReturnTitleMaaToOwner]"
-						# 	}
-						#
-						# 	expand = {}
-						# }
-
-					}
-
-					hbox = {
-						name = "governor_info"
-						layoutpolicy_horizontal = expanding
-						margin = { 12 12 }
-						margin_bottom = 18
-
-						background = {
-							using = Background_Area_Light
-						}
-
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							layoutpolicy_vertical = expanding
-
-							text_single = {
-								layoutpolicy_horizontal = expanding
-								max_width = 300
-
-								text = ADMIN_VASSAL_DETAILS_GOVERNOR_TITLE
-								default_format = "#low"
-								using = Font_Size_Medium
-							}
-
-							text_single = {
-								layoutpolicy_horizontal = expanding
-								max_width = 300
-
-								text = "[Character.GetNameNoTooltip]"
-								using = Font_Size_Medium
-							}
-
-							text_single = {
-								layoutpolicy_horizontal = expanding
-								max_width = 300
-
-								text = "[Character.GetRelationToString( GetPlayer )]"
-								default_format = "#low"
-							}
-
-							spacer = { size = { -1 8 } }
-
-							vbox = {
-								layoutpolicy_horizontal = expanding
-								margin_left = 17
-								spacing = 5
-
-								hbox = {
-									layoutpolicy_horizontal = expanding
-
-									spacing = 15
-
-									text_single = {
-										raw_text = "@gold_icon! [Character.GetGold|v0]   [Character.GetBalance|1=v]"
-										# using = Font_Size_Medium
-									}
-
-									text_single = {
-										raw_text = "@soldier_icon! [Character.GetMilitaryStrengthText|v]"
-										# using = Font_Size_Medium
-									}
-
-									# text_single = {
-									# 	visible = "[Not( Character.IsIndependentRuler )]"
-									#
-									# 	text = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALID
-									# 	tooltip = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT
-									# }
-
-									expand = {}
-								}
-
-								hbox = {
-									layoutpolicy_horizontal = expanding
-									spacing = 10
-
-									text_single = {
-										raw_text = "[Character.Custom( 'AIEconomicPersonality' )]"
-									}
-
-									text_single = {
-										raw_text = "[Character.GetAIPersonality]"
-									}
-
-									expand = {}
-								}
-
-								hbox = {
-									layoutpolicy_horizontal = expanding
-									margin_top = 10
-
-									hbox = {
-										name = "skills_grid"
-										margin = { 2 0 }
-										background = { using = Background_Area_Border }
-
-										vbox_skill_entry = {}
-										vbox_skill_entry = {
-											blockoverride "frame" {
-												frame = 2
-											}
-											blockoverride "value" {
-												text = "[Character.GetSkill('martial')]"
-											}
-										}
-										vbox_skill_entry = {
-											blockoverride "frame" {	frame = 3	}
-											blockoverride "value" {
-												text = "[Character.GetSkill('stewardship')]"
-											}
-										}
-										vbox_skill_entry = {
-											blockoverride "frame" {	frame = 4	}
-											blockoverride "value" {
-												text = "[Character.GetSkill('intrigue')]"
-											}
-										}
-										vbox_skill_entry = {
-											blockoverride "frame" {	frame = 5	}
-											blockoverride "value" {
-												text = "[Character.GetSkill('learning')]"
-											}
-										}
-										vbox = {
-											tooltip = "[CharacterWindow.GetCharacter.GetProwessBreakdown]"
-											using = tooltip_ne
-											spacing = -3
-
-											using = Animation_Character_Window_Refresh
-
-											icon = {
-												name = "prowess_icon"
-												size = { 32 32 }
-												texture = "gfx/interface/icons/icon_prowess.dds"
-											}
-
-											text_single = {
-												name = "prowess_value"
-												text = "[Character.GetProwess|0v]"
-												align = nobaseline
-											}
-										}
-
-										spacer = {
-											size = { 10 0 }
-										}
-
-										vbox = {
-											tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT"
-											using = tooltip_ne
-											spacing = -3
-											margin_right = 3
-
-											icon = {
-												name = "char_governor_efficiency_icon"
-												size = { 32 32 }
-												texture = "gfx/interface/icons/icon_skill_governor_efficiency.dds"
-											}
-
-											text_single = {
-												name = "char_governor_efficiency_value"
-												text = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALUE"
-												align = nobaseline
-											}
-										}
-									}
-
-									expand = {}
-								}
-							}
-
-						}
-
-						portrait_torso = { }
-					}
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-
-						margin = { 10 0 }
-
-						hbox = {
-							margin_top = 12
-							spacing = 4
-
-							button_round = {
-								visible = "[Character.IsPlayerInteractionShown('force_step_down_interaction')]"
-								enabled = "[Character.IsPlayerInteractionValid('force_step_down_interaction')]"
-								tooltip = "[Character.GetPlayerInteractionTooltip('force_step_down_interaction')]"
-								onclick = "[Character.OpenPlayerInteraction('force_step_down_interaction')]"
-
-								button_force_to_step_down = {
-									parentanchor = center
-									alwaystransparent = yes
-								}
-							}
-
-							button_round = {
-								visible = "[Character.IsPlayerInteractionShown('start_subsume_province_interaction')]"
-								enabled = "[Character.IsPlayerInteractionValid('start_subsume_province_interaction')]"
-								tooltip = "[Character.GetPlayerInteractionTooltip('start_subsume_province_interaction')]"
-								onclick = "[Character.OpenPlayerInteraction('start_subsume_province_interaction')]"
-
-								button_subsume_province = {
-									parentanchor = center
-									alwaystransparent = yes
-								}
-							}
-
-							button_round = {
-								visible = "[Character.IsPlayerInteractionShown('start_dispute_border_interaction')]"
-								enabled = "[Character.IsPlayerInteractionValid('start_dispute_border_interaction')]"
-								tooltip = "[Character.GetPlayerInteractionTooltip('start_dispute_border_interaction')]"
-								onclick = "[Character.OpenPlayerInteraction('start_dispute_border_interaction')]"
-
-								button_dispute_border = {
-									parentanchor = center
-									alwaystransparent = yes
-								}
-							}
-
-							button_round = {
-								visible = "[Character.IsPlayerInteractionShown('frontier_influence_war_interaction')]"
-								enabled = "[Character.IsPlayerInteractionValid('frontier_influence_war_interaction')]"
-								tooltip = "[Character.GetPlayerInteractionTooltip('frontier_influence_war_interaction')]"
-								onclick = "[Character.OpenPlayerInteraction('frontier_influence_war_interaction')]"
-
-								button_declare_war = {
-									parentanchor = center
-									alwaystransparent = yes
-								}
-							}
-							expand = {}
-						}
-
-						expand = {}
-
-						hbox = {
-							visible = "[GetPlayer.IsIndependentRuler]"
-
-							button_standard = {
-								visible = "[Not( Character.IsIndependentRuler )]"
-								enabled = "[Character.IsPlayerInteractionValid('revoke_title_interaction')]"
-
-								text = ADMIN_VASSAL_DETAILS_REVOKE_BUTTON
-
-								onclick = "[Character.OpenPlayerInteractionWithTargetTitle('revoke_title_interaction', Title.Self)]"
-								onclick = "[Character.PanCameraTo]"
-								onclick = "[AdminVassalDetailView.Close]"
-
-								tooltip = "[Character.GetPlayerInteractionTooltip('revoke_title_interaction')]"
-							}
-
-							button_standard = {
-								visible = "[Character.IsIndependentRuler]"
-								enabled = "[And( And( ObjectsEqual( GetPlayer.Self, Character.Self ), Title.CanUseFindVassal( Character.Self ) ), Not( Title.IsLeasedOut ) )]"
-
-								text = ADMIN_VASSAL_DETAILS_APPOINT_BUTTON
-
-								onclick = "[OpenTitleWindowAndGrantTitle( Title.Self )]"
-								onclick = "[Character.PanCameraTo]"
-								onclick = "[AdminVassalDetailView.Close]"
-
-								tooltip = FIND_VASSAL_BUTTON_TOOLTIP
-							}
-
-							expand = { }
-						}
-					}
-
-					text_multi = {
-						visible = "[And( Character.IsIndependentRuler, GetPlayer.IsIndependentRuler )]"
-						layoutpolicy_horizontal = expanding
-						max_width = 300
-
-						text = ADMIN_WINDOW_THEME_IMPERIAL_LAND_DETAILS
-					}
-
-					vbox = {
-						name = "succession_info"
-						margin = { 0 8 }
-						margin_bottom = 12
-						spacing = 12
-						layoutpolicy_horizontal = expanding
-						layoutpolicy_vertical = expanding
-
-						background = {
-							using = Background_Area
-						}
-
-
-						text_label_center = {
-							text = ADMIN_VASSAL_DETAILS_SUCCESSION_LABEL
-						}
-
-						hbox_admin_title_successor_candidates_list = {
-							datacontext = "[AdminVassalDetailView.GetSuccessorCandidateList]"
-						}
-
-						# INVEST IN BEST LOCAL PLAYER CANDIDATE IF THEY EXIST
-						hbox = {
-							datacontext = "[AdminVassalDetailView.GetTitle]"
-							datacontext = "[AdminVassalDetailView.GetSuccessorCandidateList]"
-							datacontext = "[AdminVassalSuccessorCandidateList.GetBestLocalPlayerCandidate( '(int32)0' )]"
-							datacontext = "[AdminVassalSuccessorCandidate.GetCandidate]"
-
-							visible = "[AdminVassalSuccessorCandidateList.ShowBestPlayerCandidateIndependently( '(int32)0' )]"
-							layoutpolicy_horizontal = expanding
-
-							button_standard = {
-								enabled = "[Character.IsPlayerInteractionValid('influence_candidacy_interaction')]"
-								tooltip = "[Character.GetPlayerInteractionTooltip('influence_candidacy_interaction')]"
-								onclick = "[Character.OpenPlayerInteractionWithTargetTitle('influence_candidacy_interaction', Title.Self)]"
-								size = { 180 40 }
-
-								hbox = {
-									layoutpolicy_horizontal = expanding
-									margin = { 8 4 }
-
-									button_promote_candidate = {
-										alwaystransparent = yes
-									}
-
-									text_single = {
-										text = ADMIN_VASSAL_DETAILS_VOTE_FOR_SUCCESSOR_BUTTON
-										align = nobaseline
-									}
-								}
-							}
-						}
-
-						# INVEST IN ANYONE (FALLBACK)
-						hbox = {
-							datacontext = "[AdminVassalDetailView.GetTitle]"
-							datacontext = "[AdminVassalDetailView.GetSuccessorCandidateList]"
-
-							visible = "[Not( AdminVassalSuccessorCandidateList.ShowBestPlayerCandidateIndependently( '(int32)0' ) )]"
-							layoutpolicy_horizontal = expanding
-
-							button_standard = {
-								enabled = "[Character.IsPlayerInteractionValid('influence_candidacy_interaction')]"
-								tooltip = "[Character.GetPlayerInteractionTooltip('influence_candidacy_interaction')]"
-								onclick = "[Character.GetTopLiege.OpenPlayerInteractionWithTargetTitle('influence_candidacy_interaction', Title.Self)]"
-								size = { 180 40 }
-
-								hbox = {
-									layoutpolicy_horizontal = expanding
-									margin = { 8 4 }
-
-									button_promote_candidate = {
-										alwaystransparent = yes
-									}
-
-									text_single = {
-										text = ADMIN_VASSAL_DETAILS_VOTE_FOR_SUCCESSOR_BUTTON
-										align = nobaseline
-									}
-								}
-							}
-						}
-						expand = {}
 					}
 				}
 
+				text_single = {
+					visible = "[GreaterThan_int32(GetDataModelSize(Title.MakeScope.GetList('bordering_realms')), '(int32)2')]"
+					raw_text = "and [Subtract_int32( GetDataModelSize(Title.MakeScope.GetList('bordering_realms')), '(int32)2')] more"
+				}
+
+				dot = {}
+			}
+
+			# succession
+			widget = {
+				size = { 600 35 }
+				layoutpolicy_horizontal = expanding
+				scissor = yes
+
 				vbox = {
 					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
-					visible = "[GetVariableSystem.HasValue('theme_tabs', 'graphs')]"
-					margin_left = 10
+
+					datacontext = "[AdminVassalDetailView.GetTitle]"
+					datacontext = "[AdminVassalDetailView.GetSuccessorCandidateList]"
+					datacontext = "[AdminVassalSuccessorCandidateList.GetBestLocalPlayerCandidate( '(int32)0' )]"
+					datacontext = "[AdminVassalSuccessorCandidate.GetCandidate]"
 
 					vbox = {
+						visible = "[AdminVassalSuccessorCandidateList.ShowBestPlayerCandidateIndependently( '(int32)3' )]"
 						layoutpolicy_horizontal = expanding
-						spacing = 5
-						margin_top = 10
-
-						text_label_center = {
-							raw_text = "[GetDataModelSize(Title.MakeScope.GetList('bav_income_tracker'))] months recorded"
-						}
-
-						text_single = {
-							raw_text = "[Title.GetHolder.GetFirstNameNoTooltip] has [Title.MakeScope.ScriptValue('bav_holdings_in_title')|v0] holdings in this theme:"
-						}
-
-						text_single = {
-							visible = "[EqualTo_CFixedPoint( Title.MakeScope.ScriptValue('bav_holdings_in_title'), '(CFixedPoint)0')]"
-							raw_text = "nothing!"
-						}
 
 						vbox = {
+							datamodel = "[DataModelFirst( AdminVassalSuccessorCandidateList.GetSuccessorCandidates, '(int32)3')]"
 							layoutpolicy_horizontal = expanding
-							spacing = 10
-							visible = "[GreaterThan_CFixedPoint( Title.MakeScope.ScriptValue('bav_holdings_in_title'), '(CFixedPoint)0')]"
+							spacing = 3
 
-							vbox_theme_graph = {}
-
-							vbox_theme_graph = {
-								blockoverride "total" {
-									raw_text = "levies"
-								}
-								blockoverride "values" {
-									max = "[Max_CFixedPoint(Title.MakeScope.Var('bav_highest_levies').GetValue, '(CFixedPoint)1')]"
-									value = "[Story.MakeScope.Var('title_total_levies').GetValue]"
-									tooltip = "[Story.MakeScope.Var('title_total_levies').GetValue|0]"
-								}
-								blockoverride "lowest" {
-									raw_text = "[Title.MakeScope.Var('bav_lowest_levies').GetValue|0v]"
-								}
-								blockoverride "highest" {
-									raw_text = "[Title.MakeScope.Var('bav_highest_levies').GetValue|0v]"
-								}
-							}
-
-							vbox_theme_graph = {
-								blockoverride "total" {
-									raw_text = "building levels"
-								}
-								blockoverride "values" {
-									max = "[Max_CFixedPoint(Title.MakeScope.Var('bav_highest_building_levels').GetValue, '(CFixedPoint)1')]"
-									value = "[Story.MakeScope.Var('title_total_building_levels').GetValue]"
-									tooltip = "[Story.MakeScope.Var('title_total_building_levels').GetValue|0]"
-								}
-								blockoverride "lowest" {
-									raw_text = "[Title.MakeScope.Var('bav_lowest_building_levels').GetValue|0v]"
-								}
-								blockoverride "highest" {
-									raw_text = "[Title.MakeScope.Var('bav_highest_building_levels').GetValue|0v]"
-								}
-							}
-
-							vbox_theme_graph = {
-								blockoverride "total" {
-									raw_text = "constructions"
-								}
-								blockoverride "values" {
-									max = "[Max_CFixedPoint(Title.MakeScope.Var('bav_highest_constructions').GetValue, '(CFixedPoint)1')]"
-									value = "[Story.MakeScope.Var('title_total_constructions').GetValue]"
-									tooltip = "[Story.MakeScope.Var('title_total_constructions').GetValue|0]"
-								}
-								blockoverride "lowest" {
-									raw_text = "[Title.MakeScope.Var('bav_lowest_constructions').GetValue|0v]"
-								}
-								blockoverride "highest" {
-									raw_text = "[Title.MakeScope.Var('bav_highest_constructions').GetValue|0v]"
+							item = {
+								vbox_admin_vassal_successor_candidate_tip = {
+									datacontext = "[AdminVassalSuccessorCandidate.GetCandidate]"
 								}
 							}
 						}
 
+						hbox = {
+							layoutpolicy_horizontal = expanding
+
+							vbox_admin_vassal_successor_candidate_tip = {
+								datacontext = "[AdminVassalSuccessorCandidateList.GetBestLocalPlayerCandidate( '(int32)3' )]"
+								datacontext = "[AdminVassalSuccessorCandidate.GetCandidate]"
+							}
+							expand = {}
+						}
 					}
 
-					expand = {}
-
-
-					hbox = {
+					vbox = {
+						visible = "[Not( AdminVassalSuccessorCandidateList.ShowBestPlayerCandidateIndependently( '(int32)3' ) )]"
+						datamodel = "[DataModelFirst( AdminVassalSuccessorCandidateList.GetSuccessorCandidates, '(int32)4')]"
 						layoutpolicy_horizontal = expanding
-						visible = no
-						datamodel = "[Title.MakeScope.GetList('bav_income_tracker')]"
+						spacing = 3
 
 						item = {
-							vbox = {
-								datacontext = "[Scope.Story]"
+							vbox_admin_vassal_successor_candidate_tip = {
+								datacontext = "[AdminVassalSuccessorCandidate.GetCandidate]"
+							}
+						}
 
+						expand = {}
+					}
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						text = ADMIN_VASSAL_DETAILS_NO_SUCCESSORS
+						visible = "[IsDataModelEmpty( AdminVassalSuccessorCandidateList.GetSuccessorCandidates )]"
+					}
+				}
+			}
+			widget = {
+				size = { 0 5 }
+			}
+		}
+		blockoverride "ocr_content" {
+			spacing = 10
+
+			flowcontainer = {
+				ignoreinvisible = yes
+				visible = "[Isnt('theme_succession')]"
+
+				spacing = 10
+				direction = vertical
+				layoutpolicy_horizontal = expanding
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+						visible = "[Not( Character.IsIndependentRuler )]"
+
+						button_modify_theme_ocr = {}
+
+						button_text = {
+							datacontext = "[Title.GetHolder.GetLiege]"
+							visible = "[And(Title.GetHolder.IsPlayer,Title.GetHolder.GetLiege.IsValid)]"
+							enabled = "[Character.IsPlayerInteractionValid('admin_vassal_modify_vassal_contract_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('admin_vassal_modify_vassal_contract_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('admin_vassal_modify_vassal_contract_interaction')]"
+
+							tooltip_visible = "[Not(Character.IsPlayerInteractionValid('admin_vassal_modify_vassal_contract_interaction'))]"
+
+							blockoverride "text" {
+								raw_text = "[Character.GetPlayerInteractionName('admin_vassal_modify_vassal_contract_interaction')]."
+							}
+							blockoverride "disabled" {
+								visible = "[Not(Character.IsPlayerInteractionValid('admin_vassal_modify_vassal_contract_interaction'))]"
+							}
+						}
+
+						button_text = {
+							onclick = "[GetScriptedGui('save_directed_vassal').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Character.MakeScope).End )]"
+							visible = "[Character.IsPlayerInteractionShown('give_vassal_directive_interaction')]"
+							enabled = "[Character.IsPlayerInteractionValid('give_vassal_directive_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('give_vassal_directive_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('give_vassal_directive_interaction')]"
+
+							tooltip_visible = "[Not(Character.IsPlayerInteractionValid('give_vassal_directive_interaction'))]"
+							shortcut = find_title_shortcut
+
+							blockoverride "text" {
+								raw_text = "[Character.Custom('vassal_directive_text')], V."
+								alwaystransparent = yes
+								# raw_text = "[Character.GetPlayerInteractionName('give_vassal_directive_interaction')]."
+							}
+							blockoverride "extra" {
 								text_single = {
-									raw_text = "Tax: [Story.MakeScope.Var('title_total_taxes').GetValue|0]"
-								}
-								text_single = {
-									raw_text = "Highest tax: [Title.MakeScope.Var('bav_highest_tax').GetValue|0]"
-								}
-								text_single = {
-									raw_text = "Levies: [Story.MakeScope.Var('title_total_levies').GetValue|0]"
-								}
-								text_single = {
-									raw_text = "Buildings: [Story.MakeScope.Var('title_total_building_levels').GetValue|0]"
-								}
-								text_single = {
-									raw_text = "Constructions: [Story.MakeScope.Var('title_total_constructions').GetValue|0]"
-								}
-								text_single = {
-									raw_text = "Date: [Story.MakeScope.Var('bav_month').GetValue|0] [Story.MakeScope.Var('bav_year').GetValue|0]"
+									raw_text = "Can't change."
+									visible = "[Not(Character.IsPlayerInteractionValid('give_vassal_directive_interaction'))]"
 								}
 							}
+						}
+					}
+
+					button_text = {
+						using = title_click
+						blockoverride "text" {
+							raw_text = "[Character.GetTitleAsNameNoTooltip] holds [GuiScope.SetRoot( Title.MakeScope ).AddScope('player', Character.MakeScope).ScriptValue('your_counties_in_title')] out of [Title.MakeScope.ScriptValue('counties_in_title')] de-jure counties."
+						}
+					}
+
+					text_single = {
+						visible = "[Character.IsIndependentRuler]"
+						text = ADMIN_WINDOW_THEME_IMPERIAL_LANDS_HEADER
+					}
+				}
+
+				### governor
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+
+					button_text = {
+						visible = "[Not(Character.IsLocalPlayer)]"
+						using = char_click
+						shortcut = army_create_new
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "Held by"
+							}
+							text_single = {
+								raw_text = "[Character.GetNameNoTooltip], [Character.GetAge],"
+							}
+							text_single = {
+								raw_text = "[Character.Custom('BaseRankName')] of [Character.RealmSize] counties."
+							}
+							text_single = {
+								raw_text = "h hotkey."
+							}
+						}
+					}
+
+					text_single = {
+						visible = "[Not(Character.IsLocalPlayer)]"
+						raw_text = "[Character.GetSheHe|U] is [Character.GetRelationToString(GetPlayer)]."
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+
+						visible = "[GetPlayer.IsIndependentRuler]"
+
+						button_text = {
+							visible = "[Not( Character.IsIndependentRuler )]"
+							enabled = "[Character.IsPlayerInteractionValid('revoke_title_interaction')]"
+
+							blockoverride "text" {
+								text = ADMIN_VASSAL_DETAILS_REVOKE_BUTTON
+							}
+
+							blockoverride "disabled" {
+								visible = "[Not(Character.IsPlayerInteractionValid('revoke_title_interaction'))]"
+							}
+
+							blockoverride "extra" {
+								comma = {}
+								text_single = {
+									raw_text = "Control R."
+								}
+							}
+
+							onclick = "[Character.OpenPlayerInteractionWithTargetTitle('revoke_title_interaction', Title.Self)]"
+							onclick = "[Character.PanCameraTo]"
+							onclick = "[AdminVassalDetailView.Close]"
+
+							tooltip_visible = "[Not(Character.IsPlayerInteractionValid('revoke_title_interaction'))]"
+
+							tooltip = "[Character.GetPlayerInteractionTooltip('revoke_title_interaction')]"
+							shortcut = map_mode_18
+						}
+
+						text_multi_wide = {
+							visible = "[And( Character.IsIndependentRuler, GetPlayer.IsIndependentRuler )]"
+
+							text = ADMIN_WINDOW_THEME_IMPERIAL_LAND_DETAILS
+						}
+
+
+
+						button_text = {
+							visible = "[Character.IsIndependentRuler]"
+							enabled = "[And( And( ObjectsEqual( GetPlayer.Self, Character.Self ), Title.CanUseFindVassal( Character.Self ) ), Not( Title.IsLeasedOut ) )]"
+
+							blockoverride "disabled" {
+								visible = "[Not(And( And( ObjectsEqual( GetPlayer.Self, Character.Self ), Title.CanUseFindVassal( Character.Self ) ), Not( Title.IsLeasedOut ) ))]"
+							}
+
+							blockoverride "text" {
+								text = ADMIN_VASSAL_DETAILS_APPOINT_BUTTON
+							}
+
+							tooltip_visible = "[Not(And( And( ObjectsEqual( GetPlayer.Self, Character.Self ), Title.CanUseFindVassal( Character.Self ) ), Not( Title.IsLeasedOut ) ))]"
+
+
+							onclick = "[OpenTitleWindowAndGrantTitle( Title.Self )]"
+							onclick = "[Character.PanCameraTo]"
+							onclick = "[AdminVassalDetailView.Close]"
+
+							tooltip = FIND_VASSAL_BUTTON_TOOLTIP
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+
+						button_text = {
+							visible = "[Character.IsPlayerInteractionShown('force_step_down_interaction')]"
+							enabled = "[Character.IsPlayerInteractionValid('force_step_down_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('force_step_down_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('force_step_down_interaction')]"
+
+							blockoverride "disabled" {
+								visible = "[Not(Character.IsPlayerInteractionValid('force_step_down_interaction'))]"
+							}
+
+							blockoverride "text" {
+								text = "[Character.GetPlayerInteractionName('force_step_down_interaction')]"
+							}
+						}
+
+						button_text = {
+							visible = "[Character.IsPlayerInteractionShown('start_subsume_province_interaction')]"
+							enabled = "[Character.IsPlayerInteractionValid('start_subsume_province_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('start_subsume_province_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('start_subsume_province_interaction')]"
+
+							blockoverride "disabled" {
+								visible = "[Not(Character.IsPlayerInteractionValid('start_subsume_province_interaction'))]"
+							}
+
+							blockoverride "text" {
+								text = "[Character.GetPlayerInteractionName('start_subsume_province_interaction')]"
+							}
+						}
+
+						button_text = {
+							visible = "[Character.IsPlayerInteractionShown('start_dispute_border_interaction')]"
+							enabled = "[Character.IsPlayerInteractionValid('start_dispute_border_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('start_dispute_border_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('start_dispute_border_interaction')]"
+
+							blockoverride "disabled" {
+								visible = "[Not(Character.IsPlayerInteractionValid('start_dispute_border_interaction'))]"
+							}
+
+							blockoverride "text" {
+								text = "[Character.GetPlayerInteractionName('start_dispute_border_interaction')]"
+							}
+						}
+
+						button_text = {
+							visible = "[Character.IsPlayerInteractionShown('frontier_influence_war_interaction')]"
+							enabled = "[Character.IsPlayerInteractionValid('frontier_influence_war_interaction')]"
+							tooltip = "[Character.GetPlayerInteractionTooltip('frontier_influence_war_interaction')]"
+							onclick = "[Character.OpenPlayerInteraction('frontier_influence_war_interaction')]"
+
+							blockoverride "disabled" {
+								visible = "[Not(Character.IsPlayerInteractionValid('frontier_influence_war_interaction'))]"
+							}
+
+							blockoverride "text" {
+								text = "[Character.GetPlayerInteractionName('frontier_influence_war_interaction')]"
+							}
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+
+						text_single = {
+							raw_text = "[Character.MakeScope.ScriptValue( 'governor_efficiency_presented')|0]% efficiency,"
+							tooltip = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							spacing = 3
+							visible = "[Character.HasTraitByKey('governor')]"
+
+							text_single = {
+								raw_text = "[GetTrait('governor').GetName(Character.Self)] trait level [Character.MakeScope.ScriptValue('governor_level')|0], [Character.MakeScope.ScriptValue('governor_xp')] experience."
+							}
+						}
+
+						text_single = {
+							visible = "[Not(Character.HasTraitByKey('governor'))]"
+							raw_text = "no [GetTrait('governor').GetName(Character.Self)] trait."
+						}
+					}
+
+					flow_skills_grid_character_short = {
+						visible = "[And(Not(Character.IsLocalPlayer), Not(Character.IsIndependentRuler))]"
+					}
+				}
+
+				# tax
+				flowcontainer = {
+					direction = vertical
+					ignoreinvisible = yes
+
+					text_single = {
+						visible = "[And(Not(Character.IsLocalPlayer), Not(Character.IsIndependentRuler))]"
+						raw_text = "[Character.GetFirstName] provides to [Character.GetLiege.GetNameOrMeNoTooltip], affected by [Character.GetHerHis] efficiency:"
+					}
+
+					text_single = {
+						visible = "[And(Character.IsLocalPlayer, Not(Character.IsIndependentRuler))]"
+						raw_text = "You provide to your liege, [Character.GetLiege.GetFirstName], affected by your efficiency:"
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+						visible = "[And(Not(Character.IsLocalPlayer), Not(Character.IsIndependentRuler))]"
+						datacontext = "[Title.GetHolder.GetVassalContract]"
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							spacing = 3
+
+							text_single = {
+								raw_text = "ADMIN_VASSAL_DETAILS_TAX_CONTRIBUTION"
+							}
+
+							text_single = {
+								raw_text = "gold,"
+							}
+
+							text_single = {
+								raw_text = "[VassalContract.GetTaxRatioForLiege|%0]"
+							}
+
+							text_single = {
+								visible = "[GreaterThan_CFixedPoint(VassalContract.GetTaxRatioForLiege, '(CFixedPoint)0')]"
+								raw_text = "of [Divide_CFixedPoint(AdminVassalDetailView.GetTaxContribution, VassalContract.GetTaxRatioForLiege)|1] max"
+							}
+
+							dot_l = {}
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							spacing = 3
+
+							text_single = {
+								raw_text = "ADMIN_VASSAL_DETAILS_LEVY_CONTRIBUTION"
+							}
+
+							text_single = {
+								raw_text = "levies,"
+							}
+
+							text_single = {
+								raw_text = "[VassalContract.GetLevyRatioForLiege|%0]"
+							}
+
+							text_single = {
+								visible = "[GreaterThan_CFixedPoint(VassalContract.GetLevyRatioForLiege, '(CFixedPoint)0')]"
+								raw_text = "of [Divide_CFixedPoint(AdminVassalDetailView.GetLevyContribution, VassalContract.GetLevyRatioForLiege)|0] max"
+							}
+
+							dot_l = {}
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+						visible = "[And(Not(Character.IsLocalPlayer), Not(Character.IsIndependentRuler))]"
+
+						text_single = {
+							visible = "[Character.IsLocalPlayer]"
+							raw_text = "You have"
+						}
+						text_single = {
+							visible = "[Not(Character.IsLocalPlayer)]"
+							raw_text = "[Character.GetSheHe|U] has"
+						}
+						text_single = {
+							raw_text = "[Character.GetGold|0] gold,"
+						}
+						text_single = {
+							raw_text = "[Character.GetBalance|1=] a month"
+						}
+						text_single = {
+							raw_text = "and [Character.GetMilitaryStrengthText] soldiers."
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+
+						text_single = {
+							raw_text = "[Character.MakeScope.ScriptValue('ruler_num_buildings')] total buildings, [Character.MakeScope.ScriptValue('ruler_num_free_building_slots')] empty slots, [Character.MakeScope.ScriptValue('ruler_num_empty_holdings')] empty holdings."
+						}
+					}
+
+					text_single = {
+						visible = "[Not(Character.IsLocalPlayer)]"
+						raw_text = "[Character.Custom( 'AIEconomicPersonality' )] [economical_archetype|E]."
+					}
+				}
+
+				# maa
+				flowcontainer = {
+					direction = vertical
+					ignoreinvisible = yes
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+
+						text_single = {
+							raw_text = "[Title.GetTierAsNameNoTooltip]"
+						}
+
+						text_single = {
+							raw_text = "BANNER_MEN_AT_ARMS_LABEL"
+						}
+
+						text_single = {
+							raw_text = "[GetDataModelSize(Title.GetControlledMAA)]"
+						}
+
+						text_single = {
+							raw_text = "out of [Add_CFixedPoint(Character.MakeScope.ScriptValue('bav_maa_title_cap'), Select_CFixedPoint(EqualTo_string(Character.GetHouse.GetHousePowerBonus.GetName, GetHousePowerBonus('army_quartermasters').GetName), '(CFixedPoint)1', '(CFixedPoint)0'))],"
+						}
+
+						text_single = {
+							raw_text = "[Title.GetTotalTitleMAATroopsDesc]."
+						}
+					}
+
+					button_text = {
+						visible = "[DataModelHasItems(Title.GetControlledMAA)]"
+						shortcut = character_finder
+						enabled = "[And(Title.CanTransferTitleMaaOwnershipToLocalPlayer, GetScriptedGui('pay_to_transfer_title_maa').IsValid( GuiScope.SetRoot( Title.MakeScope ).AddScope('actor', GetPlayer.MakeScope).End ))]"
+
+						onclick = "[GetScriptedGui('pay_to_transfer_title_maa').Execute( GuiScope.SetRoot( Title.MakeScope ).AddScope('actor', GetPlayer.MakeScope).End )]"
+						clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+
+						blockoverride "disabled" {
+							visible = "[Not(Title.CanTransferTitleMaaOwnershipToLocalPlayer)]"
+						}
+						blockoverride "text" {
+							raw_text = "HIRED_TROOPS_REQUEST_AS_EMPEROR"
+						}
+						blockoverride "extra" {
+							comma = {}
+							text_single = {
+								raw_text = "Cost [GuiScope.SetRoot(Title.MakeScope).AddScope('actor', GetPlayer.MakeScope).ScriptValue('admin_title_troop_command_cost_value')] influence,"
+							}
+							text_single = {
+								raw_text = "C."
+							}
+						}
+					}
+
+					button_text = {
+						shortcut = increase_speed_2
+						blockoverride "text" {
+							raw_text = "HIRED_TROOPS_VIEW_RETURN"
+						}
+						visible = "[Not(DataModelHasItems(Title.GetControlledMAA))]"
+						enabled = "[Title.CanReturnTitleMaaToOwner]"
+						blockoverride "disabled" {
+							visible = "[Not(Title.CanReturnTitleMaaToOwner)]"
+						}
+						blockoverride "extra" {
+							comma = {}
+							text_single = {
+								raw_text = "X."
+							}
+						}
+						onclick = "[Title.ReturnTitleMaaToOwner]"
+					}
+
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+
+						datamodel = "[Title.GetControlledMAA]"
+
+						item = {
+							maa_one_line = {
+								blockoverride "stationed" {}
+							}
+						}
+					}
+				}
+			}
+
+			# succession
+			flowcontainer = {
+				layoutpolicy_horizontal = expanding
+				ignoreinvisible = yes
+				direction = vertical
+
+				button = {
+					visible = "[Is('theme_succession')]"
+					shortcut = close_window
+					onclick = "[Clear('theme_succession')]"
+				}
+
+				button_text = {
+					onclick = "[Toggle('theme_succession')]"
+					shortcut = map_mode_1
+					blockoverride "text" {
+						raw_text = "ADMIN_VASSAL_DETAILS_SUCCESSION_LABEL"
+					}
+					blockoverride "extra" {
+						comma = {}
+						text_single = {
+							raw_text = "E."
+						}
+					}
+				}
+
+				# INVEST IN BEST LOCAL PLAYER CANDIDATE IF THEY EXIST
+
+				button_text = {
+					datacontext = "[AdminVassalDetailView.GetTitle]"
+					datacontext = "[AdminVassalDetailView.GetSuccessorCandidateList]"
+					datacontext = "[AdminVassalSuccessorCandidateList.GetBestLocalPlayerCandidate( '(int32)0' )]"
+					datacontext = "[AdminVassalSuccessorCandidate.GetCandidate]"
+					shortcut = mapmode_kingdoms_secondary
+					visible = "[AdminVassalSuccessorCandidateList.ShowBestPlayerCandidateIndependently( '(int32)0' )]"
+
+					blockoverride "text" {
+						raw_text = "ADMIN_VASSAL_DETAILS_VOTE_FOR_SUCCESSOR_BUTTON"
+					}
+					blockoverride "extra" {
+						comma = {}
+						text_single = {
+							raw_text = "i."
+						}
+					}
+					blockoverride "disabled" {
+						visible = "[Not(Character.IsPlayerInteractionValid('influence_candidacy_interaction'))]"
+					}
+
+					enabled = "[Character.IsPlayerInteractionValid('influence_candidacy_interaction')]"
+					tooltip = "[Character.GetPlayerInteractionTooltip('influence_candidacy_interaction')]"
+					onclick = "[Character.OpenPlayerInteractionWithTargetTitle('influence_candidacy_interaction', Title.Self)]"
+				}
+
+				# INVEST IN ANYONE (FALLBACK)
+				button_text = {
+					datacontext = "[AdminVassalDetailView.GetTitle]"
+					datacontext = "[AdminVassalDetailView.GetSuccessorCandidateList]"
+
+					visible = "[Not( AdminVassalSuccessorCandidateList.ShowBestPlayerCandidateIndependently( '(int32)0' ) )]"
+
+					blockoverride "text" {
+						raw_text = "ADMIN_VASSAL_DETAILS_VOTE_FOR_SUCCESSOR_BUTTON"
+					}
+					blockoverride "extra" {
+						comma = {}
+						text_single = {
+							raw_text = "i."
+						}
+					}
+					blockoverride "disabled" {
+						visible = "[Not(Character.IsPlayerInteractionValid('influence_candidacy_interaction'))]"
+					}
+
+					enabled = "[Character.IsPlayerInteractionValid('influence_candidacy_interaction')]"
+					tooltip = "[Character.GetPlayerInteractionTooltip('influence_candidacy_interaction')]"
+					onclick = "[Character.GetTopLiege.OpenPlayerInteractionWithTargetTitle('influence_candidacy_interaction', Title.Self)]"
+				}
+
+
+				hbox_admin_title_successor_candidates_list_ocr = {
+					datacontext = "[AdminVassalDetailView.GetSuccessorCandidateList]"
+				}
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[ToggleGameViewData( 'title_appointment', Title.GetID )]"
+					shortcut = mapmode_culture_secondary
+					blockoverride "text" {
+						raw_text = "TITLE_VIEW_APPOINTMENT"
+					}
+					blockoverride "extra" {
+						comma = {}
+						text_single = {
+							raw_text = "Shift S."
 						}
 					}
 				}
@@ -1214,77 +997,194 @@ types AdminVassalDetails
 			}
 		}
 	}
+}
 
-	type vbox_theme_graph = vbox {
+types OCR
+{
+	type vbox_admin_vassal_successor_candidate_ocr = button_text {
+		using = char_click
+		blockoverride "pre" {
+			tooltipwidget = {
+				widget_value_breakdown_tooltip = {
+					block "score_breakdown" {
+						datacontext = "[AdminVassalDetailView.GetSuccessionScoreBreakdown(AdminVassalSuccessorCandidate.GetCandidate.Self )]"
+					}
+				}
+			}
+
+			text_single = {
+				raw_text = "ADMIN_VASSAL_DETAILS_SUCCESSOR_INDEX"
+			}
+			comma = {}
+			text_single = {
+				raw_text = "ADMIN_VASSAL_DETAILS_SUCCESSOR_SCORES"
+			}
+			text_single = {
+				raw_text = "score,"
+			}
+			text_single = {
+				visible = "[AdminVassalSuccessorCandidate.IsLocalPlayerInvested]"
+				raw_text = "you invested in"
+			}
+			text_single = {
+				visible = "[AdminVassalSuccessorCandidate.IsLocalPlayerCandidate]"
+				raw_text = "your candidate,"
+			}
+
+			###
+
+			text_single = {
+				raw_text = "[Character.GetNameOrMeNoTooltip], [Character.GetAge]."
+			}
+			text_single = {
+				visible = "[Not(Character.IsLocalPlayer)]"
+				raw_text = "[Character.GetRelationToString(GetPlayer)]."
+			}
+		}
+	}
+
+	type vbox_admin_vassal_successor_candidate_tip = vbox {
 		layoutpolicy_horizontal = expanding
-		spacing = 5
 
-		hbox = {
+		text_single = {
 			layoutpolicy_horizontal = expanding
-			spacing = 5
-
-			text_single = {
-				block "lowest" {
-					raw_text = "[Title.MakeScope.Var('bav_lowest_tax').GetValue|1v]"
-				}
-			}
-
-			text_single = {
-				raw_text = "-"
-			}
-
-			text_single = {
-				block "highest" {
-					raw_text = "[Title.MakeScope.Var('bav_highest_tax').GetValue|1v]"
-				}
-			}
-
-			text_single = {
-				block "total" {
-					raw_text = "income:"
-				}
-			}
-
-			expand = {}
+			name = "investment_has_candidate"
+			background = { using = Background_Area_Border_Solid }
+			visible = "[And(AdminVassalSuccessorCandidate.IsLocalPlayerInvested, Not( AdminVassalSuccessorCandidate.IsLocalPlayerCandidateInFirst ))]"
+			raw_text = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_LOSING_TT"
 		}
 
-		fixedgridbox = {
-			datamodel = "[Title.MakeScope.GetList('bav_income_tracker')]"
-			addrow = 80
-			addcolumn = 9
-			setitemsizefromcell = yes
-			flipdirection = yes
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			name = "no_investment_has_candidate"
+			background = { using = Background_Area_Border_Solid }
+			visible = "[And( And( AdminVassalSuccessorCandidate.IsLocalPlayerCandidate, Not( AdminVassalSuccessorCandidate.IsLocalPlayerInvested ) ), Not( AdminVassalSuccessorCandidate.IsLocalPlayerCandidateInFirst  ) )]"
+			raw_text = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_LOSING_TT"
+		}
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			name = "player_candidate_in_first_invested"
+			background = { using = Background_Area_Border_Solid }
+			visible = "[And( And( AdminVassalSuccessorCandidate.IsLocalPlayerCandidate, AdminVassalSuccessorCandidate.IsLocalPlayerCandidateInFirst ), AdminVassalSuccessorCandidate.IsLocalPlayerInvested )]"
+
+			raw_text = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_WINNING_TT"
+		}
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			name = "player_candidate_in_first"
+			background = { using = Background_Area_Border_Solid }
+			visible = "[And( And( AdminVassalSuccessorCandidate.IsLocalPlayerCandidate, AdminVassalSuccessorCandidate.IsLocalPlayerCandidateInFirst ), Not(AdminVassalSuccessorCandidate.IsLocalPlayerInvested) )]"
+
+			raw_text = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_WINNING_TT"
+		}
+	}
+
+	type hbox_admin_title_successor_candidates_list_ocr = flowcontainer {
+		ignoreinvisible = yes
+		direction = vertical
+
+		flowcontainer = {
+			visible = "[AdminVassalSuccessorCandidateList.ShowBestPlayerCandidateIndependently( '(int32)3' )]"
+			ignoreinvisible = yes
+			direction = vertical
+
+			flowcontainer = {
+				datamodel = "[DataModelFirst( AdminVassalSuccessorCandidateList.GetSuccessorCandidates, '(int32)3')]"
+				direction = vertical
+
+				item = {
+					vbox_admin_vassal_successor_candidate_ocr = {
+						datacontext = "[AdminVassalSuccessorCandidate.GetCandidate]"
+					}
+				}
+			}
+
+			vbox_admin_vassal_successor_candidate_ocr = {
+				datacontext = "[AdminVassalSuccessorCandidateList.GetBestLocalPlayerCandidate( '(int32)3' )]"
+				datacontext = "[AdminVassalSuccessorCandidate.GetCandidate]"
+			}
+		}
+
+		flowcontainer = {
+			visible = "[Not( AdminVassalSuccessorCandidateList.ShowBestPlayerCandidateIndependently( '(int32)3' ) )]"
+			datamodel = "[DataModelFirst( AdminVassalSuccessorCandidateList.GetSuccessorCandidates, '(int32)4')]"
+			ignoreinvisible = yes
+			direction = vertical
 
 			item = {
-				progressbar_standard = {
-					datacontext = "[Scope.Story]"
-					min = 0
-					block "values" {
-						max = "[Max_CFixedPoint(Title.MakeScope.Var('bav_highest_tax').GetValue, '(CFixedPoint)1')]"
-						value = "[Story.MakeScope.Var('title_total_taxes').GetValue]"
-						tooltip = "[Story.MakeScope.Var('title_total_taxes').GetValue|1]"
-					}
-					direction = vertical
+				vbox_admin_vassal_successor_candidate_ocr = {
+					datacontext = "[AdminVassalSuccessorCandidate.GetCandidate]"
 				}
 			}
 		}
 
-		# hbox = {
-		# 	layoutpolicy_horizontal = expanding
-		#
-		# 	text_label_left = {
-		# 		block "lowest" {
-		# 			raw_text = "[Title.MakeScope.Var('bav_lowest_tax').GetValue|1]"
-		# 		}
-		# 	}
-		#
-		# 	expand = {}
-		#
-		# 	text_label_right = {
-		# 		block "highest" {
-		# 			raw_text = "[Title.MakeScope.Var('bav_highest_tax').GetValue|1]"
-		# 		}
-		# 	}
-		# }
+		flowcontainer = {
+			visible = "[IsDataModelEmpty( AdminVassalSuccessorCandidateList.GetSuccessorCandidates )]"
+			direction = vertical
+			ignoreinvisible = yes
+
+			text_single = {
+				text = ADMIN_VASSAL_DETAILS_NO_SUCCESSORS
+			}
+		}
+	}
+
+	type powerful_family_bonus_ocr = button_text {
+		allow_outside = yes
+
+		datacontext = "[DynastyHouse]"
+		datacontext = "[DynastyHouse.GetHousePowerBonus]"
+
+		name = "powerful_family_bonus"
+		visible = "[HousePowerBonus.IsValid]"
+
+		onclick = "[OpenGameViewData( 'family_attribute_window', DynastyHouse.Self )]"
+		tooltip = "ADMINISTRATIVE_GOVERNMENT_BONUS_TOOLTIP"
+
+		blockoverride "text" {
+			raw_text = "[HousePowerBonus.GetName],"
+		}
+		blockoverride "extra" {
+			text_single = {
+				block "show_button" {}
+				raw_text = "[Select_CString(DynastyHouse.GetHeadOfHouse.IsLocalPlayer, 'click to change', 'click for details')]."
+			}
+		}
+	}
+
+	type vbox_skill_entry_ocr = vbox {
+		using = tooltip_ne
+		spacing = -3
+
+		icon = {
+			name = "skill_icon"
+			size = { 32 32 }
+			framesize = { 60 60 }
+			block "frame" {
+				frame = 1
+			}
+			texture = "gfx/interface/icons/icon_skills.dds"
+		}
+
+		text_single = {
+			name = "skill_value"
+			block "value" {
+				text = "[Character.GetSkill('diplomacy')]"
+			}
+			default_format = "#high"
+			align = nobaseline
+
+			background = {
+				name = "skill_icon_bg"
+				texture = "gfx/interface/window_character/character_view_skills_bg.dds"
+				block "frame" {
+					frame = 1
+				}
+				framesize = { 70 26 }
+				margin = { 10 0 }
+			}
+		}
 	}
 }

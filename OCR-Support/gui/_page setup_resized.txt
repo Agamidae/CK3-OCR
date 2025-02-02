@@ -1,36 +1,42 @@
 
-# 'court_window_page' = variable name, the first item on the current page, so 5, 10, 15, etc
+# 'title_appointment_page' = variable name, the first item on the current page, so 5, 10, 15, etc
 # CharacterSelectionList.GetList = our datamodel
 # PageReset checks if the datamodel is smaller than our selected paged item
-# XX_number = amount per page
 
 # TODO!
-# 1. replace court_window_page
+# 1. replace title_appointment_page
 # 2. replace CharacterSelectionList.GetList
-# 3. replace XX_number
-# 4. make sguis for reset, next and prev
-# 5. make a modulo script value
+# 3. make sguis for reset, resize, next and prev
 
 # reset if we paged too far and showing an item outside of the datamodel
-#PageReset = LessThan_int32( GetDataModelSize( CharacterSelectionList.GetList ), FixedPointToInt(GetPlayer.MakeScope.Var('court_window_page').GetValue ))
+#PageReset = LessThan_int32( GetDataModelSize( CharacterSelectionList.GetList ), FixedPointToInt(GetPlayer.MakeScope.Var('title_appointment_page').GetValue ))
 # or if we're missing variables
 
 
 
 # state = {
 #   name = "reset"
-#   on_finish = "[GetScriptedGui('reset_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+#   on_finish = "[GetScriptedGui('reset_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 #   trigger_on_create = yes
 # }
 
+state = {
+  name = "reset"
+  on_finish = "[GetScriptedGui('reset_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+  trigger_when = "[Or(Or(PageReset('title_appointment_page', CharacterSelectionList.GetList), Not(GetPlayer.MakeScope.Var('title_appointment_page_size').IsSet)), Not(GetPlayer.MakeScope.Var('title_appointment_page').IsSet))]"
+}
 
-trigger_when = "[Or(Or(PageReset('court_window_page', CharacterSelectionList.GetList), Not(GetPlayer.MakeScope.Var('court_window_page_size').IsSet)), Not(GetPlayer.MakeScope.Var('court_window_page').IsSet))]"
+visible = "[Not(GreaterThan_int32(GetDataModelSize(CharacterSelectionList.GetList), '(int32)10'))]"
+
+visible = "[GreaterThan_int32(GetDataModelSize(CharacterSelectionList.GetList), '(int32)10')]"
+
+
 
 blockoverride "sort" {
-  onclick = "[GetScriptedGui('reset_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+  onclick = "[GetScriptedGui('reset_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 }
 blockoverride "reset_page" {
-  on_finish = "[GetScriptedGui('reset_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+  on_finish = "[GetScriptedGui('reset_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 }
 blockoverride "reverse_order" {
   shortcut = mapmode_house_secondary
@@ -45,41 +51,49 @@ blockoverride "widget_index" {
   text_single = {
     alwaystransparent = yes
     margin_left = 3
-    raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, Add_int32(FixedPointToInt( GetPlayer.MakeScope.Var('court_window_page').GetValue ), '(int32)1'))],"
+    raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, Add_int32(FixedPointToInt( GetPlayer.MakeScope.Var('title_appointment_page').GetValue ), '(int32)1'))],"
   }
 }
 
-hbox = {
-  spacing = 3
+# top of the list
 
-  text_single = {
-    raw_text = "from [PageStart('court_window_page')] to [PageEnd('court_window_page', GetPlayer.MakeScope.Var('court_window_page_size').GetValue, CharacterSelectionList.GetList)],"
-  }
+blockoverride "pre_count" {
+  hbox = {
+    spacing = 3
 
-  button_text = {
-    shortcut = army_merge
-    onclick = "[GetScriptedGui('resize_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-    blockoverride "text" {
-      margin_left = -5
-      raw_text = "Show [Select_CString(EqualTo_CFixedPoint(GetPlayer.MakeScope.Var('court_window_page_size').GetValue, '(CFixedPoint)10'), '5', '10')] per page, G."
+    text_single = {
+      raw_text = "from [PageStart('title_appointment_page')] to [PageEnd('title_appointment_page', GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue, CharacterSelectionList.GetList)],"
+    }
+
+    button_text = {
+      shortcut = army_merge
+      onclick = "[GetScriptedGui('resize_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+      blockoverride "text" {
+        margin_left = -5
+        raw_text = "Show [Select_CString(EqualTo_CFixedPoint(GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue, '(CFixedPoint)10'), '5', '10')] per page, G."
+      }
     }
   }
 }
 
 
+# raw_text
+blockoverride "click_info" {}
+
+
 
 # if we have sorting, reset when changing it
-onselectionchanged = "[GetScriptedGui('reset_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-onclick = "[GetScriptedGui('reset_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+onselectionchanged = "[GetScriptedGui('reset_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+onclick = "[GetScriptedGui('reset_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
 
 
-# PageStart = Add_CFixedPoint(GetPlayer.MakeScope.Var('court_window_page').GetValue, '(CFixedPoint)1')
+# PageStart = Add_CFixedPoint(GetPlayer.MakeScope.Var('title_appointment_page').GetValue, '(CFixedPoint)1')
 # adding one since we count from 0 in script
-# PageEnd = Min_CFixedPoint(Add_CFixedPoint(GetPlayer.MakeScope.Var( 'court_window_page' ).GetValue, MAX ), IntToFixedPoint(GetDataModelSize( CharacterSelectionList.GetList )))
+# PageEnd = Min_CFixedPoint(Add_CFixedPoint(GetPlayer.MakeScope.Var( 'title_appointment_page' ).GetValue, MAX ), IntToFixedPoint(GetDataModelSize( CharacterSelectionList.GetList )))
 # adding amount per page, but limiting to the datamodel size if we're at the end
 
 
-datamodel = "[PageModel('court_window_page', FixedPointToInt(GetPlayer.MakeScope.Var('court_window_page_size').GetValue), CharacterSelectionList.GetList)]"
+datamodel = "[PageModel('title_appointment_page', FixedPointToInt(GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue), CharacterSelectionList.GetList)]"
 
 
 vbox = {
@@ -90,17 +104,17 @@ vbox = {
     spacing = 3
 
     button_text = {
-      visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('court_window_page').GetValue, '(CFixedPoint)0' )]"
+      visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('title_appointment_page').GetValue, '(CFixedPoint)0' )]"
       blockoverride "text" {
-        raw_text = "Previous [GetPlayer.MakeScope.Var('court_window_page_size').GetValue|0], Z."
+        raw_text = "Previous [GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue|0], Z."
       }
-      onclick = "[GetScriptedGui('prev_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+      onclick = "[GetScriptedGui('prev_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
       shortcut = decrease_speed_2
       using = paper_flip_back_ocr
     }
 
     button_text = {
-      onclick = "[GetScriptedGui('reset_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+      onclick = "[GetScriptedGui('reset_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
       shortcut = map_mode_18
       using = paper_flip_back_ocr
       blockoverride "text" {
@@ -114,10 +128,10 @@ vbox = {
   button_text = {
     layoutpolicy_horizontal = expanding
     blockoverride "text" {
-      raw_text = "Next [GetPlayer.MakeScope.Var('court_window_page_size').GetValue|0], X."
+      raw_text = "Next [GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue|0], X."
     }
-    onclick = "[GetScriptedGui('next_court_window_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-    visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( CharacterSelectionList.GetList ), FixedPointToInt(GetPlayer.MakeScope.Var('court_window_page').GetValue )), FixedPointToInt(GetPlayer.MakeScope.Var('court_window_page_size').GetValue) )]"
+    onclick = "[GetScriptedGui('next_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+    visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( CharacterSelectionList.GetList ), FixedPointToInt(GetPlayer.MakeScope.Var('title_appointment_page').GetValue )), FixedPointToInt(GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue) )]"
     using = paper_flip_forward_ocr
     shortcut = increase_speed_2
   }

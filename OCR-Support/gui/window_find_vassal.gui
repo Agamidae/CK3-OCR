@@ -6,147 +6,144 @@ window = {
 	# using = title_view_window_side_pop_out
 	# using = Window_Position_CharacterList
 	# using = Window_Size_CharacterList
-	using = Window_Movable
-	size = { 700 100% }
-	using = Window_Background_Subwindow
+	using = base_ocr_window
 
 	datacontext = "[FindVassalListWindow.GetFindVassalList]"
 
+	window_ocr = {
+		blockoverride "show_window" {}
+		blockoverride "ocr_header" {
+			button = {
+				shortcut = close_window
+				onclick = "[FindVassalListWindow.Close]"
+			}
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = map_mode_1
+				onclick = "[Toggle('grant_vassal_buttons')]"
+				blockoverride "text" {
+					raw_text = "Grant [FindVassalListWindow.GetTitle.GetNameNoTooltip]"
+				}
+				blockoverride "extra" {
+					# , = {}
+					# text_single = {
+					# 	raw_text = "buttons"
+					# }
+					# text_single = {
+					# 	raw_text = "[Collapse('grant_vassal_buttons')] E."
+					# }
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Isnt('grant_vassal_buttons')]"
+				vbox = {
+					visible = "[Or(FindVassalListWindow.GetTitle.IsBarony,FindVassalListWindow.GetTitle.IsCounty)]"
+					layoutpolicy_horizontal = expanding
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						name = "grant_to_same_culture_noble"
+						using = agot_show_same_culture_noble
+						using = locr_hide
+						onclick = "[FindVassalListWindow.GetTitle.CreateHolderForTitle]"
+						onclick = "[FindVassalListWindow.Close]"
+						tooltip = "GRANT_TO_SAME_CULTURE_NOBLE_BUTTON_HOLDING_VIEW_TOOLTIP"
+						shortcut = map_mode_1
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "E,"
+							}
+						}
+						blockoverride "text" {
+							raw_text = "GRANT_TO_SAME_CULTURE_NOBLE_INFO"
+						}
+						blockoverride "dot" {}
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Not( ObjectsEqual( FindVassalListWindow.GetTitle.GetProvince.GetCulture, GetPlayer.GetCulture ) )]"
+						onclick = "[FindVassalListWindow.GetTitle.CreateLocalHolderForTitle]"
+						onclick = "[FindVassalListWindow.Close]"
+						tooltip = "[FindVassalListWindow.GetTitle.GetAutoGrantTitleToLocalRulerDesc]"
+						shortcut = explore_legends
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "L,"
+							}
+						}
+						blockoverride "text" {
+							raw_text = "GRANT_TO_LOCAL_CULTURE_NOBLE_INFO"
+						}
+						blockoverride "dot" {}
+					}
+				}
+
+				text_single = {
+					visible = "[Or(FindVassalListWindow.GetTitle.IsBarony,FindVassalListWindow.GetTitle.IsCounty)]"
+					text = grant_title_info_text
+					layoutpolicy_horizontal = expanding
+					margin_left = 5
+				}
+			}
+		}
+		blockoverride "ocr_content" {
+
+			vbox_paged_list = {
+				datacontext = "[GetScriptedGui('find_vassal_page')]"
+				blockoverride "page_index" {
+					datacontext = "[GetPlayer.MakeScope.Var('find_vassal_page')]"
+				}
+
+				blockoverride "full_datamodel" {
+				  datamodel = "[CharacterSelectionList.GetList]"
+				}
+				blockoverride "list_datamodel" {
+				  datamodel = "[PageModelGlobal(CharacterSelectionList.GetList)]"
+				}
+				blockoverride "vbox_contents" {
+					fixed_character_list = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "sort" {
+							using = sgui_click_reset
+						}
+						blockoverride "reset_page" {
+							using = sgui_finish_reset
+						}
+						blockoverride "reverse_order" {
+							shortcut = mapmode_house_secondary
+						}
+						blockoverride "toggle_text" {
+							text_single = {
+								raw_text = "Toggle: Shift D."
+							}
+						}
+
+						blockoverride "widget_index" {
+							page_index = {}
+						}
+						name = find_vassal_list
+						blockoverride "click" {
+							# onclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+							onclick = "[CharacterListItem.OnClick('character')]"
+							onclick = "[CloseGameView('holding_view')]"
+							onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+							onrightclick = "[CloseGameView('holding_view')]"
+						}
+					}
+				}
+			}
+		}
+	}
+
 	vbox = {
 		margin = { 20 20 }
+		visible = no
 		# spacing = 10
 
-		header_pattern = {
-			layoutpolicy_horizontal = expanding
 
-			blockoverride "header_text"
-			{
-				text = "FIND_VASSAL_HEADER"
-			}
-
-			blockoverride "button_close"
-			{
-				onclick = "[FindVassalListWindow.Close]"
-			}
-		}
-
-		vbox = {
-			visible = "[Or(FindVassalListWindow.GetTitle.IsBarony,FindVassalListWindow.GetTitle.IsCounty)]"
-			layoutpolicy_horizontal = expanding
-
-			button_standard_clean = {
-				name = "grant_to_same_culture_noble"
-				onclick = "[FindVassalListWindow.GetTitle.CreateHolderForTitle]"
-				onclick = "[FindVassalListWindow.Close]"
-				using = tooltip_se
-				tooltip = "GRANT_TO_SAME_CULTURE_NOBLE_BUTTON_HOLDING_VIEW_TOOLTIP"
-				using = agot_show_same_culture_noble
-				using = locr_hide
-				# this is also used in the vanilla window!
-
-				layoutpolicy_horizontal = expanding
-				size = { 0 50 }
-
-				background = {
-					texture = "gfx/interface/illustrations/decisions/decision_recruitment.dds"
-					alpha = 0.3
-				}
-
-				background = {
-					texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
-					spriteType = Corneredtiled
-					spriteborder = { 5 5 }
-					margin = { -2 -2 }
-				}
-
-				using = Background_Vignette_Button
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					margin = { 5 3 }
-					background = {
-						using = Background_Area_Dark
-					}
-					text_single = {
-						min_width = 230
-						max_width = 600
-						layoutpolicy_horizontal = expanding
-						text = "GRANT_TO_SAME_CULTURE_NOBLE_HEADER"
-						default_format = "#clickable"
-						align = left
-					}
-					text_multi = {
-						min_width = 600
-						max_width = 600
-						layoutpolicy_horizontal = expanding
-						text = "GRANT_TO_SAME_CULTURE_NOBLE_INFO"
-						default_format = "#low"
-						align = left
-						autoresize = yes
-					}
-					expand = { }
-				}
-			}
-
-			button_standard_clean = {
-				name = "grant_to_local_culture_noble"
-				visible = "[Not( ObjectsEqual( FindVassalListWindow.GetTitle.GetProvince.GetCulture, GetPlayer.GetCulture ) )]"
-				onclick = "[FindVassalListWindow.GetTitle.CreateLocalHolderForTitle]"
-				onclick = "[FindVassalListWindow.Close]"
-				using = tooltip_se
-				tooltip = "[FindVassalListWindow.GetTitle.GetAutoGrantTitleToLocalRulerDesc]"
-
-				layoutpolicy_horizontal = expanding
-				size = { 0 50 }
-
-				background = {
-					texture = "gfx/interface/illustrations/decisions/decision_destiny_goal.dds"
-					alpha = 0.3
-				}
-
-				background = {
-					texture = "gfx/interface/component_tiles/tile_vignette_3px.dds"
-					spriteType = Corneredtiled
-					spriteborder = { 5 5 }
-					margin = { -2 -2 }
-				}
-
-				using = Background_Vignette_Button
-
-				vbox = {
-					margin = { 5 3 }
-					background = {
-						using = Background_Area_Dark
-					}
-					text_single = {
-						min_width = 600
-						max_width = 600
-						layoutpolicy_horizontal = expanding
-						text = "GRANT_TO_LOCAL_CULTURE_NOBLE_HEADER"
-						default_format = "#clickable"
-						align = left
-					}
-					text_multi = {
-						min_width = 600
-						max_width = 600
-						layoutpolicy_horizontal = expanding
-						text = "GRANT_TO_LOCAL_CULTURE_NOBLE_INFO"
-						default_format = "#low"
-						align = left
-						autoresize = yes
-					}
-					expand = { }
-				}
-			}
-		}
-
-		text_single = {
-			visible = "[Or(FindVassalListWindow.GetTitle.IsBarony,FindVassalListWindow.GetTitle.IsCounty)]"
-			text = grant_title_info_text
-			default_format = "#I"
-			layoutpolicy_horizontal = expanding
-			margin_left = 5
-		}
 
 		vbox_character_list = {
 			name = "find_vassal_list"
@@ -194,31 +191,6 @@ window = {
 						}
 					}
 
-					fixedgridbox = {
-						addcolumn = 650
-						addrow = 95
-
-						datamodel = "[CharacterSelectionList.GetList]"
-						using = vanilla
-
-						item = {
-							widget_character_list_item = {
-								size = { 650 90 }
-								text_single = {
-									name = "debug_relevance_score"
-									raw_text = "Relevance: [FindVassalListWindow.GetRelevance( CharacterListItem.Self )]"
-									default_format = "D"
-									visible = "[InDebugMode]"
-
-									tooltipwidget = {
-										widget_value_breakdown_tooltip = {
-											datacontext = "[FindVassalListWindow.GetRelevanceBreakdown( CharacterListItem.GetCharacter )]"
-										}
-									}
-								}
-							}
-						}
-					}
 				}
 				blockoverride "scrollbox_empty_visibility"
                 {

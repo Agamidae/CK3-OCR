@@ -193,6 +193,10 @@ window = {
 											visible = "[GetScriptedGui('is_hostile_barony').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', Province.MakeScope ).End )]"
 										}
 										text_single = {
+											raw_text = "border"
+											visible = "[GetScriptedGui('is_border_province').IsShown( GuiScope.SetRoot( Province.MakeScope ).End )]"
+										}
+										text_single = {
 											visible = "[HoldingView.GetHolding.IsEmpty]"
 											raw_text = "[HoldingView.GetProvince.GetTerrain.GetNameNoTooltip] of"
 										}
@@ -296,6 +300,31 @@ window = {
 								expand = { }
 							}
 
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+
+								flow_crossing = {
+									visible = "[DataModelHasItems(Province.MakeScope.GetList('sea_crossings'))]"
+									blockoverride "bridge" {
+										raw_text = "strait crossing"
+									}
+									datamodel = "[Province.MakeScope.GetList('sea_crossings')]"
+								}
+
+								flow_crossing = {
+									visible = "[DataModelHasItems(Province.MakeScope.GetList('river_large_crossings'))]"
+									datamodel = "[Province.MakeScope.GetList('river_large_crossings')]"
+								}
+
+								flow_crossing = {
+									visible = "[DataModelHasItems(Province.MakeScope.GetList('river_crossings'))]"
+									datamodel = "[Province.MakeScope.GetList('river_crossings')]"
+								}
+
+								expand = {}
+							}
+
 							text_single = {
 								layoutpolicy_horizontal = expanding
 								visible = "[And(ObjectsEqual(HoldingView.GetProvince, GetPlayer.GetCapitalLocation), And(GetPlayer.IsLandlessRuler, GetPlayer.HasDomicile))]"
@@ -377,6 +406,10 @@ window = {
 										text_single = {
 											raw_text = "Hostile"
 											visible = "[GetScriptedGui('is_hostile_county').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'target', Province.MakeScope ).End )]"
+										}
+										text_single = {
+											visible = "[GetScriptedGui('is_border_county').IsShown( GuiScope.SetRoot( Title.MakeScope ).End )]"
+											raw_text = "[AddTextIf(Not(And(Title.GetHolder.IsLocalPlayer, Not(HoldingView.GetTitle.GetLesseeOrHolder.IsLocalPlayer) )), 'a ')]border"
 										}
 										text_single = {
 											raw_text = "capital"
@@ -815,14 +848,74 @@ window = {
 								datacontext = "[HoldingView.GetProvince.MakeScope.Var('closest_county').Title.GetProvince]"
 								blockoverride "extra" {
 									text_single = {
-										raw_text = " [Title.GetNameNoTierNoTooltip], Home."
-										visible = "[HoldingView.GetProvince.MakeScope.Var('closest_county').IsSet]"
+										raw_text = " [Title.GetNameNoTierNoTooltip],"
+									}
+									text_distance_capital = {
+									}
+									text_single = {
+										raw_text = "Home."
 									}
 								}
 								using = prov_click
-								visible = "[And(Not(Or(ObjectsEqual( Character.Self, GetPlayer ),Character.IsOtherLiegeOrAbove( GetPlayer ))), Not(GetPlayer.IsLandlessRuler))]"
+								visible = "[And(And(Not(Or(ObjectsEqual( Character.Self, GetPlayer ),Character.IsOtherLiegeOrAbove( GetPlayer ))), Not(GetPlayer.IsLandlessRuler)), HoldingView.GetProvince.MakeScope.Var('closest_county').IsSet)]"
 								shortcut = go_to_capital
 							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								using = char_click
+								datacontext = "[HoldingView.GetCountyTitle.GetHolder]"
+								datacontext = "[HoldingView.GetCountyTitle]"
+								blockoverride "text" {
+									raw_text = "[Character.GetFirstNameOrMeNoTooltip] hold[AddTextIf(Not(Character.IsLocalPlayer), 's')] [Title.GetHolder.MakeScope.ScriptValue('personal_counties')] personal counties."
+								}
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								button_text = {
+									shortcut = decrease_speed_2
+									datacontext = "[HoldingView.GetCountyTitle.MakeScope.Var('prev_county').Title]"
+									onclick = "[OpenGameViewData('holding_view', Title.GetProvince.Self)]"
+									onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+									onclick = "[PdxGuiTriggerAllAnimations('adjacent_counties')]"
+									onrightclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+									visible = "[HoldingView.GetCountyTitle.MakeScope.Var('prev_county').IsSet]"
+
+									blockoverride "text" {
+										raw_text = "Z, previous, [Title.GetNameNoTierNoTooltip],"
+									}
+									blockoverride "extra" {
+										text_single = {
+											datacontext = "[Title.GetProvince]"
+											raw_text = "[DistanceTo(HoldingView.GetProvince, Province)|0] [DaysTo(HoldingView.GetProvince, Province)] [Direction(HoldingView.GetProvince, Province)]."
+										}
+									}
+								}
+								button_text = {
+									shortcut = increase_speed_2
+									onclick = "[OpenGameViewData('holding_view', Title.GetProvince.Self)]"
+									onclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+									onclick = "[PdxGuiTriggerAllAnimations('adjacent_counties')]"
+									visible = "[HoldingView.GetCountyTitle.MakeScope.Var('next_county').IsSet]"
+
+									onrightclick = "[DefaultOnCoatOfArmsRightClick(Title.GetID)]"
+									datacontext = "[HoldingView.GetCountyTitle.MakeScope.Var('next_county').Title]"
+									blockoverride "text" {
+										raw_text = "X, next, [Title.GetNameNoTierNoTooltip],"
+									}
+									blockoverride "extra" {
+										text_single = {
+											datacontext = "[Title.GetProvince]"
+											raw_text = "[DistanceTo(HoldingView.GetProvince, Province)|0] [DaysTo(HoldingView.GetProvince, Province)] [Direction(HoldingView.GetProvince, Province)]."
+										}
+									}
+								}
+
+								expand = {}
+							}
+
+
 						}
 
 
@@ -5013,6 +5106,80 @@ types CountyViewTypes
 
 			text_single = {
 				block "preview" {}
+			}
+		}
+	}
+
+	type flow_crossing = flowcontainer {
+		ignoreinvisible = yes
+		direction = vertical
+		name = "list"
+
+		item = {
+			button_text = {
+				datacontext = "[Scope.GetProvince.GetHolding]"
+				blockoverride "pre" {
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+						visible = "[IsIndexFirst]"
+
+						text_single = {
+							raw_text = "Has"
+						}
+
+						text_single = {
+							visible = "[EqualTo_int32(PdxGuiWidget.AccessParent.AccessParent.AccessParent.AccessParent.CountVisibleChildren, '(int32)1')]"
+							raw_text = "a"
+						}
+
+						text_single = {
+							visible = "[GreaterThan_int32(PdxGuiWidget.AccessParent.AccessParent.AccessParent.AccessParent.CountVisibleChildren, '(int32)1')]"
+							raw_text = "[PdxGuiWidget.AccessParent.AccessParent.AccessParent.AccessParent.CountVisibleChildren]"
+						}
+
+						text_single = {
+							block "bridge" {
+								raw_text = "bridge"
+							}
+						}
+
+						text_single = {
+							margin_left = -3
+							raw_text = "[AddTextIf(GreaterThan_int32(PdxGuiWidget.AccessParent.AccessParent.AccessParent.AccessParent.CountVisibleChildren, '(int32)1'), 's, one')] to"
+						}
+					}
+
+					text_single = {
+						visible = "[Not(IsIndexFirst)]"
+						raw_text = "and to"
+					}
+				}
+				blockoverride "extra" {
+					# text_single = {
+					# 	raw_text = "[Scope.GetProvince.GetCounty.GetName] county,"
+					# }
+					text_single = {
+						margin_left = -3
+						raw_text = "the [Direction(Province, Scope.GetProvince)],"
+					}
+
+					text_single = {
+						raw_text = "[AddTextIf(Not(Holding.IsEmpty), Concatenate(Holding.GetPrimaryBuildingType.GetTypeName, ' of '))][Holding.GetNameNoTooltip],"
+					}
+
+					text_single = {
+						visible = "[ObjectsEqual(Scope.GetProvince.GetCounty.GetCount.GetTopLiege, Province.GetCounty.GetCount.GetTopLiege)]"
+						raw_text = "same realm."
+					}
+					text_single = {
+						visible = "[Not(ObjectsEqual(Scope.GetProvince.GetCounty.GetCount.GetTopLiege, Province.GetCounty.GetCount.GetTopLiege))]"
+						raw_text = "in [Scope.GetProvince.GetCounty.GetCount.GetTopLiege.GetPrimaryTitle.GetNameNoTooltip]."
+					}
+				}
+				onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
+				onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+				onclick = "[PdxGuiTriggerAllAnimations('adjacent_counties')]"
 			}
 		}
 	}

@@ -1,0 +1,462 @@
+﻿window = {
+	name = "title_appointment"
+	using = base_ocr_window
+
+	state = {
+		name = _show
+		using = Sound_WindowShow_Standard
+
+		on_start = "[GetVariableSystem.Set( 'hide_bottom_left_HUD', 'true' )]"
+	}
+
+	state = {
+		name = _hide
+		using = Sound_WindowHide_Standard
+
+		on_start = "[GetVariableSystem.Clear( 'hide_bottom_left_HUD' )]"
+	}
+
+	datacontext = "[SuccessionAppointmentWindow.GetTitle]"
+
+	window_ocr = {
+		buttons_window_control = {
+			blockoverride "button_close"
+			{
+				onclick = "[SuccessionAppointmentWindow.Close]"
+			}
+
+			blockoverride "button_back"
+			{
+				size = { 0 0 }
+				visible = "[HasViewHistory]"
+				onclick = "[OpenFromViewHistory]"
+				tooltip = "[GetViewHistoryTooltip]"
+			}
+		}
+
+		blockoverride "ocr_header" {
+			flowcontainer = {
+				ignoreinvisible = yes
+				direction = vertical
+				layoutpolicy_horizontal = expanding
+
+				button_text = {
+					onclick = "[Toggle('appointment_header')]"
+					shortcut = map_mode_11
+					blockoverride "text" {
+						alwaystransparent = yes
+						raw_text = "TITLE_APPOINTMENT_HEADER"
+					}
+					blockoverride "extra" {
+						comma = {}
+						text_single = {
+							raw_text = "TITLE_APPOINTMENT_LAW"
+						}
+						comma = {}
+						# text_single = {
+						# 	raw_text = "[Collapse('appointment_header')]"
+						# }
+						# text_single = {
+						# 	raw_text = "Shift E."
+						# }
+					}
+				}
+
+				char_name = {
+					datacontext = "[Title.GetHolder]"
+					blockoverride "pre" {
+						text_single = {
+							datacontext = "[SuccessionAppointmentWindow.GetCandidates]"
+							raw_text = "[GetDataModelSize(CharacterSelectionList.GetList)] candidates,"
+						}
+						text_single = {
+							raw_text = "Current holder:"
+						}
+					}
+				}
+			}
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					datacontext = "[CharacterListItem.GetCharacter]"
+					datacontext = "[SuccessionAppointmentWindow.GetTopCandidate]"
+					visible = "[SuccessionAppointmentWindow.HasTopCandidate]"
+					using = char_click
+					blockoverride "pre" {
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								spacing = 3
+
+								text_single = {
+									text = "TITLE_APPOINTMENT_SUCCESSION_TOP_CANDIDATE"
+								}
+
+								text_single = {
+									text = "TITLE_APPOINTMENT_RANK"
+									tooltip = "TITLE_APPOINTMENT_RANK_TOOLTIP"
+								}
+
+								text_single = {
+									raw_text = "[Character.GetShortUINameNoTooltip],"
+								}
+								text_single = {
+									raw_text = "[Character.GetAge]."
+								}
+							}
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								spacing = 3
+
+								text_single = {
+									text = "TITLE_APPOINTMENT_GOVERNOR_EFFICIENCY"
+									tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALID_TT"
+								}
+
+								text_single = {
+									raw_text = "efficiency,"
+								}
+
+
+								text_single = {
+									raw_text = "[Character.GetRelationToString(GetPlayer)]"
+								}
+
+								opinion_text = {
+									margin_left = -3
+								}
+
+								dot_l = {}
+							}
+
+							button_text = {
+								shortcut = mapmode_kingdoms_secondary
+								onclick = "[Character.OpenPlayerInteractionWithTargetTitle( 'influence_candidacy_interaction', Title.Self )]"
+								enabled = "[Character.IsPlayerInteractionValid( 'influence_candidacy_interaction' )]"
+
+								blockoverride "disabled" {
+									visible = "[Not(Character.IsPlayerInteractionValid( 'influence_candidacy_interaction' ))]"
+								}
+								tooltip = "[Character.GetPlayerInteractionTooltip( 'influence_candidacy_interaction' )]"
+
+								blockoverride "text" {
+									raw_text = "[Character.GetPlayerInteractionName('influence_candidacy_interaction')], i."
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = "All candidates below."
+									}
+								}
+							}
+						}
+					}
+				}
+
+
+
+				fixed_character_list_paged_ocr = {
+					datacontext = "[SuccessionAppointmentWindow.GetCandidates]"
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					blockoverride "list_datamodel" {
+						datamodel = "[PageModel('title_appointment_page', FixedPointToInt(GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue), CharacterSelectionList.GetList)]"
+					}
+
+					# blockoverride "pre_name" {
+					# 	text_single = {
+					# 		text = TITLE_APPOINTMENT_RANK
+					# 		tooltip = "TITLE_APPOINTMENT_RANK_TOOLTIP"
+					# 	}
+					# }
+
+					state = {
+					  name = "reset"
+					  on_finish = "[GetScriptedGui('reset_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					  trigger_when = "[Or(Or(PageReset('title_appointment_page', CharacterSelectionList.GetList), Not(GetPlayer.MakeScope.Var('title_appointment_page_size').IsSet)), Not(GetPlayer.MakeScope.Var('title_appointment_page').IsSet))]"
+						trigger_on_create = yes
+					}
+
+					blockoverride "sort" {
+					  onclick = "[GetScriptedGui('reset_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					}
+					blockoverride "reset_page" {
+					  on_finish = "[GetScriptedGui('reset_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					}
+					blockoverride "reverse_order" {
+					  shortcut = mapmode_house_secondary
+					}
+					blockoverride "toggle_text" {
+					  text_single = {
+					    raw_text = "Toggle: Shift D."
+					  }
+					}
+					blockoverride "filters_sort" {}
+
+					blockoverride "pre_count" {
+						filter_buttons = {}
+					}
+					blockoverride "count_extra" {
+						text_single = {
+							raw_text = "Showing from [PageStart('title_appointment_page')] to [PageEnd('title_appointment_page', GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue, CharacterSelectionList.GetList)],"
+						}
+
+						space = {}
+
+						button_text = {
+							shortcut = army_merge
+							onclick = "[GetScriptedGui('resize_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							blockoverride "text" {
+								margin_left = -5
+								raw_text = "Show [Select_CString(EqualTo_CFixedPoint(GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue, '(CFixedPoint)10'), '5', '10')] per page, G."
+							}
+						}
+					}
+					blockoverride "tip" {
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							raw_text = "Click to influence candidacy, right-click to view. Press B to return here after."
+						}
+					}
+					blockoverride "top_bar" {
+						powerful_family_bonus_ocr = {
+							datacontext = "[Character.GetHouse]"
+							visible = "[DynastyHouse.IsValid]"
+							blockoverride "show_button" {
+								visible = no
+							}
+						}
+					}
+
+					blockoverride "click_info" {
+					}
+
+					blockoverride "skill_sort_buttons" {}
+
+					blockoverride "item_size" {
+						size = { 650 70 }
+					}
+
+					blockoverride "skills_pre" {
+						text_single = {
+							raw_text = "[CharacterListItem.GetFixedPoint( 'score' )|V0] score,"
+
+							tooltipwidget = {
+								widget_value_breakdown_tooltip = {
+									datacontext = "[SuccessionAppointmentWindow.GetSuccessionScoreBreakdown( Character.Self )]"
+								}
+							}
+						}
+
+						text_single = {
+							visible = "[Not(Character.IsPlayerInteractionValid( 'influence_candidacy_interaction' ))]"
+							tooltip = "[Character.GetPlayerInteractionTooltip( 'influence_candidacy_interaction' )]"
+							raw_text = "can't influence,"
+						}
+
+						text_single = {
+							text = "TITLE_APPOINTMENT_GOVERNOR_EFFICIENCY"
+							tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALID_TT"
+						}
+
+						text_single = {
+							visible = "[IsIndexFirst]"
+							raw_text = "efficiency,"
+						}
+					}
+
+					blockoverride "widget" {
+						datacontext = "[GetPlayer.MakeScope.Var('title_appointment_page')]"
+					}
+
+					blockoverride "click" {
+						# onclick = "[CharacterListItem.OnClick('character')]"
+						# onclick = "[GetVariableSystem.Clear('expand_view')]"
+						onrightclick = "[GetVariableSystem.Clear('expand_view')]"
+						onrightclick = "[DefaultOnCharacterClick(CharacterListItem.GetCharacter.GetID)]"
+						# onrightclick = "[DefaultOnCharacterRightClick(CharacterListItem.GetCharacter.GetID)]"
+
+						button = {
+							size = { 100% 100% }
+							onclick = "[Character.OpenPlayerInteractionWithTargetTitle( 'influence_candidacy_interaction', Title.Self )]"
+							visible = "[Character.IsPlayerInteractionValid( 'influence_candidacy_interaction' )]"
+						}
+					}
+
+					# powerful_family_bonus_ocr
+
+					# vbox_candidate_details
+
+					# button_support_candidacy
+				}
+
+				vbox = {
+				  layoutpolicy_horizontal = expanding
+
+				  hbox = {
+				    layoutpolicy_horizontal = expanding
+				    spacing = 3
+
+				    button_text = {
+				      visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('title_appointment_page').GetValue, '(CFixedPoint)0' )]"
+				      blockoverride "text" {
+				        raw_text = "Previous [GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue|0], Z."
+				      }
+				      onclick = "[GetScriptedGui('prev_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				      shortcut = decrease_speed_2
+				      using = paper_flip_back_ocr
+				    }
+
+				    button_text = {
+				      onclick = "[GetScriptedGui('reset_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				      shortcut = map_mode_18
+				      using = paper_flip_back_ocr
+				      blockoverride "text" {
+				        raw_text = "Reset, Control R."
+				      }
+				    }
+
+				    expand = {}
+				  }
+
+				  button_text = {
+				    layoutpolicy_horizontal = expanding
+				    blockoverride "text" {
+				      raw_text = "Next [GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue|0], X."
+				    }
+				    onclick = "[GetScriptedGui('next_title_appointment_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				    visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( CharacterSelectionList.GetList ), FixedPointToInt(GetPlayer.MakeScope.Var('title_appointment_page').GetValue )), FixedPointToInt(GetPlayer.MakeScope.Var('title_appointment_page_size').GetValue) )]"
+				    using = paper_flip_forward_ocr
+				    shortcut = increase_speed_2
+				  }
+				}
+
+				expand = {}
+			}
+		}
+	}
+
+	window_title_appointment_old = {}
+
+	window_character_filter = {
+		datacontext = "[SuccessionAppointmentWindow.GetCandidates]"
+
+		blockoverride "addition_filter" {
+			filter_item = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetFilter('range_filter')]"
+			}
+
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+
+				datacontext = "[CharacterSelectionList.GetCategory('personal_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('ruler_filter')]"
+					}
+
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('adult_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('gender_filter')]"
+					}
+
+					divider = {
+						layoutpolicy_horizontal = expanding
+					}
+
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('married_filter')]"
+					}
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('imprisoned_filter')]"
+					}
+
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('hook_filter')]"
+					}
+				}
+			}
+
+			vbox_filter_group = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[CharacterSelectionList.GetCategory('membership_filter_category')]"
+				blockoverride "filters" {
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('religion_filter')]"
+					}
+
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('culture_filter')]"
+					}
+
+					filter_item = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CharacterSelectionList.GetFilter('dynasty_house_filter')]"
+					}
+				}
+			}
+		}
+	}
+}
+
+types TitleAppointment
+{
+	type vbox_candidate_details = vbox
+	{
+		maximumsize = { 260 -1 }
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			max_width = 240
+			margin_bottom = 4
+			text = "TITLE_APPOINTMENT_SUCCESSION_SCORE"
+
+			tooltipwidget = {
+				widget_value_breakdown_tooltip = {
+					datacontext = "[SuccessionAppointmentWindow.GetSuccessionScoreBreakdown( Character.Self )]"
+				}
+			}
+		}
+
+		text_single = {
+			layoutpolicy_horizontal = expanding
+			text = "TITLE_APPOINTMENT_GOVERNOR_EFFICIENCY"
+			tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALID_TT"
+			max_width = 240
+		}
+	}
+
+	type button_support_candidacy = button_round  {
+		name = "support_candidacy"
+		size = { 48 48 }
+		onclick = "[Character.OpenPlayerInteractionWithTargetTitle( 'influence_candidacy_interaction', Title.Self )]"
+		enabled = "[Character.IsPlayerInteractionValid( 'influence_candidacy_interaction' )]"
+		tooltip = "[Character.GetPlayerInteractionTooltip( 'influence_candidacy_interaction' )]"
+
+		button_promote_candidate = {
+			alwaystransparent = yes
+			parentanchor = center
+			position = { 1 -1 }
+			size = { 32 32 }
+		}
+	}
+}

@@ -128,6 +128,11 @@ types OCR {
 						}
 
 						text_single = {
+							raw_text = "[Character.RealmSize] counties,"
+							visible = "[Character.HasLandedTitles]"
+						}
+
+						text_single = {
 							raw_text = "[Character.Custom('character_health')] health."
 							visible = "[Not(Character.IsDeadAndValid)]"
 
@@ -314,6 +319,37 @@ types OCR {
 							expand = {}
 						}
 
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = 3
+
+							visible = "[Character.GetGovernment.IsType('administrative_government')]"
+
+							text_single = {
+								text = "admin_efficiency"
+								tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT"
+							}
+
+							, = {}
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								spacing = 3
+								visible = "[Character.HasTraitByKey('governor')]"
+
+								text_single = {
+									raw_text = "[GetTrait('governor').GetName(Character.Self)] trait level [Character.MakeScope.ScriptValue('governor_level')|0], [Character.MakeScope.ScriptValue('governor_xp')] experience."
+								}
+							}
+
+							text_single = {
+								visible = "[Not(Character.HasTraitByKey('governor'))]"
+								raw_text = "no [GetTrait('governor').GetName(Character.Self)] trait."
+							}
+
+							expand = {}
+						}
+
 						widget = {
 							size = { 0 10 }
 						}
@@ -340,6 +376,11 @@ types OCR {
 
 								text_single = {
 									raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+								}
+
+								text_single = {
+									visible = "[GreaterThan_int32(GetDataModelSize(CharacterWindow.GetTitles), '(int32)1')]"
+									raw_text = "and [Subtract_int32(GetDataModelSize(CharacterWindow.GetTitles), '(int32)1')] more titles,"
 								}
 
 								text_single = {
@@ -1429,12 +1470,12 @@ types OCR {
 					visible = "[GetVariableSystem.HasValue('expand_view', 'counties')]"
 
 					button_text = {
-						shortcut = increase_speed_2
+						shortcut = map_mode_15
 						onclick = "[Click('clear_county_filters')]"
 						visible = "[Show('clear_county_filters')]"
 						onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
 						blockoverride "text" {
-							raw_text = "Filtered, reset with X."
+							raw_text = "Filtered, reset with Control F."
 						}
 					}
 					button_text = {
@@ -1746,7 +1787,33 @@ types OCR {
 									onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
 									shortcut = map_mode_2
 									blockoverride "text" {
-										raw_text = "[GetDataModelSize(Character.MakeScope.GetList('counties'))] personal counties, sorted by [Select_CString(Show('county_tax'), 'tax', 'distance')], T to use [Select_CString(Show('county_tax'), 'distance', 'tax')]."
+										raw_text = "[GetDataModelSize(Character.MakeScope.GetList('counties'))] personal counties"
+									}
+									blockoverride "extra" {
+										text_single = {
+											visible= "[Or(GetPlayer.MakeScope.Var('filter_counties_culture').IsSet, GetPlayer.MakeScope.Var('filter_counties_faith').IsSet)]"
+											raw_text = "that are not"
+										}
+
+										text_single = {
+											visible = "[GetPlayer.MakeScope.Var('filter_counties_faith').IsSet]"
+											raw_text = "[Character.GetFaith.GetAdjectiveNoTooltip]"
+										}
+										text_single = {
+											visible= "[And(GetPlayer.MakeScope.Var('filter_counties_culture').IsSet, GetPlayer.MakeScope.Var('filter_counties_faith').IsSet)]"
+											raw_text = "or"
+										}
+
+										text_single = {
+											visible = "[GetPlayer.MakeScope.Var('filter_counties_culture').IsSet]"
+											raw_text = "[Character.GetCulture.GetNameNoTooltip]"
+										}
+
+										, = {}
+
+										text_single = {
+											raw_text = "sorted by [Select_CString(Show('county_tax'), 'tax', 'distance')], T to use [Select_CString(Show('county_tax'), 'distance', 'tax')]."
+										}
 									}
 								}
 
@@ -1759,6 +1826,9 @@ types OCR {
 											resizeparent = yes
 											ignoreinvisible = yes
 											spacing = 3
+											text_single = {
+												raw_text = "[IndexNumber],"
+											}
 											text_single = {
 												raw_text = "[Scope.Title.GetNameNoTierNoTooltip],"
 											}
@@ -1803,68 +1873,114 @@ types OCR {
 								size = { 0 5 }
 							}
 
-							text_single = {
-								raw_text = "[GetDataModelSize(Character.MakeScope.GetList('vassal_counties'))] vassal counties."
+							flowcontainer = {
+								ignoreinvisible = yes
+								spacing = 3
+
+								text_single = {
+									raw_text = "[GetDataModelSize(Character.MakeScope.GetList('vassal_counties'))] vassal counties"
+								}
+
+								text_single = {
+									visible= "[Or(GetPlayer.MakeScope.Var('filter_counties_culture').IsSet, GetPlayer.MakeScope.Var('filter_counties_faith').IsSet)]"
+									raw_text = "that are not"
+								}
+
+								text_single = {
+									visible = "[GetPlayer.MakeScope.Var('filter_counties_faith').IsSet]"
+									raw_text = "[Character.GetFaith.GetAdjectiveNoTooltip]"
+								}
+								text_single = {
+									visible= "[And(GetPlayer.MakeScope.Var('filter_counties_culture').IsSet, GetPlayer.MakeScope.Var('filter_counties_faith').IsSet)]"
+									raw_text = "or"
+								}
+
+								text_single = {
+									visible = "[GetPlayer.MakeScope.Var('filter_counties_culture').IsSet]"
+									raw_text = "[Character.GetCulture.GetNameNoTooltip]"
+								}
+
+								dot_l = {}
+
 							}
 
 							divider_light = {
 								size = { 500 3 }
 							}
-							#counties
-							flowcontainer = {
-								datamodel = "[Character.MakeScope.GetList('vassal_counties')]"
-								direction = vertical
-								layoutpolicy_horizontal = expanding
-								item = {
-									button = {
-										onclick = "[OpenGameViewData('holding_view', Scope.GetLandedTitle.GetProvince.Self)]"
-										onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetLandedTitle.GetID)]"
 
-										flowcontainer = {
-											resizeparent = yes
-											ignoreinvisible = yes
-											spacing = 3
-											text_single = {
-												raw_text = "[Scope.GetLandedTitle.GetBaseNameNoTierNoTooltip],"
-											}
+							flow_paged_list = {
+								datacontext = "[GetPlayer.MakeScope.Var('char_counties_page')]"
+								datacontext = "[GetScriptedGui('char_counties_page')]"
 
-											flowcontainer = {
-												ignoreinvisible = yes
-												spacing = 3
-												visible = "[Show('county_tax')]"
+								blockoverride "full_datamodel" {
+									datamodel = "[Character.MakeScope.GetList('vassal_counties')]"
+								}
 
-												text_single = {
-													raw_text = "tax: [Scope.GetLandedTitle.MakeScope.Var('total_tax').GetValue|1],"
-												}
-												text_single = {
-													raw_text = "levies: [Scope.GetLandedTitle.MakeScope.Var('total_levies').GetValue|0]."
-												}
-												# text_single = {
-												# 	raw_text = "Control: [Scope.GetLandedTitle.GetCountyData.GetControl]."
-												# }
-											}
+								blockoverride "vbox_contents" {
+									#counties
+									flowcontainer = {
+										# datamodel = "[Character.MakeScope.GetList('vassal_counties')]"
+										datamodel = "[PageModelGlobal(Character.MakeScope.GetList('vassal_counties'))]"
+										direction = vertical
+										layoutpolicy_horizontal = expanding
+										item = {
+											button = {
+												onclick = "[OpenGameViewData('holding_view', Scope.GetLandedTitle.GetProvince.Self)]"
+												onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetLandedTitle.GetID)]"
 
-											text_single = {
-												visible = "[And(Not(ObjectsEqual(Province.GetID, MyCapital.GetID)), Not(Show('county_tax')))]"
-												datacontext = "[Scope.Title.GetProvince]"
-												raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
-											}
+												flowcontainer = {
+													resizeparent = yes
+													ignoreinvisible = yes
+													spacing = 3
 
-											text_single = {
-												raw_text = "[Scope.GetLandedTitle.GetCountyData.GetFaith.GetAdjective]."
-											}
-											text_single = {
-												raw_text = "[Scope.GetLandedTitle.GetCountyData.GetCulture.GetName],"
-											}
+													page_index = {
+														datacontext = "[GetPlayer.MakeScope.Var('char_counties_page')]"
+													}
 
-											char_name = {
-												datacontext = "[Scope.GetLandedTitle.GetHolder]"
-												blockoverride "pre" {
-													margin_left = -2
+													text_single = {
+														raw_text = "[Scope.GetLandedTitle.GetBaseNameNoTierNoTooltip],"
+													}
+
+													flowcontainer = {
+														ignoreinvisible = yes
+														spacing = 3
+														visible = "[Show('county_tax')]"
+
+														text_single = {
+															raw_text = "tax: [Scope.GetLandedTitle.MakeScope.Var('total_tax').GetValue|1],"
+														}
+														text_single = {
+															raw_text = "levies: [Scope.GetLandedTitle.MakeScope.Var('total_levies').GetValue|0]."
+														}
+														# text_single = {
+														# 	raw_text = "Control: [Scope.GetLandedTitle.GetCountyData.GetControl]."
+														# }
+													}
+
+													text_single = {
+														visible = "[And(Not(ObjectsEqual(Province.GetID, MyCapital.GetID)), Not(Show('county_tax')))]"
+														datacontext = "[Scope.Title.GetProvince]"
+														raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+													}
+
+													text_single = {
+														raw_text = "[Scope.GetLandedTitle.GetCountyData.GetFaith.GetAdjective]."
+													}
+													text_single = {
+														raw_text = "[Scope.GetLandedTitle.GetCountyData.GetCulture.GetName],"
+													}
+
+													char_name = {
+														datacontext = "[Scope.GetLandedTitle.GetHolder]"
+														blockoverride "pre" {
+															margin_left = -2
+														}
+													}
 												}
 											}
 										}
 									}
+
 								}
 							}
 						}
@@ -1906,8 +2022,21 @@ types OCR {
 							text_single = {
 								raw_text = "[GuiScope.SetRoot(Character.MakeScope).ScriptValue('vassal_holdings')] vassal holdings."
 							}
-							char_expanded_list = {
-								datamodel = "[Character.MakeScope.GetList('realm_holdings')]"
+							flow_paged_list = {
+								datacontext = "[GetPlayer.MakeScope.Var('char_holdings_page')]"
+								datacontext = "[GetScriptedGui('char_holdings_page')]"
+								blockoverride "page_index" {
+									datacontext = "[GetPlayer.MakeScope.Var('char_holdings_page')]"
+								}
+								blockoverride "full_datamodel" {
+									datamodel = "[Character.MakeScope.GetList('vassal_counties')]"
+								}
+
+								blockoverride "vbox_contents" {
+									char_expanded_list = {
+										datamodel = "[PageModelGlobal(Character.MakeScope.GetList('realm_holdings'))]"
+									}
+								}
 							}
 						}
 						#titles

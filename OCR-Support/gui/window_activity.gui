@@ -23,6 +23,7 @@
 		using = Sound_WindowHide_Standard
 		on_start = "[PdxGuiWidget.FindChild( 'pulse_action_popup' ).Hide]"
 		using = pause_event
+		on_finish = "[Clear('conclusion_text')]"
 	}
 
 	window = {
@@ -75,6 +76,10 @@
 						text_single = {
 							name = "tour_arrival_event"
 						}
+
+						text_single = {
+							name = "chariot_race_pivotal_moment_widget"
+						}
 					}
 
 					dot = {
@@ -93,369 +98,420 @@
 					expand = { }
 				}
 
-
-				hbox = {
-					name = "conclusion"
-					visible = "[Not( ActivityWindow.HasActiveEvent )]"
+				scrollbox = {
 					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+					blockoverride "scrollbox_content" {
 
-					vbox_activity_conclusion_ocr = {
-						layoutpolicy_horizontal = expanding
-						name = "activity_conclusion"
-						visible = "[Activity.IsComplete]"
-
-
-						blockoverride "close_activity_onclick"
-						{
-							onclick = "[ActivityWindow.Close]"
-						}
-					}
-
-					expand = { }
-				}
-
-				text_single = {
-					layoutpolicy_horizontal = expanding
-					visible = "[Activity.IsComplete]"
-					raw_text = "warning, this window will close permanently."
-				}
-
-				hbox_activity_progress_ocr = {
-					visible = "[And(Not( Activity.IsComplete ),Not(ActivityWindow.HasActiveEvent))]"
-					name = "activity_progress"
-				}
-
-				button_text = {
-					layoutpolicy_horizontal = expanding
-					name = "activity_log"
-					blockoverride "text" {
-						text = "ACTIVITY_WINDOW_LOG"
-					}
-					blockoverride "extra" {
-						text_single = {
-							margin_left = -3
-							raw_text = ", hotkey O."
-						}
-					}
-					shortcut = mapmode_empires_secondary
-					down = "[IsGameViewDataShown( 'activity_log', Activity.Self )]"
-					onclick = "[ToggleGameViewData( 'activity_log', Activity.Self )]"
-				}
-
-				vbox = {
-					name = "activity_plugin_widgets_summary"
-					layoutpolicy_horizontal = expanding
-
-					state = {
-						trigger_on_create = yes
-						name = appear_test
-						delay = 0
-						using = Animation_Curve_Default
-						alpha = 1
-						duration = 0
-					}
-				}
-
-				vbox = {
-					visible = "[EqualTo_string( ActivityType.GetKey(), 'activity_journey')]"
-					name = "activity_plugin_widgets_skill_text"
-					layoutpolicy_horizontal = expanding
-
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						raw_text = "On journey to [Activity.GetCurrentPhase.GetLocation.GetHolding.GetSpecialBuildingType.GetNameNoTooltip],"
-					}
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						text = "journey_skill_type_desc"
-					}
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						text = "journey_skill_desc"
-						max_width = 320
-					}
-				}
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					datacontext = "[Activity.GetCurrentPhase.GetLocation]"
-
-					button_text = {
-						using = prov_click
-						onclick = "[ActivityWindow.Close]"
-						layoutpolicy_horizontal = expanding
-						blockoverride "text" {
-							raw_text = "Location, [Province.GetTitle.GetNameNoTooltip], in [Province.GetCounty.GetTitle.GetNameNoTierNoTooltip]."
-						}
-					}
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						spacing = 3
-						datacontext = "[Province.GetCounty.GetTitle.GetHolder.GetTopLiege]"
-
-						text_single = {
-							visible = "[Not(ObjectsEqual(MyCapital.GetID, Province.GetID))]"
-							raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)],"
-						}
-
-						#TODO show the vassal realm if needed
-						# text_single = {
-						# 	visible = "[Not(ObjectsEqual(Province.GetCounty.GetTitle.GetHolder, Character))]"
-						# 	raw_text = "in [Province.GetCounty.GetTitle.GetHolder.GetPrimaryTitle.GetNameNoTierNoTooltip],"
-						# }
-
-						text_single = {
-							raw_text = "in [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
-						}
-
-
-						expand = {}
-					}
-
-					expand = {}
-				}
-
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					visible = "[Not(Activity.IsComplete)]"
-
-					datacontext = "[Activity.GetLastWeeklyPulseAction]"
-					datacontext = "[Activity.GetCurrentPhase.GetPhase]"
-
-					hbox = {
-					    layoutpolicy_horizontal = expanding
-
-						text_multi = {
+						hbox = {
+							name = "conclusion"
+							visible = "[Not( ActivityWindow.HasActiveEvent )]"
 							layoutpolicy_horizontal = expanding
-							using = wide
-							autoresize = yes
-							raw_text = "ACTIVITY_WINDOW_PHASE_IN_PROGRESS_TOOLTIP"
+
+							vbox_activity_conclusion_ocr = {
+								layoutpolicy_horizontal = expanding
+								name = "activity_conclusion"
+								visible = "[Activity.IsComplete]"
+
+
+								blockoverride "close_activity_onclick"
+								{
+									onclick = "[ActivityWindow.Close]"
+								}
+							}
+
+							expand = { }
 						}
 
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Activity.IsComplete]"
+							raw_text = "warning, this window will close permanently."
+						}
 
-					    expand = { }
-					}
-				}
+						hbox_activity_progress_ocr = {
+							visible = "[And(Not( Activity.IsComplete ),Not(ActivityWindow.HasActiveEvent))]"
+							name = "activity_progress"
+						}
 
-				vbox = {
-					name = "idle_character"
-					layoutpolicy_horizontal = expanding
-
-					visible = "[Not( ActivityWindow.HasActiveEvent )]"
-
-					button_text = {
-						layoutpolicy_horizontal = expanding
-					    blockoverride "text" {
-							raw_text = "[GetDataModelSize(ActivityWindow.GetCharacters)] Notable Characters, [Select_CString(Is('hide_activity_chars'), 'Show', 'Hide')] with C."
-					    }
-						onclick = "[Toggle('hide_activity_chars')]"
-						shortcut = character_finder
-					}
-
-					#TODO may limit to three at the completion
-
-					vbox = {
-						name = "idle_characters_ongoing"
-						datamodel = "[ActivityWindow.GetCharacters]"
-						layoutpolicy_horizontal = expanding
-						visible = "[Isnt('hide_activity_chars')]"
-
-						item = {
-							button_text = {
-								#TODO do it in one line
-								layoutpolicy_horizontal = expanding
-								using = char_click
-								datacontext = "[ActivityWindowCharacter.GetCharacter]"
-								blockoverride "text" {
-									raw_text = "[IndexNumber], [ActivityWindowCharacter.GetLabel]."
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							name = "activity_log"
+							blockoverride "text" {
+								text = "ACTIVITY_WINDOW_LOG"
+							}
+							blockoverride "extra" {
+								text_single = {
+									margin_left = -3
+									raw_text = ", hotkey O."
 								}
-								blockoverride "extra" {
+							}
+							shortcut = mapmode_empires_secondary
+							down = "[IsGameViewDataShown( 'activity_log', Activity.Self )]"
+							onclick = "[ToggleGameViewData( 'activity_log', Activity.Self )]"
+						}
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							shortcut = army_create_new
+							datacontext = "[Activity.GetCurrentPhase]"
+							datacontext = "[Activity.GetCurrentPhase.GetPhase]"
+							name = "charioteers"
+							blockoverride "text" {
+								text = "CHARIOTEERS_WINDOW_LABEL"
+							}
+							blockoverride "extra" {
+								, = {}
+								text_single = {
+									visible = "[DataModelHasItems( ActivityWindow.GetCurrentPhaseGuestSubset( 'charioteers' ) )]"
+									raw_text = "[GetDataModelSize( ActivityWindow.GetCurrentPhaseGuestSubset( 'charioteers' ) )],"
+								}
+								text_single = {
+									raw_text = "[Collapse('activity_charioteers_view')]"
+								}
+								text_single = {
+									raw_text = "H."
+								}
+								flowcontainer = {
+									ignoreinvisible = yes
+									spacing = 3
+									visible = "[Isnt('activity_charioteers_view')]"
 									text_single = {
-										visible = "[Character.IsDeadAndValid]"
-										raw_text = "[Character.GetNameNoTooltip]."
+										visible = "[And( EqualTo_string( ActivityPhase.GetKey, 'chariot_race_gambling' ), DataModelHasItems( ActivityWindow.GetCurrentPhaseGuestSubset( 'charioteers' ) ) )]"
+										text = "CHARIOTEER_SORT_METHOD_APTITUDE"
+									}
+
+									text_single = {
+										visible = "[And( EqualTo_string( ActivityPhase.GetKey, 'chariot_race_phase' ), DataModelHasItems( ActivityWindow.GetCurrentPhaseGuestSubset( 'charioteers' ) ) )]"
+										text = "CHARIOTEER_SORT_METHOD_PLACE"
 									}
 								}
 							}
+							visible = "[DataModelHasItems( ActivityWindow.GetCurrentPhaseGuestSubset( 'charioteers' ) )]"
+							down = "[Not( GetVariableSystem.Exists( 'activity_charioteers_view' ) )]"
+							onclick = "[GetVariableSystem.Toggle( 'activity_charioteers_view' )]"
 						}
-					}
-				}
 
-				vbox = {
-					name = "main_content"
-					layoutpolicy_horizontal = expanding
-
-					#
-					# activity_pulse_action_popup_right_ocr = {
-					# 	datacontext = "[ActivityWindow.GetActivity]"
-					# 	datacontext = "[ActivityWindow.GetLastWeeklyPulseEffectData]"
-					# }
-
-					vbox = {
-						layoutpolicy_horizontal = expanding
+						window_activity_contestants_right_bar = {
+							layoutpolicy_horizontal = expanding
+						}
 
 						vbox = {
-							name = "activity_content"
+							name = "activity_plugin_widgets_summary"
 							layoutpolicy_horizontal = expanding
 
-							vbox = {
-								name = "bottom_bar"
+							state = {
+								trigger_on_create = yes
+								name = appear_test
+								delay = 0
+								using = Animation_Curve_Default
+								alpha = 1
+								duration = 0
+							}
+						}
+
+						vbox = {
+							visible = "[EqualTo_string( ActivityType.GetKey(), 'activity_journey')]"
+							name = "activity_plugin_widgets_skill_text"
+							layoutpolicy_horizontal = expanding
+
+							text_single = {
 								layoutpolicy_horizontal = expanding
-								datacontext = "[GetPlayer]"
+								raw_text = "On journey to [Activity.GetCurrentPhase.GetLocation.GetHolding.GetSpecialBuildingType.GetNameNoTooltip],"
+							}
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								text = "journey_skill_type_desc"
+							}
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								text = "journey_skill_desc"
+								max_width = 320
+							}
+						}
 
-								vbox = {
-									name = "ongoing_info"
-									layoutpolicy_horizontal = expanding
-									visible = "[And(Not( Activity.IsComplete ),Not(ActivityWindow.HasActiveEvent))]"
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[Activity.GetCurrentPhase.GetLocation]"
 
-									hbox = {
-										layoutpolicy_horizontal = expanding
+							button_text = {
+								using = prov_click
+								onclick = "[ActivityWindow.Close]"
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "Location, [Province.GetTitle.GetNameNoTooltip], in [Province.GetCounty.GetTitle.GetNameNoTierNoTooltip]."
+								}
+							}
 
-										activity_phase_progress_timline_widget_ocr = {
-											name = "phase_progres_timeline_short"
-										}
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+								datacontext = "[Province.GetCounty.GetTitle.GetHolder.GetTopLiege]"
 
-										expand = { }
-									}
+								text_single = {
+									visible = "[Not(ObjectsEqual(MyCapital.GetID, Province.GetID))]"
+									raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)],"
 								}
 
-								vbox = {
+								#TODO show the vassal realm if needed
+								# text_single = {
+								# 	visible = "[Not(ObjectsEqual(Province.GetCounty.GetTitle.GetHolder, Character))]"
+								# 	raw_text = "in [Province.GetCounty.GetTitle.GetHolder.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+								# }
+
+								text_single = {
+									raw_text = "in [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+								}
+
+
+								expand = {}
+							}
+
+							expand = {}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Not(Activity.IsComplete)]"
+
+							datacontext = "[Activity.GetLastWeeklyPulseAction]"
+							datacontext = "[Activity.GetCurrentPhase.GetPhase]"
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+
+								text_multi = {
 									layoutpolicy_horizontal = expanding
+									using = wide
+									autoresize = yes
+									raw_text = "ACTIVITY_WINDOW_PHASE_IN_PROGRESS_TOOLTIP"
+								}
 
-									vbox = {
-										visible = "[Activity.IsParticipant( Character.Self )]"
+
+								expand = { }
+							}
+						}
+
+						vbox = {
+							name = "idle_character"
+							layoutpolicy_horizontal = expanding
+
+							visible = "[Not( ActivityWindow.HasActiveEvent )]"
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "[GetDataModelSize(ActivityWindow.GetCharacters)] Notable Characters, [Select_CString(Is('hide_activity_chars'), 'Show', 'Hide')] with C."
+								}
+								onclick = "[Toggle('hide_activity_chars')]"
+								shortcut = character_finder
+							}
+
+							#TODO may limit to three at the completion
+
+							vbox = {
+								name = "idle_characters_ongoing"
+								datamodel = "[ActivityWindow.GetCharacters]"
+								layoutpolicy_horizontal = expanding
+								visible = "[Isnt('hide_activity_chars')]"
+
+								item = {
+									button_text = {
+										#TODO do it in one line
 										layoutpolicy_horizontal = expanding
-
-										vbox = {
-											name = "current_intent"
-											datacontext = "[Character.GetInvolvedActivityIntent]"
-											visible = "[Not( Activity.IsComplete )]"
-											layoutpolicy_horizontal = expanding
-
-											button_text = {
-												layoutpolicy_horizontal = expanding
-												shortcut = "mapmode_kingdoms_secondary"
-												blockoverride "pre" {
-													text_single = {
-														raw_text = "Intent"
-													}
-													text_single = {
-														margin_left = -3
-														raw_text = ":"
-													}
-												}
-											    blockoverride "text" {
-											        raw_text = "[ActivityIntent.GetName],"
-											    }
-
-												blockoverride "extra" {
-													text_single = {
-														visible = "[Not( ActivityWindow.HasActiveEvent )]"
-														raw_text = "hotkey i."
-													}
-												}
-												# blockoverride "disabled" {
-												# 	visible = "[ActivityWindow.HasActiveEvent]"
-												# }
-												# blockoverride "disabled text" {
-												# 	visible = "[ActivityWindow.HasActiveEvent]"
-												# 	raw_text = "change"
-												# }
-												onclick = "[ToggleGameViewData( 'activity_intent_selection', GetPlayer )]"
-												enabled = "[Not( ActivityWindow.HasActiveEvent )]"
-												# tooltip = "ACTIVITY_OPEN_INTENT_WINDOW"
-											}
+										using = char_click
+										datacontext = "[ActivityWindowCharacter.GetCharacter]"
+										blockoverride "text" {
+											raw_text = "[IndexNumber], [ActivityWindowCharacter.GetLabel]."
 										}
-
-										vbox = {
-											name = "succeeded_multiple_intents"
-											visible = "[And( Activity.IsComplete, GreaterThan_int32( GetDataModelSize( Character.GetCompletedIntents ), '(int32)1' ) )]"
-
+										blockoverride "extra" {
 											text_single = {
-												layoutpolicy_horizontal = expanding
-												text = "ACTIVITY_CONCLUSION_COMPLETED_INTENT_MULTI"
-											}
-
-											hbox = {
-												datamodel = "[Character.GetCompletedIntents]"
-												spacing = 3
-
-												item = {
-													text_single = {
-														datacontext = "[ActivityIntentData.GetType]"
-														raw_text = "[ActivityIntent.GetName],"
-													}
-												}
-
-												expand = { }
-											}
-										}
-
-										vbox = {
-											name = "succeeded_single_intent"
-											visible = "[And( Activity.IsComplete, EqualTo_int32( GetDataModelSize( Character.GetCompletedIntents ), '(int32)1' ) )]"
-											layoutpolicy_horizontal = expanding
-
-											text_single = {
-												layoutpolicy_horizontal = expanding
-												text = "ACTIVITY_CONCLUSION_COMPLETED_INTENT"
-											}
-
-											hbox = {
-												layoutpolicy_horizontal = expanding
-												datacontext_from_model = {
-													datamodel = "[Character.GetCompletedIntents]"
-													index = 0
-												}
-												datacontext = "[ActivityIntentData.GetType]"
-
-												text_single = {
-													layoutpolicy_horizontal = expanding
-													name = "intent_name_completed"
-													raw_text = "[ActivityIntent.GetName]."
-												}
-
-												expand = { }
-											}
-										}
-
-										vbox = {
-											name = "failed_intent"
-											visible = "[And( Activity.IsComplete, IsDataModelEmpty( Character.GetCompletedIntents ) )]"
-											datacontext = "[Character.GetInvolvedActivityIntent]"
-											layoutpolicy_horizontal = expanding
-
-											text_single = {
-												layoutpolicy_horizontal = expanding
-												text = "ACTIVITY_CONCLUSION_FAILED_INTENT"
-											}
-
-											text_single = {
-												layoutpolicy_horizontal = expanding
-												name = "intent_name_failed"
-												raw_text = "[ActivityIntent.GetName]."
+												visible = "[Character.IsDeadAndValid]"
+												raw_text = "[Character.GetNameNoTooltip]."
 											}
 										}
 									}
+								}
+							}
+						}
+
+						vbox = {
+							name = "main_content"
+							layoutpolicy_horizontal = expanding
+
+							#
+							# activity_pulse_action_popup_right_ocr = {
+							# 	datacontext = "[ActivityWindow.GetActivity]"
+							# 	datacontext = "[ActivityWindow.GetLastWeeklyPulseEffectData]"
+							# }
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+
+								vbox = {
+									name = "activity_content"
+									layoutpolicy_horizontal = expanding
 
 									vbox = {
+										name = "bottom_bar"
 										layoutpolicy_horizontal = expanding
+										datacontext = "[GetPlayer]"
 
-										button_text = {
+										vbox = {
+											name = "ongoing_info"
 											layoutpolicy_horizontal = expanding
-											name = "guest_list"
-											blockoverride "text" {
-												text = "ACTIVITY_WINDOW_GUEST_LIST"
+											visible = "[And(Not( Activity.IsComplete ),Not(ActivityWindow.HasActiveEvent))]"
+
+											hbox = {
+												layoutpolicy_horizontal = expanding
+
+												activity_phase_progress_timline_widget_ocr = {
+													name = "phase_progres_timeline_short"
+												}
+
+												expand = { }
 											}
-											blockoverride "extra" {
-												text_single = {
-													margin_left = -3
-													raw_text = ", hotkey G."
+										}
+
+										vbox = {
+											layoutpolicy_horizontal = expanding
+
+											vbox = {
+												visible = "[Activity.IsParticipant( Character.Self )]"
+												layoutpolicy_horizontal = expanding
+
+												vbox = {
+													name = "current_intent"
+													datacontext = "[Character.GetInvolvedActivityIntent]"
+													visible = "[Not( Activity.IsComplete )]"
+													layoutpolicy_horizontal = expanding
+
+													button_text = {
+														layoutpolicy_horizontal = expanding
+														shortcut = "mapmode_kingdoms_secondary"
+														blockoverride "pre" {
+															text_single = {
+																raw_text = "Intent"
+															}
+															text_single = {
+																margin_left = -3
+																raw_text = ":"
+															}
+														}
+														blockoverride "text" {
+															raw_text = "[ActivityIntent.GetName],"
+														}
+
+														blockoverride "extra" {
+															text_single = {
+																visible = "[Not( ActivityWindow.HasActiveEvent )]"
+																raw_text = "hotkey i."
+															}
+														}
+														# blockoverride "disabled" {
+														# 	visible = "[ActivityWindow.HasActiveEvent]"
+														# }
+														# blockoverride "disabled text" {
+														# 	visible = "[ActivityWindow.HasActiveEvent]"
+														# 	raw_text = "change"
+														# }
+														onclick = "[ToggleGameViewData( 'activity_intent_selection', GetPlayer )]"
+														enabled = "[Not( ActivityWindow.HasActiveEvent )]"
+														# tooltip = "ACTIVITY_OPEN_INTENT_WINDOW"
+													}
+												}
+
+												vbox = {
+													name = "succeeded_multiple_intents"
+													visible = "[And( Activity.IsComplete, GreaterThan_int32( GetDataModelSize( Character.GetCompletedIntents ), '(int32)1' ) )]"
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "ACTIVITY_CONCLUSION_COMPLETED_INTENT_MULTI"
+													}
+
+													hbox = {
+														datamodel = "[Character.GetCompletedIntents]"
+														spacing = 3
+
+														item = {
+															text_single = {
+																datacontext = "[ActivityIntentData.GetType]"
+																raw_text = "[ActivityIntent.GetName],"
+															}
+														}
+
+														expand = { }
+													}
+												}
+
+												vbox = {
+													name = "succeeded_single_intent"
+													visible = "[And( Activity.IsComplete, EqualTo_int32( GetDataModelSize( Character.GetCompletedIntents ), '(int32)1' ) )]"
+													layoutpolicy_horizontal = expanding
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "ACTIVITY_CONCLUSION_COMPLETED_INTENT"
+													}
+
+													hbox = {
+														layoutpolicy_horizontal = expanding
+														datacontext_from_model = {
+															datamodel = "[Character.GetCompletedIntents]"
+															index = 0
+														}
+														datacontext = "[ActivityIntentData.GetType]"
+
+														text_single = {
+															layoutpolicy_horizontal = expanding
+															name = "intent_name_completed"
+															raw_text = "[ActivityIntent.GetName]."
+														}
+
+														expand = { }
+													}
+												}
+
+												vbox = {
+													name = "failed_intent"
+													visible = "[And( Activity.IsComplete, IsDataModelEmpty( Character.GetCompletedIntents ) )]"
+													datacontext = "[Character.GetInvolvedActivityIntent]"
+													layoutpolicy_horizontal = expanding
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														text = "ACTIVITY_CONCLUSION_FAILED_INTENT"
+													}
+
+													text_single = {
+														layoutpolicy_horizontal = expanding
+														name = "intent_name_failed"
+														raw_text = "[ActivityIntent.GetName]."
+													}
 												}
 											}
-											shortcut = army_merge
-											down = "[IsGameViewDataShown( 'activity_guest_list', Activity.Self )]"
-											onclick = "[ToggleGameViewData( 'activity_guest_list', Activity.Self )]"
+
+											vbox = {
+												layoutpolicy_horizontal = expanding
+
+												button_text = {
+													layoutpolicy_horizontal = expanding
+													name = "guest_list"
+													blockoverride "text" {
+														text = "ACTIVITY_WINDOW_GUEST_LIST"
+													}
+													blockoverride "extra" {
+														text_single = {
+															margin_left = -3
+															raw_text = ", hotkey G."
+														}
+													}
+													shortcut = army_merge
+													down = "[IsGameViewDataShown( 'activity_guest_list', Activity.Self )]"
+													onclick = "[ToggleGameViewData( 'activity_guest_list', Activity.Self )]"
+												}
+											}
 										}
 									}
 								}
@@ -463,7 +519,6 @@
 						}
 					}
 				}
-
 				expand = { }
 			}
 		}
@@ -551,14 +606,33 @@
 				alwaystransparent = yes
 			}
 
-
 			activity_event_widget = {
-				# using = Window_Background
-				# using = Window_Decoration
-				# name = "activity_event"
 				size = { 100% 100% }
 			}
 		}
+	}
+
+	widget = {
+		using = base_ocr_window
+		name = "widget_activity_pivotal_moment_event_window"
+		datacontext = "[ActivityWindow.GetEventWindowInsert( PdxGuiWidget.AccessSelf )]"
+		datacontext = "[EventWindowViewInsert.GetOpenEvent]"
+		visible = "[ActivityWindow.HasActiveEvent]"
+		alwaystransparent = yes
+
+		state = {
+			name = _show
+			on_finish = "[Set('act_event', 'yes')]"
+			using = only_slow_events
+			# on_finish = "[PdxGuiTriggerAllAnimations('open_activity')]"
+		}
+
+		state = {
+			name = _hide
+			on_finish = "[Clear('act_event')]"
+		}
+
+		# ﻿window_event_ocr = {}
 	}
 
 	widget = {
@@ -2500,51 +2574,61 @@ types OCR {
 			layoutpolicy_horizontal = expanding
 
 			hbox = {
-			    layoutpolicy_horizontal = expanding
+		    layoutpolicy_horizontal = expanding
 
-				text_multi = {
-					layoutpolicy_horizontal = expanding
-					text = "[Activity.GetConclusionDescription( GetPlayer )]"
-					autoresize = yes
-					using = wide
+				button_text = {
+					shortcut = map_mode_1
+					onclick = "[Toggle('conclusion_text')]"
+					blockoverride "text" {
+						text = "[Activity.GetConclusionDescription( GetPlayer )]"
+					}
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "[Collapse('conclusion_text')] E"
+						}
+					}
 				}
 
-			    expand = { }
+		    expand = { }
 			}
 
-
-			text_single = {
+			Vbox = {
 				layoutpolicy_horizontal = expanding
-				name = "effects_header"
-				text = "ACTIVITY_CONCLUSION_EFFECTS_HEADER"
-				visible = "[Not( StringIsEmpty( LocalPlayerActivityData.GetCompletionEffectsString ) )]"
-			}
+				visible = "[Isnt('conclusion_text')]"
 
-			hbox = {
-			    layoutpolicy_horizontal = expanding
-
-				text_multi = {
+				text_single = {
 					layoutpolicy_horizontal = expanding
-					autoresize = yes
-					text = "[LocalPlayerActivityData.GetCompletionEffectsString]"
-					using = wide
+					name = "effects_header"
+					text = "ACTIVITY_CONCLUSION_EFFECTS_HEADER"
+					visible = "[Not( StringIsEmpty( LocalPlayerActivityData.GetCompletionEffectsString ) )]"
 				}
 
+				hbox = {
+			    layoutpolicy_horizontal = expanding
+
+					text_multi = {
+						layoutpolicy_horizontal = expanding
+						autoresize = yes
+						text = "[LocalPlayerActivityData.GetCompletionEffectsString]"
+						using = wide
+					}
+
 			    expand = { }
-			}
+				}
 
 
-			hbox = {
-				layoutpolicy_horizontal = expanding
-				name = "activity_plugin_widgets_conclusion"
-				visible = "[Activity.IsComplete]"
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					name = "activity_plugin_widgets_conclusion"
+					visible = "[Activity.IsComplete]"
 
-				state = {
-					trigger_on_create = yes
-					name = appear_test
-					using = Animation_Curve_Default
-					alpha = 1
-					duration = 0.1
+					state = {
+						trigger_on_create = yes
+						name = appear_test
+						using = Animation_Curve_Default
+						alpha = 1
+						duration = 0.1
+					}
 				}
 			}
 		}

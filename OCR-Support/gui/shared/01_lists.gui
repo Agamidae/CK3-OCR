@@ -299,21 +299,17 @@ types OCR {
 								}
 							}
 
-							button_text = {
-								blockoverride "text" {
-									raw_text = "Change type"
+							button_modify_theme_ocr = {
+								blockoverride "pre" {
+									margin_left = -3
 								}
-								blockoverride "disabled" {
-									visible = "[Not(Character.IsPlayerInteractionValid('admin_liege_modify_vassal_contract_interaction'))]"
-								}
-								visible = "[Character.GetGovernment.IsType('administrative_government')]"
-								enabled = "[Character.IsPlayerInteractionValid('admin_liege_modify_vassal_contract_interaction')]"
-								onclick = "[Character.OpenPlayerInteraction('admin_liege_modify_vassal_contract_interaction')]"
-								tooltip = "[Character.GetPlayerInteractionTooltip('admin_liege_modify_vassal_contract_interaction')]"
-								block "admin_contract_button_round" {}
+								datacontext = "[Character.GetPrimaryTitle]"
+								blockoverride "theme_key" {}
 							}
 
 							button_text = {
+								onclick = "[GetScriptedGui('save_directed_vassal').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', Character.MakeScope).End )]"
+
 								block "give_directive_button_round" {}
 								blockoverride "text" {
 									raw_text = "[Character.Custom('vassal_directive_text')],"
@@ -459,11 +455,15 @@ types OCR {
 				layoutpolicy_horizontal = expanding
 				spacing = 3
 
+				text_distance_capital = {
+					datacontext = "[Character.GetCapitalLocation]"
+				}
+
 				text_single = {
 					raw_text = "Skills:"
 				}
 
-				hbox_skills_grid_character_named_full = { }
+				hbox_skills_grid_character_named = { }
 
 				expand = { }
 			}
@@ -592,6 +592,8 @@ types OCR {
 									align = left
 								}
 
+								hbox_efficiency_in_list = {}
+
 								hbox = {
 									layoutpolicy_horizontal = expanding
 									block "relation_top" {
@@ -649,7 +651,9 @@ types OCR {
 										tooltip = "EXTENDED_RELATIONS_TOOLTIP"
 										align = left
 										fontsize_min = 14
-										max_width = 260
+										block "relation_width" {
+											max_width = 260
+										}
 									}
 
 									# expand = { }
@@ -1551,9 +1555,7 @@ types Lists
 			block "bottom_bar" { }
 			hbox = {
 				layoutpolicy_horizontal = expanding
-				# visible = "[DataModelHasItems(CharacterSelectionList.GetList)]"
-				# margin_bottom = 8
-				# spacing = 5
+
 				block "pre_count" {}
 
 				text_single = {
@@ -1581,47 +1583,264 @@ types Lists
 			}
 		}
 
-		scrollbox = {
-			name = "characters_scroll_area"
-			layoutpolicy_vertical = expanding
-			layoutpolicy_horizontal = expanding
+		block "scrollbox" {
+			scrollbox = {
+				name = "characters_scroll_area"
+				layoutpolicy_vertical = expanding
+				layoutpolicy_horizontal = expanding
 
-			block "scrollbox_properties" { }
+				block "scrollbox_properties" { }
 
-			blockoverride "scrollbox_content" {
+				blockoverride "scrollbox_content" {
 
-				block "container_implementation" {
-					vbox = {
-						margin_top = 15
-						name = "characters_grid"
-						block "list_datamodel" {
-							datamodel = "[CharacterSelectionList.GetList]"
-						}
-						visible = "[Not(CharacterSelectionList.IsBuildingList)]"
-						layoutpolicy_horizontal = expanding
+					block "container_implementation" {
+						vbox = {
+							margin_top = 15
+							name = "characters_grid"
+							block "list_datamodel" {
+								datamodel = "[CharacterSelectionList.GetList]"
+							}
+							visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+							layoutpolicy_horizontal = expanding
 
-						item = {
-							block "list_item" {
-								widget_character_list_item_finder_ocr = {
-									block "item_size" {
-										size = { 650 110 }
-										layoutpolicy_horizontal = expanding
+							item = {
+								block "list_item" {
+									widget_character_list_item_finder_ocr = {
+										block "item_size" {
+											size = { 650 110 }
+											layoutpolicy_horizontal = expanding
+										}
 									}
 								}
 							}
 						}
 					}
 				}
-			}
 
-			blockoverride "scrollbox_empty"
-			{
-				block "scrollbox_empty_visibility"
+				blockoverride "scrollbox_empty"
 				{
-					layoutpolicy_vertical = expanding
-					visible = "[IsDataModelEmpty( CharacterSelectionList.GetList )]"
-					text = "NO_CHARACTERS_TO_SELECT"
+					block "scrollbox_empty_visibility"
+					{
+						layoutpolicy_vertical = expanding
+						visible = "[IsDataModelEmpty( CharacterSelectionList.GetList )]"
+						text = "NO_CHARACTERS_TO_SELECT"
+					}
 				}
+			}
+		}
+		block "post_scrollbox" {}
+	}
+
+	type fixed_character_list = vbox {
+		name = "character_list"
+
+		block "sort_buttons"
+		{
+			hbox_list_sort_buttons = {
+				layoutpolicy_horizontal = expanding
+			}
+		}
+		blockoverride "sort_text_extra" {
+			button_text = {
+				name = "sort_order"
+				onclick = "[CharacterSelectionList.RevertSortOrder]"
+				block "sort" {}
+				block "reverse_order" {}
+
+				blockoverride "text" {
+					raw_text = "In [Select_CString(CharacterSelectionList.GetSortOrder, 'ascending', 'descending')] order."
+				}
+				blockoverride "extra" {
+					block "toggle_text" {}
+				}
+			}
+		}
+
+		block "special_character" { }
+
+		block "character_count" {
+			block "bottom_bar" { }
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 3
+
+				block "pre_count" {}
+
+				text_single = {
+					name = "character_count"
+					datacontext = "[CharacterSelectionList]"
+					text = "CHARACTER_FINDER_COUNT"
+				}
+
+				dot_l = {}
+
+				text_single = {
+					visible = "[DataModelHasItems(CharacterSelectionList.GetList)]"
+					block "click_info" {
+						raw_text = "Click to select, right click to view."
+					}
+				}
+
+				block "count_extra" { }
+
+				expand = { }
+			}
+		}
+
+		block "tip" {}
+
+		fixedgridbox = {
+			name = "characters_grid"
+			block "list_datamodel" {
+				datamodel = "[CharacterSelectionList.GetList]"
+			}
+			visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+			layoutpolicy_horizontal = expanding
+
+			block "modelsize" {
+				addcolumn = 650
+				addrow = 66
+			}
+			setitemsizefromcell = yes
+
+			item = {
+				block "list_item" {
+					widget_character_list_item_finder_ocr = {
+						block "item_size" {
+							size = { 650 66 }
+						}
+					}
+				}
+			}
+		}
+		text_single = {
+			block "scrollbox_empty_visibility"
+			{
+				layoutpolicy_vertical = expanding
+				visible = "[IsDataModelEmpty( CharacterSelectionList.GetList )]"
+				text = "NO_CHARACTERS_TO_SELECT"
+			}
+		}
+
+
+		block "post_scrollbox" {}
+
+		expand = {}
+	}
+
+	type vbox_paged_list = vbox {
+		layoutpolicy_horizontal = expanding
+
+		block "page_index" {
+			datacontext = "[GetPlayer.MakeScope.Var('generic_page')]"
+		}
+		datacontext = "[GetScriptedGui('generic_page')]"
+
+		# blockoverride "full_datamodel" {
+		#   datamodel = "[CharacterSelectionList.GetList]"
+		# }
+		# blockoverride "list_datamodel" {
+		#   datamodel = "[PageModelGlobal(CharacterSelectionList.GetList)]"
+		# }
+
+		state = {
+		  name = "reset"
+		  on_finish = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
+		  trigger_when = "[ResetPages( CountPrevItems )]"
+		  trigger_on_create = yes
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+		  spacing = 3
+
+		  text_single = {
+		    raw_text = "Showing from [PageStartGlobal] to [Min_CFixedPoint(Add_CFixedPoint(Scope.GetValue, GlobalPageSize), IntToFixedPoint(PdxGuiWidget.AccessParent.AccessParent.FindChild('items').CountVisibleChildren))],"
+
+		  }
+
+		  button_resize_page_ocr = {}
+
+			expand = {}
+		}
+
+		blockoverride "widget_index" {
+			page_index = {}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			block "vbox_contents" {
+			}
+		}
+
+		page_buttons_ocr = {}
+
+		fixedgridbox = {
+			block "full_datamodel" {}
+			name = "items"
+			addcolumn = 1
+			addrow = 1
+			flipdirection = yes
+			item = {
+				widget = {}
+			}
+		}
+	}
+
+	type flow_paged_list = flowcontainer {
+		direction = vertical
+		ignoreinvisible = yes
+
+		datacontext = "[GetPlayer.MakeScope.Var('generic_page')]"
+		datacontext = "[GetScriptedGui('generic_page')]"
+
+		# blockoverride "full_datamodel" {
+		#   datamodel = "[CharacterSelectionList.GetList]"
+		# }
+		# blockoverride "list_datamodel" {
+		#   datamodel = "[PageModelGlobal(CharacterSelectionList.GetList)]"
+		# }
+
+		state = {
+		  name = "reset"
+		  on_finish = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
+		  trigger_when = "[ResetPages( CountPrevItems )]"
+		  trigger_on_create = yes
+		}
+
+		flowcontainer = {
+		  spacing = 3
+
+		  text_single = {
+		    raw_text = "Showing from [PageStartGlobal] to [Min_CFixedPoint(Add_CFixedPoint(Scope.GetValue, GlobalPageSize), IntToFixedPoint(PdxGuiWidget.AccessParent.AccessParent.FindChild('items').CountVisibleChildren))],"
+
+		  }
+
+		  button_resize_page_ocr = {}
+		}
+
+		blockoverride "widget_index" {
+			page_index = {}
+		}
+
+		flowcontainer = {
+			direction = vertical
+			ignoreinvisible = yes
+			block "vbox_contents" {
+			}
+		}
+
+		flow_page_buttons_ocr = {}
+
+		fixedgridbox = {
+			block "full_datamodel" {}
+			name = "items"
+			addcolumn = 1
+			addrow = 1
+			flipdirection = yes
+			item = {
+				widget = {}
 			}
 		}
 	}
@@ -1699,4 +1918,171 @@ template reverse_order_key {
 			raw_text = "Toggle: Shift D."
 		}
 	}
+}
+
+
+types Pages {
+
+  type button_resize_page_ocr =  button_text {
+    shortcut = army_merge
+    block "resize" {
+      onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('resize')).End )]"
+    }
+    blockoverride "text" {
+      margin_left = -5
+      raw_text = "Show [Select_CString(EqualTo_CFixedPoint(GetPlayer.MakeScope.Var('global_page_size').GetValue, '(CFixedPoint)10'), '5', '10')] per page, G."
+    }
+  }
+
+  type button_prev_page_ocr = button_text {
+    visible = "[GreaterThan_CFixedPoint( Scope.GetValue, '(CFixedPoint)0' )]"
+    blockoverride "text" {
+      raw_text = "Previous [GetPlayer.MakeScope.Var('global_page_size').GetValue|0], Z."
+    }
+    onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('prev')).End )]"
+    shortcut = decrease_speed_2
+    using = paper_flip_back_ocr
+  }
+
+  type button_next_page_ocr = button_text {
+    block "next_page" {
+    }
+    block "show_next_page" {
+      visible = "[ShowNextPage( CharacterSelectionList.GetList )]"
+    }
+    layoutpolicy_horizontal = expanding
+    blockoverride "text" {
+      raw_text = "Next [GetPlayer.MakeScope.Var('global_page_size').GetValue|0], X."
+    }
+    onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('next')).End )]"
+    using = paper_flip_forward_ocr
+    shortcut = increase_speed_2
+  }
+
+  type button_reset_page_ocr = button_text {
+    onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
+    shortcut = map_mode_18
+    using = paper_flip_back_ocr
+    blockoverride "text" {
+      raw_text = "Reset, Control R."
+    }
+  }
+  type page_buttons_ocr = vbox {
+    layoutpolicy_horizontal = expanding
+
+    hbox = {
+      layoutpolicy_horizontal = expanding
+      spacing = 3
+
+      button_prev_page_ocr = {
+        block "prev" {
+        }
+      }
+
+      button_reset_page_ocr = {}
+
+      expand = {}
+    }
+
+    button_next_page_ocr = {
+      visible = "[ShowNextPage( PdxGuiWidget.AccessParent.AccessParent.FindChild('items').CountVisibleChildren )]"
+    }
+  }
+
+	type flow_page_buttons_ocr = flowcontainer {
+    ignoreinvisible = yes
+		direction = vertical
+
+    flowcontainer = {
+			ignoreinvisible = yes
+      spacing = 3
+
+      button_prev_page_ocr = {
+        block "prev" {
+        }
+      }
+
+      button_reset_page_ocr = {}
+    }
+
+    button_next_page_ocr = {
+      visible = "[ShowNextPage( PdxGuiWidget.AccessParent.AccessParent.FindChild('items').CountVisibleChildren )]"
+    }
+  }
+
+  type page_index = text_single {
+    alwaystransparent = yes
+		block "page_index" {}
+    margin_left = 3
+		block "page_index_text" {
+			raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, Add_int32(FixedPointToInt( Scope.GetValue ), '(int32)1'))],"
+		}
+  }
+
+  type vbox_character_list_paged_ocr = vbox_character_list {
+    blockoverride "sort" {
+      using = sgui_click
+    }
+    blockoverride "reset_page" {
+      using = sgui_finish
+    }
+    blockoverride "reverse_order" {
+      shortcut = mapmode_house_secondary
+    }
+    blockoverride "toggle_text" {
+      text_single = {
+        raw_text = "Toggle: Shift D."
+      }
+    }
+
+    blockoverride "widget_index" {
+      page_index = {}
+    }
+  }
+
+  type fixed_character_list_paged_ocr = fixed_character_list {
+    blockoverride "sort" {
+      using = sgui_click
+    }
+    blockoverride "reset_page" {
+      using = sgui_finish
+    }
+    blockoverride "reverse_order" {
+      shortcut = mapmode_house_secondary
+    }
+    blockoverride "toggle_text" {
+      text_single = {
+        raw_text = "Toggle: Shift D."
+      }
+    }
+
+    blockoverride "widget_index" {
+      page_index = {}
+    }
+  }
+}
+
+template paper_flip_forward_ocr {
+  clicksound = "event:/paper_flip_forward_ocr"
+}
+template paper_flip_back_ocr {
+  clicksound = "event:/paper_flip_back_ocr"
+}
+template sgui_click {
+  onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+}
+template sgui_selection {
+  onselectionchanged = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+}
+template sgui_finish {
+  on_finish = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+}
+template sgui_click_reset {
+  onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
+}
+template sgui_selection_reset {
+  onselectionchanged = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
+}
+template sgui_finish_reset {
+  on_finish = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
 }

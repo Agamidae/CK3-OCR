@@ -1,0 +1,241 @@
+﻿### FAMILY ATTRIBUTE WINDOW
+window = {
+	name = "window_family_attribute"
+	widgetid = "window_family_attribute"
+	datacontext = "[FamilyAttributeWindow.GetDynastyHouse]"
+	using = base_ocr_window
+
+	state = {
+		name = _show
+		on_finish = "[Clear('change_fam_attribute')]"
+		on_finish = "[Clear('fam_attribute_desc')]"
+	}
+
+	window_ocr = {
+		blockoverride "ocr_header" {
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				button_text = {
+					enabled = "[FamilyAttributeWindow.CanEdit]"
+					onclick = "[Set('change_fam_attribute', 'yes')]"
+					shortcut = action_list
+					blockoverride "text" {
+						raw_text = "[FamilyAttributeWindow.GetTitle]"
+					}
+					blockoverride "extra" {
+						text_single = {
+							visible = "[Not(FamilyAttributeWindow.CanEdit)]"
+							raw_text = "of house [DynastyHouse.GetNameNoTooltip]."
+						}
+						flowcontainer = {
+							ignoreinvisible = yes
+							spacing = 3
+							visible = "[FamilyAttributeWindow.CanEdit]"
+							comma = {}
+							text_single = {
+								visible = "[Isnt('change_fam_attribute')]"
+								raw_text = "Open list, hotkey Tab."
+							}
+							text_single = {
+								visible = "[Is('change_fam_attribute')]"
+								raw_text = "[GetDataModelSize(GetAllHousePowerBonuss)] options:"
+							}
+						}
+					}
+				}
+
+				button = {
+					shortcut = close_window
+					onclick = "[FamilyAttributeWindow.Close]"
+				}
+
+				expand = {}
+			}
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				visible = "[Isnt('change_fam_attribute')]"
+				datacontext = "[FamilyAttributeWindow.GetHousePowerBonus]"
+				layoutpolicy_horizontal = expanding
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					spacing = 3
+
+					text_single = {
+						visible = "[FamilyAttributeWindow.CanEdit]"
+						raw_text = "[Select_CString(ObjectsEqual( HousePowerBonus.Self, DynastyHouse.GetHousePowerBonus ), 'Current:', 'Selected:')]"
+					}
+
+					text_single = {
+						text = "FAMILY_ATTRIBUTE_WINDOW_SELECTED"
+					}
+
+					dot_l = {}
+
+					hbox = {
+						spacing = 3
+						visible = "[FamilyAttributeWindow.CanEdit]"
+
+						vbox = {
+							datamodel = "[GetAllHousePowerBonuss]"
+							item = {
+								hbox = {
+									visible = "[ObjectsEqual(FamilyAttributeWindow.GetHousePowerBonus, HousePowerBonus.Self)]"
+
+									button_text = {
+										shortcut = decrease_speed_2
+										blockoverride "text" {
+											raw_text = "Previous, Z."
+										}
+
+										onclick = "[FamilyAttributeWindow.SelectHousePowerBonus( HousePowerBonus.Self )]"
+										datacontext_from_model = {
+											datamodel = "[GetAllHousePowerBonuss]"
+											index = "[Subtract_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)1')]"
+										}
+									}
+								}
+							}
+						}
+
+						vbox = {
+							datamodel = "[GetAllHousePowerBonuss]"
+							item = {
+								hbox = {
+									visible = "[ObjectsEqual(FamilyAttributeWindow.GetHousePowerBonus, HousePowerBonus.Self)]"
+
+									button_text = {
+										shortcut = increase_speed_2
+										blockoverride "text" {
+											raw_text = "Next, X."
+										}
+
+										onclick = "[FamilyAttributeWindow.SelectHousePowerBonus( HousePowerBonus.Self )]"
+										datacontext_from_model = {
+											datamodel = "[GetAllHousePowerBonuss]"
+											index = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, '(int32)1')]"
+										}
+									}
+								}
+							}
+						}
+					}
+
+
+					expand = {}
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[Toggle('fam_attribute_desc')]"
+					shortcut = mapmode_house_secondary
+					blockoverride "text" {
+						raw_text = "Effects [Collapse('fam_attribute_desc')] Shift D."
+					}
+				}
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Not(Is('fam_attribute_desc'))]"
+
+
+					text_multi_wide = {
+						layoutpolicy_horizontal = expanding
+						text = "[HousePowerBonus.GetDescription]"
+					}
+
+					expand = {}
+				}
+
+				vbox = {
+					visible = "[FamilyAttributeWindow.CanEdit]"
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						text_multi_wide = {
+							visible = "[And( Not(DynastyHouse.IsPowerful), Not( DynastyHouse.IsDominant ) )]"
+							layoutpolicy_horizontal = expanding
+
+							text = "FAMILY_ATTRIBUTE_WINDOW_ALERT"
+						}
+
+						expand = {}
+					}
+
+					button_primary_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							text = "FAMILY_ATTRIBUTE_WINDOW_CHANGE_ATTRIBUTE"
+						}
+
+						enabled = "[Not( DynastyHouse.HasHousePowerBonusCooldown )]"
+						onclick = "[FamilyAttributeWindow.ConfirmHousePowerBonus]"
+						# onclick = "[FamilyAttributeWindow.Close]"
+						blockoverride "disabled" {
+							visible = "[DynastyHouse.HasHousePowerBonusCooldown]"
+						}
+
+						tooltip_when_disabled = "[DynastyHouse.GetHousePowerBonusCooldownDesc]"
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						text_multi_wide = {
+							layoutpolicy_horizontal = expanding
+							text = "FAMILY_ATTRIBUTE_WINDOW_COOLDOWN_ALERT"
+						}
+
+						expand = {}
+					}
+				}
+			}
+
+			vbox = {
+				visible = "[And(FamilyAttributeWindow.CanEdit, Is('change_fam_attribute'))]"
+				datamodel = "[GetAllHousePowerBonuss]"
+				layoutpolicy_horizontal = expanding
+
+				button = {
+					shortcut = close_window
+					onclick = "[Clear('change_fam_attribute')]"
+					shortcut = action_list
+				}
+
+				item = {
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcuts_list = {
+							blockoverride "click" {
+								onclick = "[FamilyAttributeWindow.SelectHousePowerBonus( HousePowerBonus.Self )]"
+								onclick = "[Clear('change_fam_attribute')]"
+							}
+						}
+						onclick = "[FamilyAttributeWindow.SelectHousePowerBonus( HousePowerBonus.Self )]"
+						onclick = "[Clear('change_fam_attribute')]"
+						blockoverride "pre" {
+							text_single = {
+								visible = "[ObjectsEqual( HousePowerBonus.Self, DynastyHouse.GetHousePowerBonus )]"
+								raw_text = "Current:"
+							}
+						}
+						blockoverride "num" {
+
+						}
+						blockoverride "text" {
+							raw_text = "[HousePowerBonus.GetName]."
+						}
+					}
+				}
+
+				expand = {}
+			}
+		}
+	}
+
+	window_family_attribute_old = {}
+}

@@ -4,11 +4,24 @@
 	visible = "[And( IsGameViewOpen('government_administration'), IsDefaultGUIMode )]"
 	using = base_ocr_window
 
+	state = {
+		name = _show
+		using = Sound_WindowShow_Standard
+		on_finish = "[Set('opened_admin', 'yes')]"
+		on_finish = "[Set('admin_refresh', 'yes')]"
+	}
+
+	state = {
+		name = _hide
+		using = Sound_WindowHide_Standard
+		on_finish = "[Clear(Get('selected_group_directive'))]"
+		on_finish = "[Clear('selected_group_directive')]"
+	}
 
 	window_ocr = {
 		state = {
 			on_finish = "[GetScriptedGui('reset_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-			trigger_when = "[PageReset('admin_page', AdministrativeHouseItem.GetControlledThemes)]"
+			trigger_when = "[Or(PageReset('admin_page', AdministrativeHouseItem.GetControlledThemes), Not(GetPlayer.MakeScope.Var('admin_page').IsSet))]"
 		}
 		blockoverride "ocr_header" {
 			header_text = {
@@ -23,7 +36,19 @@
 					comma = {}
 					text_single = {
 						visible = "[Isnt('admin_tab')]"
-						raw_text = "themes tab,"
+						raw_text = "[GetPlayer.Custom('GetProvincePluralConceptNoTooltip')] tab,"
+					}
+					text_single = {
+						visible = "[Has('admin_tab', 'families')]"
+						raw_text = "[Localize('administraction_tab_families')] tab."
+					}
+					text_single = {
+						visible = "[Has('admin_tab', 'interactions')]"
+						raw_text = "5 interactions."
+					}
+					text_single = {
+						visible = "[Has('admin_tab', 'directives')]"
+						raw_text = "Directives."
 					}
 					#TODO unassigned number?
 				}
@@ -40,6 +65,7 @@
 				ignoreinvisible = yes
 				direction = vertical
 				layoutpolicy_horizontal = expanding
+				visible = "[Isnt('admin_tab')]"
 
 				button_text = {
 					datacontext = "[GetDecisionWithKey('change_state_faith')]"
@@ -77,11 +103,37 @@
 					}
 				}
 
-				#TODO interactions
+				button_text = {
+					shortcut = find_title_shortcut
+					visible = "[Not(GetPlayer.IsIndependentRuler)]"
+					onclick = "[Set('admin_tab', 'interactions')]"
+					blockoverride "text" {
+						raw_text = "Open liege interactions, V."
+					}
+				}
+
+				button_text = {
+					shortcut = army_split_half
+					onclick = "[Set('admin_tab', 'families')]"
+					blockoverride "text" {
+						raw_text = "[Localize('administraction_tab_families')], F. [GetPlayer.Custom('GetProvincePluralConceptNoTooltip')] list below."
+					}
+				}
+
+				button_text = {
+					shortcut = character_finder
+					visible = "[GetPlayer.IsIndependentRuler]"
+					onclick = "[Set('admin_tab', 'directives')]"
+					onclick = "[GetScriptedGui('refresh_directives').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					blockoverride "text" {
+						raw_text = "Change directives in bulk, C."
+					}
+				}
 
 				flowcontainer = {
 					ignoreinvisible = yes
 					spacing = 7
+					visible = "[Not(GovernmentAdministrationWindow.ShouldGroupByHouse)]"
 
 					dropdown_menu_standard = {
 
@@ -95,7 +147,7 @@
 
 						blockoverride "dropdown_active_item_properties"
 						{
-							raw_text = "Sorted by [ThemeOrderOption.GetName], in [Select_CString(Not(GovernmentAdministrationWindow.GetSortOrder), 'descending', 'ascending')] order, toggle X."
+							raw_text = "Sorted by [ThemeOrderOption.GetName], in [Select_CString(Not(GovernmentAdministrationWindow.GetSortOrder), 'descending', 'ascending')] order, toggle Shift D."
 						}
 
 						blockoverride "dropdown_item_properties"
@@ -105,7 +157,7 @@
 					}
 
 					button_text = {
-						shortcut = increase_speed_2
+						shortcut = mapmode_house_secondary
 						blockoverride "text" {
 							raw_text = ""
 						}
@@ -113,25 +165,144 @@
 					}
 				}
 
-				button_checked_text = {
-					shortcut = army_create_new
-					onclick = "[GovernmentAdministrationWindow.ToggleGroupByHouse]"
-					blockoverride "visible"
-					{
-						visible = "[Not(GovernmentAdministrationWindow.ShouldGroupByHouse)]"
+				flowcontainer = {
+					spacing = 3
+
+					button_checked_text = {
+						shortcut = army_create_new
+						onclick = "[GovernmentAdministrationWindow.ToggleGroupByHouse]"
+						blockoverride "visible"
+						{
+							visible = "[Not(GovernmentAdministrationWindow.ShouldGroupByHouse)]"
+						}
+
+						blockoverride "text"
+						{
+							text = "ADMIN_WINDOW_THEME_GROUP_BY_HOUSE"
+							margin_left = -3
+						}
+						blockoverride "extra" {
+							spacing = 3
+							comma = {}
+							text_single = {
+								raw_text = "H."
+							}
+							text_single = {
+								visible = "[GovernmentAdministrationWindow.ShouldGroupByHouse]"
+								raw_text = "number keys select houses."
+							}
+						}
 					}
 
-					blockoverride "text"
-					{
-						text = "ADMIN_WINDOW_THEME_GROUP_BY_HOUSE"
-						margin_left = -3
+					button_text = {
+						shortcut = map_mode_11
+						visible = "[Not(GovernmentAdministrationWindow.ShouldGroupByHouse)]"
+						onclick = "[PdxGuiTriggerAllAnimations('fold_all_themes')]"
+						blockoverride "text" {
+							raw_text = "Collapse all, Shift E."
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "Number keys select themes."
+							}
+						}
+					}
+				}
+			}
+
+			flowcontainer = {
+				layoutpolicy_horizontal = expanding
+				ignoreinvisible = yes
+				direction = vertical
+				visible = "[Has('admin_tab', 'families')]"
+
+				button_text = {
+					onclick = "[Clear('admin_tab')]"
+					shortcut = map_mode_2
+					blockoverride "text" {
+						raw_text = "Switch to [GetPlayer.Custom('GetProvincePluralConceptNoTooltip')], T."
+					}
+				}
+				button_text = {
+					shortcut = map_mode_11
+					onclick = "[PdxGuiTriggerAllAnimations('fold_all_families')]"
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "[GetDataModelSize(GovernmentAdministrationWindow.GetFamilyGroups)] groups,"
+						}
+					}
+					blockoverride "text" {
+						raw_text = "Collapse all, Shift E."
 					}
 					blockoverride "extra" {
-						spacing = 3
-						comma = {}
 						text_single = {
-							raw_text = "H."
+							raw_text = "Number keys toggle groups."
 						}
+						margin_bottom = 5
+					}
+				}
+			}
+
+			flowcontainer = {
+				ignoreinvisible = yes
+				direction = vertical
+				layoutpolicy_horizontal = expanding
+				button = {
+					shortcut = close_window
+					onclick = "[Clear('admin_tab')]"
+				}
+
+				visible = "[Has('admin_tab', 'directives')]"
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+
+					visible = "[Is('selected_group_directive')]"
+
+					button = {
+						shortcut = close_window
+						onclick = "[Clear(Get('selected_group_directive'))]"
+						onclick = "[Clear('selected_group_directive')]"
+					}
+
+					text_single = {
+						raw_text = "Apply a new directive for [GetDataModelSize(GetPlayer.MakeScope.GetList(Get(Get('selected_group_directive'))))] vassals[AddTextIf(Isnt('global_directive'), ' with ')][Localize(Concatenate(Get(Get('selected_group_directive')), '_name'))]."
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+
+						datamodel = "[GetGlobalList('directive_lists')]"
+
+						item = {
+							button_text = {
+								shortcuts_list = {
+									blockoverride "click" {
+										onclick = "[GetScriptedGui('mass_directive').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('directive', MakeScopeFlag( Scope.GetFlagName )).AddScope('group', MakeScopeFlag(Get(Get('selected_group_directive')))).End )]"
+										onclick = "[Clear(Get('selected_group_directive'))]"
+										onclick = "[Clear('selected_group_directive')]"
+										onclick = "[GetScriptedGui('refresh_directives').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+										clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+									}
+								}
+								blockoverride "num" {}
+								blockoverride "text" {
+									raw_text = "[Localize(Concatenate(Scope.GetFlagName, '_name'))]"
+								}
+								onclick = "[GetScriptedGui('mass_directive').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('directive', MakeScopeFlag( Scope.GetFlagName )).AddScope('group', MakeScopeFlag(Get(Get('selected_group_directive')))).End )]"
+
+								onclick = "[Clear(Get('selected_group_directive'))]"
+								onclick = "[Clear('selected_group_directive')]"
+								onclick = "[GetScriptedGui('refresh_directives').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+								clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+							}
+						}
+					}
+
+					text_single = {
+						raw_text = "Affected vassals:"
 					}
 				}
 			}
@@ -143,6 +314,7 @@
 
 				vbox = {
 					name = "house_list"
+					visible = "[GovernmentAdministrationWindow.ShouldGroupByHouse]"
 					datamodel = "[GovernmentAdministrationWindow.GetHousesWithThemes]"
 
 					layoutpolicy_horizontal = expanding
@@ -155,24 +327,54 @@
 							button_text = {
 								layoutpolicy_horizontal = expanding
 								datacontext = "[AdministrativeHouseItem.GetHouse]"
-								onclick = "[GovernmentAdministrationWindow.ToggleCollapseHouse( DynastyHouse.Self )]"
+								# onclick = "[GovernmentAdministrationWindow.ToggleCollapseHouse( DynastyHouse.Self )]"
+								onclick = "[Set('focused_noble_house', DynastyHouse.GetNameNoTooltip)]"
+								visible = "[Or(Not(Is('focused_noble_house')), Has('focused_noble_house', DynastyHouse.GetNameNoTooltip))]"
 
+								shortcuts_list = {
+									blockoverride "click" {
+										onclick = "[Set('focused_noble_house', DynastyHouse.GetNameNoTooltip)]"
+									}
+								}
+
+								blockoverride "num" {}
 								blockoverride "text" {
+									visible = "[Not(GovernmentAdministrationWindow.ShouldGroupByHouse)]"
 									raw_text = "[GetDataModelSize(AdministrativeHouseItem.GetControlledThemes)]"
 								}
 								blockoverride "extra" {
 									text_single = {
-										raw_text = "[SelectLocalization(DynastyHouse.IsValid, SelectLocalization(GovernmentAdministrationWindow.ShouldGroupByHouse, 'ADMIN_WINDOW_HOUSE_DROPDOWN', 'ADMIN_WINDOW_ASSIGNED_THEME'), 'ADMIN_WINDOW_UNASSIGNED_THEME')],"
+										visible = "[Not(GovernmentAdministrationWindow.ShouldGroupByHouse)]"
+										raw_text = "[SelectLocalization(DynastyHouse.IsValid, SelectLocalization(GovernmentAdministrationWindow.ShouldGroupByHouse, '', 'ADMIN_WINDOW_ASSIGNED_THEME'), 'ADMIN_WINDOW_UNASSIGNED_THEME')],"
 									}
 									text_single = {
-										raw_text = "[CollapseIf(Not(GovernmentAdministrationWindow.IsHouseCollapsed( DynastyHouse.Self )))]"
+										visible = "[And(GovernmentAdministrationWindow.ShouldGroupByHouse, Not(DynastyHouse.IsValid))]"
+										raw_text = "ADMIN_WINDOW_UNASSIGNED_THEME"
+									}
+									text_single = {
+										visible = "[GovernmentAdministrationWindow.ShouldGroupByHouse]"
+										raw_text = "[DynastyHouse.GetNameNoTooltip], [GetDataModelSize(AdministrativeHouseItem.GetControlledThemes)] [themes|e]."
+									}
+
+									text_single = {
+										visible = "[And(GovernmentAdministrationWindow.ShouldGroupByHouse, DynastyHouse.IsValid)]"
+										raw_text = "[DynastyHouse.GetHousePower] power."
+									}
+									text_single = {
+										visible = "[Is('focused_noble_house')]"
+										raw_text = "Escape to clear."
 									}
 								}
 							}
 
 							vbox = {
 								layoutpolicy_horizontal = expanding
-								visible = "[GovernmentAdministrationWindow.IsHouseCollapsed( AdministrativeHouseItem.GetHouse )]"
+								visible = "[Has('focused_noble_house', DynastyHouse.GetNameNoTooltip)]"
+
+								button = {
+									shortcut = close_window
+									onclick = "[Clear('focused_noble_house')]"
+								}
 
 								vbox = {
 									layoutpolicy_horizontal = expanding
@@ -201,24 +403,40 @@
 									vbox = {
 										layoutpolicy_horizontal = expanding
 
-										button_text = {
+										hbox = {
 											layoutpolicy_horizontal = expanding
-											blockoverride "text" {
-												raw_text = "Previous 10, Page Up"
+											spacing = 3
+
+											button_text = {
+												blockoverride "text" {
+													raw_text = "Previous 10, Z."
+												}
+												visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('admin_page').GetValue, '(CFixedPoint)0' )]"
+												onclick = "[GetScriptedGui('prev_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+												shortcut = decrease_speed_2
+												using = paper_flip_back_ocr
 											}
-											visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('admin_page').GetValue, '(CFixedPoint)0' )]"
-											onclick = "[GetScriptedGui('prev_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-											shortcut = zoom_out
+
+											button_text = {
+									      onclick = "[GetScriptedGui('reset_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+									      shortcut = map_mode_18
+									      using = paper_flip_back_ocr
+									      blockoverride "text" {
+									        raw_text = "Reset, Control R."
+									      }
+									    }
+											expand = {}
 										}
 
 										button_text = {
 											layoutpolicy_horizontal = expanding
 											blockoverride "text" {
-												raw_text = "Next 10, Page Down"
+												raw_text = "Next 10, X."
 											}
 											onclick = "[GetScriptedGui('next_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-											shortcut = zoom_in
+											shortcut = increase_speed_2
 											visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( AdministrativeHouseItem.GetControlledThemes ), FixedPointToInt(GetPlayer.MakeScope.Var('admin_page').GetValue )), '(int32)10' )]"
+											using = paper_flip_forward_ocr
 										}
 									}
 								}
@@ -247,6 +465,780 @@
 							}
 						}
 					}
+				}
+				vbox = {
+					name = "theme_list"
+					visible = "[Not(GovernmentAdministrationWindow.ShouldGroupByHouse)]"
+					datamodel = "[GovernmentAdministrationWindow.GetHousesWithThemes]"
+
+					layoutpolicy_horizontal = expanding
+
+					item = {
+						vbox = {
+							datacontext = "[AdministrativeHouseItem.GetHouse]"
+							layoutpolicy_horizontal = expanding
+
+							oncreate = "[BindFoldOutContext]"
+							oncreate = "[PdxGuiFoldOut.Unfold]"
+
+							state = {
+								name = "fold_all_themes"
+								on_finish = "[PdxGuiFoldOut.Fold]"
+								on_finish = "[Set('imperial_theme', 'yes')]"
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								datacontext = "[AdministrativeHouseItem.GetHouse]"
+								# onclick = "[GovernmentAdministrationWindow.ToggleCollapseHouse( DynastyHouse.Self )]"
+								onclick = "[PdxGuiFoldOut.Toggle]"
+
+								blockoverride "text" {
+									raw_text = "[GetDataModelSize(AdministrativeHouseItem.GetControlledThemes)]"
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = "[SelectLocalization(DynastyHouse.IsValid, SelectLocalization(GovernmentAdministrationWindow.ShouldGroupByHouse, 'ADMIN_WINDOW_HOUSE_DROPDOWN', 'ADMIN_WINDOW_ASSIGNED_THEME'), 'ADMIN_WINDOW_UNASSIGNED_THEME')],"
+									}
+									text_single = {
+										raw_text = "[CollapseIf(PdxGuiFoldOut.IsFolded)]"
+									}
+								}
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[PdxGuiFoldOut.IsUnfolded]"
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[GreaterThan_int32(GetDataModelSize(AdministrativeHouseItem.GetControlledThemes), '(int32)10')]"
+
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										raw_text = "Showing items from [PageStart('admin_page')] to [PageEnd('admin_page', '(CFixedPoint)10', AdministrativeHouseItem.GetControlledThemes)]."
+										margin_left = 5
+									}
+
+									dynamicgridbox = {
+										name = "assigned_themes_list"
+										datamodel = "[PageModel('admin_page', '(int32)10', AdministrativeHouseItem.GetControlledThemes)]"
+										layoutpolicy_horizontal = expanding
+										ignoreinvisible = yes
+
+										item = {
+											widget_theme_item_ocr = {
+												datacontext = "[AdministrativeThemeItem.GetTitle]"
+												visible = "[AdministrativeThemeItem.ShouldShowTitle]"
+											}
+										}
+									}
+
+									vbox = {
+										layoutpolicy_horizontal = expanding
+
+										hbox = {
+											layoutpolicy_horizontal = expanding
+											spacing = 3
+
+											button_text = {
+												blockoverride "text" {
+													raw_text = "Previous 10, Z."
+												}
+												visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('admin_page').GetValue, '(CFixedPoint)0' )]"
+												onclick = "[GetScriptedGui('prev_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+												shortcut = decrease_speed_2
+												using = paper_flip_back_ocr
+											}
+
+											button_text = {
+									      onclick = "[GetScriptedGui('reset_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+									      shortcut = map_mode_18
+									      using = paper_flip_back_ocr
+									      blockoverride "text" {
+									        raw_text = "Reset, Control R."
+									      }
+									    }
+											expand = {}
+										}
+
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											blockoverride "text" {
+												raw_text = "Next 10, X."
+											}
+											onclick = "[GetScriptedGui('next_admin_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+											shortcut = increase_speed_2
+											visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( AdministrativeHouseItem.GetControlledThemes ), FixedPointToInt(GetPlayer.MakeScope.Var('admin_page').GetValue )), '(int32)10' )]"
+											using = paper_flip_forward_ocr
+										}
+									}
+								}
+
+								vbox = {
+									layoutpolicy_horizontal = expanding
+									visible = "[LessThanOrEqualTo_int32(GetDataModelSize(AdministrativeHouseItem.GetControlledThemes), '(int32)10')]"
+
+									dynamicgridbox = {
+										name = "assigned_themes_list"
+										datamodel = "[AdministrativeHouseItem.GetControlledThemes]"
+										layoutpolicy_horizontal = expanding
+										ignoreinvisible = yes
+
+										item = {
+											widget_theme_item_ocr = {
+												blockoverride "admin_index" {
+													raw_text = "[IndexNumber],"
+												}
+												datacontext = "[AdministrativeThemeItem.GetTitle]"
+												visible = "[AdministrativeThemeItem.ShouldShowTitle]"
+											}
+										}
+									}
+								}
+							}
+
+							vbox = {
+								name = "imperial"
+								datamodel = "[AdministrativeHouseItem.GetControlledThemes]"
+								layoutpolicy_horizontal = expanding
+								ignoreinvisible = yes
+								visible = "[GetScriptedGui('is_there_imperial_theme').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+
+								item = {
+									vbox = {
+										layoutpolicy_horizontal = expanding
+										datacontext = "[AdministrativeThemeItem.GetTitle]"
+										visible = "[And(AdministrativeThemeItem.ShouldShowTitle, GetScriptedGui('is_imperial_theme').IsShown( GuiScope.SetRoot( Title.MakeScope ).End ))]"
+										button_text = {
+											layoutpolicy_horizontal = expanding
+											onclick = "[Toggle('imperial_theme')]"
+											blockoverride "text" {
+												raw_text = "Imperial theme, [Collapse('imperial_theme')]"
+											}
+										}
+										widget_theme_item_ocr = {
+											visible = "[Isnt('imperial_theme')]"
+											layoutpolicy_horizontal = expanding
+											blockoverride "admin_index" {}
+											blockoverride "shortcuts" {
+												visible = no
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			####
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Has('admin_tab', 'families')]"
+				state = {
+					name = "reset_noble_families"
+					on_finish = "[GetScriptedGui('reset_noble_families_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					trigger_when = "[Or(Or(PageReset('noble_families_page', AdminFamilyGroupItem.GetFamilyItems), Not(GetPlayer.MakeScope.Var('noble_families_page_size').IsSet)), Not(GetPlayer.MakeScope.Var('noble_families_page').IsSet))]"
+					trigger_on_create = yes
+				}
+
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					datamodel = "[GovernmentAdministrationWindow.GetFamilyGroups]"
+
+					item = {
+						vbox_family_group_foldout_ocr = {}
+					}
+				}
+			}
+
+			flowcontainer = {
+				ignoreinvisible = yes
+				direction = vertical
+				datacontext = "[GovernmentAdministrationWindow.GetTitle]"
+				datacontext = "[Title.GetHolder]"
+				layoutpolicy_horizontal = expanding
+
+				visible = "[Has('admin_tab', 'interactions')]"
+
+				button = {
+					shortcut = close_window
+					shortcut = find_title_shortcut
+					onclick = "[Clear('admin_tab')]"
+				}
+
+				button_text = {
+					shortcut = speed_1
+				  blockoverride "text" {
+				    raw_text = "1, [Character.GetPlayerInteractionName('request_governorship_interaction')]"
+				  }
+				  blockoverride "disabled" {
+				    visible = "[Not(Character.IsPlayerInteractionValid('request_governorship_interaction'))]"
+				  }
+				  enabled = "[Character.IsPlayerInteractionValid('request_governorship_interaction')]"
+				  tooltip = "[Character.GetPlayerInteractionTooltip('request_governorship_interaction')]"
+				  onclick = "[Character.OpenPlayerInteraction('request_governorship_interaction')]"
+				}
+				button_text = {
+					shortcut = speed_2
+				  blockoverride "text" {
+				    raw_text = "2, [Character.GetPlayerInteractionName('admin_vassal_modify_vassal_contract_interaction')]"
+				  }
+				  blockoverride "disabled" {
+				    visible = "[Not(Character.IsPlayerInteractionValid('admin_vassal_modify_vassal_contract_interaction'))]"
+				  }
+				  enabled = "[Character.IsPlayerInteractionValid('admin_vassal_modify_vassal_contract_interaction')]"
+				  tooltip = "[Character.GetPlayerInteractionTooltip('admin_vassal_modify_vassal_contract_interaction')]"
+				  onclick = "[Character.OpenPlayerInteraction('admin_vassal_modify_vassal_contract_interaction')]"
+				}
+				button_text = {
+					shortcut = speed_3
+				  blockoverride "text" {
+				    raw_text = "3, [Character.GetPlayerInteractionName('request_council_interaction')]"
+				  }
+				  blockoverride "disabled" {
+				    visible = "[Not(Character.IsPlayerInteractionValid('request_council_interaction'))]"
+				  }
+				  enabled = "[Character.IsPlayerInteractionValid('request_council_interaction')]"
+				  tooltip = "[Character.GetPlayerInteractionTooltip('request_council_interaction')]"
+				  onclick = "[Character.OpenPlayerInteraction('request_council_interaction')]"
+				}
+				button_text = {
+					shortcut = speed_4
+				  blockoverride "text" {
+				    raw_text = "4, [Character.GetPlayerInteractionName('start_foster_legitimacy_interaction')]"
+				  }
+				  blockoverride "disabled" {
+				    visible = "[Not(Character.IsPlayerInteractionValid('start_foster_legitimacy_interaction'))]"
+				  }
+				  enabled = "[Character.IsPlayerInteractionValid('start_foster_legitimacy_interaction')]"
+				  tooltip = "[Character.GetPlayerInteractionTooltip('start_foster_legitimacy_interaction')]"
+				  onclick = "[Character.OpenPlayerInteraction('start_foster_legitimacy_interaction')]"
+				}
+				button_text = {
+					shortcut = speed_5
+				  blockoverride "text" {
+				    raw_text = "5, [Character.GetPlayerInteractionName('start_damage_legitimacy_interaction')]"
+				  }
+				  blockoverride "disabled" {
+				    visible = "[Not(Character.IsPlayerInteractionValid('start_damage_legitimacy_interaction'))]"
+				  }
+				  enabled = "[Character.IsPlayerInteractionValid('start_damage_legitimacy_interaction')]"
+				  tooltip = "[Character.GetPlayerInteractionTooltip('start_damage_legitimacy_interaction')]"
+				  onclick = "[Character.OpenPlayerInteraction('start_damage_legitimacy_interaction')]"
+				}
+			}
+
+			flowcontainer = {
+				ignoreinvisible = yes
+				direction = vertical
+				layoutpolicy_horizontal = expanding
+				visible = "[Has('admin_tab', 'directives')]"
+
+				state = {
+					trigger_when = "[Is('admin_refresh')]"
+					on_finish = "[GetScriptedGui('refresh_directives').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					name = "refresh"
+				}
+
+				state = {
+					name = "close"
+					trigger_when = "[Not(GetPlayer.IsIndependentRuler)]"
+				}
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+
+					visible = "[Isnt('selected_group_directive')]"
+
+					button_text = {
+						shortcut = find_title_shortcut
+						onclick = "[Set('global_directive', 'all_available_vassals_for_directive')]"
+						onclick = "[Set('selected_group_directive', 'global_directive')]"
+
+						blockoverride "text" {
+							raw_text = "V, Change directive for all [GetDataModelSize(GetPlayer.MakeScope.GetList('all_available_vassals_for_directive'))] vassals."
+						}
+						blockoverride "extra" {
+							text_single = {
+								visible = "[GreaterThan_CFixedPoint(GetPlayer.MakeScope.ScriptValue('vassals_refuse_directive'), '(CFixedPoint)0')]"
+								raw_text = "[GetPlayer.MakeScope.ScriptValue('vassals_refuse_directive')] more can't change theirs."
+							}
+						}
+					}
+
+					text_single = {
+						raw_text = "Or select a group of vassals below:"
+					}
+
+					text_single = {
+						raw_text = "[PdxGuiWidget.AccessParent.AccessParent.FindChild('directive_lists').CountVisibleChildren] directive groups:"
+					}
+				}
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+					visible = "[Is('global_directive')]"
+
+					datamodel = "[GetPlayer.MakeScope.GetList('all_available_vassals_for_directive')]"
+
+					item = {
+						char_name = {
+							blockoverride "extra" {
+								text_single = {
+									raw_text = "[Character.Custom('vassal_directive_text')],"
+								}
+							}
+							datacontext = "[Scope.GetCharacter]"
+						}
+					}
+				}
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+					datamodel = "[GetGlobalList('directive_lists')]"
+					name = "directive_lists"
+					visible = "[Or(Isnt('selected_group_directive'), Has('selected_group_directive', 'directive_list_focus'))]"
+
+					item = {
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList(Scope.GetFlagName))]"
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								direction = vertical
+								visible = "[Or(Has('directive_list_focus', Scope.GetFlagName), Isnt('directive_list_focus'))]"
+
+								button_text = {
+									onclick = "[Set('directive_list_focus', Scope.GetFlagName)]"
+									onclick = "[Set('selected_group_directive', 'directive_list_focus')]"
+
+									blockoverride "text" {
+										raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList(Scope.GetFlagName))] [Localize(Concatenate(Scope.GetFlagName, '_name'))],"
+									}
+								}
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									direction = vertical
+									visible = "[Has('directive_list_focus', Scope.GetFlagName)]"
+
+									datamodel = "[GetPlayer.MakeScope.GetList(Scope.GetFlagName)]"
+
+									# button = {
+									# 	shortcut = close_window
+									# 	onclick = "[Clear('directive_list_focus')]"
+									# }
+
+									item = {
+										char_name = {
+											blockoverride "extra" {
+												text_single = {
+													raw_text = "[Character.Custom('vassal_directive_text')],"
+												}
+											}
+											datacontext = "[Scope.GetCharacter]"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+					visible = "[Or(Isnt('selected_group_directive'), Has('selected_group_directive', 'wrong_counties_list'))]"
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+						visible = "[Or(Isnt('wrong_counties_list'), Has('wrong_counties_list', 'have_wrong_state_faith_counties'))]"
+
+						button_text = {
+							onclick = "[Set('selected_group_directive', 'wrong_counties_list')]"
+							onclick = "[Set('wrong_counties_list', 'have_wrong_state_faith_counties')]"
+							visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('have_wrong_state_faith_counties'))]"
+							blockoverride "text" {
+								raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('have_wrong_state_faith_counties'))] [GetPlayer.GetPrimaryTitle.GetStateFaith.GetAdjectiveNoTooltip] vassals with non-[GetPlayer.GetPrimaryTitle.GetStateFaith.GetAdjectiveNoTooltip] counties,"
+							}
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							visible = "[Has('wrong_counties_list', 'have_wrong_state_faith_counties')]"
+
+							datamodel = "[GetPlayer.MakeScope.GetList('have_wrong_state_faith_counties')]"
+
+							item = {
+								char_name = {
+									blockoverride "extra" {
+										text_single = {
+											raw_text = "[Character.Custom('vassal_directive_text')],"
+										}
+									}
+									datacontext = "[Scope.GetCharacter]"
+								}
+							}
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+
+						visible = "[Or(Isnt('wrong_counties_list'), Has('wrong_counties_list', 'have_wrong_culture_counties'))]"
+
+						button_text = {
+							onclick = "[Set('selected_group_directive', 'wrong_counties_list')]"
+							onclick = "[Set('wrong_counties_list', 'have_wrong_culture_counties')]"
+							visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList('have_wrong_culture_counties'))]"
+							blockoverride "text" {
+								raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('have_wrong_culture_counties'))] [GetPlayer.GetCulture.GetNameNoTooltip] vassals with non-[GetPlayer.GetCulture.GetNameNoTooltip] counties,"
+							}
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							visible = "[Has('wrong_counties_list', 'have_wrong_culture_counties')]"
+
+							datamodel = "[GetPlayer.MakeScope.GetList('have_wrong_culture_counties')]"
+
+							item = {
+								char_name = {
+									blockoverride "extra" {
+										text_single = {
+											raw_text = "[Character.Custom('vassal_directive_text')],"
+										}
+									}
+									datacontext = "[Scope.GetCharacter]"
+								}
+							}
+						}
+					}
+				}
+
+				text_single = {
+					raw_text = "[PdxGuiWidget.AccessParent.FindChild('theme_type_lists').CountVisibleChildren] theme type groups:"
+					visible = "[Isnt('selected_group_directive')]"
+				}
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+					datamodel = "[GetGlobalList('theme_type_lists')]"
+					name = "theme_type_lists"
+					visible = "[Or(Isnt('selected_group_directive'), Has('selected_group_directive', 'theme_type_list_focus'))]"
+
+					item = {
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							visible = "[DataModelHasItems(GetPlayer.MakeScope.GetList(Scope.GetFlagName))]"
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								direction = vertical
+								visible = "[Or(Has('theme_type_list_focus', Scope.GetFlagName), Isnt('theme_type_list_focus'))]"
+
+								button_text = {
+									onclick = "[Set('theme_type_list_focus', Scope.GetFlagName)]"
+									onclick = "[Set('selected_group_directive', 'theme_type_list_focus')]"
+									blockoverride "text" {
+										raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList(Scope.GetFlagName))][Localize(Concatenate(Scope.GetFlagName, '_name'))],"
+									}
+								}
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									direction = vertical
+									visible = "[Has('theme_type_list_focus', Scope.GetFlagName)]"
+
+									datamodel = "[GetPlayer.MakeScope.GetList(Scope.GetFlagName)]"
+
+									item = {
+										char_name = {
+											blockoverride "extra" {
+												text_single = {
+													raw_text = "[Character.Custom('vassal_directive_text')],"
+												}
+											}
+											datacontext = "[Scope.GetCharacter]"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	window_ocr = {
+		name = "featured_house_members_window"
+		datacontext = "[GovernmentAdministrationWindow.GetFeaturedHouse]"
+		datacontext = "[GovernmentAdministrationWindow.GetHouseMembersList]"
+		datacontext = "[GetPlayer.MakeScope.Var('noble_house_members_page')]"
+		datacontext = "[GetScriptedGui('reset_noble_house_members_page')]"
+		state = {
+			name = _show
+			on_finish = "[CharacterSelectionList.OnResetFilters]"
+		}
+		state = {
+			name = close
+			trigger_on_create = yes
+			on_finish = "[CharacterSelectionList.OnToggleFilters]"
+			on_finish = "[CharacterSelectionList.OnToggleFilters]"
+		}
+		blockoverride "show_window" {
+			visible = "[And(DynastyHouse.IsValid, Isnt('ocr'))]"
+		}
+		blockoverride "ocr_header" {
+			datacontext = "[DynastyHouse.GetHeadOfHouse]"
+
+			button_text = {
+				shortcut = army_create_new
+				layoutpolicy_horizontal = expanding
+				onclick = "[OpenGameViewData('dynasty_house_view', Character.GetHouse.GetID)]"
+				blockoverride "text" {
+					raw_text = "ADMINISTRATIVE_GOVERNMENT_HOUSE_WITH_NAME"
+				}
+				blockoverride "extra" {
+					comma = {}
+					text_single = {
+						raw_text = "open house view, H."
+					}
+				}
+			}
+
+			button = {
+				shortcut = close_window
+				onclick = "[GovernmentAdministrationWindow.ClearFeaturedHouse]"
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[DynastyHouse.GetHeadOfHouse]"
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					shortcut = "council_window"
+
+					# from the type
+					datacontext = "[Character.GetDomicile]"
+					onclick = "[ToggleGameViewData( 'domicile', Domicile.Self )]"
+					tooltip = "[Domicile.GetMapPinTooltip( GetPlayer.Self )]"
+
+					visible = "[Character.HasDomicile]"
+					blockoverride "text" {
+						raw_text = "Open [Domicile.GetName], Shift Q."
+					}
+					shortcut = map_mode_9
+				}
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					shortcut = find_title_shortcut
+					onclick = "[Toggle('house_interactions')]"
+					blockoverride "text" {
+						raw_text = "[PdxGuiWidget.AccessParent.AccessParent.FindChild('house_interactions').CountVisibleChildren] interactions, [Collapse('house_interactions')] V."
+					}
+					container = {
+						name = "house_interactions"
+						container = {
+							visible = "[And( Character.HasDomicile, Not( DynastyHouse.GetHeadOfHouse.IsPlayer ) )]"
+						}
+						container = { visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]" }
+						container = { visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]" }
+						container = { visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]" }
+					}
+				}
+
+				flowcontainer = {
+					visible = "[Isnt('house_interactions')]"
+					ignoreinvisible = yes
+					direction = vertical
+					layoutpolicy_horizontal = expanding
+
+					button_text = {
+						shortcut = speed_1
+						visible = "[And( Character.HasDomicile, Not( DynastyHouse.GetHeadOfHouse.IsPlayer ) )]"
+						enabled = "[Character.IsPlayerInteractionValid('start_raid_estate_interaction')]"
+						tooltip = "[Character.GetPlayerInteractionTooltip('start_raid_estate_interaction')]"
+						onclick = "[Character.OpenPlayerInteraction('start_raid_estate_interaction')]"
+						blockoverride "disabled" {
+							visible = "[Not(Character.IsPlayerInteractionValid('start_raid_estate_interaction'))]"
+						}
+
+						blockoverride "text" {
+							raw_text = "1, [Character.GetPlayerInteractionName('start_raid_estate_interaction')]"
+						}
+					}
+
+					button_text = {
+						shortcut = speed_2
+						visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
+						enabled = "[Character.IsPlayerInteractionValid('start_slander_interaction')]"
+						tooltip = "[Character.GetPlayerInteractionTooltip('start_slander_interaction')]"
+						onclick = "[Character.OpenPlayerInteraction('start_slander_interaction')]"
+						blockoverride "disabled" {
+							visible = "[Not(Character.IsPlayerInteractionValid('start_slander_interaction'))]"
+						}
+
+						blockoverride "text" {
+							raw_text = "2, [Character.GetPlayerInteractionName('start_slander_interaction')]"
+						}
+					}
+
+					button_text = {
+						shortcut = speed_3
+						visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
+						enabled = "[Character.IsPlayerInteractionValid('start_challenge_status_interaction')]"
+						tooltip = "[Character.GetPlayerInteractionTooltip('start_challenge_status_interaction')]"
+						onclick = "[Character.OpenPlayerInteraction('start_challenge_status_interaction')]"
+						blockoverride "disabled" {
+							visible = "[Not(Character.IsPlayerInteractionValid('start_challenge_status_interaction'))]"
+						}
+
+						blockoverride "text" {
+							raw_text = "3, [Character.GetPlayerInteractionName('start_challenge_status_interaction')]"
+						}
+					}
+
+					button_text = {
+						shortcut = speed_4
+						visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
+						enabled = "[Character.IsPlayerInteractionValid('request_appointment_support')]"
+						tooltip = "[Character.GetPlayerInteractionTooltip('request_appointment_support')]"
+						onclick = "[Character.OpenPlayerInteraction('request_appointment_support')]"
+						blockoverride "disabled" {
+							visible = "[Not(Character.IsPlayerInteractionValid('request_appointment_support'))]"
+						}
+
+						blockoverride "text" {
+							raw_text = "4, [Character.GetPlayerInteractionName('request_appointment_support')]"
+						}
+					}
+				}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				shortcut = map_mode_1
+				onclick = "[Toggle('noble_house_members')]"
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "[GetDataModelSize(CharacterSelectionList.GetList)]"
+					}
+				}
+				blockoverride "text" {
+					raw_text = "ADMIN_WINDOW_MEMBERS_OF_HOUSE_TITLE"
+				}
+				blockoverride "extra" {
+					comma = {}
+					text_single = {
+						raw_text = "[CollapseIf(Isnt('noble_house_members'))] E."
+					}
+				}
+			}
+
+			# text_single = {
+			# 	datacontext = "[GetPlayer.MakeScope.Var('global_page_size')]"
+			# 	visible = "[Scope.IsSet]"
+			# 	raw_text = "GLOBAL PAGE"
+			# }
+		}
+		blockoverride "ocr_content" {
+			vbox_character_list_paged_ocr = {
+				visible = "[Is('noble_house_members')]"
+
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				state = {
+				  name = "reset"
+				  on_finish = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+				  trigger_when = "[Or(Or(PageReset('noble_house_members_page', CharacterSelectionList.GetList), Not(GetPlayer.MakeScope.Var('global_page_size').IsSet)), Not(Scope.IsSet))]"
+					trigger_on_create = yes
+				}
+
+				blockoverride "pre_count" {
+					hbox = {
+					  spacing = 3
+						margin_right = 3
+
+					  text_single = {
+					    raw_text = "Showing from [PageStartGlobal] to [PageEndGlobal(CharacterSelectionList.GetList)],"
+					  }
+
+					  button_resize_page_ocr = {}
+					}
+				}
+				blockoverride "click_info" {
+
+				}
+
+				blockoverride "scrollbox" {
+					fixedgridbox = {
+						layoutpolicy_horizontal = expanding
+						addcolumn = 600
+						addrow = 65
+						datamodel_reuse_widgets = yes
+
+						datamodel = "[PageModelGlobal(CharacterSelectionList.GetList)]"
+						item = {
+							widget_house_member_item_ocr = {
+								size = { 600 65 }
+							}
+						}
+					}
+				}
+				blockoverride "post_scrollbox" {
+					page_buttons_ocr = {
+					  blockoverride "prev" {
+					    datacontext = "[GetScriptedGui('prev_noble_house_members_page')]"
+					  }
+					  blockoverride "next_page" {
+							datacontext = "[GetScriptedGui('next_noble_house_members_page')]"
+					  }
+					}
+				}
+				expand = {}
+			}
+		}
+
+		window_character_filter = {
+			position = { 0 0 }
+			size = { 100% 100% }
+			blockoverride "addition_filter" {
+				filter_item = {
+					layoutpolicy_horizontal = expanding
+					datacontext = "[CharacterSelectionList.GetFilter('ruler_filter')]"
+				}
+				filter_item = {
+					layoutpolicy_horizontal = expanding
+					datacontext = "[CharacterSelectionList.GetFilter('religion_filter')]"
+				}
+				filter_item = {
+					layoutpolicy_horizontal = expanding
+					datacontext = "[CharacterSelectionList.GetFilter('culture_filter')]"
+				}
+				filter_item = {
+					layoutpolicy_horizontal = expanding
+					datacontext = "[CharacterSelectionList.GetFilter('alive_filter')]"
 				}
 			}
 		}
@@ -428,7 +1420,7 @@ types OCR
 
 	type widget_theme_item_ocr = widget
 	{
-		size = { 500 90 }
+		size = { 600 90 }
 
 		button_text = {
 			resizeparent = yes
@@ -440,7 +1432,7 @@ types OCR
 
 					flowcontainer = {
 						ignoreinvisible = yes
-						spacing  = 3
+						spacing = 3
 
 						text_single = {
 							block "admin_index" {
@@ -462,6 +1454,45 @@ types OCR
 								visible = "[Not(IsAdministrativeRuler(Title.GetHolder))]"
 								raw_text = "[Title.GetHolder.GetGovernment.GetNameNoTooltip],"
 							}
+						}
+
+						text_single = {
+							raw_text = "no successor,"
+							visible = "[And( And( And( Title.HasHolder, Not( AdministrativeThemeItem.HasValidSuccessor ) ), Not( Title.GetHolder.IsIndependentRuler ) ), IsAdministrativeRuler( Title.GetHolder ) )]"
+
+							tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_NO_VALID_SUCCESSOR_TT"
+						}
+
+						text_single = {
+							visible = "[And( And( Not( AdministrativeThemeItem.HasLocalPlayerInvested ), AdministrativeThemeItem.HasLocalPlayerCandidate ), AdministrativeThemeItem.HasLocalPlayerCandidateInFirst )]"
+
+							tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_WINNING_TT"
+							margin_left = -3
+
+							raw_text = "winning,"
+						}
+
+						text_single = {
+							visible = "[And( AdministrativeThemeItem.HasLocalPlayerInvested, AdministrativeThemeItem.HasLocalPlayerCandidateInFirst )]"
+
+							tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_WINNING_TT"
+							raw_text = "winning,"
+							margin_left = -3
+						}
+
+						text_single = {
+							visible = "[And( And( Not( AdministrativeThemeItem.HasLocalPlayerInvested ), AdministrativeThemeItem.HasLocalPlayerCandidate ), Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+							tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_CANDIDATE_LOSING_TT"
+							raw_text = "losing,"
+						}
+
+
+						text_single = {
+							visible = "[And( AdministrativeThemeItem.HasLocalPlayerInvested, Not( AdministrativeThemeItem.HasLocalPlayerCandidateInFirst ) )]"
+
+							tooltip = "ADMIN_WINDOW_THEME_ADMINISTRATION_LOCAL_PLAYER_HAS_INVESTED_LOSING_TT"
+							raw_text = "losing,"
 						}
 
 						# text_single = {
@@ -500,6 +1531,11 @@ types OCR
 						}
 
 						text_single = {
+							visible = "[GetScriptedGui('is_border_theme').IsShown( GuiScope.SetRoot( Title.MakeScope ).End )]"
+							raw_text = "on the border,"
+						}
+
+						text_single = {
 							visible = "[Not(Title.GetHolder.IsValid)]"
 							raw_text = "no holder!"
 						}
@@ -516,6 +1552,7 @@ types OCR
 								spacing = 3
 
 								text_single = {
+									visible = "[IsIndexFirst]"
 									raw_text = "held by"
 								}
 
@@ -526,7 +1563,7 @@ types OCR
 							}
 
 							text_single = {
-								raw_text = "[Character.GetFirstNameOrMeNoTooltip],"
+								raw_text = "[Character.GetFirstNameOrMeNoTooltip]"
 							}
 
 							flowcontainer = {
@@ -560,6 +1597,11 @@ types OCR
 								tooltip = ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT
 							}
 
+							text_single = {
+								visible = "[GetScriptedGui('is_coastal_theme').IsShown( GuiScope.SetRoot( Title.MakeScope ).End )]"
+								raw_text = "Coastal,"
+							}
+
 							flowcontainer = {
 								ignoreinvisible = yes
 								visible = "[And(Not( Title.GetHolder.IsIndependentRuler ), IsAdministrativeRuler( Title.GetHolder ))]"
@@ -577,7 +1619,7 @@ types OCR
 								spacing = 3
 								visible = "[Not(Title.GetHolder.IsIndependentRuler)]"
 								text_single = {
-									raw_text = "Tax:  [Character.MakeScope.ScriptValue('bav_tax_to_liege')|1v],"
+									raw_text = "Tax: [Character.MakeScope.ScriptValue('bav_tax_to_liege')|1v],"
 								}
 
 								text_single = {
@@ -689,6 +1731,32 @@ types OCR
 			}
 		}
 
+		container = {
+			block "shortcuts" {
+				visible = "[Not(Title.GetHolder.IsIndependentRuler)]"
+			}
+			shortcuts_list = {
+				visible = "[IsAdministrativeRuler(Title.GetHolder)]"
+				blockoverride "click" {
+					onclick = "[ToggleAdminVassalDetailView( Title.Self )]"
+				}
+			}
+
+			shortcuts_list = {
+				visible = "[Or( Not(Title.GetHolder.IsValid),  And( And( Not( IsAdministrativeRuler( Title.GetHolder )), Not(Title.GetHolder.IsPlayerInteractionValid('demand_admin_interaction'))), Title.GetHolder.GetLiege.IsPlayer  ) ) ]"
+				blockoverride "click" {
+					onclick = "[DefaultOnCoatOfArmsClick(Title.GetID)]"
+				}
+			}
+
+			shortcuts_list = {
+				visible = "[And( And( And( Not( IsAdministrativeRuler( Character ) ), Character.IsValid ), Character.GetLiege.IsPlayer ), Character.IsPlayerInteractionValid('demand_admin_interaction') )]"
+				blockoverride "click" {
+					onclick = "[Character.OpenPlayerInteraction('demand_admin_interaction')]"
+				}
+			}
+		}
+
 		button = {
 			name = "open_detail_button"
 			visible = "[IsAdministrativeRuler(Title.GetHolder)]"
@@ -731,20 +1799,37 @@ types OCR
 		}
 	}
 
-	type button_modify_theme_ocr = button_round {
+	type button_modify_theme_ocr = button_text {
 		visible = "[Character.IsPlayerInteractionShown('admin_liege_modify_vassal_contract_interaction')]"
 		enabled = "[Character.IsPlayerInteractionValid('admin_liege_modify_vassal_contract_interaction')]"
+		block "theme_key" {
+			shortcut = map_mode_2
+		}
 
 		onclick = "[Character.OpenPlayerInteraction('admin_liege_modify_vassal_contract_interaction')]"
 		onclick = "[Character.PanCameraTo]"
 
 		tooltip = "[Character.GetPlayerInteractionTooltip('admin_liege_modify_vassal_contract_interaction')]"
 
-		block "feudal_contract_button_round" {}
+		tooltip_visible = "[Not(Character.IsPlayerInteractionValid('admin_liege_modify_vassal_contract_interaction'))]"
 
-		button_add_laws = {
-			alwaystransparent = yes
-			parentanchor = center
+		blockoverride "text" {
+			raw_text = "ADMIN_WINDOW_THEME_ADMINISTRATION_TYPE"
+		}
+		blockoverride "extra" {
+			block "theme_key" {
+				text_single = {
+					raw_text = "type,"
+				}
+				text_single = {
+					visible = "[Character.IsPlayerInteractionValid('admin_liege_modify_vassal_contract_interaction')]"
+					raw_text = "T."
+				}
+				text_single = {
+					visible = "[Not(Character.IsPlayerInteractionValid('admin_liege_modify_vassal_contract_interaction'))]"
+					raw_text = "Disabled."
+				}
+			}
 		}
 	}
 
@@ -802,179 +1887,118 @@ types OCR
 	type widget_house_member_item_ocr = widget {
 		datacontext = "[CharacterListItem.GetCharacter]"
 
-		hbox = {
-			portrait_head = {}
+		flowcontainer = {
+			ignoreinvisible = yes
+			direction = vertical
 
-			hbox = {
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
+			button_text = {
+				using = char_click
+				blockoverride "pre" {
+					block "widget_index" {}
+				}
+				blockoverride "text" {
+					raw_text = "[Character.GetUINameNoTooltip], [Character.GetAge]."
+				}
+				blockoverride "extra" {
+					text_single = {
+						visible = "[And(Character.HasRelationTo( GetPlayer ), Not(Character.IsPlayer))]"
+						text = "[Character.GetRelationToString( GetPlayer )]"
+						tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+					}
+				}
+			}
 
-				vbox = {
-					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
+			flowcontainer = {
+				ignoreinvisible = yes
+				spacing = 3
 
-					# Name and age
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						margin = { 0 3 }
-						margin_left = 5
-						margin_right = 10
-
-						background = {
-							using = Background_Area_Characterlist
+				flowcontainer = {
+					ignoreinvisible = yes
+					spacing = 3
+					tooltipwidget = {
+						widget_value_breakdown_tooltip = {
+							datacontext = "[GovernmentAdministrationWindow.GetInvestmentCapTooltip( Character.Self )]"
 						}
-
-						background = {
-							using = Background_Area_Dark
-
-							modify_texture = {
-								texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
-								blend_mode = alphamultiply
-								alpha = 1
-								rotate_uv = 90
-								mirror = vertical
-							}
-						}
-
-						hbox = {
-							margin_left = 3
-							layoutpolicy_horizontal = expanding
-							maximumsize = { 338 -1 }
-
-							text_single = {
-								using = Font_Size_Medium
-								layoutpolicy_horizontal = expanding
-								align = nobaseline
-								text = "[Character.GetUINameNoTooltip|U]"
-								autoresize = no
-								fontsize_min = 14
-							}
-
-							block "character_relation"
-							{
-								hbox = {
-									visible = "[And(Character.HasRelationTo( GetPlayer ), Not(Character.IsPlayer))]"
-									text_single = {
-										raw_text = "•"
-										align = nobaseline
-										margin = { 5 0 }
-									}
-
-									text_single = {
-										name = "character_relation"
-										text = "[Character.GetRelationToString( GetPlayer )]"
-										tooltip = "EXTENDED_RELATIONS_TOOLTIP"
-										default_format = "#low"
-										align = nobaseline
-										fontsize_min = 14
-										max_width = 180
-									}
-								}
-							}
-
-							expand = {}
-						}
-
-						hbox = {
-							using = character_age_or_death_text
-						}
-						expand = {}
 					}
 
-					### BOTTOM ROW ###
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						layoutpolicy_vertical = expanding
+					text_single = {
+						raw_text = "[Character.GetInvestmentCap]"
+					}
 
-						vbox = {
-							layoutpolicy_horizontal = expanding
-							layoutpolicy_vertical = expanding
+					text_single = {
+						visible = "[IsIndexFirst]"
+						raw_text = "[investment_cap|E]"
+					}
 
-							block "additional_info_kill_list" {}
+					text_single = {
+						visible = "[Not(IsIndexFirst)]"
+						raw_text = "investment"
+					}
+					comma = {}
+				}
 
-							hbox = {
-								layoutpolicy_horizontal = expanding
 
-								text_label_left = {
-									margin_left = 10
-									max_width = 250
+				text_single = {
+					text = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALUE"
+					tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT"
+				}
 
-									layoutpolicy_horizontal = expanding
+				text_single = {
+					raw_text = "admin"
+				}
 
-									text = "ADMINISTRATIVE_GOVERNMENT_INVESTMENT_CAP"
+				text_single = {
+					visible = "[IsIndexFirst]"
+					raw_text = "efficiency"
+				}
 
-									tooltipwidget = {
-										widget_value_breakdown_tooltip = {
-											datacontext = "[GovernmentAdministrationWindow.GetInvestmentCapTooltip( Character.Self )]"
-										}
-									}
-								}
-								expand = {}
-							}
+				comma = {}
 
-							hbox = {
-								layoutpolicy_horizontal = expanding
-								layoutpolicy_vertical = expanding
+				text_single = {
+					using = opinion_of_me_text
+				}
+			}
 
-								background = {
-									using = Background_Area_Dark
-									alpha = 0.5
-									margin = { 0 2 }
-								}
+			flowcontainer = {
+				ignoreinvisible = yes
+				spacing = 3
+				visible = "[IsAdministrativeRuler( Character )]"
 
-								hbox = {
-									visible = "[IsAdministrativeRuler( Character )]"
+				flowcontainer = {
+					ignoreinvisible = yes
+					spacing = 3
+					visible = "[GreaterThan_int32( PdxGuiWidget.AccessParent.FindChild('governorships').CountVisibleChildren, '(int32)0')]"
 
-									layoutpolicy_horizontal = expanding
+					text_single = {
+						raw_text = "[PdxGuiWidget.AccessParent.AccessParent.FindChild('governorships').CountVisibleChildren] high titles:"
+					}
+				}
 
-									fixedgridbox = {
-										flipdirection = yes
-										addrow = 60
-										addcolumn = 38
-										maxverticalslots = 1
-										datamodel_wrap = 9
+				text_single = {
+					visible = "[EqualTo_int32( PdxGuiWidget.AccessParent.FindChild('governorships').CountVisibleChildren, '(int32)0')]"
 
-										datamodel = "[Character.GetTitles]"
-										item = {
-											coa_title_tiny_crown = {
-												visible = "[GreaterThan_int32( Title.GetTierFrame, '(int32)3' )]" # Show only Duke or Emperor
+					text_single = {
+						raw_text = "No high titles."
+					}
+				}
 
-												icon = {
-													name = "has_laws"
-													visible = "[Title.HasLaws]"
-													parentanchor = bottom|right
-													size = { 25 25 }
-													position = { 5 0 }
-													texture = "gfx/interface/icons/title_status/icon_title_law.dds"
-												}
+				flowcontainer = {
+					ignoreinvisible = yes
+					datamodel = "[Character.GetTitles]"
+					name = "governorships"
 
-												using = tooltip_ne
-											}
-										}
-									}
-									expand = {}
-								}
-
-								expand = {}
-
-								vbox = {
-									icon = {
-										size = { 32 32 }
-										texture = "gfx/interface/icons/icon_skill_governor_efficiency.dds"
-									}
-
-									text_single = {
-										text = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALUE"
-										align = nobaseline
-									}
-
-									tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT"
-									using = tooltip_ne
-								}
+					item = {
+						button_text = {
+							using = title_click
+							visible = "[GreaterThan_int32( Title.GetTierFrame, '(int32)3' )]" # Show only Duke or Emperor
+							blockoverride "text" {
+								raw_text = "[Title.GetNameNoTooltip],"
 							}
 						}
 					}
 				}
+
+				expand = {}
 			}
 		}
 	}
@@ -985,10 +2009,30 @@ types OCR
 		oncreate = "[BindFoldOutContext]"
 		oncreate = "[PdxGuiFoldOut.Unfold]"
 
-		button_expandable_toggle_field = {
-			blockoverride "text"
-			{
-				text = "[AdminFamilyGroupItem.GetName]"
+		state = {
+			name = "fold_all_families"
+			on_finish = "[PdxGuiFoldOut.Fold]"
+		}
+
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			onclick = "[PdxGuiFoldOut.Toggle]"
+			shortcuts_list = {
+				blockoverride "click" {
+					onclick = "[PdxGuiFoldOut.Toggle]"
+				}
+			}
+			blockoverride "num" {
+
+			}
+			blockoverride "text" {
+				raw_text = "[AdminFamilyGroupItem.GetName],"
+				alwaystransparent = yes
+			}
+			blockoverride "extra" {
+				text_single = {
+					raw_text = "[CollapseIf(PdxGuiFoldOut.IsFolded)]"
+				}
 			}
 		}
 
@@ -1003,288 +2047,184 @@ types OCR
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding
 
-				addcolumn = 525
-				addrow = 120
+				addcolumn = 600
+				addrow = 65
+				visible = "[Not(GreaterThan_int32(GetDataModelSize(AdminFamilyGroupItem.GetFamilyItems), '(int32)10'))]"
 
 				datamodel = "[AdminFamilyGroupItem.GetFamilyItems]"
 				item = {
-					vbox = {
-						layoutpolicy_horizontal = expanding
+					button_family_group_item_ocr = {}
+				}
+			}
 
-						button_family_group_item = {}
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[GreaterThan_int32(GetDataModelSize(AdminFamilyGroupItem.GetFamilyItems), '(int32)10')]"
+
+				hbox = {
+					spacing = 3
+					layoutpolicy_horizontal = expanding
+
+					text_single = {
+						raw_text = "Showing houses from [PageStart('noble_families_page')] to [PageEnd('noble_families_page', GetPlayer.MakeScope.Var('noble_families_page_size').GetValue, AdminFamilyGroupItem.GetFamilyItems)],"
+					}
+
+					button_text = {
+						shortcut = army_merge
+						onclick = "[GetScriptedGui('resize_noble_families_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						blockoverride "text" {
+							margin_left = -5
+							raw_text = "Show [Select_CString(EqualTo_CFixedPoint(GetPlayer.MakeScope.Var('noble_families_page_size').GetValue, '(CFixedPoint)10'), '5', '10')] per page, G."
+						}
+					}
+					expand = {}
+				}
+
+				fixedgridbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					addcolumn = 600
+					addrow = 65
+
+					datamodel = "[PageModel('noble_families_page', FixedPointToInt(GetPlayer.MakeScope.Var('noble_families_page_size').GetValue), AdminFamilyGroupItem.GetFamilyItems)]"
+
+					blockoverride "widget_index" {
+						alwaystransparent = yes
+						margin_left = 3
+						raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, Add_int32(FixedPointToInt( GetPlayer.MakeScope.Var('noble_families_page').GetValue ), '(int32)1'))],"
+					}
+
+					item = {
+						button_family_group_item_ocr = {}
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						button_text = {
+							visible = "[GreaterThan_CFixedPoint( GetPlayer.MakeScope.Var('noble_families_page').GetValue, '(CFixedPoint)0' )]"
+							blockoverride "text" {
+								raw_text = "Previous [GetPlayer.MakeScope.Var('noble_families_page_size').GetValue|0], Z."
+							}
+							onclick = "[GetScriptedGui('prev_noble_families_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							shortcut = decrease_speed_2
+							using = paper_flip_back_ocr
+						}
+
+						button_text = {
+							onclick = "[GetScriptedGui('reset_noble_families_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							shortcut = map_mode_18
+							using = paper_flip_back_ocr
+							blockoverride "text" {
+								raw_text = "Reset, Control R."
+							}
+						}
+
 						expand = {}
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "Next [GetPlayer.MakeScope.Var('noble_families_page_size').GetValue|0], X."
+						}
+						onclick = "[GetScriptedGui('next_noble_families_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						visible = "[GreaterThan_int32( Subtract_int32( GetDataModelSize( AdminFamilyGroupItem.GetFamilyItems ), FixedPointToInt(GetPlayer.MakeScope.Var('noble_families_page').GetValue )), FixedPointToInt(GetPlayer.MakeScope.Var('noble_families_page_size').GetValue) )]"
+						using = paper_flip_forward_ocr
+						shortcut = increase_speed_2
 					}
 				}
 			}
+
 		}
 	}
 
 	type button_family_group_item_ocr = button
 	{
-		size = { 525 110 }
+		size = { 600 70 }
 		datacontext = "[AdminHouseItem.GetHouse]"
 		datacontext = "[DynastyHouse.GetHeadOfHouse]"
 		onclick = "[GovernmentAdministrationWindow.SelectFeaturedHouse( DynastyHouse.Self )]"
+		datacontext = "[DynastyHouse.GetHeadOfHouse]"
 
-		background = {
-			visible = "[ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse )]"
-			margin = { 4 4 }
-			using = Background_Area_Admin_Purple
-		}
+		flowcontainer = {
+			ignoreinvisible = yes
+			direction = vertical
 
-		background = {
-			visible = "[DynastyHouse.IsDominant]"
-			margin = { 4 4 }
-			using = Background_Area_Admin_Orange
-		}
+			#TODO number of governors of this house
+			flowcontainer = {
+				ignoreinvisible = yes
+				spacing = 3
 
-		background = {
-			visible = "[And( And( DynastyHouse.IsPowerful, Not( DynastyHouse.IsDominant ) ), Not( ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse ) ) )]"
-			margin = { 4 4 }
-			using = Background_Area_Admin_Blue
-		}
-
-		background = {
-			texture = "gfx/interface/window_administrative_government/family_decoration.dds"
-			spriteType = Corneredtiled
-			margin_bottom = 2
-			spriteborder_bottom = 14
-			texture_density = 1.5
-			alpha = 0.1
-			using = Mask_Rough_Edges
-		}
-
-		background = {
-			texture = "gfx/interface/window_administrative_government/family_decoration.dds"
-			spriteType = Corneredtiled
-			margin_top = 2
-			spriteborder_top = 14
-			texture_density = 1.5
-			alpha = 0.1
-			using = Mask_Rough_Edges
-		}
-
-		background = {
-			texture = "gfx/interface/component_masks/patterns/mask_pattern_02.dds"
-			spriteType = corneredtiled
-			color = { 0.1 0.1 0.12 1 }
-			texture_density = 0.75
-			margin = { 0 -10 }
-			alpha = 0.2
-
-			using = Mask_Rough_Edges
-
-			modify_texture = {
-				texture = "gfx/interface/component_masks/mask_clouds.dds"
-				blend_mode = alphamultiply
-				spriteType = corneredTiled
-				alpha = 0.5
-			}
-
-			modify_texture = {
-				texture = "gfx/interface/component_masks/mask_scratches.dds"
-				blend_mode = alphamultiply
-				spriteType = corneredTiled
-			}
-		}
-
-		background = {
-			spriteType = Corneredtiled
-			texture_density = 2
-			visible = "[ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse )]"
-			texture = "gfx/interface/window_administrative_government/imperial_family_decoration.dds"
-			spriteborder = { 212 0 }
-
-			using = Mask_Rough_Edges
-
-			modify_texture = {
-				blend_mode = alphaMultiply
-				texture = "gfx/interface/component_masks/mask_horizontal_extended.dds"
-			}
-		}
-
-		background = {
-			spriteType = Corneredtiled
-			texture_density = 2
-			visible = "[DynastyHouse.IsDominant]"
-			texture = "gfx/interface/window_administrative_government/dominant_family_decoration.dds"
-			spriteborder = { 212 0 }
-
-			using = Mask_Rough_Edges
-
-			modify_texture = {
-				blend_mode = alphaMultiply
-				texture = "gfx/interface/component_masks/mask_horizontal_extended.dds"
-			}
-		}
-
-		background = {
-			spriteType = Corneredtiled
-			texture_density = 2
-			visible = "[And( And( DynastyHouse.IsPowerful, Not( DynastyHouse.IsDominant ) ), Not( ObjectsEqual( Character.GetHouse, Character.GetTopLiege.GetHouse ) ) )]"
-			texture = "gfx/interface/window_administrative_government/powerful_family_decoration.dds"
-			spriteborder = { 212 0 }
-
-			using = Mask_Rough_Edges
-
-			modify_texture = {
-				blend_mode = alphaMultiply
-				texture = "gfx/interface/component_masks/mask_horizontal_extended.dds"
-			}
-		}
-
-		background = {
-			visible = "[DynastyHouse.GetHeadOfHouse.IsPlayer]"
-			using = Background_Area_Border
-			using = Background_Frame_Gold
-		}
-
-		hbox = {
-			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
-			margin_left = 12
-			margin_right = 12
-
-			coa_house_medium = {
-
-				widget = {
-					size = { 92% 32 }
-					parentanchor = bottom|hcenter
-					position = { 0 -14}
-
-					background = {
-						texture = "gfx/interface/window_theme_administration/rating_banner.dds"
+				text_single = {
+					block "widget_index" {
+						raw_text = "[IndexNumber],"
 					}
+				}
 
+				text_single = {
+					raw_text = "[DynastyHouse.GetHousePower] power,"
 					tooltipwidget = {
 						widget_value_breakdown_tooltip = {
 							datacontext = "[GovernmentAdministrationWindow.GetHousePowerTooltip( DynastyHouse.Self )]"
 						}
 					}
-
-					text_single = {
-						parentanchor = center
-						position = { 0 -1 }
-						max_width = 250
-						align = nobaseline
-
-						text = "[DynastyHouse.GetHousePower]"
-
-						default_format = "#light_background"
-					}
 				}
 
-				powerful_family_bonus = {
-					parentanchor = top|right
+				text_single = {
+					max_width = 350
+					raw_text = "ADMINISTRATIVE_GOVERNMENT_HOUSE_WITH_NAME"
+				}
+
+				comma = {}
+
+				text_single = {
+					raw_text = "[DynastyHouse.GetNumberOfMembers] members,"
+				}
+
+				text_single = {
+					visible = "[IsIndexFirst]"
+					raw_text = "controls"
+				}
+				text_single = {
+					raw_text = "[GuiScope.SetRoot( DynastyHouse.MakeScope ).AddScope('target', GetPlayer.GetTopLiege.MakeScope).ScriptValue('house_land_share')|%0] of the realm"
 				}
 			}
 
-			hbox = {
-				margin_left = 8
-				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
-				datacontext = "[DynastyHouse.GetHeadOfHouse]"
-
-				vbox = {
-					spacing = 2
-					margin_left = 8
-					margin_top = 8
-					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						text_single = {
-							layoutpolicy_horizontal = expanding
-							max_width = 250
-							text = "ADMINISTRATIVE_GOVERNMENT_HOUSE_WITH_NAME"
-						}
-						expand = {}
+			button_text = {
+				using = char_click
+				blockoverride "pre" {
+					text_single = {
+						visible = "[And(IsIndexFirst, Not(Character.IsLocalPlayer))]"
+						raw_text = "Head has"
 					}
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						text_single = {
-							max_width = 250
-							layoutpolicy_horizontal = expanding
-							text = "ADMINISTRATIVE_GOVERNMENT_HOUSE_HEAD"
-						}
-						expand = {}
+					text_single = {
+						visible = "[Character.IsLocalPlayer]"
+						raw_text = "Head:"
 					}
-
-					hbox = {
-						layoutpolicy_horizontal = expanding
-						margin_top = 4
-						datacontext = "[DynastyHouse.GetHeadOfHouse]"
-
-						hbox_access_domicile_button = {
-							datacontext = "[DynastyHouse.GetHeadOfHouse]"
-							visible = "[Character.HasDomicile]"
-
-						}
-
-						button_round = {
-							visible = "[And( Character.HasDomicile, Not( DynastyHouse.GetHeadOfHouse.IsPlayer ) )]"
-							enabled = "[Character.IsPlayerInteractionValid('start_raid_estate_interaction')]"
-							tooltip = "[Character.GetPlayerInteractionTooltip('start_raid_estate_interaction')]"
-							onclick = "[Character.OpenPlayerInteraction('start_raid_estate_interaction')]"
-
-							button_army_toggle_raiding = {
-								parentanchor = center
-								alwaystransparent = yes
-							}
-						}
-
-						button_round = {
-							visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
-							enabled = "[Character.IsPlayerInteractionValid('start_slander_interaction')]"
-							tooltip = "[Character.GetPlayerInteractionTooltip('start_slander_interaction')]"
-							onclick = "[Character.OpenPlayerInteraction('start_slander_interaction')]"
-
-							button_slander = {
-								parentanchor = center
-								alwaystransparent = yes
-							}
-						}
-
-						button_round = {
-							visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
-							enabled = "[Character.IsPlayerInteractionValid('start_challenge_status_interaction')]"
-							tooltip = "[Character.GetPlayerInteractionTooltip('start_challenge_status_interaction')]"
-							onclick = "[Character.OpenPlayerInteraction('start_challenge_status_interaction')]"
-
-							button_challenge_status = {
-								parentanchor = center
-								alwaystransparent = yes
-							}
-						}
-
-						button_round = {
-							visible = "[Not( DynastyHouse.GetHeadOfHouse.IsPlayer )]"
-							enabled = "[Character.IsPlayerInteractionValid('request_appointment_support')]"
-							tooltip = "[Character.GetPlayerInteractionTooltip('request_appointment_support')]"
-							onclick = "[Character.OpenPlayerInteraction('request_appointment_support')]"
-
-							button_request_appointment_support = {
-								parentanchor = center
-								alwaystransparent = yes
-							}
-						}
-
-						expand = {}
+					text_single = {
+						using = opinion_of_me_text
 					}
-					expand = {}
 				}
+				blockoverride "text" {
+					raw_text = "[Character.GetShortUIName],"
+				}
+				blockoverride "extra" {
+					text_single = {
+						raw_text = "[Character.GetMilitaryStrengthText] men."
+					}
+				}
+			}
 
-				portrait_head_small = {
-					blockoverride "portrait_button"
-					{
-						using = tooltip_ws
-					}
-					blockoverride "glow_visible"
-					{
-						visible = no
-					}
+			powerful_family_bonus_ocr = {
+				blockoverride "show_button" {
+					visible = "[Or(IsIndexFirst, Character.IsLocalPlayer)]"
 				}
 			}
 		}
@@ -1659,7 +2599,6 @@ types BAV {
 										spacing = 5
 										datacontext = "[Title.GetHolder]"
 
-										# TODO
 										button_round = {
 											size = { 30 30 }
 											datacontext = "[Title.GetHolder.GetLiege]"

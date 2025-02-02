@@ -67,7 +67,7 @@ types CharacterInteraction
 
 	type vbox_arrangement_interaction_send_offer = vbox {
 		name = "send_offer_window"
-		margin = { 0 10 }
+		margin = { 0 0 }
 
 		vbox = {
 			layoutpolicy_horizontal = expanding
@@ -90,9 +90,9 @@ types CharacterInteraction
 				clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
 			}
 
-			widget = {
-				size = { 0 5 }
-			}
+			# widget = {
+			# 	size = { 0 5 }
+			# }
 
 			vbox_interaction_options = {
 				layoutpolicy_horizontal = expanding
@@ -537,7 +537,6 @@ types CharacterInteraction
 	}
 
 	type vbox_character_interaction_three_characters = vbox {
-		margin = { 10 10 }
 
 		button_text = {
 			layoutpolicy_horizontal = expanding
@@ -1162,48 +1161,29 @@ types CharacterInteraction
 			}
 		}
 
-		scrollbox = {
-			name = "effects_scrollarea"
+		vbox = {
 			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
-			block "scrollarea_size" {
-				size = { 0 170 }
+
+			text_multi_wide = {
+				visible = "[InteractionEffectsDescription.IsShowingOnAcceptEffects]"
+				name = "accept_effects_info"
+				layoutpolicy_horizontal = expanding
+				text = "[InteractionEffectsDescription.GetAcceptEffectDescription]"
 			}
 
-			blockoverride "scrollbox_content"
-			{
-				text_multi = {
-					visible = "[InteractionEffectsDescription.IsShowingOnAcceptEffects]"
-					name = "accept_effects_info"
-					layoutpolicy_horizontal = expanding
-					autoresize = yes
-					block "width" {
-						max_width = 450
-					}
-					text = "[InteractionEffectsDescription.GetAcceptEffectDescription]"
-				}
-
-				text_multi = {
-					visible = "[Not(InteractionEffectsDescription.IsShowingIntermediaryDeclineEffect)]"
-					layoutpolicy_horizontal = expanding
-					autoresize = yes
-					block "width" {
-						max_width = 450
-					}
-					text = "[InteractionEffectsDescription.GetIntermediaryRejectionEffectDescription]"
-				}
-
-				text_multi = {
-					visible = "[Not(InteractionEffectsDescription.IsShowingRecipientDeclineEffect)]"
-					layoutpolicy_horizontal = expanding
-					autoresize = yes
-					block "width" {
-						max_width = 450
-					}
-					text = "[InteractionEffectsDescription.GetRejectionEffectDescription]"
-				}
-				block "extra_content" { }
+			text_multi_wide = {
+				visible = "[Not(InteractionEffectsDescription.IsShowingIntermediaryDeclineEffect)]"
+				layoutpolicy_horizontal = expanding
+				text = "[InteractionEffectsDescription.GetIntermediaryRejectionEffectDescription]"
 			}
+
+			text_multi_wide = {
+				visible = "[Not(InteractionEffectsDescription.IsShowingRecipientDeclineEffect)]"
+				layoutpolicy_horizontal = expanding
+				text = "[InteractionEffectsDescription.GetRejectionEffectDescription]"
+			}
+
+			block "extra_content" { }
 		}
 	}
 
@@ -1873,19 +1853,56 @@ types InteractionCharacterList
 		text_single = {
 			layoutpolicy_horizontal = expanding
 			name = "select_someone_label"
+			visible = "[Not(StringIsEmpty(CharacterInteractionConfirmationWindow.GetPrompt))]"
 			block "prompt" {
 				raw_text = "[CharacterInteractionConfirmationWindow.GetPrompt]."
 			}
 		}
 
 		### List
-		vbox_character_list = {
+		fixed_character_list_paged_ocr = {
 			layoutpolicy_horizontal = expanding
 			layoutpolicy_vertical = expanding
+
+			blockoverride "filters_sort" {}
+			blockoverride "pre_count" {
+				filter_buttons = {}
+			}
+			blockoverride "tip" {
+				hbox = {
+					layoutpolicy_horizontal = expanding
+				  spacing = 3
+
+				  text_single = {
+				    raw_text = "Showing from [PageStartGlobal] to [PageEndGlobal(CharacterSelectionList.GetList)],"
+				  }
+
+				  button_resize_page_ocr = {
+						blockoverride "resize" {
+							onclick = "[GetScriptedGui('resize_interaction_list_page').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+						}
+					}
+
+					expand = {}
+				}
+			}
 
 			blockoverride "claims_visibility"
 			{
 				visible = no
+			}
+			blockoverride "list_datamodel" {
+				datamodel = "[PageModelGlobal(CharacterSelectionList.GetList)]"
+			}
+
+			datacontext = "[GetPlayer.MakeScope.Var('interaction_list_page')]"
+			datacontext = "[GetScriptedGui('reset_interaction_list_page')]"
+
+			state = {
+			  name = "reset"
+			  on_finish = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+			  trigger_when = "[Or(Or(PageReset('interaction_list_page', CharacterSelectionList.GetList), Not(GetPlayer.MakeScope.Var('global_page_size').IsSet)), Not(Scope.IsSet))]"
+			  trigger_on_create = yes
 			}
 
 			blockoverride "special_character"
@@ -1909,6 +1926,10 @@ types InteractionCharacterList
 					visible = "[CharacterInteractionConfirmationWindow.HasSelectedCandidateScoreSortOption]"
 					spacing = 3
 
+					# text_single = {
+					# 	raw_text = "[IndexNumber],"
+					# }
+
 					text_single = {
 						raw_text = "Score:"
 					}
@@ -1928,20 +1949,20 @@ types InteractionCharacterList
 
 				# Governor Efficiency
 				hbox = {
-					visible = "[CharacterInteractionConfirmationWindow.HasSelectedGovernorEfficiencySortOption]"
+					# visible = "[CharacterInteractionConfirmationWindow.HasSelectedGovernorEfficiencySortOption]" #TODO
+					visible = "[GetPlayer.GetGovernment.HasRule( 'administrative' )]"
 					tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT"
 					spacing = 3
-
-					text_single = {
-						raw_text = "Efficiency:"
-					}
 
 					text_single = {
 						name = "char_governor_efficiency_value"
 						text = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALUE"
 					}
 
-					dot_l = {}
+					text_single = {
+						visible = "[IsIndexFirst]"
+						raw_text = "efficiency,"
+					}
 				}
 
 
@@ -1965,6 +1986,15 @@ types InteractionCharacterList
 						# value = "[CharacterInteractionConfirmationWindow.GetAnswerScore]"
 						tooltip = "[CharacterInteractionConfirmationWindow.GetAcceptanceBreakdown( CharacterListItem.Self )]"
 					}
+				}
+			}
+
+			page_buttons_ocr = {
+				blockoverride "prev" {
+					datacontext = "[GetScriptedGui('prev_interaction_list_page')]"
+				}
+				blockoverride "next_page" {
+					datacontext = "[GetScriptedGui('next_interaction_list_page')]"
 				}
 			}
 		}
@@ -2173,6 +2203,22 @@ types OCR {
 			dynamicgridbox_interaction_list_ocr = {
 				datamodel = "[InteractionCategoryItem.GetInteractions]"
 			}
+		}
+	}
+
+	type hbox_efficiency_in_list = hbox {
+		visible = "[GetPlayer.GetGovernment.HasRule( 'administrative' )]"
+		tooltip = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_TT"
+		spacing = 3
+
+		text_single = {
+			name = "char_governor_efficiency_value"
+			text = "ADMIN_WINDOW_THEME_GOVERNOR_EFFICIENCY_VALUE"
+		}
+
+		text_single = {
+			visible = "[IsIndexFirst]"
+			raw_text = "efficiency,"
 		}
 	}
 }

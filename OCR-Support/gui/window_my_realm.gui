@@ -813,6 +813,23 @@ window = {
 					}
 
 					button_tab_rulers = { } # AGOT
+
+					button_text = {
+						onclick = "[GetVariableSystem.Set('realm_tabs', 'admin_laws')]"
+						blockoverride "pre" {
+							text_single = {
+								raw_text = "i,"
+							}
+						}
+						blockoverride "text" {
+							raw_text = "realm_tab_admin_laws"
+						}
+						blockoverride "dot" {
+						}
+						shortcut = mapmode_kingdoms_secondary
+
+						visible = "[IsAdministrativeRuler( GetPlayer )]"
+					}
 				}
 
 				button_agot_laws = {}
@@ -1234,13 +1251,17 @@ window = {
 							# 	raw_text = "Showing first "
 							# }
 
-							vbox = {
+							hbox = {
 								layoutpolicy_horizontal = expanding
+								spacing = 3
 
 								text_single = {
-									layoutpolicy_horizontal = expanding
 									raw_text = "Showing items from [Add_CFixedPoint(GetPlayer.MakeScope.Var('vassal_page').GetValue, '(CFixedPoint)1')] to [Min_CFixedPoint(Add_CFixedPoint(GetPlayer.MakeScope.Var('vassal_page').GetValue, vassals_per_page), IntToFixedPoint(GetDataModelSize( MyRealmWindow.GetVassals )))]."
 									margin_left = 5
+								}
+
+								text_single = {
+									raw_text = "Number keys select vassals, 1 selects 6, 11, etc."
 								}
 
 								expand = { }
@@ -1258,10 +1279,18 @@ window = {
 								addrow = 95
 								setitemsizefromcell = yes
 
+
 								item = {
 									widget_vassal_list_item_ocr = {
 										name = tutorial_highlight_vassal
 										onclick = "[MyRealmWindow.Close]"
+										shortcuts_list = {
+											blockoverride "click" {
+												onclick = "[DefaultOnCharacterClick( Character.GetID )]"
+												onclick = "[GetVariableSystem.Clear('expand_view')]"
+												onclick = "[MyRealmWindow.Close]"
+											}
+										}
 										datacontext = "[MyRealmWindowVassalItem.GetCharacter]"
 										datacontext = "[MyRealmWindow.GetVassalInfo( Character.Self )]"
 										datacontext = "[MyRealmWindowVassalItem.GetContract]"
@@ -1926,17 +1955,18 @@ window = {
 														    blockoverride "text" {
 														       text = "[Title.GetNameNoTooltip]"
 														    }
-														}
+															}
 														hbox = {
 															layoutpolicy_horizontal = expanding
 
 															button_text = {
 																layoutpolicy_horizontal = expanding
-															    blockoverride "text" {
+														    blockoverride "text" {
 																	text = "MY_REALM_WINDOW_VOTE"
-															    }
+														    }
 																onclick = "[OpenSuccessionElectionWindowForTitle(Title.Self)]"
 																onclick = "[MyRealmWindow.SendButtonClickedTelemetry( PdxGuiTabs.GetActiveTab.GetKey, 'election' )]"
+															}
 
 															expand = { }
 														}
@@ -1960,115 +1990,73 @@ window = {
 				scrollbox = {
 					name = "tab_admin_laws"
 					widgetid = "tab_admin_laws"
-					visible = "[PdxGuiTabs.IsTabSet( 'admin_laws' )]"
+					visible = "[GetVariableSystem.HasValue('realm_tabs', 'admin_laws')]"
 
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
 
-					using = Animation_Tab_Switch
-
-					blockoverride "scrollbox_margins" {
-						margin = { 0 4 }
-					}
-
-					background = {
-						texture = "gfx/interface/illustrations/council/fp2_bg_council_steward.dds"
-						margin = { -5 0 }
-						fittype = end
-						alpha = 0.3
-
-						modify_texture = {
-							texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
-							blend_mode = alphamultiply
-							mirror = vertical
-						}
-					}
-
 					blockoverride "scrollbox_content"
 					{
 						vbox = {
-							margin = { 20 10 }
-							margin_bottom = 10
+							name = "administrative_laws"
+							datamodel = "[MyRealmWindow.GetRealmLaws]"
+							ignoreinvisible = yes
+							layoutpolicy_horizontal = expanding
 
-							vbox = {
-								name = "administrative_laws"
-								datamodel = "[MyRealmWindow.GetRealmLaws]"
-								ignoreinvisible = yes
-								margin_left = 10
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								text = "MY_REALM_ADMIN_LAWS_HEADER"
+							}
 
-								text_label_center = {
-									text = "MY_REALM_ADMIN_LAWS_HEADER"
-									using = Font_Size_Medium
-									default_format = "#low"
-								}
-								spacer = {
-									size = { 5 5 }
-								}
-								divider_light = {
-									layoutpolicy_horizontal = growing
-								}
-								spacer = {
-									size = { 5 15 }
-								}
+							item = {
+								vbox = {
+									layoutpolicy_vertical = expanding
+									datacontext = "[GuiLawGroup.GetLawGroup]"
+									visible = "[And(And( GuiLawGroup.GetLawGroup.HasFlag( 'admin_law' ), GuiLawGroup.IsAvailable ), Not(GetPlayer.GetGovernment.IsType('landless_adventurer_government')))]"
+									ignoreinvisible = yes
+									layoutpolicy_horizontal = expanding
 
-								item = {
+									text_single = {
+										layoutpolicy_horizontal = expanding
+										text = "[LawGroup.GetName]"
+									}
+
 									vbox = {
-										layoutpolicy_vertical = expanding
-										datacontext = "[GuiLawGroup.GetLawGroup]"
-										visible = "[And(And( GuiLawGroup.GetLawGroup.HasFlag( 'admin_law' ), GuiLawGroup.IsAvailable ), Not(GetPlayer.GetGovernment.IsType('landless_adventurer_government')))]"
-										ignoreinvisible = yes
-										spacing = 3
-										margin_bottom = 10
-
-										text_label_center = {
-											text = "[LawGroup.GetName]"
-										}
-
-										hbox = {
-											datamodel = "[GuiLawGroup.GetLaws]"
-
-											background = {
-												texture = "gfx/lines/line_lifestyles_unavailable.dds"
-												margin = { -8 -12 }
-												tintcolor = { 0.7 0.5 0.25 1 }
-											}
-
-											item = {
-												icon_button_decorative = {
-													datacontext = "[GuiLaw.GetLaw]"
-													size = { 60 60 }
-													enabled = "[Or(GuiLaw.CanEnact, GuiLaw.IsEnacted)]"
-													down = "[GuiLaw.IsEnacted]"
-													alwaystransparent = "[GuiLaw.IsEnacted]"
-													onclick = "[GuiLaw.Enact]"
-													tooltipwidget = { pass_law_tooltip = {} }
-													using = tooltip_below
-
-													icon_button_decorative = {
-														size = { 54 54 }
-														parentanchor = center
-														alwaystransparent = yes
-													}
-
-													button_icon = {
+										datamodel = "[GuiLawGroup.GetLaws]"
+										layoutpolicy_horizontal = expanding
+										item = {
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												datacontext = "[GuiLaw.GetLaw]"
+												blockoverride "pre" {
+													spacing = 3
+													text_single = {
+														raw_text = "Pass"
 														visible = "[Not(GuiLaw.IsEnacted)]"
-														texture = "[Law.GetIcon]"
-														parentanchor = center
-														size = { 42 42 }
-														alwaystransparent = yes
 													}
+													text_single = {
+														raw_text = "Current:"
+														visible = "[GuiLaw.IsEnacted]"
+													}
+												}
+												blockoverride "text" {
+													raw_text = "[GuiLaw.GetLaw.GetNameNoTooltip]"
+												}
 
-													icon = {
-														visible = "[And( GuiLaw.IsEnacted , Not( GuiLaw.CanEnact ) )]"
-														texture = "[Law.GetIcon]"
-														parentanchor = center
-														size = { 42 42 }
-														alwaystransparent = yes
-
-														using = Master_Button_Modify_Texture
-
-														blockoverride "master_color_frame" {
-															frame = 2
+												blockoverride "dot" {
+												}
+												enabled = "[GuiLaw.CanEnact]"
+												onclick = "[GuiLaw.Enact]"
+												#text disable
+												blockoverride "disabled" {
+													visible = "[And(Not(GuiLaw.CanEnact), Not(GuiLaw.IsEnacted))]"
+													align = left
+												}
+												tooltipwidget = {
+													pass_law_tooltip = {
+														#TODO localization
+														blockoverride "concept_link" {
+															text = "[law|E]"
 														}
 													}
 												}

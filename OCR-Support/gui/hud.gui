@@ -90,7 +90,7 @@ widget = {
 		ignoreinvisible = yes
 		spacing = 5
 		parentanchor = bottom
-		visible = "[Not(InReleaseMode)]"
+		visible = no#"[Not(InReleaseMode)]"
 
 		button_text = {
 			shortcut = speed_1
@@ -396,10 +396,21 @@ widget = {
 	######################################################
 
 	### Top Right Bar
-	widget_top_right_bar = {
-		name = "top_bar"
+	vbox = {
+		layoutpolicy_horizontal = expanding
 		using = vanilla
-		parentanchor = top|right
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			expand = {}
+
+			resources_top_right_bar = {
+				name = "top_bar"
+			}
+
+		}
+
+		expand = {}
 	}
 
 	### Outliner Button
@@ -1589,7 +1600,9 @@ widget = {
 					datacontext = "[GetPlayer.GetDomicile]"
 					tooltip = "[Domicile.GetProvisionsBreakdown]"
 
-					button_gather_provisions = {}
+					button_gather_provisions = {
+						onclick = "[Clear('resources')]"
+					}
 
 					expand = {}
 				}
@@ -1611,7 +1624,7 @@ widget = {
 
 					text_single = {
 						visible = "[PlayerValueItem.HasNextLevel]"
-						raw_text = " [PlayerValueItem.GetProgressTowardNextLevelLabel]."
+						raw_text = " [PlayerValueItem.GetProgressTooltip]."
 					}
 
 					tooltipwidget = {
@@ -1634,6 +1647,7 @@ widget = {
 					using = tooltip_ne
 
 					onclick = "[ToggleGameView('my_realm')]"
+					onclick = "[Clear('resources')]"
 
 
 					flowcontainer = {
@@ -1710,6 +1724,7 @@ widget = {
 					name = "piety"
 					datacontext = "[InGameTopbar.GetPietyItem]"
 					onclick = "[OpenGameViewData( 'faith', GetPlayer.GetFaith.GetID )]"
+					onclick = "[Clear('resources')]"
 
 					using = tooltip_ne
 
@@ -1796,6 +1811,7 @@ widget = {
 					datacontext = "[PlayerValueItem.GetBalanceGained]"
 
 					onclick = "[DefaultOnHouseCoatOfArmsClick(GetPlayer.GetHouse.GetID)]"
+					onclick = "[Clear('resources')]"
 
 					using = tooltip_ne
 
@@ -1893,6 +1909,7 @@ widget = {
 				button_group = {
 					layoutpolicy_horizontal = expanding
 					onclick = "[ToggleGameViewData('military', GetPlayer.GetID)]"
+					onclick = "[Clear('resources')]"
 					tooltip = "[ArmyComposition.GetArmyCompositionTooltip]"
 					using = tooltip_ne
 
@@ -1927,6 +1944,17 @@ widget = {
 					}
 				}
 
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[ToggleGameViewData('military', GetPlayer.GetID)]"
+					onclick = "[Set('military_view_tabs', 'MV_ARMIES_SELECTION_IMPERIAL')]"
+					onclick = "[Clear('resources')]"
+
+					visible = "[GetPlayer.GetGovernment.HasRule( 'administrative' )]"
+					blockoverride "text" {
+						raw_text = "Imperial armies: [GetPlayer.GetTopLiege.MakeScope.ScriptValue('realm_title_maa')]. You own [Val('personal_title_maa')] and command [Val('only_controlled_title_maa')]."
+					}
+				}
 				button = {
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
@@ -1940,6 +1968,7 @@ widget = {
 					using = tooltip_ne
 
 					onclick = "[ToggleGameView('my_realm')]"
+					onclick = "[Clear('resources')]"
 
 					flowcontainer = {
 						resizeparent = yes
@@ -1954,6 +1983,7 @@ widget = {
 						}
 					}
 				}
+
 			}
 
 			vbox = {
@@ -2398,7 +2428,7 @@ widget = {
 				visible = "[GetPlayer.HasDomicile]"
 
 				button_text = {
-					using = NoWindowsOpen
+					# using = NoWindowsOpen
 					datacontext = "[GetPlayer.GetDomicile]"
 					shortcut = map_mode_5
 					onclick = "[ToggleGameViewData( 'domicile', Domicile.Self )]"
@@ -2437,6 +2467,22 @@ widget = {
 					# 		raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
 					# 	}
 					# }
+				}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				visible = "[And(GetPlayer.GetTopLiege.GetGovernment.HasRule( 'administrative' ), Isnt('opened_admin'))]"
+				onclick = "[ToggleGameView( 'government_administration' )]"
+				down = "[IsGameViewOpen( 'government_administration' )]"
+				blockoverride "text" {
+					raw_text = "ADMINISTRATIVE_GOVERNMENT_HEADER"
+				}
+				blockoverride "extra" {
+					, = {}
+					text_single = {
+						raw_text = "J."
+					}
 				}
 			}
 		}
@@ -3234,6 +3280,21 @@ widget = {
 							}
 							onclick = "[ToggleEncyclopedia]"
 							shortcut = "encyclopedia"
+						}
+
+						button_text = {
+							visible = "[GetPlayer.GetTopLiege.GetGovernment.HasRule( 'administrative' )]"
+							onclick = "[ToggleGameView( 'government_administration' )]"
+							down = "[IsGameViewOpen( 'government_administration' )]"
+							blockoverride "text" {
+								raw_text = "ADMINISTRATIVE_GOVERNMENT_HEADER"
+							}
+							blockoverride "extra" {
+								, = {}
+								text_single = {
+									raw_text = "J."
+								}
+							}
 						}
 
 						container = {
@@ -4980,35 +5041,15 @@ types HUD
 		}
 	}
 
-	type widget_top_right_bar = widget
+	type resources_top_right_bar = hbox
 	{
-		size = { 640 38 }
-		filter_mouse = all
-		alwaystransparent = no
 		layer = top
-		background = { using = Background_Area_Border_Solid }
 
 		using = Animation_ShowHide_Quick
-
-		background = {
-			visible = "[Not( IsGameViewOpen('barbershop') )]"
-			texture = "gfx/interface/skinned/hud_top_right_bg.dds"
-			margin_left = 20
-			margin_bottom = 28
-		}
-
-		icon = {
-			parentanchor = bottom|right
-			position = { 7 23 }
-			texture = "gfx/interface/component_decoration/decoration_arch.dds"
-			size = { 30 30 }
-			mirror = vertical
-		}
 
 		## Resources
 		hbox = {
 			name = "resources"
-			margin_left = 20
 			visible = "[Not( IsGameViewOpen('barbershop') )]"
 
 			hbox = {
@@ -5020,263 +5061,492 @@ types HUD
 					name = "tutorial_highlight_resources_bar"
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
-					margin_right = 5
-					margin_left = 15
 
-					hbox = {
+					widget = {
 						name = "gold"
-						layoutpolicy_vertical = expanding
-						minimumsize = { 80 0 }
-						margin_left = 7
-						margin_right = 5
+						size = { 144 70 }
 
-						using = tooltip_ne
+						widget = {
+							size = { 144 45 }
 
-						tooltipwidget = {
-							widget_gold_breakdown_tooltip = {
-								blockoverride "income"
-								{
-									datacontext = "[InGameTopbar.GetIncomeBalanceBreakdown]"
-								}
+							tooltipwidget = {
+								widget_gold_breakdown_tooltip = {
+									blockoverride "income"
+									{
+										datacontext = "[InGameTopbar.GetIncomeBalanceBreakdown]"
+									}
 
-								blockoverride "expenses"
-								{
-									datacontext = "[InGameTopbar.GetExpensesBalanceBreakdown]"
+									blockoverride "expenses"
+									{
+										datacontext = "[InGameTopbar.GetExpensesBalanceBreakdown]"
+									}
 								}
 							}
+							using = tooltip_ne
 						}
 
-						hbox = {
-							name = "gold"
-							layoutpolicy_vertical = expanding
+						background = {
+							texture = "gfx/interface/skinned/resource_panel_start.dds"
+						}
+
+						vbox = {
+							margin_top = -2
 
 							hbox = {
-								margin_top = -5
-								spacing = 7
+								layoutpolicy_horizontal = expanding
+								expand = {}
 
-								icon = {
-									name = "gold_icon"
-									size = { 30 30 }
-									texture = "gfx/interface/icons/icon_gold.dds"
-								}
+								hbox = {
+									spacing = 7
 
-								flowcontainer = {
-									margin_bottom = 7
-									spacing = -6
-									direction = vertical
-									ignoreinvisible = yes
-
-									text_single = {
-										name = "gold_value_positive"
-										visible = "[GreaterThanOrEqualTo_CFixedPoint(GetPlayer.GetGold, '(CFixedPoint)0')]"
-										text = "[GetPlayer.GetGold|0]"
-										max_width = 50
-										default_format = "#high"
-										using = Font_Size_Medium
+									icon = {
+										name = "gold_icon"
+										size = { 30 30 }
+										texture = "gfx/interface/icons/icon_gold.dds"
 									}
 
-									text_single = {
-										name = "gold_value_negative"
-										visible = "[LessThan_CFixedPoint(GetPlayer.GetGold, '(CFixedPoint)0')]"
-										text = "[GetPlayer.GetGold|0]"
-										max_width = 50
-										default_format = "#N"
-										using = Font_Size_Medium
-									}
+									flowcontainer = {
+										margin_bottom = 7
+										spacing = -6
+										direction = vertical
+										ignoreinvisible = yes
 
-									container = {
 										text_single = {
-											name = "balance_positive"
-											visible = "[GreaterThanOrEqualTo_CFixedPoint(GetPlayerBalance, '(CFixedPoint)0')]"
-											text = "CURRENT_BALANCE"
+											name = "gold_value_positive"
+											visible = "[GreaterThanOrEqualTo_CFixedPoint(GetPlayer.GetGold, '(CFixedPoint)0')]"
+											text = "[GetPlayer.GetGold|0]"
 											max_width = 50
-											default_format = "#low"
+											default_format = "#high"
+											using = Font_Size_Medium
 										}
 
 										text_single = {
-											name = "balance_negative"
-											visible = "[LessThan_CFixedPoint(GetPlayerBalance, '(CFixedPoint)0')]"
-											text = "CURRENT_BALANCE"
+											name = "gold_value_negative"
+											visible = "[LessThan_CFixedPoint(GetPlayer.GetGold, '(CFixedPoint)0')]"
+											text = "[GetPlayer.GetGold|0]"
 											max_width = 50
 											default_format = "#N"
+											using = Font_Size_Medium
+										}
+
+										container = {
+											text_single = {
+												name = "balance_positive"
+												visible = "[GreaterThanOrEqualTo_CFixedPoint(GetPlayerBalance, '(CFixedPoint)0')]"
+												text = "CURRENT_BALANCE"
+												max_width = 50
+												default_format = "#low"
+											}
+
+											text_single = {
+												name = "balance_negative"
+												visible = "[LessThan_CFixedPoint(GetPlayerBalance, '(CFixedPoint)0')]"
+												text = "CURRENT_BALANCE"
+												max_width = 50
+												default_format = "#N"
+											}
 										}
 									}
 								}
+								spacer = {
+									size = { 10 1}
+								}
+								divider_light = {
+									layoutpolicy_vertical = expanding
+									alpha = 0.8
+								}
 							}
+							expand = {}
 						}
 					}
 
-					divider_light = {
-						layoutpolicy_vertical = expanding
-						alpha = 0.8
-					}
-
-					hbox = {
+					widget = {
 						name = "prestige"
 						datacontext = "[InGameTopbar.GetPrestigeItem]"
-						layoutpolicy_vertical = expanding
-						minimumsize = { 80 0 }
 
-						using = tooltip_ne
+						widget = {
+							size = { 112 45 }
 
-						hbox = {
-							margin_top = -5
-							spacing = 7
-
-							icon = {
-								name = "prestige_icon"
-								size = { 30 30 }
-								texture = "[GetPlayer.GetPrestigeLevelTexture]"
+							tooltipwidget = {
+								widget_resource_value_tooltip = {}
 							}
-
-							flowcontainer = {
-								margin_bottom = 7
-								spacing = -6
-								direction = vertical
-
-								text_single = {
-									name = "prestige_value"
-									text = "[GetPlayer.GetPrestige|0]"
-									max_width = 50
-									default_format = "#high"
-									using = Font_Size_Medium
-								}
-
-								container_resource_balance = {}
-							}
+							using = tooltip_ne
 						}
 
-						tooltipwidget = {
-							widget_resource_value_tooltip = {}
+						background = {
+							texture = "gfx/interface/skinned/resource_panel_piece.dds"
 						}
-					}
+						size = { 112 70 }
 
-					divider_light = {
-						layoutpolicy_vertical = expanding
-						alpha = 0.8
-					}
+						vbox = {
+							margin_top = -2
 
-					button = {
-						name = "piety"
-						datacontext = "[InGameTopbar.GetPietyItem]"
-						layoutpolicy_vertical = expanding
-						onclick = "[OpenGameViewData( 'faith', GetPlayer.GetFaith.GetID )]"
-
-						minimumsize = { 80 0 }
-						margin_left = 7
-						margin_right = 5
-
-						using = tooltip_ne
-						tooltipwidget = {
-							widget_resource_value_tooltip = {}
-						}
-
-						hbox = {
 							hbox = {
-								margin_top = -5
-								spacing = 6
+								layoutpolicy_horizontal = expanding
+								expand = {}
 
-								icon = {
-									name = "piety_icon"
-									size = { 30 30 }
-									texture = "[GetPlayer.GetPietyLevelTexture]"
-								}
+								hbox = {
+									spacing = 7
 
-								flowcontainer = {
-									margin_bottom = 7
-									spacing = -6
-									direction = vertical
-
-									text_single = {
-										name = "piety_value"
-										text = "[GetPlayer.GetPiety|0]"
-
-										max_width = 50
-										default_format = "#high"
-										using = Font_Size_Medium
+									icon = {
+										name = "prestige_icon"
+										size = { 30 30 }
+										texture = "[GetPlayer.GetPrestigeLevelTexture]"
 									}
 
-									container_resource_balance = {}
+									flowcontainer = {
+										margin_bottom = 7
+										spacing = -6
+										direction = vertical
+
+										text_single = {
+											name = "prestige_value"
+											text = "[GetPlayer.GetPrestige|0]"
+											max_width = 50
+											default_format = "#high"
+											using = Font_Size_Medium
+										}
+
+										container_resource_balance = {}
+									}
+								}
+
+								expand = {}
+
+								divider_light = {
+									layoutpolicy_vertical = expanding
+									alpha = 0.8
 								}
 							}
+							expand = {}
 						}
 					}
 
-					divider_light = {
-						layoutpolicy_vertical = expanding
-						alpha = 0.8
+
+
+					widget = {
+						name = "piety"
+						datacontext = "[InGameTopbar.GetPietyItem]"
+						button = {
+							size = { 112 45 }
+							onclick = "[OpenGameViewData( 'faith', GetPlayer.GetFaith.GetID )]"
+
+							using = tooltip_ne
+							tooltipwidget = {
+								widget_resource_value_tooltip = {}
+							}
+						}
+
+						background = {
+							texture = "gfx/interface/skinned/resource_panel_piece.dds"
+						}
+						size = { 112 70 }
+
+						vbox = {
+							margin_top = -2
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								expand = {}
+
+								hbox = {
+									spacing = 6
+
+									icon = {
+										name = "piety_icon"
+										size = { 30 30 }
+										texture = "[GetPlayer.GetPietyLevelTexture]"
+									}
+
+									flowcontainer = {
+										margin_bottom = 7
+										spacing = -6
+										direction = vertical
+
+										text_single = {
+											name = "piety_value"
+											text = "[GetPlayer.GetPiety|0]"
+
+											max_width = 50
+											default_format = "#high"
+											using = Font_Size_Medium
+										}
+
+										container_resource_balance = {}
+									}
+								}
+
+								expand = {}
+
+								divider_light = {
+									layoutpolicy_vertical = expanding
+									alpha = 0.8
+								}
+							}
+							expand = {}
+						}
 					}
 
-					button = {
+
+					widget = {
+						name = "provisions"
+						visible = "[IsLandlessAdventurer( GetPlayer )]"
+						size = { 112 70 }
+
+						widget = {
+							datacontext = "[GetPlayer.GetDomicile]"
+							size = { 112 45 }
+
+							tooltip = "[Domicile.GetProvisionsBreakdown]"
+							using = tooltip_ne
+						}
+
+						background = {
+							texture = "gfx/interface/skinned/resource_panel_piece.dds"
+						}
+
+						vbox = {
+							datacontext = "[GetPlayer.GetDomicile]"
+							margin_top = -2
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								expand = {}
+
+								hbox = {
+									spacing = 7
+
+									icon = {
+										name = "provisions_icon"
+										size = { 30 30 }
+
+										framesize = { 60 60 }
+										frame = 0
+										texture = "gfx/interface/icons/icon_camp_supply.dds"
+									}
+
+									flowcontainer = {
+										margin_bottom = 7
+										spacing = -6
+										direction = vertical
+										ignoreinvisible = yes
+
+										text_single = {
+											name = "provisions_value_positive"
+											visible = "[Not( Or( Domicile.IsProvisionsLow, Domicile.IsProvisionsCritical ) )]"
+
+											text = "[Domicile.GetProvisions|0]"
+											max_width = 50
+											default_format = "#high"
+											using = Font_Size_Medium
+										}
+
+										text_single = {
+											name = "provisions_value_low"
+											visible = "[Domicile.IsProvisionsLow]"
+
+											text = "[Domicile.GetProvisions|0]"
+											max_width = 50
+											default_format = "#color_yellow"
+											using = Font_Size_Medium
+										}
+
+										text_single = {
+											name = "provisions_value_critical"
+											visible = "[Domicile.IsProvisionsCritical]"
+
+											text = "[Domicile.GetProvisions|0]"
+											max_width = 50
+											default_format = "#N"
+											using = Font_Size_Medium
+										}
+
+										container = {
+											text_single = {
+												name = "provisions_max"
+												text = "[Domicile.GetProvisionsMax]"
+												max_width = 50
+												default_format = "#low"
+											}
+										}
+									}
+								}
+								expand = {}
+								divider_light = {
+									layoutpolicy_vertical = expanding
+									alpha = 0.8
+								}
+							}
+							expand = {}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 6
+
+
+								vbox = {
+									margin_top = -2
+									layoutpolicy_vertical = expanding
+
+									expand = {}
+								}
+							}
+							expand = {}
+						}
+					}
+
+					widget = {
+						name = "influence"
+						datacontext = "[InGameTopbar.GetInfluenceItem]"
+
+						visible = "[GetPlayer.GetGovernment.HasRule( 'administrative' )]"
+
+						widget = {
+							size = { 112 45 }
+
+							tooltipwidget = {
+								widget_resource_value_tooltip = {}
+							}
+							using = tooltip_ne
+						}
+
+						background = {
+							texture = "gfx/interface/skinned/resource_panel_piece.dds"
+						}
+						size = { 112 70 }
+
+						vbox = {
+							margin_top = -2
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								expand = {}
+
+								hbox = {
+									spacing = 7
+
+									icon = {
+										name = "influence_icon"
+										size = { 30 30 }
+										texture = "[GetPlayer.GetInfluenceLevelTexture]"
+									}
+
+									flowcontainer = {
+										margin_bottom = 7
+										spacing = -6
+										direction = vertical
+
+										text_single = {
+											name = "influence_value"
+											text = "[GetPlayer.GetInfluence|0]"
+											max_width = 50
+											default_format = "#high"
+											using = Font_Size_Medium
+										}
+
+										container_resource_balance = {}
+									}
+								}
+
+								expand = {}
+
+								divider_light = {
+									layoutpolicy_vertical = expanding
+									alpha = 0.8
+								}
+							}
+							expand = {}
+						}
+					}
+
+					widget = {
 						name = "renown"
 						datacontext = "[InGameTopbar.GetDynastyPrestigeItem]"
 						layoutpolicy_vertical = expanding
 
-						onclick = "[DefaultOnHouseCoatOfArmsClick(GetPlayer.GetHouse.GetID)]"
+						button = {
+							size = { 112 45 }
+							onclick = "[DefaultOnHouseCoatOfArmsClick(GetPlayer.GetHouse.GetID)]"
 
-						minimumsize = { 80 0 }
-						margin_left = 6
-						margin_right = 5
-
-						using = tooltip_ne
-						tooltipwidget = {
-							widget_resource_value_tooltip = {}
+							using = tooltip_ne
+							tooltipwidget = {
+								widget_resource_value_tooltip = {}
+							}
 						}
 
-						hbox = {
+						background = {
+							texture = "gfx/interface/skinned/resource_panel_piece.dds"
+						}
+						size = { 112 70 }
+
+						vbox = {
+							margin_top = -2
+
 							hbox = {
-								margin_top = -5
-								spacing = 6
+								layoutpolicy_horizontal = expanding
+								expand = {}
 
-								icon = {
-									visible = "[GetPlayer.IsDynast]"
-									texture = "[GetPlayer.GetDynasty.GetDynastyPrestigeLevelTexture]"
-									size = { 30 30 }
-								}
+								hbox = {
+									spacing = 6
 
-								icon = {
-									visible = "[Not(GetPlayer.IsDynast)]"
-									texture = "[GetPlayer.GetDynasty.GetDynastyPrestigeLevelTexture]"
-									size = { 30 30 }
-									alpha = 0.3
-								}
-
-								flowcontainer = {
-									visible = "[GetPlayer.IsDynast]"
-									margin_bottom = 7
-									spacing = -6
-									direction = vertical
-
-									text_single = {
-										name = "prestige_value"
-										text = "[GetPlayer.GetDynasty.GetPrestige|0]"
-
-										max_width = 50
-										default_format = "#high"
-										using = Font_Size_Medium
+									icon = {
+										visible = "[GetPlayer.IsDynast]"
+										texture = "[GetPlayer.GetDynasty.GetDynastyPrestigeLevelTexture]"
+										size = { 30 30 }
 									}
 
-									container_resource_balance = {}
-								}
-
-								flowcontainer = {
-									visible = "[Not(GetPlayer.IsDynast)]"
-									margin_bottom = 7
-									spacing = -6
-									direction = vertical
-
-									text_single = {
-										name = "prestige_value_nodynast"
-										text = "[GetPlayer.GetDynasty.GetPrestige|0]"
-
-										max_width = 50
-										default_format = "#low"
-										using = Font_Size_Medium
+									icon = {
+										visible = "[Not(GetPlayer.IsDynast)]"
+										texture = "[GetPlayer.GetDynasty.GetDynastyPrestigeLevelTexture]"
+										size = { 30 30 }
+										alpha = 0.3
 									}
 
-									container_resource_balance = {}
+									flowcontainer = {
+										visible = "[GetPlayer.IsDynast]"
+										margin_bottom = 7
+										spacing = -6
+										direction = vertical
+
+										text_single = {
+											name = "prestige_value"
+											text = "[GetPlayer.GetDynasty.GetPrestige|0]"
+
+											max_width = 50
+											default_format = "#high"
+											using = Font_Size_Medium
+										}
+
+										container_resource_balance = {}
+									}
+
+									flowcontainer = {
+										visible = "[Not(GetPlayer.IsDynast)]"
+										margin_bottom = 7
+										spacing = -6
+										direction = vertical
+
+										text_single = {
+											name = "prestige_value_nodynast"
+											text = "[GetPlayer.GetDynasty.GetPrestige|0]"
+
+											max_width = 50
+											default_format = "#low"
+											using = Font_Size_Medium
+										}
+
+										container_resource_balance = {}
+									}
+								}
+
+								expand = {}
+
+								divider_light = {
+									layoutpolicy_vertical = expanding
+									alpha = 0.8
 								}
 							}
+							expand = {}
 						}
 					}
 				}
@@ -5284,131 +5554,129 @@ types HUD
 				hbox = {
 					name = "military"
 					datacontext = "[GetPlayer]"
-					datacontext = "[GetPlayerArmyComposition]"
-					spacing = 5
-					margin_left = 10
-					margin_bottom = 3
 
-					background = {
-						texture = "gfx/interface/skinned/overlay_stone.dds"
-						margin_right = 20
-						margin_top = 20
-						margin_bottom = 3
-						texture_density = 2
-						spritetype = corneredtiled
-						color = { 0.4 0.4 0.44 1 }
-						alpha = 0.9
+					widget = {
+						button = {
+							size = { 112 45 }
+							onclick = "[ToggleGameViewData('military', GetPlayer.GetID)]"
 
-						using = Mask_Rough_Edges
-					}
-
-					background = {
-						texture = "gfx/interface/skinned/hud_top_right_bg_stone.dds"
-						margin_right = 10
-						margin_left = -2
-						margin_top = 4
-						texture_density = 2
-						spritetype = corneredtiled
-					}
-
-					button_group = {
-						onclick = "[ToggleGameViewData('military', GetPlayer.GetID)]"
-						tooltip = "[ArmyComposition.GetArmyCompositionTooltip]"
-						using = tooltip_ne
-
-						flowcontainer = {
-							margin = { 0 0 }
-							spacing = 5
-
-							icon = {
-								name = "icon_soldier"
-								texture = "gfx/interface/icons/icon_soldier.dds"
-								size = { 25 25 }
-							}
-
-							flowcontainer = {
-								direction = vertical
-								min_width = 65
-
-								flowcontainer = {
-									spacing = 2
-
-									text_single = {
-										name = "strength"
-										text = "[ArmyComposition.GetSoldierCountString]"
-										default_format = "#high"
-										align = nobaseline
-									}
-
-									army_quality_icon = {
-										tooltip_visible = no
-									}
-								}
-
-								progressbar_standard = {
-									name = "soldiers_max"
-									size = { 40 8 }
-
-									min = 0
-									max = "[IntToFloat(ArmyComposition.GetMaxNumberOfSoldiers)]"
-									value = "[IntToFloat(ArmyComposition.GetCurrentNumberOfSoldiers)]"
-								}
-							}
+							tooltip = "[InGameTopbar.GetMilitaryTooltip]"
+							using = tooltip_ne
 						}
-					}
 
-					button = {
-						name = "domain_limit"
-						layoutpolicy_vertical = expanding
-
-						minimumsize = { 60 0 }
-
-						margin_left = 3
-						margin_bottom = 3
-
-						tooltip = "[Character.GetDomainLimitTooltip]"
-						using = tooltip_ne
-
-						onclick = "[ToggleGameViewData('my_realm', 'domain')]"
+						size = { 112 70 }
 
 						background = {
-							visible = "[GreaterThan_int32( Character.GetDomainSize, Character.GetDomainLimit )]"
-							using = Status_Bad
-							margin_bottom = -3
+							texture = "gfx/interface/skinned/resource_panel_piece_light.dds"
 						}
 
-						hbox = {
-							icon = {
-								texture = "gfx/interface/icons/icon_domain.dds"
-								size = { 25 25 }
+						vbox = {
+							margin_top = 4
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								expand = {}
+
+								hbox = {
+									spacing = 5
+									icon = {
+										name = "icon_soldier"
+										texture = "gfx/interface/icons/icon_soldier.dds"
+										size = { 25 25 }
+									}
+
+									flowcontainer = {
+										direction = vertical
+										datacontext = "[GetPlayerArmyComposition]"
+
+										flowcontainer = {
+											spacing = 2
+
+											text_single = {
+												name = "strength"
+												text = "[InGameTopbar.GetCurrentTroopsCount]"
+												default_format = "#high"
+												align = nobaseline
+											}
+
+											army_quality_icon = {}
+										}
+
+										progressbar_standard = {
+											name = "soldiers_max"
+											size = { 40 8 }
+											visible = "[NotEqualTo_int32(ArmyComposition.GetMaxNumberOfSoldiers, '(int32)0')]"
+
+											min = 0
+											max = "[IntToFloat(ArmyComposition.GetMaxNumberOfSoldiers)]"
+											value = "[IntToFloat(ArmyComposition.GetCurrentNumberOfSoldiers)]"
+										}
+									}
+								}
+
+								expand = {}
 							}
 
-							text_single = {
-								name = "value"
-								text = "[Character.GetDomainSize]/[Character.GetDomainLimit]"
-								align = nobaseline
-								margin_bottom = 1
+							expand = {}
+						}
+					}
 
-								max_width = 110
+					widget = {
+						name = "domain_limit"
+						visible = "[Not( IsLandlessAdventurer( GetPlayer ) )]"
+
+						layoutpolicy_vertical = expanding
+
+						button = {
+							size = { 112 45 }
+							onclick = "[ToggleGameView('my_realm')]"
+
+							tooltip = "[Character.GetDomainLimitTooltip]"
+							using = tooltip_ne
+						}
+
+						size = { 112 70 }
+
+						background = {
+							texture = "gfx/interface/skinned/resource_panel_end.dds"
+						}
+
+						vbox = {
+							margin_top = 4
+
+							hbox = {
+								margin_bottom = 16
+
+								expand = {}
+								hbox = {
+									margin = { 5 5 }
+									spacing = 5
+
+									background = {
+										visible = "[GreaterThan_int32( Character.GetDomainSize, Character.GetDomainLimit )]"
+										using = Status_Bad
+										margin_bottom = -3
+									}
+
+									icon = {
+										texture = "gfx/interface/icons/icon_domain.dds"
+										size = { 25 25 }
+									}
+
+									text_single = {
+										name = "value"
+										text = "[Character.GetDomainSize]/[Character.GetDomainLimit]"
+										align = nobaseline
+										margin_bottom = 1
+										max_width = 110
+									}
+								}
+								expand = {}
 							}
+							expand = {}
 						}
 					}
 				}
-
-				spacer = {
-					size = { 10 0 }
-				}
-			}
-		}
-
-		widget = {
-			size = { 100% 100% }
-			visible = "[Not( IsGameViewOpen('barbershop') )]"
-
-			background = {
-				texture = "gfx/interface/skinned/hud_top_right_frame.dds"
-				margin_left = 20
-				margin_bottom = 28
 			}
 		}
 	}

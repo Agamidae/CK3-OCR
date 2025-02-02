@@ -122,6 +122,16 @@ window = {
 						expand = {}
 					}
 
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[OpenAdminVassalDetailView(Title.Self)]"
+						visible = "[TitleViewWindow.ShowAppointment]"
+						shortcut = map_mode_2
+						blockoverride "text" {
+							raw_text = "Open [theme|e] view, T."
+						}
+					}
+
 
 					hbox = {
 						layoutpolicy_horizontal = expanding
@@ -993,16 +1003,22 @@ window = {
 									# layoutpolicy_vertical = expanding
 									visible = "[Not( Title.HasFaction )]"
 
-
 									hbox = {
 										visible = "[Not(Title.IsHolyOrder)]"
 										layoutpolicy_horizontal = expanding
+										spacing = 3
 
 										text_single = {
 											text = "TITLE_VIEW_SUCCESSION"
 										}
+										comma = {}
 										text_single = {
-											raw_text = ", top 5:"
+											visible = "[GreaterThan_int32(GetDataModelSize(TitleViewWindow.GetLineOfSuccession), '(int32)5')]"
+											raw_text = "top 5:"
+										}
+										text_single = {
+											visible = "[Not(GreaterThan_int32(GetDataModelSize(TitleViewWindow.GetLineOfSuccession), '(int32)5'))]"
+											raw_text = "[GetDataModelSize(TitleViewWindow.GetLineOfSuccession)]:"
 										}
 										expand = { }
 									}
@@ -1032,17 +1048,104 @@ window = {
 										}
 									}
 
-									#TODO
-
-									hbox = {
+									vbox = {
 										layoutpolicy_horizontal = expanding
 										visible = "[TitleViewWindow.ShowAppointment]"
 
-										text_multi_wide = {
-											raw_text = "Work in progress: Succession in administrative realms is currently not shown"
+										hbox_admin_title_successor_candidates_list_ocr = {
+											visible = "[TitleViewWindow.ShowAppointment]"
+											datacontext = "[TitleViewWindow.GetSuccessorCandidateList]"
+											layoutpolicy_horizontal = expanding
+
+											blockoverride "score_breakdown" {
+												datacontext = "[TitleViewWindow.GetSuccessionScoreBreakdown( Character.Self )]"
+											}
 										}
 
-										expand = {}
+										vbox = {
+											visible = "[TitleViewWindow.ShowAppointment]"
+											layoutpolicy_horizontal = expanding
+
+											button_text = {
+												layoutpolicy_horizontal = expanding
+												onclick = "[ToggleGameViewData( 'title_appointment', Title.GetID )]"
+												shortcut = mapmode_culture_secondary
+												blockoverride "text" {
+													raw_text = "TITLE_VIEW_APPOINTMENT"
+												}
+												blockoverride "extra" {
+													comma = {}
+													text_single = {
+														raw_text = "Shift S."
+													}
+												}
+											}
+
+
+											# INVEST IN BEST LOCAL PLAYER CANDIDATE IF THEY EXIST
+											vbox = {
+												datacontext = "[TitleViewWindow.GetTitle]"
+												datacontext = "[TitleViewWindow.GetSuccessorCandidateList]"
+												datacontext = "[AdminVassalSuccessorCandidateList.GetBestLocalPlayerCandidate( '(int32)0' )]"
+												datacontext = "[AdminVassalSuccessorCandidate.GetCandidate]"
+
+												visible = "[And( TitleViewWindow.ShowAppointment, AdminVassalSuccessorCandidateList.ShowBestPlayerCandidateIndependently( '(int32)0' ) )]"
+												layoutpolicy_horizontal = expanding
+
+												button_text = {
+													layoutpolicy_horizontal = expanding
+													shortcut = mapmode_kingdoms_secondary
+													visible = "[Not(Or(Title.IsCounty,Title.IsBarony))]"
+													enabled = "[Character.IsPlayerInteractionValid('influence_candidacy_interaction')]"
+													tooltip = "[Character.GetPlayerInteractionTooltip('influence_candidacy_interaction')]"
+													onclick = "[Character.OpenPlayerInteractionWithTargetTitle('influence_candidacy_interaction', Title.Self)]"
+													blockoverride "disabled" {
+														visible = "[Not(Character.IsPlayerInteractionValid('influence_candidacy_interaction'))]"
+													}
+													blockoverride "text" {
+														raw_text = "ADMIN_VASSAL_DETAILS_VOTE_FOR_SUCCESSOR_BUTTON"
+													}
+													blockoverride "extra" {
+														comma = {}
+														text_single = {
+															raw_text = "i."
+														}
+													}
+												}
+											}
+
+											# INVEST IN ANYONE (FALLBACK)
+											vbox = {
+												datacontext = "[TitleViewWindow.GetTitle]"
+												datacontext = "[TitleViewWindow.GetSuccessorCandidateList]"
+
+												visible = "[And( TitleViewWindow.ShowAppointment, Not( AdminVassalSuccessorCandidateList.ShowBestPlayerCandidateIndependently( '(int32)0' ) ) )]"
+												layoutpolicy_horizontal = expanding
+
+												button_text = {
+													shortcut = mapmode_kingdoms_secondary
+													visible = "[Not(Or(Title.IsCounty,Title.IsBarony))]"
+													enabled = "[Character.IsPlayerInteractionValid('influence_candidacy_interaction')]"
+													tooltip = "[Character.GetPlayerInteractionTooltip('influence_candidacy_interaction')]"
+													onclick = "[Character.GetTopLiege.OpenPlayerInteractionWithTargetTitle('influence_candidacy_interaction', Title.Self)]"
+													layoutpolicy_horizontal = expanding
+
+													blockoverride "disabled" {
+														visible = "[Not(Character.IsPlayerInteractionValid('influence_candidacy_interaction'))]"
+													}
+													blockoverride "text" {
+														raw_text = "ADMIN_VASSAL_DETAILS_VOTE_FOR_SUCCESSOR_BUTTON"
+													}
+													blockoverride "extra" {
+														comma = {}
+														text_single = {
+															raw_text = "i."
+														}
+													}
+												}
+											}
+										}
+
 									}
 
 								}
