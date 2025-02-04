@@ -136,21 +136,23 @@ window = {
 					layoutpolicy_horizontal = expanding
 					shortcut = map_mode_11
 					blockoverride "text" {
-						raw_text = "[GetDataModelSize(DecisionsView.GetDecisionGroupItems)] groups, collapse all with Shift E, expand all with E."
+						raw_text = "[GetDataModelSize(DecisionsView.GetDecisionGroupItems)] groups, collapse all with Shift E, expand with E, focus with numbers."
 					}
 					onclick = "[PdxGuiTriggerAllAnimations('collapse_decisions')]"
+					visible = "[Isnt('decision_focus')]"
 				}
 
 				button = {
 					shortcut = map_mode_1
 					onclick = "[PdxGuiTriggerAllAnimations('expand_decisions')]"
+					onclick = "[Clear('decision_focus')]"
 				}
-
 				datamodel = "[DecisionsView.GetDecisionGroupItems]"
 
 				item = {
 					vbox = {
 						datacontext = "[DecisionGroupItem.GetType]"
+						visible = "[Or(Isnt('decision_focus'), Has('decision_focus', DecisionGroupItem.GetGroupTitle))]"
 
 						layoutpolicy_horizontal = expanding
 
@@ -169,15 +171,27 @@ window = {
 
 						button_text = {
 							layoutpolicy_horizontal = expanding
-							onclick = "[PdxGuiFoldOut.Toggle]"
+							onclick = "[PdxGuiFoldOut.Unfold]"
+							onclick = "[Set('decision_focus', DecisionGroupItem.GetGroupTitle)]"
 							shortcuts_list = {
 								blockoverride "click" {
-									onclick = "[PdxGuiFoldOut.Toggle]"
+									onclick = "[Set('decision_focus', DecisionGroupItem.GetGroupTitle)]"
+									onclick = "[PdxGuiFoldOut.Unfold]"
+									# onclick = "[PdxGuiFoldOut.Toggle]"
 								}
 							}
-							blockoverride "text" {
-								raw_text = "[IndexNumber], [DecisionGroupItem.GetGroupTitle], [CollapseIf(PdxGuiFoldOut.IsFolded)]"
+							blockoverride "num" {
+								visible = "[Isnt('decision_focus')]"
 							}
+							blockoverride "text" {
+								raw_text = "[DecisionGroupItem.GetGroupTitle], [CollapseIf(PdxGuiFoldOut.IsFolded)]"
+							}
+						}
+
+						button = {
+							shortcut = close_window
+							onclick = "[Clear('decision_focus')]"
+							visible = "[Has('decision_focus', DecisionGroupItem.GetGroupTitle)]"
 						}
 
 						vbox = {
@@ -196,6 +210,17 @@ window = {
 
 								item = {
 									button_decision_entry_text = {
+										blockoverride "num" {
+											visible = "[Is('decision_focus')]"
+										}
+
+										shortcuts_list = {
+											blockoverride "click" {
+												onclick = "[DecisionsViewItem.OnSelect]"
+												onclick = "[PdxGuiTriggerAllAnimations('decisions_detail_refresh')]"
+											}
+											visible = "[Is('decision_focus')]"
+										}
 										datacontext = "[DecisionsViewItem.GetDecision]"
 
 										onclick = "[DecisionsViewItem.OnSelect]"
