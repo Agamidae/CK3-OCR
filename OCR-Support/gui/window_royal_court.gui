@@ -706,12 +706,61 @@ window = {
 						name = "display_artifact_from_storage_overlay"
 						layoutpolicy_horizontal = expanding
 
-
 						visible = "[RoyalCourtWindow.IsPlacingArtifact]"
+						datacontext = "[RoyalCourtWindow.GetSelectedArtifact]"
 
-						text_single = {
+						button_text = {
 							layoutpolicy_horizontal = expanding
-							text = "[RoyalCourtWindow.GetSelectedArtifact.GetName]"
+							blockoverride "pre" {
+								text_single = {
+									raw_text = "[Artifact.GetNameNoTooltip]."
+								}
+							}
+							blockoverride "text" {
+								raw_text = "View details."
+							}
+							blockoverride "extra" {
+								flowcontainer = {
+									spacing = 3
+									ignoreinvisible = yes
+
+									visible = "[Artifact.IsValid]"
+									tooltip = "[Artifact.GetDurabilityTooltip]"
+									text_single = {
+										raw_text = "Does not decay."
+										visible = "[Not(Artifact.ShouldDecay)]"
+									}
+
+									text_single = {
+										visible = "[And( Artifact.ShouldDecay, GreaterThanOrEqualTo_int32( Artifact.GetYearsUntilDecay, '(int32)0' ) )]"
+										text = "ARTIFACT_YEARS_UNTIL_DECAY"
+									}
+
+									space = { }
+
+									text_single = {
+										visible = "[And( Artifact.ShouldDecay, GreaterThanOrEqualTo_int32( Artifact.GetYearsUntilDecay, '(int32)0' ) )]"
+										raw_text = "of durability left."
+									}
+
+									text_single = {
+										raw_text = ""
+									}
+
+									# in case a unique gets damaged
+									text_single = {
+										raw_text = ", durability [Artifact.GetDurability]"
+										visible = "[And(GreaterThan_CFixedPoint(Artifact.GetMaxDurability, Artifact.GetDurability), Not(Artifact.ShouldDecay))]"
+									}
+
+									text_single = {
+										raw_text = " Maximum is [Artifact.GetMaxDurability]."
+										visible = "[GreaterThan_CFixedPoint(Artifact.GetMaxDurability, Artifact.GetDurability)]"
+									}
+								}
+							}
+							onclick = "[ToggleGameViewData( 'artifact_details', Artifact.GetID )]"
+							onclick = "[LocalPlayerNewArtifacts.RemoveNewArtifact( Artifact.Self )]"
 						}
 
 						text_single = {
@@ -1193,7 +1242,18 @@ window = {
 								datacontext = "[RoyalCourtWindow.GetSelectedSlot]"
 								datacontext = "[RoyalCourtWindow.GetCharacter]"
 								layoutpolicy_horizontal = expanding
-								blockoverride "pre" {
+								blockoverride "extra_header" {
+									button_text = {
+										layoutpolicy_horizontal = expanding
+										# visible = "[Has('royal_details', 'artifacts')]"
+										shortcut = map_mode_1
+										blockoverride "text" {
+											raw_text = "[Select_CString(GetVariableSystem.Exists('artifact_effects'), 'Hide', 'Show')] effects, E."
+										}
+										onclick = "[GetVariableSystem.Toggle('artifact_effects')]"
+									}
+								}
+								blockoverride "pre_header" {
 									text_single = {
 										raw_text = "[GetDataModelSize(RoyalCourtWindow.GetSortedArtifactForSelectedSlot)]"
 									}
@@ -1206,8 +1266,8 @@ window = {
 
 								blockoverride "button_close"
 								{
-									onclick = "[GetVariableSystem.Clear( 'artifacts_tab' )]"
-									onclick = "[Clear('royal_details')]"
+									# onclick = "[GetVariableSystem.Clear( 'artifacts_tab' )]"
+									# onclick = "[Clear('royal_details')]"
 									onclick = "[RoyalCourtWindow.ClearSelectedSlot]"
 									onclick = "[RoyalCourtWindow.ClearSelectedArtifact]"
 									# onclick = "[RoyalCourtWindow.SetCameraActiveByKey( GetDefine( 'NRoyalCourt', 'DEFAULT_ARTIFACTS_CAMERA' ) )]"
@@ -1218,7 +1278,11 @@ window = {
 								name = "court_artifact_sorting"
 								layoutpolicy_horizontal = expanding
 
+								datacontext = "[GetPlayer.MakeScope.Var('court_artifacts_page')]"
+								datacontext = "[GetScriptedGui('court_artifacts_page')]"
+
 								dropdown_menu_standard = {
+									using = sgui_selection_reset
 									blockoverride "dropdown_size"
 									{
 										size = { 400 32 }
@@ -1255,6 +1319,9 @@ window = {
 								layoutpolicy_horizontal = expanding
 								name = "sort_order"
 								onclick = "[RoyalCourtWindow.ToggleArtifactSortOrder]"
+
+								using = sgui_click_reset
+
 								blockoverride "text" {
 									margin_left = 10
 									raw_text = "[Select_CString(RoyalCourtWindow.IsArtifactSortOrderDescending, 'In descending order', 'In ascending order')]."
@@ -2626,93 +2693,117 @@ types OCR {
 		}
 	}
 
-	type widget_court_artifact_list_ocr = vbox
+	type widget_court_artifact_list_ocr = vbox_paged_list
 	{
-		vbox = {
-			name = "artifacts_list"
+		datacontext = "[GetPlayer.MakeScope.Var('court_artifacts_page')]"
+		datacontext = "[GetScriptedGui('court_artifacts_page')]"
+
+		blockoverride "full_datamodel" {
 			datamodel = "[RoyalCourtWindow.GetSortedArtifacts]"
-			layoutpolicy_horizontal = expanding
+		}
+		blockoverride "reset_when" {
+			state = {
+			  name = "reset"
+			  on_finish = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
+				trigger_when = "[Or(Or(LessThan_int32( GetDataModelSize(RoyalCourtWindow.GetSortedArtifacts), FixedPointToInt( Scope.GetValue )), Not(GetPlayer.MakeScope.Var('global_page_size').IsSet)), Not(Scope.IsSet))]"
+				trigger_on_create = yes
+			}
+		}
+		# blockoverride "show_next_page" {}
+		# text_single = {
+		# 	layoutpolicy_horizontal = expanding
+		# 	visible = "[GetPlayer.MakeScope.Var('global_page_size').IsSet]"
+		# 	raw_text = "[CountPrevItems] total. [Scope.GetValue] current. [GetPlayer.MakeScope.Var('global_page_size').GetValue] page size"
+		# }
+		blockoverride "vbox_contents" {
 
-			item = {
-				widget_artifact_entry_ocr = {
-					layoutpolicy_horizontal = expanding
-					datacontext = "[RoyalCourtWindow.GetCharacter.GetInventory]"
-					datacontext = "[Inventory.GetSlotFromType( RoyalCourtWindow.GetSelectedSlot )]"
+			vbox = {
+				name = "artifacts_list"
+				datamodel = "[PageModelGlobal(RoyalCourtWindow.GetSortedArtifacts)]"
+				layoutpolicy_horizontal = expanding
 
-					using = tooltip_es
-					tooltipwidget = {
-						artifact_tooltip = {
-							blockoverride "extra_information"
-							{
-								hbox = {
-									visible = "[RoyalCourtWindow.GetCharacter.IsLocalPlayer]"
-									layoutpolicy_horizontal = expanding
+				item = {
+					widget_artifact_entry_ocr = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[RoyalCourtWindow.GetCharacter.GetInventory]"
+						datacontext = "[Inventory.GetSlotFromType( RoyalCourtWindow.GetSelectedSlot )]"
 
-									text_multi = {
-										visible = "[Inventory.IsEquipped( Artifact.Self)]"
+						using = tooltip_es
+						tooltipwidget = {
+							artifact_tooltip = {
+								blockoverride "extra_information"
+								{
+									hbox = {
+										visible = "[RoyalCourtWindow.GetCharacter.IsLocalPlayer]"
+										layoutpolicy_horizontal = expanding
 
-										text = "REMOVE_COURT_ARTIFACT_FROM_DISPLAY"
+										text_multi = {
+											visible = "[Inventory.IsEquipped( Artifact.Self)]"
 
-										max_width = 300
-										autoresize = yes
-										using = Font_Size_Small
+											text = "REMOVE_COURT_ARTIFACT_FROM_DISPLAY"
+
+											max_width = 300
+											autoresize = yes
+											using = Font_Size_Small
+										}
+
+										text_multi = {
+											visible = "[Not( Inventory.IsEquipped( Artifact.Self ) )]"
+
+											text = "DISPLAY_ARTIFACT"
+
+											max_width = 300
+											autoresize = yes
+											using = Font_Size_Small
+										}
+
+										expand = {}
 									}
-
-									text_multi = {
-										visible = "[Not( Inventory.IsEquipped( Artifact.Self ) )]"
-
-										text = "DISPLAY_ARTIFACT"
-
-										max_width = 300
-										autoresize = yes
-										using = Font_Size_Small
-									}
-
-									expand = {}
 								}
 							}
 						}
-					}
 
-					shortcuts_list = {
-						blockoverride "click" {
+						shortcuts_list = {
+							blockoverride "click" {
+								onclick = "[RoyalCourtWindow.OnClickArtifact( Artifact.Self )]"
+								enabled = "[And( RoyalCourtWindow.GetCharacter.IsLocalPlayer, Inventory.CanEquipReplace( Artifact.Self ) )]"
+							}
+						}
+
+						blockoverride "index" {
+							page_index = {}
+						}
+
+						blockoverride "court" {
+							visible = no
+						}
+
+						blockoverride "destroy" {
+							# visible = no
+							visible = "[Is('artifact_effects')]"
+						}
+						blockoverride "artifact_effects" {
+							visible = "[Is('artifact_effects')]"
+						}
+
+						blockoverride "background_button_overrides"
+						{
 							onclick = "[RoyalCourtWindow.OnClickArtifact( Artifact.Self )]"
 							enabled = "[And( RoyalCourtWindow.GetCharacter.IsLocalPlayer, Inventory.CanEquipReplace( Artifact.Self ) )]"
 						}
-					}
 
-					blockoverride "index" {
-						text_single = {
-							raw_text = "[IndexNumber],"
+						blockoverride "button"
+						{
+							down = "[RoyalCourtWindow.IsArtifactSelected( Artifact.Self )]"
+							enabled = "[And( RoyalCourtWindow.GetCharacter.IsLocalPlayer, Inventory.CanEquipReplace( Artifact.Self ) )]"
 						}
-					}
-
-					blockoverride "court" {
-						visible = no
-					}
-
-					blockoverride "destroy" {
-						visible = no
-						# visible = "[Isnt('artifact_effects')]"
-					}
-
-					blockoverride "background_button_overrides"
-					{
-						onclick = "[RoyalCourtWindow.OnClickArtifact( Artifact.Self )]"
-						enabled = "[And( RoyalCourtWindow.GetCharacter.IsLocalPlayer, Inventory.CanEquipReplace( Artifact.Self ) )]"
-					}
-
-					blockoverride "button"
-					{
-						down = "[RoyalCourtWindow.IsArtifactSelected( Artifact.Self )]"
-						enabled = "[And( RoyalCourtWindow.GetCharacter.IsLocalPlayer, Inventory.CanEquipReplace( Artifact.Self ) )]"
 					}
 				}
 			}
 		}
 	}
 
-	type widget_equippable_court_artifact_list_ocr = vbox {
+	type widget_equippable_court_artifact_list_ocr = vbox_paged_list {
 		layoutpolicy_horizontal = expanding
 		layoutpolicy_vertical = expanding
 		name = "equippable_court_artifacts"
@@ -2720,52 +2811,82 @@ types OCR {
 		datacontext = "[RoyalCourtWindow.GetCharacter.GetInventory]"
 		datacontext = "[RoyalCourtWindow.GetSelectedSlot]"
 
-		vbox = {
-			name = "artifacts_list"
+		datacontext = "[GetPlayer.MakeScope.Var('court_artifacts_page')]"
+		datacontext = "[GetScriptedGui('court_artifacts_page')]"
+
+		blockoverride "reset_when" {
+			state = {
+			  name = "reset"
+			  on_finish = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
+				trigger_when = "[Or(Or(LessThan_int32( GetDataModelSize(RoyalCourtWindow.GetSortedArtifacts), FixedPointToInt( Scope.GetValue )), Not(GetPlayer.MakeScope.Var('global_page_size').IsSet)), Not(Scope.IsSet))]"
+				trigger_on_create = yes
+			}
+		}
+
+		blockoverride "full_datamodel" {
 			datamodel = "[RoyalCourtWindow.GetSortedArtifactForSelectedSlot]"
-			layoutpolicy_horizontal = expanding
+		}
+		blockoverride "vbox_contents" {
+			vbox = {
+				name = "artifacts_list"
+				datamodel = "[PageModelGlobal(RoyalCourtWindow.GetSortedArtifactForSelectedSlot)]"
+				layoutpolicy_horizontal = expanding
 
-			item = {
-				widget_artifact_entry_ocr = {
-					layoutpolicy_horizontal = expanding
-					datacontext = "[RoyalCourtWindow.GetCharacter.GetInventory]"
-					datacontext = "[Inventory.GetSlotFromType( RoyalCourtWindow.GetSelectedSlot )]"
+				item = {
+					widget_artifact_entry_ocr = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[RoyalCourtWindow.GetCharacter.GetInventory]"
+						datacontext = "[Inventory.GetSlotFromType( RoyalCourtWindow.GetSelectedSlot )]"
 
-					blockoverride "court" {
-						visible = no
-					}
+						blockoverride "index" {
+							page_index = {}
+						}
 
-					tooltipwidget = {
-						artifact_tooltip = {
-							blockoverride "extra_information"
-							{
-								hbox = {
-									visible = "[RoyalCourtWindow.GetCharacter.IsLocalPlayer]"
-									layoutpolicy_horizontal = expanding
+						blockoverride "court" {
+							visible = no
+						}
 
-									# Displayed In Selected Slot
-									text_multi = {
-										visible = "[And( Inventory.IsEquipped( Artifact.Self), ObjectsEqual( Inventory.GetSlotFromType( RoyalCourtWindow.GetSelectedSlot ).GetArtifact, Artifact.Self ) )]"
+						blockoverride "court" {
+							visible = no
+						}
+						blockoverride "artifact_effects" {
+							visible = "[Is('artifact_effects')]"
+						}
+						blockoverride "destroy" {
+							visible = no#"[Is('artifact_effects')]"
+						}
 
-										text = "REMOVE_COURT_ARTIFACT_FROM_DISPLAY"
+						tooltipwidget = {
+							artifact_tooltip = {
+								blockoverride "extra_information"
+								{
+									hbox = {
+										visible = "[RoyalCourtWindow.GetCharacter.IsLocalPlayer]"
+										layoutpolicy_horizontal = expanding
 
-										max_width = 300
-										autoresize = yes
-										using = Font_Size_Small
-									}
+										# Displayed In Selected Slot
+										text_multi = {
+											visible = "[And( Inventory.IsEquipped( Artifact.Self), ObjectsEqual( Inventory.GetSlotFromType( RoyalCourtWindow.GetSelectedSlot ).GetArtifact, Artifact.Self ) )]"
 
-									# Displayed somewhere else
-									text_multi = {
-										visible = "[And( Inventory.IsEquipped( Artifact.Self), Not( ObjectsEqual( Inventory.GetSlotFromType( RoyalCourtWindow.GetSelectedSlot ).GetArtifact, Artifact.Self ) ) )]"
+											text = "REMOVE_COURT_ARTIFACT_FROM_DISPLAY"
 
-										text = "MOVE_COURT_ARTIFACT_TO_DISPLAY"
+											max_width = 300
+											autoresize = yes
+											using = Font_Size_Small
+										}
 
-										max_width = 300
-										autoresize = yes
-										using = Font_Size_Small
-									}
+										# Displayed somewhere else
+										text_multi = {
+											visible = "[And( Inventory.IsEquipped( Artifact.Self), Not( ObjectsEqual( Inventory.GetSlotFromType( RoyalCourtWindow.GetSelectedSlot ).GetArtifact, Artifact.Self ) ) )]"
 
-									text_multi = { # In Storage
+											text = "MOVE_COURT_ARTIFACT_TO_DISPLAY"
+
+											max_width = 300
+											autoresize = yes
+											using = Font_Size_Small
+										}
+
+										text_multi = { # In Storage
 										visible = "[Not( Inventory.IsEquipped( Artifact.Self ) )]"
 
 										text = "[RoyalCourtWindow.CanPutInSelectedSlotTooltip( Artifact.Self )]"
@@ -2780,27 +2901,25 @@ types OCR {
 							}
 						}
 					}
-					using = tooltip_es
+						using = tooltip_es
 
-					blockoverride "destroy" {
-						visible = "[Isnt('artifact_effects')]"
-					}
 
-					blockoverride "background_button_overrides"
-					{
-						onclick = "[RoyalCourtWindow.OnClickArtifact( Artifact.Self )]"
-						onclick = "[RoyalCourtWindow.ClearSelectedSlot]"
-						onclick = "[RoyalCourtWindow.SetCameraActiveByKey( GetDefine( 'NRoyalCourt', 'DEFAULT_ARTIFACTS_CAMERA' ) )]"
-						onclick = "[RoyalCourtWindow.ClearSelectedArtifact]"
+						blockoverride "background_button_overrides"
+						{
+							onclick = "[RoyalCourtWindow.OnClickArtifact( Artifact.Self )]"
+							onclick = "[RoyalCourtWindow.ClearSelectedSlot]"
+							onclick = "[RoyalCourtWindow.SetCameraActiveByKey( GetDefine( 'NRoyalCourt', 'DEFAULT_ARTIFACTS_CAMERA' ) )]"
+							onclick = "[RoyalCourtWindow.ClearSelectedArtifact]"
 
-						enabled = "[And( RoyalCourtWindow.GetCharacter.IsLocalPlayer, RoyalCourtWindow.CanPutInSelectedSlot( Artifact.Self ) )]"
-					}
+							enabled = "[And( RoyalCourtWindow.GetCharacter.IsLocalPlayer, RoyalCourtWindow.CanPutInSelectedSlot( Artifact.Self ) )]"
+						}
 
-					blockoverride "button"
-					{
-						down = "[RoyalCourtWindow.IsArtifactSelected( Artifact.Self )]"
-						enabled = "[And( RoyalCourtWindow.GetCharacter.IsLocalPlayer, RoyalCourtWindow.CanPutInSelectedSlot( Artifact.Self ) )]"
-						clicksound = "event:/DLC/EP1/SFX/UI/inventory_artifact_place"
+						blockoverride "button"
+						{
+							down = "[RoyalCourtWindow.IsArtifactSelected( Artifact.Self )]"
+							enabled = "[And( RoyalCourtWindow.GetCharacter.IsLocalPlayer, RoyalCourtWindow.CanPutInSelectedSlot( Artifact.Self ) )]"
+							clicksound = "event:/DLC/EP1/SFX/UI/inventory_artifact_place"
+						}
 					}
 				}
 			}

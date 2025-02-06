@@ -1,27 +1,52 @@
 
-# 'template_page' = variable name, the first item on the current page, so 5, 10, 15, etc
-# CharacterSelectionList.GetList = our datamodel
+# 'artifacts_page' = variable name, the first item on the current page, so 5, 10, 15, etc
+# RoyalCourtWindow.GetSortedArtifactForSelectedSlot = our datamodel
 # ResetPages checks if the datamodel is smaller than our selected paged item, or if our variables are not set
 # see types in shared\ocr_pages.gui
 
 # TODO!
-# 1. replace template_page
-# 2. replace CharacterSelectionList.GetList
+# 1. replace artifacts_page
+# 2. replace RoyalCourtWindow.GetSortedArtifactForSelectedSlot
 # 3. make an sgui
 
 # reset if we paged too far and showing an item outside of the datamodel
-#PageReset = LessThan_int32( GetDataModelSize( CharacterSelectionList.GetList ), FixedPointToInt(GetPlayer.MakeScope.Var('template_page').GetValue ))
+#PageReset = LessThan_int32( GetDataModelSize( RoyalCourtWindow.GetSortedArtifactForSelectedSlot ), FixedPointToInt(GetPlayer.MakeScope.Var('artifacts_page').GetValue ))
 # or if we're missing variables
 
 
-datacontext = "[GetPlayer.MakeScope.Var('template_page')]"
-datacontext = "[GetScriptedGui('template_page')]"
 
-blockoverride "full_datamodel" {
-  datamodel = "[CharacterSelectionList.GetList]"
+vbox_paged_list = {
+  blockoverride "page_index" {
+    datacontext = "[GetPlayer.MakeScope.Var('artifacts_page')]"
+  }
+  datacontext = "[GetScriptedGui('artifacts_page')]"
+
+  blockoverride "full_datamodel" {
+    datamodel = "[]"
+  }
+  blockoverride "vbox_contents" {
+    datamodel = "[PageModelGlobal()]"
+  }
+
+  blockoverride "num" {
+    page_index = {}
+  }
 }
+
+blockoverride "reset_when" {
+  state = {
+    name = "reset"
+    on_finish = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
+    trigger_when = "[Or(Or(LessThan_int32( GetDataModelSize(RoyalCourtWindow.GetSortedArtifacts), FixedPointToInt( Scope.GetValue )), Not(GetPlayer.MakeScope.Var('global_page_size').IsSet)), Not(Scope.IsSet))]"
+    trigger_on_create = yes
+  }
+}
+
+
+# we don't need the rest anymore
+
 blockoverride "list_datamodel" {
-  datamodel = "[PageModelGlobal(CharacterSelectionList.GetList)]"
+  datamodel = "[PageModelGlobal(RoyalCourtWindow.GetSortedArtifactForSelectedSlot)]"
 }
 
 
@@ -43,25 +68,24 @@ hbox = {
 }
 
 # if we have sorting, reset when changing it
-using = sgui_selection
-using = sgui_click
 
-on_finish = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
-onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
+using = sgui_click_reset
+using = sgui_selection_reset
+using = sgui_finish_reset
 
 page_buttons_ocr = {
   blockoverride "prev" {
-    datacontext = "[GetScriptedGui('prev_template_page')]"
+    datacontext = "[GetScriptedGui('prev_artifacts_page')]"
   }
   blockoverride "show_next_page" {
 
   }
   blockoverride "next_page" {
-    datacontext = "[GetScriptedGui('next_template_page')]"
+    datacontext = "[GetScriptedGui('next_artifacts_page')]"
   }
 }
 
 
 # if we have multiple lists
-visible = "[Not(GreaterThan_int32(GetDataModelSize(CharacterSelectionList.GetList), '(int32)10'))]"
-visible = "[GreaterThan_int32(GetDataModelSize(CharacterSelectionList.GetList), '(int32)10')]"
+visible = "[Not(GreaterThan_int32(GetDataModelSize(RoyalCourtWindow.GetSortedArtifactForSelectedSlot), '(int32)10'))]"
+visible = "[GreaterThan_int32(GetDataModelSize(RoyalCourtWindow.GetSortedArtifactForSelectedSlot), '(int32)10')]"
