@@ -788,8 +788,23 @@ window = {
 								shortcut = "zoom_out"
 							}
 
+							hbox = {
+								visible = "[GreaterThan_CFixedPoint(Province.MakeScope.Var('is_in_regions').GetValue, '(CFixedPoint)0')]"
+
+								button_text = {
+									shortcut = map_mode_18
+									blockoverride "text" {
+										raw_text = "Belongs to [Province.MakeScope.Var('is_in_regions').GetValue] regions, Control R."
+									}
+									# onclick = "[GetScriptedGui('save_region_province').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
+									onclick = "[Set('extra_window', 'window_province_regions')]"
+								}
+
+								expand = {}
+							}
 							expand = { }
 						}
+
 
 						# distance
 						vbox = {
@@ -3425,6 +3440,220 @@ window = {
 		}
 	}
 
+	window_ocr = {
+		# datacontext = "[GetPlayer.MakeScope.Var('region_province').GetProvince]"
+		button = {
+			# visible = "[Isnt('province_region')]"
+			shortcut = close_window
+			onclick = "[Clear('extra_window')]"
+		}
+		blockoverride "show_window" {
+			visible = "[Has('extra_window', 'window_province_regions')]"
+		}
+		blockoverride "ocr_header" {
+			button_text = {
+				visible = "[Isnt('province_region')]"
+				layoutpolicy_horizontal = expanding
+				onclick = "[GetScriptedGui('refresh_region_province').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', Province.MakeScope).End )]"
+				shortcut = map_mode_11
+				blockoverride "text" {
+					raw_text = "[Province.MakeScope.Var('is_in_regions').GetValue] regions that [Province.GetNameNoTooltip] belongs to. Refresh with Shift E."
+				}
+			}
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				visible = "[Isnt('province_region')]"
+				state = {
+					name = _show
+					on_finish = "[GetScriptedGui('refresh_region_province').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', Province.MakeScope).End )]"
+					trigger_when = "[Not(GetPlayer.MakeScope.Var('region_province').IsSet)]"
+					trigger_on_create = yes
+				}
+			}
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datamodel = "[GetPlayer.MakeScope.GetList('province_regions')]"
+
+				item = {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Or(Isnt('province_region'), Has('province_region', Scope.GetFlagName))]"
+
+						button = {
+							# shortcut = close_window
+							shortcut = go_back
+							onclick = "[Clear('province_region')]"
+						}
+
+						vbox = {
+							button = {
+								shortcut = decrease_speed_2
+								clicksound = ""
+							}
+							button = {
+								shortcut = increase_speed_2
+								clicksound = ""
+							}
+						}
+
+						button_text = {
+							datacontext = "[GetScriptedGui('province_region_page')]"
+							using = sgui_click_reset
+							onclick = "[Set('province_region', Scope.GetFlagName)]"
+							layoutpolicy_horizontal = expanding
+							blockoverride "text" {
+								raw_text = "[Localize(Concatenate(Scope.GetFlagName, '_name'))],"
+							}
+							blockoverride "extra" {
+								text_single = {
+									raw_text = "[AddTextIf(IsIndexFirst, 'You control ')][GetDataModelSize(GetPlayer.MakeScope.GetList(Concatenate(Scope.GetFlagName, '_yours')))] [AddTextIf(IsIndexFirst, 'counties ')]out of [Add_int32(GetDataModelSize(GetPlayer.MakeScope.GetList(Concatenate(Scope.GetFlagName, '_yours'))), GetDataModelSize(GetPlayer.MakeScope.GetList(Concatenate(Scope.GetFlagName, '_foreign'))))]."
+								}
+								text_single = {
+									visible = "[Is('province_region')]"
+									raw_text = "Go back with B."
+								}
+							}
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Has('province_region', Scope.GetFlagName)]"
+
+							datacontext = "[GetScriptedGui('province_region_page')]"
+
+							button_text = {
+								using = sgui_click_reset
+								layoutpolicy_horizontal = expanding
+								onclick = "[Toggle(Concatenate(Scope.GetFlagName, '_foreign'))]"
+								blockoverride "text" {
+									raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList(Concatenate(Scope.GetFlagName, '_foreign')))] counties you don't control, [Collapse(Concatenate(Scope.GetFlagName, '_foreign'))]"
+								}
+							}
+
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								visible = "[Isnt(Concatenate(Scope.GetFlagName, '_foreign'))]"
+
+								state = {
+								  name = "reset"
+								  using = sgui_finish_reset
+								  trigger_when = "[Or(Or(PageReset('province_region_page', GetPlayer.MakeScope.GetList(Concatenate(Scope.GetFlagName, '_foreign'))), Not(GetPlayer.MakeScope.Var('global_page_size').IsSet)), Not(GetPlayer.MakeScope.Var('province_region_page').IsSet))]"
+									trigger_on_create = yes
+								}
+
+								hbox = {
+									layoutpolicy_horizontal = expanding
+								  spacing = 3
+
+								  text_single = {
+										datacontext = "[GetPlayer.MakeScope.Var('province_region_page')]"
+								    raw_text = "Showing from [PageStartGlobal] to [Min_CFixedPoint(Add_CFixedPoint(Scope.GetValue, GlobalPageSize), IntToFixedPoint(PdxGuiWidget.AccessParent.AccessParent.FindChild('items').CountVisibleChildren))],"
+								  }
+
+								  button_resize_page_ocr = {}
+
+									expand = {}
+								}
+
+								fixedgridbox = {
+									datamodel = "[PageModel('province_region_page', FixedPointToInt(GetPlayer.MakeScope.Var('global_page_size').GetValue), GetPlayer.MakeScope.GetList(Concatenate(Scope.GetFlagName, '_foreign')))]"
+									layoutpolicy_horizontal = expanding
+									addrow = 25
+									addcolumn = 600
+
+									item = {
+										adjacent_county_button = {
+											blockoverride "pre" {
+												text_single = {
+											    alwaystransparent = yes
+											    margin_left = 3
+											    raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, Add_int32(FixedPointToInt( GetPlayer.MakeScope.Var('province_region_page').GetValue ), '(int32)1'))],"
+											  }
+											}
+											onclick = "[Clear('extra_window')]"
+											blockoverride "county_distance" {}
+											blockoverride "holder" {
+												visible = no
+											}
+										}
+									}
+								}
+
+								page_buttons_ocr = {
+									datacontext = "[GetPlayer.MakeScope.Var('province_region_page')]"
+								}
+
+								fixedgridbox = {
+									name = "items"
+									datamodel = "[GetPlayer.MakeScope.GetList(Concatenate(Scope.GetFlagName, '_foreign'))]"
+									addcolumn = 1
+									addrow = 1
+									flipdirection = yes
+									item = {
+										widget = {
+										}
+									}
+								}
+							}
+
+							###
+
+							button_text = {
+								using = sgui_click_reset
+								onclick = "[Toggle(Concatenate(Scope.GetFlagName, '_foreign'))]"
+								layoutpolicy_horizontal = expanding
+								blockoverride "text" {
+									raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList(Concatenate(Scope.GetFlagName, '_yours')))] counties you control, [CollapseIf(Isnt(Concatenate(Scope.GetFlagName, '_foreign')))]"
+								}
+							}
+
+							vbox_paged_list = {
+								visible = "[Is(Concatenate(Scope.GetFlagName, '_foreign'))]"
+								blockoverride "var" {
+
+								}
+							  blockoverride "page_index" {
+							    datacontext = "[GetPlayer.MakeScope.Var('province_region_page')]"
+							  }
+							  datacontext = "[GetScriptedGui('province_region_page')]"
+
+							  blockoverride "full_datamodel" {
+							    datamodel = "[GetPlayer.MakeScope.GetList(Concatenate(Scope.GetFlagName, '_yours'))]"
+							  }
+							  blockoverride "vbox_contents" {
+									fixedgridbox = {
+										datamodel = "[PageModel('province_region_page', FixedPointToInt(GetPlayer.MakeScope.Var('global_page_size').GetValue), GetPlayer.MakeScope.GetList(Concatenate(Scope.GetFlagName, '_yours')))]"
+									  layoutpolicy_horizontal = expanding
+									  addrow = 25
+									  addcolumn = 600
+									  item = {
+											adjacent_county_button = {
+												layoutpolicy_horizontal = expanding
+												blockoverride "pre" {
+													text_single = {
+														alwaystransparent = yes
+														margin_left = 3
+														raw_text = "[Add_int32(PdxGuiWidget.GetIndexInDataModel, Add_int32(FixedPointToInt( GetPlayer.MakeScope.Var('province_region_page').GetValue ), '(int32)1'))],"
+													}
+												}
+												onclick = "[Clear('extra_window')]"
+												blockoverride "county_distance" {}
+												blockoverride "holder" {
+													visible = no
+												}
+											}
+									  }
+									}
+							  }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	old_county = { }
 
 	#AGOT Added
@@ -4574,7 +4803,9 @@ types OCR {
 				}
 
 				text_single = {
-					visible = "[Not(ObjectsEqual(Title.GetHolder, GetPlayer))]"
+					block "holder" {
+						visible = "[Not(ObjectsEqual(Title.GetHolder, GetPlayer))]"
+					}
 					raw_text = "held by [Title.GetHolder.GetFirstNameNoTooltip] of [Title.GetHolder.GetPrimaryTitle.GetNameNoTierNoTooltip]."
 				}
 
