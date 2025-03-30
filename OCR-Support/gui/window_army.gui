@@ -2,11 +2,9 @@ window = {
 	name = "army_window"
 	datacontext = "[ArmyWindow.GetArmy]"
 
-	# parentanchor = bottom|left
 	size = { 750 100% }
 	filter_mouse = left|right
 	movable = no
-	# allow_outside = yes
 	visible_at_creation = no
 	alwaystransparent = yes
 	layer = middle
@@ -52,7 +50,8 @@ window = {
 	}
 
 	widget = {
-		visible = "[Is('army_window_open'))]"
+		visible = "[Is('army_window_open')]"
+
 		widget = {
 			visible = "[And(IsGamePaused, Not(GetVariableSystem.Exists('ocr')))]"
 
@@ -311,7 +310,7 @@ window = {
 								}
 
 								button_text = {
-									visible = "[Not(Army.GetCommander.IsValid)]"
+									visible = "[And(Not(Army.GetCommander.IsValid), Not( Army.GetOwner.HasActiveCompanionAISetting('assign_commanders') ))]"
 									blockoverride "text" {
 										raw_text = "Assign commander!"
 									}
@@ -405,6 +404,7 @@ window = {
 										}
 
 										button_text = {
+											visible = "[Not(Army.IsControlledByCompanionAI)]"
 											blockoverride "text" {
 												raw_text = "Reorganize, hotkey Y."
 											}
@@ -635,6 +635,12 @@ window = {
 							    expand = { }
 								}
 
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									visible = "[Army.IsControlledByCompanionAI]"
+									raw_text = "Intent: [Army.GetAIOrderDesc]"
+								}
+
 								# siege
 								vbox = {
 									layoutpolicy_horizontal = expanding
@@ -699,7 +705,7 @@ window = {
 									}
 
 									button_text = {
-										visible = "[Not(Army.GetCommander.IsValid)]"
+										visible = "[And(Not(Army.GetCommander.IsValid), Not( Army.GetOwner.HasActiveCompanionAISetting('assign_commanders') ))]"
 										blockoverride "text" {
 											raw_text = "Assign commander!"
 										}
@@ -1295,7 +1301,7 @@ window = {
 												visible = "[Not(ArmyWindow.CanAttachToAnyLocalUnit)]"
 											}
 
-											visible = "[And( Not( ArmyWindow.CanAttachToMultipleLocalUnits ), Not( ArmyWindow.IsAttachedToAnyUnit ) )]"
+											visible = "[And(And( Not( ArmyWindow.CanAttachToMultipleLocalUnits ), Not( ArmyWindow.IsAttachedToAnyUnit ) ), Not(Army.IsControlledByCompanionAI))]"
 											enabled = "[ArmyWindow.CanAttachToAnyLocalUnit]"
 											tooltip = "[ArmyWindow.BuildAttachToUnitTooltip]"
 											tooltip_visible = "[Not(ArmyWindow.CanAttachToAnyLocalUnit)]"
@@ -2240,7 +2246,7 @@ window = {
 
 												button_text = {
 													shortcut = speed_2
-													visible = "[Not( Character.IsValid )]"
+													visible = "[And(Not( Character.IsValid ), Not( Army.GetOwner.HasActiveCompanionAISetting('assign_commanders') ))]"
 													blockoverride "text" {
 														raw_text = "Assign commander, hotkey 2."
 													}
@@ -2304,6 +2310,7 @@ window = {
 													}
 
 													button_text = {
+														visible = "[Not( Army.GetOwner.HasActiveCompanionAISetting('assign_commanders') )]"
 														shortcut = speed_2
 														blockoverride "text" {
 															raw_text = "Change commander, 2."
@@ -2349,6 +2356,7 @@ window = {
 
 											vbox = {
 												layoutpolicy_horizontal = expanding
+												visible = "[Not(Army.IsControlledByCompanionAI)]"
 
 												vbox = {
 													layoutpolicy_horizontal = expanding
@@ -5136,6 +5144,8 @@ template reorg_regiment_tooltips {
 	}
 }
 
+
+
 types ArmyWindow
 {
 	type army_location = hbox {
@@ -5353,16 +5363,9 @@ types ArmyWindow
 		}
 	}
 
-	type soldiers_and_quality_small = hbox
+	type hbox_soldiers_and_quality_small_core = hbox
 	{
-		margin = {5 5}
-		spacing = 5
-
 		tooltip = "[ArmyComposition.GetArmyCompositionTooltip]"
-
-		expand = {
-			layoutpolicy_horizontal = expanding
-		}
 
 		icon = {
 			name = "icon_soldier"
@@ -5376,7 +5379,7 @@ types ArmyWindow
 				name = "strength"
 				text = "[ArmyComposition.GetSoldierCountString]"
 				default_format = "#high"
-				align = left
+				align = left|nobaseline
 				using = Font_Size_Medium
 			}
 
@@ -5397,6 +5400,22 @@ types ArmyWindow
 
 		army_quality_icon = {
 			tooltip_visible = no
+		}
+	}
+
+	type hbox_soldiers_and_quality_small = hbox
+	{
+		margin = {5 5}
+		spacing = 5
+
+		tooltip = "[ArmyComposition.GetArmyCompositionTooltip]"
+
+		expand = {
+			layoutpolicy_horizontal = expanding
+		}
+
+		hbox_soldiers_and_quality_small_core = {
+			tooltip = ""
 		}
 
 		expand = {

@@ -1,0 +1,228 @@
+# open_map_grid = {
+#   effect = {
+#
+#     set_variable = {
+#       name = x_county_grid
+#       value = {
+#         value = scope:province.county.title_province.var:pos_x
+#         divide = 100
+#         round = yes
+#       }
+#     }
+#
+#     set_variable = {
+#       name = y_county_grid
+#       value = {
+#         value = scope:province.county.title_province.var:pos_y
+#         divide = 100
+#         round = yes
+#       }
+#     }
+#   }
+# }
+#
+# set_up_county_grid = {
+#   effect = {
+#     clear_variable_list = x_county_grid
+#     clear_variable_list = map_provinces
+#
+#     every_province = {
+#       limit = {
+#         OR = {
+#           is_county_capital = yes
+#           is_sea_province = yes
+#           is_river_province = yes
+#         }
+#       }
+#       add_to_list = map_provinces
+#       root = {
+#         add_to_variable_list = {
+#           name = map_provinces
+#           target = prev
+#         }
+#       }
+#     }
+#
+#     # set up the stories
+#     set_local_variable = {
+#       name = x
+#       value = -1
+#     }
+#
+#     while = {
+#       count = 64
+#
+#       # reset for the new cycle
+#       set_local_variable = {
+#         name = y
+#         value = -1
+#       }
+#
+#       # we'll start at 0 since the var is set to -1
+#       change_local_variable = {
+#         name = x
+#         add = 1
+#       }
+#
+#       # first we make 64 columns
+#       create_story = {
+#         type = x_county_grid
+#         save_scope_as = x
+#       }
+#       scope:x = {
+#         set_variable = {
+#           name = x
+#           value = local_var:x
+#         }
+#
+#         root = {
+#           add_to_variable_list = {
+#             name = x_county_grid
+#             target = prev
+#           }
+#         }
+#         clear_variable_list = y_county_grid
+#
+#         # create 40 stories at x 0, then at x 1, etc
+#         while = {
+#           count = 40
+#
+#
+#           change_local_variable = {
+#             name = y
+#             add = 1
+#           }
+#
+#           # and each column will have 40 rows, but stories need to have an owner, so we create them on the root and then add to a variable list in the previous story
+#           root = {
+#             create_story = {
+#               type = y_county_grid
+#               save_scope_as = y
+#             }
+#
+#             scope:y = {
+#               scope:x = {
+#                 add_to_variable_list = {
+#                   name = y_county_grid
+#                   target = prev
+#                 }
+#               }
+#
+#               set_variable = {
+#                 name = y
+#                 value = local_var:y
+#               }
+#               clear_variable_list = grid_provinces
+#
+#               # add provinces to the story
+#               every_in_list = {
+#                 list = map_provinces
+#
+#                 limit = {
+#                   rounded_x = scope:x.var:x
+#                   rounded_y = prev.var:y
+#                 }
+#
+#                 scope:y = {
+#                   add_to_variable_list = {
+#                     name = grid_provinces
+#                     target = prev
+#                   }
+#                 }
+#                 remove_from_list = map_provinces
+#               }
+#             }
+#           }
+#         }
+#       }
+#     }
+#   }
+# }
+#
+# move_county_grid = {
+#   effect = {
+#     set_variable = {
+#       name = x_county_grid
+#       value = {
+#         value = var:x_county_grid
+#         if = {
+#           limit = { exists = scope:east }
+#           add = scope:east #value added in sgui, -1, 1
+#         }
+#       }
+#     }
+#
+#     set_variable = {
+#       name = y_county_grid
+#       value = {
+#         value = var:y_county_grid
+#         if = {
+#           limit = { exists = scope:north }
+#           add = scope:north #value added in sgui, -1, 1
+#         }
+#       }
+#     }
+#
+#     # find the column
+#     random_in_list = {
+#       variable = x_county_grid
+#       limit = {
+#         var:x = root.var:x_county_grid
+#       }
+#       save_scope_as = x
+#       # find the row
+#       random_in_list = {
+#         variable = y_county_grid
+#         limit = {
+#           var:y = root.var:y_county_grid
+#         }
+#         # save the story to show in UI
+#         root = {
+#           set_variable = {
+#             name = county_grid_cell
+#             value = prev
+#           }
+#           set_variable = {
+#             name = x_county_grid
+#             value = scope:x.var:x
+#           }
+#           set_variable = {
+#             name = y_county_grid
+#             value = prev.var:y
+#           }
+#         }
+#       }
+#     }
+#   }
+#
+#   is_valid = {
+#     trigger_if = {
+#       limit = { exists = scope:north }
+#       OR = {
+#         AND = {
+#           scope:north = 1
+#           var:y_county_grid < 40
+#         }
+#         AND = {
+#           scope:north = -1
+#           var:y_county_grid > 0
+#         }
+#       }
+#     }
+#     trigger_else = {}
+#     trigger_if = {
+#       limit = { exists = scope:east }
+#       OR = {
+#         AND = {
+#           scope:east = 1
+#           var:x_county_grid < 64
+#         }
+#         AND = {
+#           scope:east = -1
+#           var:x_county_grid > 0
+#         }
+#       }
+#     }
+#     trigger_else = {}
+#   }
+# }

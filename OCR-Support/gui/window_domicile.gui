@@ -340,6 +340,8 @@
 									}
 								}
 
+								tooltip_visible = "[Or( DomicileBuildingSlot.IsUnderConstruction, Not( DomicileBuildingSlot.IsFree ) )]"
+
 								blockoverride "extra" {
 									text_single = {
 										raw_text = "[IndexNumber],"
@@ -777,7 +779,9 @@ types OCR {
 			}
 
 			blockoverride "extra" {
-				hbox_domicile_building_cost_bar_ocr = {}
+				hbox_domicile_building_cost_bar_ocr = {
+					blockoverride "upgrade_cost_text_visibility" {}
+				}
 
 				# text_single = {
 				# 	visible = "[And( Not( DomicileBuilding.IsInternal ), PotentialBuildingItem.HasInternalUpgrades )]"
@@ -792,6 +796,21 @@ types OCR {
 		name = "building_costs"
 		ignoreinvisible = yes
 		spacing = 3
+
+		#check
+		block "upgrade_cost_text_visibility"
+		{
+			text_single = {
+				text = "UPGRADE_COST"
+				visible = "[Not( PotentialBuildingItem.GetBuilding.IsRootOfTrack )]"
+			}
+			text_single = {
+				text = "CONSTRUCT_COST"
+				visible = "[PotentialBuildingItem.GetBuilding.IsRootOfTrack]"
+			}
+			, = {}
+		}
+
 
 		flowcontainer = {
 			ignoreinvisible = yes
@@ -909,7 +928,7 @@ types OCR {
 			onclick = "[DomicileWindow.NavigateBack]"
 		}
 
-		datacontext = "[DomicileWindow.GetSelectedTreeUpgrade]"
+		datacontext = "[DomicileWindow.GetSelectedTreePreview]"
 
 		# normal view
 		flowcontainer = {
@@ -951,7 +970,7 @@ types OCR {
 					name = "upgrade_button"
 					shortcut = mapmode_duchies_secondary
 					shortcut = confirm
-					visible = "[And(And( And( DomicileWindow.IsEditMode, Not( DomicileWindow.IsInspectLineTreeBuilding ) ), Not( DomicileBuildingSlot.HasSelectedFreeInternalSlot ) ), Not(ObjectsEqual(DomicileBuildingSlot.GetBuilding, DomicileWindow.GetSelectedTreeUpgrade)))]"
+					visible = "[And(And( And( DomicileWindow.IsEditMode, Not( DomicileWindow.IsInspectLineTreeBuilding ) ), Not( DomicileBuildingSlot.HasSelectedFreeInternalSlot ) ), Not(ObjectsEqual(DomicileBuildingSlot.GetBuilding, DomicileWindow.GetSelectedTreePreview)))]"
 					onclick = "[PostCommand( Domicile.BuildBuilding( DomicileBuilding.Self, DomicileWindow.Self ) )]"
 					onclick = "[GetVariableSystem.Clear( 'camp_build_view' )]"
 
@@ -993,7 +1012,7 @@ types OCR {
 			}
 
 			hbox_domicile_building_cost_bar_ocr = {
-				datacontext = "[DomicileWindow.GetSelectedTreeCostBreakdown]"
+				datacontext = "[DomicileWindow.GetPreviewCostBreakdown]"
 				visible = "[And(And( DomicileWindow.IsEditMode, Not( DomicileWindow.IsTreeRootSelected ) ), Not( DomicileBuildingSlot.IsUnderConstruction ))]"
 			}
 
@@ -1024,7 +1043,7 @@ types OCR {
 				}
 				datacontext = "[DomicileWindow.GetCharacter.GetInventory]"
 			}
-
+			
 			# demolish X
 			button_text = {
 				shortcut = increase_speed_2
@@ -1039,7 +1058,7 @@ types OCR {
 					visible = "[Not(IsValidCommand( Domicile.DemolishBuilding( DomicileBuilding.Self ) ))]"
 				}
 				blockoverride "text" {
-					raw_text = "[DomicileBuilding.GetDemolishTooltip]"
+					raw_text = "Demolish [DomicileBuilding.GetName], X."
 				}
 			}
 
@@ -1090,14 +1109,14 @@ types OCR {
 					}
 
 					text_single = {
-						visible = "[DomicileBuildingSlot.ShowInternalScrollButtons]"
+						visible = "[DomicileBuildingSlot.CanScrollInternalUpgradesRight]"
 						raw_text = "list can be scrolled."
 					}
 				}
 
 				### Scroll internal buildings left button ###
 				button_text = {
-					visible = "[And(DomicileBuildingSlot.ShowInternalScrollButtons, DomicileBuildingSlot.CanScrollInternalUpgradesLeft)]"
+					visible = "[And(DomicileBuildingSlot.CanScrollInternalUpgradesRight, DomicileBuildingSlot.CanScrollInternalUpgradesLeft)]"
 					onclick = "[DomicileBuildingSlot.ScrollInternalUpgradesLeft]"
 					shortcut = zoom_out
 					blockoverride "text" {
@@ -1131,14 +1150,16 @@ types OCR {
 								ignoreinvisible = yes
 								visible = "[DomicileInternalGuiSlot.IsUnlocked]"
 
+								# empty
 								button_text = {
 									visible = "[And( DomicileInternalGuiSlot.IsFree, Not( DomicileBuildingSlot.IsUnderConstruction ) )]"
 									enabled = "[DomicileWindow.IsEditMode]"
-									onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.Self )]"
+									onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.GetSlotIndex )]"
+
 
 									shortcuts_list = {
 										blockoverride "click" {
-											onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.Self )]"
+											onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.GetSlotIndex )]"
 										}
 									}
 
@@ -1160,26 +1181,34 @@ types OCR {
 								# 	datacontext = "[DomicileBuildingSlot.GetBuildingTypeUnderConstruction]"
 								# }
 
+								# built or under construction
 								button_text = {
 									blockoverride "num" {}
-									visible = "[Or(Not( DomicileInternalGuiSlot.IsFree ), DomicileBuildingSlot.IsInternalSlotUnderConstruction( DomicileInternalGuiSlot.Self ) )]"
+									visible = "[Or(Not( DomicileInternalGuiSlot.IsFree ), DomicileBuildingSlot.IsInternalSlotUnderConstruction( DomicileInternalGuiSlot.GetSlotIndex ) )]"
 
-									onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.Self )]"
+									onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.GetSlotIndex )]"
 
 									datacontext = "[DomicileBuildingSlot.GetBuildingTypeUnderConstruction]"
 									datacontext = "[DomicileInternalGuiSlot.GetBuilding]"
 
 									shortcuts_list = {
 										blockoverride "click" {
-											onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.Self )]"
+											onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.GetSlotIndex )]"
 										}
 									}
+
+									#check
+									tooltip = "[DomicileBuildingSlot.GetInternalSlotTooltip( DomicileInternalGuiSlot.Self )]"
 
 									blockoverride "text" {
 										raw_text = "[DomicileBuilding.GetNameAndLevel],"
 									}
 
 									blockoverride "extra" {
+										text_single = {
+											visible = "[DomicileBuildingSlot.IsInternalSlotUnderConstruction( DomicileInternalGuiSlot.GetSlotIndex )]"
+											raw_text = "under construction"
+										}
 										text_single = {
 											visible = "[DomicileInternalGuiSlot.CanUpgrade]"
 											raw_text = "can upgrage."
@@ -1193,7 +1222,7 @@ types OCR {
 
 				### Scroll internal buildings right button ###
 				button_text = {
-					visible = "[And(DomicileBuildingSlot.ShowInternalScrollButtons, DomicileBuildingSlot.CanScrollInternalUpgradesRight)]"
+					visible = "[And(DomicileBuildingSlot.CanScrollInternalUpgradesRight, DomicileBuildingSlot.CanScrollInternalUpgradesRight)]"
 					onclick = "[DomicileBuildingSlot.ScrollInternalUpgradesRight]"
 					shortcut = zoom_in
 					blockoverride "text" {
@@ -1229,7 +1258,7 @@ types OCR {
 				item = {
 					container = {
 						datacontext = "[PotentialBuildingItem.GetBuilding]"
-						visible = "[And(DomicileBuildingSlot.IsSameSlotType( DomicileBuilding.Self ), ObjectsEqual(PotentialBuildingItem.GetBuilding, DomicileWindow.GetSelectedTreeUpgrade))]"
+						visible = "[And(DomicileBuildingSlot.IsSameSlotType( DomicileBuilding.Self ), ObjectsEqual(PotentialBuildingItem.GetBuilding, DomicileWindow.GetSelectedTreePreview))]"
 
 						text_multi_wide = {
 							visible = "[And( Not( PotentialBuildingItem.GetBuilding.IsInternal ), PotentialBuildingItem.HasInternalUpgrades )]"
@@ -1631,6 +1660,8 @@ types DomicileWindowTypes {
 				using = domicile_building_slot_tooltip
 			}
 		}
+		tooltip_visible = "[Or( DomicileBuildingSlot.IsUnderConstruction, Not( DomicileBuildingSlot.IsFree ) )]"
+		using = tooltip_ws
 
 		### Mouse enter animation built slot
 		state = {
@@ -2044,6 +2075,8 @@ types DomicileWindowTypes {
 				parentanchor = center
 				size = { 56 56 }
 
+				tooltip = "DOMICILE_WINDOW_CONSTRUCT_BUILDING_TT"
+
 				### Float animation
 				state = {
 					name = float_a
@@ -2120,6 +2153,8 @@ types DomicileWindowTypes {
 				parentanchor = center
 				size = { 56 56 }
 				alwaystransparent = "[DomicileBuildingSlot.IsUnlocked]"
+
+				tooltip = "DOMICILE_WINDOW_CONSTRUCT_BUILDING_LOCKED_TT"
 
 				icon = {
 					parentanchor = center
@@ -2251,7 +2286,9 @@ types DomicileWindowTypes {
 
 			expand = {}
 
-			hbox_domicile_building_cost_bar = {}
+			hbox_domicile_building_cost_bar = {
+				blockoverride "upgrade_cost_text_visibility" {}
+			}
 			allow_outside = yes
 
 			button_standard = {
@@ -2400,6 +2437,7 @@ types DomicileWindowTypes {
 		name = "upgrade_panel"
 		layoutpolicy_horizontal = expanding
 		layoutpolicy_vertical = expanding
+		alwaystransparent = no
 
 		using = Window_Margins
 
@@ -2421,7 +2459,7 @@ types DomicileWindowTypes {
 
 		### Header ###
 		header_pattern = {
-			datacontext = "[DomicileWindow.GetSelectedTreeUpgrade]"
+			datacontext = "[DomicileWindow.GetSelectedTreePreview]"
 			layoutpolicy_horizontal = expanding
 
 			blockoverride "header_text" {
@@ -2490,22 +2528,25 @@ types DomicileWindowTypes {
 			}
 
 			### Scroll internal buildings left button ###
-			button = {
-				visible = "[DomicileBuildingSlot.ShowInternalScrollButtons]"
+			widget = {
 				size = { 30 30 }
 
-				enabled = "[DomicileBuildingSlot.CanScrollInternalUpgradesLeft]"
-				onclick = "[DomicileBuildingSlot.ScrollInternalUpgradesLeft]"
+				button = {
+					size = { 30 30 }
 
-				tooltip = "DOMICILE_WINDOW_INTERNAL_SCROLL_LEFT"
-				using = tooltip_ne
+					visible = "[DomicileBuildingSlot.CanScrollInternalUpgradesLeft]"
+					onclick = "[DomicileBuildingSlot.ScrollInternalUpgradesLeft]"
 
-				button_icon = {
-					alwaystransparent = yes
-					parentanchor = center
-					size = { 20 20 }
+					tooltip = "DOMICILE_WINDOW_INTERNAL_SCROLL_LEFT"
+					using = tooltip_ne
 
-					texture = "gfx/interface/icons/flat_icons/window_back.dds"
+					button_icon = {
+						alwaystransparent = yes
+						parentanchor = center
+						size = { 20 20 }
+
+						texture = "gfx/interface/icons/flat_icons/window_back.dds"
+					}
 				}
 			}
 
@@ -2535,14 +2576,12 @@ types DomicileWindowTypes {
 								size = { 45 45 }
 
 								enabled = no
-								tooltip = "DOMICILE_WINDOW_INTERNAL_SLOT_LOCKED_TT"
+								tooltip = "[DomicileBuildingSlot.GetInternalSlotTooltip( DomicileInternalGuiSlot.Self )]"
 								using = tooltip_ne
 
-								icon = {
-									alwaystransparent = yes
+								icon_round_button_base = {
 									parentanchor = center
-									size = {  42 42 }
-									texture = "gfx/interface/buttons/button_lifestyles_base.dds"
+									size = { 42 42 }
 								}
 
 								button_domicile_building_unavailable = {
@@ -2565,15 +2604,13 @@ types DomicileWindowTypes {
 								size = { 45 45 }
 
 								enabled = "[DomicileWindow.IsEditMode]"
-								onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.Self )]"
+								onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.GetSlotIndex )]"
 								tooltip = "DOMICILE_WINDOW_INTERNAL_SLOT_UNLOCKED_TT"
 								using = tooltip_ne
 
-								icon = {
-									alwaystransparent = yes
+								icon_round_button_base = {
 									parentanchor = center
-									size = {  42 42 }
-									texture = "gfx/interface/buttons/button_lifestyles_base.dds"
+									size = { 42 42 }
 								}
 
 								button_domicile_building_can_upgrade = {
@@ -2587,19 +2624,16 @@ types DomicileWindowTypes {
 							### Internal Slot Under Construction ###
 							button = {
 								name = "internal_slot_under_construction"
-								visible = "[And( DomicileInternalGuiSlot.IsFree, DomicileBuildingSlot.IsInternalSlotUnderConstruction( DomicileInternalGuiSlot.Self ) )]"
+								visible = "[And( DomicileInternalGuiSlot.IsFree, DomicileBuildingSlot.IsInternalSlotUnderConstruction( DomicileInternalGuiSlot.GetSlotIndex ) )]"
 								size = { 45 45 }
 
-								onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.Self )]"
-								tooltip = "DOMICILE_WINDOW_INTERNAL_SLOT_UNLOCKED_TT"
+								onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.GetSlotIndex )]"
+								tooltip = "[DomicileBuildingSlot.GetInternalSlotTooltip( DomicileInternalGuiSlot.Self )]"
 								using = tooltip_ne
 
-								icon = {
-									alwaystransparent = yes
+								icon_round_button_base = {
 									parentanchor = center
-									texture = "gfx/interface/buttons/button_lifestyles_base.dds"
-									size = {  42 42 }
-
+									size = { 42 42 }
 								}
 
 								button_domicile_building_cannot_upgrade = {
@@ -2614,13 +2648,13 @@ types DomicileWindowTypes {
 								visible = "[Not( DomicileInternalGuiSlot.IsFree )]"
 								size = { 45 45 }
 
-								onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.Self )]"
-								tooltip = "DOMICILE_WINDOW_INTERNAL_SLOT_UNLOCKED_TT"
+								onclick = "[DomicileBuildingSlot.SelectInternalSlot( DomicileInternalGuiSlot.GetSlotIndex )]"
+								tooltip = "[DomicileBuildingSlot.GetInternalSlotTooltip( DomicileInternalGuiSlot.Self )]"
 								using = tooltip_ne
 
 								### Selected glow ###
 								icon = {
-									visible = "[DomicileBuildingSlot.IsInternalSlotSelected( DomicileInternalGuiSlot.Self )]"
+									visible = "[DomicileBuildingSlot.IsInternalSlotSelected( DomicileInternalGuiSlot.GetSlotIndex )]"
 									parentanchor = center
 									size = { 65 65 }
 									color = { 0.9 0.8 0.6 1 }
@@ -2652,11 +2686,9 @@ types DomicileWindowTypes {
 									}
 								}
 
-								icon = {
-									alwaystransparent = yes
+								icon_round_button_base = {
 									parentanchor = center
-									texture = "gfx/interface/buttons/button_lifestyles_base.dds"
-									size = {  42 42 }
+									size = { 42 42 }
 								}
 
 								button_domicile_building_can_upgrade = {
@@ -2677,24 +2709,31 @@ types DomicileWindowTypes {
 			}
 
 			### Scroll internal buildings right button ###
-			button = {
-				visible = "[DomicileBuildingSlot.ShowInternalScrollButtons]"
+
+			widget = {
 				size = { 30 30 }
 
-				enabled = "[DomicileBuildingSlot.CanScrollInternalUpgradesRight]"
-				onclick = "[DomicileBuildingSlot.ScrollInternalUpgradesRight]"
-				tooltip = "DOMICILE_WINDOW_INTERNAL_SCROLL_RIGHT"
-				using = tooltip_ne
 
-				button_icon = {
-					alwaystransparent = yes
-					parentanchor = center
-					size = { 20 20 }
-					mirror = horizontal
+				button = {
+					visible = "[DomicileBuildingSlot.CanScrollInternalUpgradesRight]"
+					size = { 30 30 }
 
-					texture = "gfx/interface/icons/flat_icons/window_back.dds"
+
+					onclick = "[DomicileBuildingSlot.ScrollInternalUpgradesRight]"
+					tooltip = "DOMICILE_WINDOW_INTERNAL_SCROLL_RIGHT"
+					using = tooltip_ne
+
+					button_icon = {
+						alwaystransparent = yes
+						parentanchor = center
+						size = { 20 20 }
+						mirror = horizontal
+
+						texture = "gfx/interface/icons/flat_icons/window_back.dds"
+					}
 				}
 			}
+
 		}
 
 		hbox = {
@@ -2763,7 +2802,7 @@ types DomicileWindowTypes {
 		}
 
 		vbox = {
-			datacontext = "[DomicileWindow.GetSelectedTreeUpgrade]"
+			datacontext = "[DomicileWindow.GetSelectedTreePreview]"
 			visible = "[Or( Not( DomicileBuildingSlot.HasSelectedFreeInternalSlot ), DomicileBuildingSlot.HasSelectedInternalSlotUnderConstruction )]"
 
 			layoutpolicy_horizontal = expanding
@@ -2866,6 +2905,16 @@ types DomicileWindowTypes {
 
 				blockoverride "scrollbox_content"
 				{
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						hbox_domicile_building_cost_bar = {
+							datacontext = "[DomicileWindow.GetPreviewCostBreakdown]"
+							visible = "[And( DomicileWindow.IsEditMode, Not( DomicileWindow.GetDomicile.HasBuildingOrHigherTier( DomicileWindow.GetSelectedTreePreview ) ) )]"
+						}
+
+						expand = {}
+					}
+
 					text_multi = {
 						margin = { 15 10 }
 						max_width = 520
@@ -2895,7 +2944,7 @@ types DomicileWindowTypes {
 
 			### Cost & Upgrade/Construct/Demolish ###
 			vbox = {
-				datacontext = "[DomicileWindow.GetSelectedTreeUpgrade]"
+				datacontext = "[DomicileWindow.GetNextUpgrade]"
 				visible = "[Not( DomicileBuildingSlot.IsUnderConstruction )]"
 				layoutpolicy_horizontal = expanding
 
@@ -2903,8 +2952,9 @@ types DomicileWindowTypes {
 
 				### Upgrade Costs ###
 				hbox_domicile_building_cost_bar = {
-					datacontext = "[DomicileWindow.GetSelectedTreeCostBreakdown]"
-					visible = "[And( DomicileWindow.IsEditMode, Not( DomicileWindow.IsTreeRootSelected ) )]"
+					blockoverride "upgrade_cost_text_visibility" {}
+					datacontext = "[DomicileWindow.GetNextUpgradeCostBreakdown]"
+					visible = "[And( DomicileWindow.IsEditMode, DomicileWindow.IsSelectedUpgradeValid )]"
 				}
 
 				### Upgrade Buttons ###
@@ -2928,21 +2978,24 @@ types DomicileWindowTypes {
 					}
 
 					button_primary = {
+						datacontext = "[DomicileWindow.GetNextUpgrade]"
 						name = "upgrade_button"
 						visible = "[And( And( DomicileWindow.IsEditMode, Not( DomicileWindow.IsInspectLineTreeBuilding ) ), Not( DomicileBuildingSlot.HasSelectedFreeInternalSlot ) )]"
-						size = { 160 33 }
+						size = { 250 33 }
 
-						text = "UPGRADE"
+						text = "UPGRADE_DOMICILE"
 
-						onclick = "[PostCommand( Domicile.BuildBuilding( DomicileBuilding.Self, DomicileWindow.Self ) )]"
+						onclick = "[PostCommand( Domicile.UpgradeBuilding( DomicileBuilding.Self, DomicileWindow.Self ) )]"
 						onclick = "[GetVariableSystem.Clear( 'show_building_panel' )]"
-						enabled = "[IsValidCommand( Domicile.BuildBuilding( DomicileBuilding.Self, DomicileWindow.Self ) )]"
+						enabled = "[IsValidCommand( Domicile.UpgradeBuilding( DomicileBuilding.Self, DomicileWindow.Self ) )]"
 						tooltip = "[DomicileBuilding.GetUpgradeTooltip( Character.Self )]"
 						using = tooltip_se
 					}
 
 					button_round= {
 						name = "demolish_button"
+						datacontext = "[DomicileWindow.GetConstructedBuildingInSelectedSlot]"
+
 						visible = "[And( Not( DomicileBuilding.IsMain ), And( And( DomicileWindow.IsEditMode, Not( DomicileWindow.IsInspectLineTreeBuilding ) ), Not( DomicileBuildingSlot.HasSelectedFreeInternalSlot ) ) )]"
 						size = { 40 40 }
 
@@ -3199,16 +3252,9 @@ types DomicileWindowTypes {
 				parentanchor = top|hcenter
 				size = { 65 65 }
 
-				icon = {
-					visible = "[DomicileBuilding.IsInternal]"
-					alwaystransparent = yes
-					parentanchor = center
-					size = { 50 50 }
-					texture = "gfx/interface/buttons/button_lifestyles_base.dds"
-				}
 
-				icon = {
-					visible = "[Not( DomicileBuilding.IsInternal )]"
+				highlight_icon = {
+					#visible = "[Not( DomicileBuilding.IsInternal )]"
 					alwaystransparent = yes
 					parentanchor = center
 					size = { 65 65 }
@@ -3266,18 +3312,74 @@ types DomicileWindowTypes {
 		}
 	}
 
+	type vbox_domicile_building_overview_group_foldout = vbox {
+		datacontext = "[DomicileOverviewBuildingItem.GetBuilding]"
+		datacontext = "[DomicileBuilding.GetAsset( DomicileWindow.GetDomicile.Self )]"
+		spacing = 4
+
+		layoutpolicy_horizontal = expanding
+
+		oncreate = "[BindFoldOutContext]"
+		oncreate = "[PdxGuiFoldOut.Unfold]"
+
+		button_expandable_toggle_field = {
+			visible = "[Not( IsDataModelEmpty( DomicileOverviewBuildingItem.GetInternalOverviewBuildings ) )]"
+			min_height = 68
+
+			hbox_domicile_building_overview_item = {}
+		}
+		button_expandable_toggle_field = {
+			visible = "[IsDataModelEmpty( DomicileOverviewBuildingItem.GetInternalOverviewBuildings )]"
+			min_height = 68
+
+			hbox_domicile_building_overview_item = {}
+
+			blockoverride "foldout_button" {
+				visible = no
+			}
+		}
+
+		vbox = {
+			visible = "[And( PdxGuiFoldOut.IsUnfolded, Not( IsDataModelEmpty( DomicileOverviewBuildingItem.GetInternalOverviewBuildings ) ) )]"
+
+			layoutpolicy_horizontal = expanding
+
+			fixedgridbox = {
+				name = "internal_building_items"
+
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				addcolumn = 195
+				addrow = 68
+
+				datamodel = "[DomicileOverviewBuildingItem.GetInternalOverviewBuildings]"
+				item = {
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						hbox_domicile_building_overview_item = {}
+						expand = {}
+					}
+				}
+			}
+		}
+	}
+
 	type hbox_domicile_building_overview_item = hbox {
 		datacontext = "[DomicileOverviewBuildingItem.GetBuilding]"
 		datacontext = "[DomicileBuilding.GetAsset( DomicileWindow.GetDomicile.Self )]"
+		margin_left = "[Select_float( DomicileBuilding.IsInternal, '(float)90.0', '(float)40.0' )]"
+		margin_right = 20
 		spacing = 5
 
 		layoutpolicy_horizontal = expanding
 
 		background = {
-			using = Background_Area
+			visible = "[DomicileBuilding.IsInternal]"
+			margin_left = -82
 
-			margin = { -0 -10 }
-			margin_left = -30
+			using = Background_Area
 
 			modify_texture = {
 				texture = "gfx/interface/component_masks/mask_fade_horizontal_right.dds"
@@ -3290,36 +3392,16 @@ types DomicileWindowTypes {
 				using = domicile_building_tooltip
 			}
 		}
-		using = tooltip_ne
 
 		widget = {
 			size = { 60 60 }
-
-			# External building icon background
-			icon = {
-				visible = "[Not( DomicileBuilding.IsInternal )]"
-				alwaystransparent = yes
-				parentanchor = center
-
-				size = { 60 60 }
-				texture = "gfx/interface/window_domiciles/domicile_icon_bg.dds"
-			}
-
-			# Internal building icon background
-			icon = {
-				visible = "[DomicileBuilding.IsInternal]"
-				alwaystransparent = yes
-				parentanchor = center
-				size = { 50 50 }
-				texture = "gfx/interface/buttons/button_lifestyles_base.dds"
-			}
 
 			button_domicile_building_can_upgrade = {
 				datacontext = "[DomicileBuilding.GetAsset( Domicile.Self )]"
 				visible = "[DomicileOverviewBuildingItem.CanUpgrade]"
 				parentanchor = center
 
-				size = { 30 30 }
+				size = { 42 42 }
 				texture = "[DomicileBuildingAsset.GetIcon]"
 			}
 
@@ -3328,7 +3410,7 @@ types DomicileWindowTypes {
 				visible = "[Not( DomicileOverviewBuildingItem.CanUpgrade )]"
 				parentanchor = center
 
-				size = { 30 30 }
+				size = { 42 42 }
 				texture = "[DomicileBuildingAsset.GetIcon]"
 			}
 
@@ -3575,6 +3657,22 @@ types DomicileWindowTypes {
 			raw_text = "AI will build: [PotentialBuildingItem.GetAIWillDo]"
 			default_format = "#D"
 			align = nobaseline
+		}
+
+		block "upgrade_cost_text_visibility"
+		{
+			vbox = {
+				text_single = {
+					text = "UPGRADE_COST"
+					align = nobaseline
+					visible = "[Not( PotentialBuildingItem.GetBuilding.IsRootOfTrack )]"
+				}
+				text_single = {
+					text = "CONSTRUCT_COST"
+					align = nobaseline
+					visible = "[PotentialBuildingItem.GetBuilding.IsRootOfTrack]"
+				}
+			}
 		}
 
 		### Gold Cost ###

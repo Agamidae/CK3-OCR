@@ -1,0 +1,309 @@
+﻿window = {
+	name = "court_task_interaction_window"
+	using = base_ocr_window
+	datacontext = "[CourtTaskInteractionWindow.GetCharacterInteractionConfirmationWindow]"
+
+	state = {
+		name = _show
+		using = Sound_WindowShow_Standard
+	}
+
+	state = {
+		name = _hide
+		using = Sound_WindowHide_Standard
+	}
+
+	window_ocr = {
+		blockoverride "ocr_header" {
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "[CourtTaskInteractionWindow.GetSelectedPositionHeader]."
+			}
+			button = {
+				shortcut = close_window
+				onclick = "[CourtTaskInteractionWindow.Close]"
+			}
+
+			char_name = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "From"
+					}
+				}
+				datacontext = "[CharacterInteractionConfirmationWindow.GetActor]"
+				visible = "[And(Character.IsValid, Not(Character.IsLocalPlayer))]"
+			}
+
+			char_name = {
+				layoutpolicy_horizontal = expanding
+				blockoverride "pre" {
+					text_single = {
+						raw_text = "To"
+					}
+				}
+				datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+				visible = "[And(Character.IsValid, Not(Character.IsLocalPlayer))]"
+			}
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				# text_multi = {
+				# 	name = "select_position_label"
+				# 	visible = "[Not( CourtTaskInteractionWindow.HasSelectedPosition )]"
+				# 	text = "COURT_TASK_INTERACTION_WINDOW_SELECT_TASK"
+				# }
+
+				text_multi_wide = {
+					name = "selected_position_label"
+					visible = "[CourtTaskInteractionWindow.HasSelectedPosition]"
+					text = "COURT_TASK_INTERACTION_WINDOW_SELECTED_TASK"
+				}
+
+				expand = {}
+			}
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[CourtTaskInteractionWindow.HasSelectedPosition]"
+
+				hbox_character_interaction_acceptance = {
+					layoutpolicy_horizontal = expanding
+				}
+
+				### SEND OFFER BUTTON
+				button_primary_text = {
+					layoutpolicy_horizontal = expanding
+					name = "send_offer_button"
+					onclick = "[CourtTaskInteractionWindow.Send]"
+					enabled = "[CourtTaskInteractionWindow.CanSendOffer]"
+					blockoverride "disabled" {
+						visible = "[Not(CourtTaskInteractionWindow.CanSendOffer)]"
+					}
+					blockoverride "text" {
+						text = "[CharacterInteractionConfirmationWindow.GetSendName]"
+					}
+					tooltip = "[CourtTaskInteractionWindow.GetSendOfferTooltip]"
+				}
+
+				vbox_interaction_options = {
+					layoutpolicy_horizontal = expanding
+				}
+			}
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				raw_text = "[GetDataModelSize(CourtTaskInteractionWindow.AccessPositions)] positions:"
+			}
+
+			vbox = {
+				datamodel = "[CourtTaskInteractionWindow.AccessPositions]"
+				layoutpolicy_horizontal = expanding
+				item = {
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[CourtTaskInteractionItem.GetCourtPosition]"
+						onclick = "[CourtTaskInteractionItem.Select]"
+						down = "[ObjectsEqual( CourtPositionType.Self, CourtTaskInteractionWindow.GetSelectedPosition )]"
+						blockoverride "num" {}
+						shortcuts_list = {
+							blockoverride "click" {
+								onclick = "[CourtTaskInteractionItem.Select]"
+							}
+						}
+						blockoverride "selected" {
+							visible = "[ObjectsEqual(CourtPositionType.Self, CourtTaskInteractionWindow.GetSelectedPosition)]"
+						}
+						blockoverride "text" {
+							raw_text = "[CourtPositionType.GetName],"
+						}
+						blockoverride "extra" {
+							text_single = {
+								visible = "[Not(ObjectsEqual( GetPlayer.Self, CharacterInteractionConfirmationWindow.GetActor.Self ))]"
+								datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+								alwaystransparent = yes
+								text = "[Character.GetCourtPositionAptitude( CourtPositionType.Self )]"
+							}
+							text_single = {
+								visible = "[ObjectsEqual( GetPlayer.Self, CharacterInteractionConfirmationWindow.GetActor.Self )]"
+								datacontext = "[CharacterInteractionConfirmationWindow.GetActor]"
+								alwaystransparent = yes
+								text = "[Character.GetCourtPositionAptitude( CourtPositionType.Self )]"
+							}
+							, = {}
+							text_single = {
+								raw_text = "[CourtPositionType.GetSalaryTextFor( GetPlayer )]."
+								tooltip = "[CourtPositionType.GetSalaryBreakdownFor( GetPlayer )]"
+								alwaystransparent = yes
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	court_task_interaction_window_old = {}
+}
+
+types CourtPositionButton
+{
+	type select_court_position_button = button_standard_clean {
+		layoutpolicy_horizontal = expanding
+		datacontext = "[CourtTaskInteractionItem.GetCourtPosition]"
+		onclick = "[CourtTaskInteractionItem.Select]"
+		down = "[ObjectsEqual( CourtPositionType.Self, CourtTaskInteractionWindow.GetSelectedPosition )]"
+
+		vbox = {
+			name = "position"
+			margin = { 10 0 }
+			spacing = 4
+			set_parent_size_to_minimum = yes
+
+			spacer = {
+				size = { 510 0 }
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				spacing = 4
+
+				hbox = {
+					margin_bottom = 4
+					layoutpolicy_horizontal = expanding
+					icon = {
+						texture = "[CourtPositionType.GetIcon]"
+						size = { 40 40 }
+					}
+					vbox = {
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							margin_left = 8
+
+							name = "position_label"
+							alwaystransparent = yes
+							text = "[CourtPositionType.GetName]"
+							using = Font_Size_Medium
+							align = nobaseline
+						}
+						text_single = {
+							visible = "[Not(ObjectsEqual( GetPlayer.Self, CharacterInteractionConfirmationWindow.GetActor.Self ))]"
+							datacontext = "[CharacterInteractionConfirmationWindow.GetRecipient]"
+							layoutpolicy_horizontal = expanding
+							margin_top = -2
+							margin_left = 2
+
+							name = "aptitude_label_1"
+							alwaystransparent = yes
+							text = "[Character.GetCourtPositionAptitude( CourtPositionType.Self )]"
+							align = nobaseline
+						}
+						text_single = {
+							visible = "[ObjectsEqual( GetPlayer.Self, CharacterInteractionConfirmationWindow.GetActor.Self )]"
+							datacontext = "[CharacterInteractionConfirmationWindow.GetActor]"
+							layoutpolicy_horizontal = expanding
+							margin_top = -2
+							margin_left = 2
+
+							name = "aptitude_label_2"
+							alwaystransparent = yes
+							text = "[Character.GetCourtPositionAptitude( CourtPositionType.Self )]"
+							align = nobaseline
+						}
+					}
+					expand = {}
+					text_single = {
+						margin_top = -4
+						default_format = "#high"
+						using = tooltip_ne
+						text = "[CourtPositionType.GetSalaryTextFor( GetPlayer )]"
+						tooltip = "[CourtPositionType.GetSalaryBreakdownFor( GetPlayer )]"
+						alwaystransparent = yes
+					}
+				}
+			}
+
+			#divider_light = {
+			#	layoutpolicy_horizontal = growing
+			#}
+			#
+			#text_multi = {
+			#	name = "employer_modifier_header"
+			#	layoutpolicy_horizontal = expanding
+			#	layoutpolicy_vertical = expanding
+			#	margin = { 8 4 }
+			#	alwaystransparent = yes
+			#
+			#	minimumsize = { 340 50 }
+			#	maximumsize = { 440 150 }
+			#	autoresize = yes
+			#	default_format = "#S"
+			#
+			#	align = bottom|left|nobaseline
+			#	text = "COURT_POSITION_TOOLTIP_EFFECT_ON_LIEGE"
+			#}
+			#
+			#text_multi = {
+			#	name = "employer_modifier_description"
+			#	layoutpolicy_horizontal = expanding
+			#	layoutpolicy_vertical = expanding
+			#	margin = { 8 4 }
+			#	alwaystransparent = yes
+			#
+			#	minimumsize = { 340 50 }
+			#	maximumsize = { 440 150 }
+			#	autoresize = yes
+			#
+			#	align = top|left|nobaseline
+			#	text = "[CourtPositionType.GetEmployerModifierDescription]"
+			#}
+			#
+			#text_multi = {
+			#	name = "employee_modifier_header"
+			#	layoutpolicy_horizontal = expanding
+			#	layoutpolicy_vertical = expanding
+			#	margin = { 8 4 }
+			#	alwaystransparent = yes
+			#
+			#	minimumsize = { 340 50 }
+			#	maximumsize = { 440 150 }
+			#	autoresize = yes
+			#	default_format = "#S"
+			#
+			#	align = bottom|left|nobaseline
+			#	text = "COURT_POSITION_TOOLTIP_EFFECT_ON_HOLDER"
+			#}
+			#
+			#text_multi = {
+			#	name = "employee_modifier_description"
+			#	layoutpolicy_horizontal = expanding
+			#	layoutpolicy_vertical = expanding
+			#	margin = { 8 4 }
+			#	alwaystransparent = yes
+			#
+			#	minimumsize = { 340 50 }
+			#	maximumsize = { 440 150 }
+			#	autoresize = yes
+			#
+			#	align = top|left|nobaseline
+			#	text = "[CourtPositionType.GetEmployeeModifierDescription]"
+			#}
+			#
+			#text_multi = {
+			#	name = "liege_court_modifiers"
+			#	visible = "[CourtPositionType.HasLiegeCourtModifiers]"
+			#	layoutpolicy_horizontal = expanding
+			#	layoutpolicy_vertical = expanding
+			#	margin = { 8 4 }
+			#
+			#	minimumsize = { 340 50 }
+			#	maximumsize = { 440 150 }
+			#	autoresize = yes
+			#
+			#	align = top|left|nobaseline
+			#	text = "COURT_POSITION_TYPE_EMPLOYER_COURT_EFFECTS"
+			#}
+		}
+	}
+}

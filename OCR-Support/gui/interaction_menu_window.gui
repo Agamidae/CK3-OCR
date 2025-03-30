@@ -1,33 +1,29 @@
 
-#### THE WINDOW
-
 window_ocr = {
 	# gfxtype = windowgfx
 	name = "character_interaction_menu_window"
 	widgetid = "character_interaction_menu_window"
-	movable = no
 	alwaystransparent = yes
 	layer = top
 	allow_outside = yes
 	visible_at_creation = no
 
 	blockoverride "show_window" {
-
 	}
+
 	using = TooltipFocus
-	#
-	# button = {
-	# 	size = { 0 0 }
-	# 	visible = "[Not(GetVariableSystem.Exists('close_char'))]"
-	#
-	# }
+
 	state = {
 		name = _show
 		on_start = "[CloseGameView(AddTextIf(GetScriptedGui('close_interactions').IsShown( GuiScope.SetRoot( GetPlayer.MakeScope ).End ), 'character'))]"
 		# on_finish = "[Clear('action_category')]"
 	}
 
-	using = Animation_ShowHide_Quick
+	state = {
+		name = _hide
+		on_finish = "[Set('favorite_interaction', 'yes')]"
+		on_finish = "[Clear('filtered_actions')]"
+	}
 
 	# Not shown to the player, but is used by the hotkey system
 	button_normal = {
@@ -91,6 +87,7 @@ window_ocr = {
 					flowcontainer = {
 						ignoreinvisible = yes
 						direction = vertical
+						visible = "[Isnt('filtered_actions')]"
 
 						button_text = {
 							blockoverride "text" {
@@ -104,7 +101,6 @@ window_ocr = {
 							# tooltip = "PIN_TT"
 							using = tooltip_se
 						}
-
 
 						widget = {
 							size = { 500 23 }
@@ -134,13 +130,12 @@ window_ocr = {
 							# tooltip = "RENAME_CHARACTER"
 							using = tooltip_ne
 						}
-					}
-
-					text_single = {
-						visible = "[CharacterInteractionMenuWindow.OutsideDiplomaticRange]"
-						tooltip = OUT_OF_DIPLOMACY_RANGE_TOOLTIP
-						name = "label"
-						text = OUT_OF_DIPLOMACY_RANGE
+						text_single = {
+							visible = "[CharacterInteractionMenuWindow.OutsideDiplomaticRange]"
+							tooltip = OUT_OF_DIPLOMACY_RANGE_TOOLTIP
+							name = "label"
+							text = OUT_OF_DIPLOMACY_RANGE
+						}
 					}
 				}
 
@@ -165,7 +160,7 @@ window_ocr = {
 					}
 
 					button_text = {
-						visible = "[Not(GetVariableSystem.Exists('action_category'))]"
+						visible = "[And(Not(GetVariableSystem.Exists('action_category')), Isnt('filtered_actions'))]"
 						onclick = "[GetVariableSystem.Set('action_category', 'yes')]"
 						shortcut = army_split_half
 						blockoverride "text" {
@@ -183,6 +178,21 @@ window_ocr = {
 					}
 				}
 
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+					visible = "[Isnt('filtered_actions')]"
+
+					text_single = {
+						visible = "[Isnt('favorite_interaction')]"
+						raw_text = "See tooltips for more information."
+					}
+
+					text_single = {
+						visible = "[Isnt('favorite_interaction')]"
+						raw_text = "Right-click to favorite an action, updates when reopened."
+					}
+				}
 			}
 
 			### MORE INTERACTIONS
@@ -218,20 +228,24 @@ window_ocr = {
 				visible = "[CharacterInteractionMenuWindow.AreMoreInteractionsVisisble]"
 				ignoreinvisible = yes
 
-				background = {
-					using = vanilla
-					texture = "gfx/interface/component_tiles/interaction_menu_bg.dds"
-					spriteType = Corneredtiled
-					spriteborder = { 11 11 }
-					spriteborder_top = 49
-					margin = { 15 12 }
-					margin_bottom = 8
-					margin_right = 5
+				container = {
+					#this is used in code as an offset to its position
+					position = { -5 30 }
+					background = {
+						using = vanilla
+						texture = "gfx/interface/component_tiles/interaction_menu_bg.dds"
+						spriteType = Corneredtiled
+						spriteborder = { 11 11 }
+						spriteborder_top = 49
+						margin = { 15 12 }
+						margin_bottom = 8
+						margin_right = 5
 
-					modify_texture = {
-						name = "overlay"
-						texture = "gfx/interface/component_overlay/overlay_window.dds"
-						blend_mode = overlay
+						modify_texture = {
+							name = "overlay"
+							texture = "gfx/interface/component_overlay/overlay_window.dds"
+							blend_mode = overlay
+						}
 					}
 				}
 				dynamicgridbox_interaction_list_ocr = {
@@ -239,9 +253,11 @@ window_ocr = {
 				}
 			}
 
-			dynamicgridbox = {
+			flowcontainer = {
 				name = "category_interaction_list"
 				datamodel = "[CharacterInteractionMenuWindow.GetCategoryItems]"
+				direction = vertical
+				ignoreinvisible = yes
 				# visible = "[Or(Not(GetVariableSystem.Exists('action_category')), GetVariableSystem.HasValue('action_category', InteractionCategoryItem.GetName))]"
 
 				item = {
@@ -252,6 +268,7 @@ window_ocr = {
 			flowcontainer = {
 				ignoreinvisible = yes
 				direction = vertical
+				visible = "[Isnt('filtered_actions')]"
 				# visible = "[Not(GetVariableSystem.Exists('action_category'))]"
 
 				button_text = {

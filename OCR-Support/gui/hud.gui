@@ -553,7 +553,7 @@ widget = {
 				}
 
 				widget_hud_main_tab = {
-					name = "tab_military"
+					name = "tab_military_tutorial_uses_this"
 
 					blockoverride "maintab_button"
 					{
@@ -829,7 +829,7 @@ widget = {
 						}
 
 						icon = {
-							visible = "[Or( Or( GreaterThan_int32( Character.GetUnassignedVassalsCount, '(int32)0' ), Not( Character.HasTaxSlots ) ), GreaterThan_int32( Character.GetTaxSlotsWithoutTaxCollectorCount, '(int32)0' ) )]"
+							visible = "[Or( Or( GreaterThan_int32( Character.GetUnassignedVassalsCount, '(int32)0' ), Not( Character.HasTaxSlots ) ), GreaterThan_int32( Character.GetUntaxedJurisdictionCount, '(int32)0' ) )]"
 							size = { 25 25 }
 							position = { -5 5}
 							texture = "gfx/interface/icons/symbols/icon_warning.dds"
@@ -1121,7 +1121,7 @@ widget = {
 				}
 
 				widget_hud_main_tab = {
-					name = "tab_military"
+					name = "tab_military_tutorial_uses_this"
 
 					blockoverride "maintab_button"
 					{
@@ -1397,7 +1397,7 @@ widget = {
 						}
 
 						icon = {
-							visible = "[Or( Or( GreaterThan_int32( Character.GetUnassignedVassalsCount, '(int32)0' ), Not( Character.HasTaxSlots ) ), GreaterThan_int32( Character.GetTaxSlotsWithoutTaxCollectorCount, '(int32)0' ) )]"
+							visible = "[Or( Or( GreaterThan_int32( Character.GetUnassignedVassalsCount, '(int32)0' ), Not( Character.HasTaxSlots ) ), GreaterThan_int32( Character.GetUntaxedJurisdictionCount, '(int32)0' ) )]"
 							size = { 25 25 }
 							position = { -5 5}
 							texture = "gfx/interface/icons/symbols/icon_warning.dds"
@@ -1774,7 +1774,7 @@ widget = {
 				button_text = {
 					layoutpolicy_horizontal = expanding
 					name = "legitimacy_button"
-					visible = "[And(LegitimacyType.IsValid, GetPlayer.GetGovernment.HasRule( 'legitimacy' ))]"
+					visible = "[And(LegitimacyType.IsValid, Character.GetGovernment.HasRule( 'legitimacy' ))]"
 					datacontext = "[GetPlayer]"
 					datacontext = "[Character.GetLegitimacyType]"
 					datacontext = "[Character.GetLegitimacyLevel]"
@@ -2213,7 +2213,7 @@ icon = {
 			ignoreinvisible = yes
 			spacing = 3
 			visible = "[IsGamePaused]"
-			
+
 			text_single = {
 				margin_top = 1
 				raw_text = "Paused"
@@ -2450,7 +2450,7 @@ widget = {
 			flowcontainer = {
 				ignoreinvisible = yes
 				direction = vertical
-				visible = "[GetPlayer.HasDomicile]"
+				visible = "[And(GetPlayer.HasDomicile, Not(IsGameViewOpen('army')))]"
 
 				button_text = {
 					# using = NoWindowsOpen
@@ -2663,9 +2663,9 @@ widget = {
 					#TODO
 					button_text = {
 						datacontext = "[GetPlayer]"
-							blockoverride "text" {
-									raw_text = "View [Character.GetDiarchyTypeName], Page Up."
-							}
+						blockoverride "text" {
+								raw_text = "View [Character.GetDiarchyTypeName], Page Up."
+						}
 						shortcut = zoom_out
 						onclick = "[ToggleGameViewData( 'diarchy', Character.GetID )]"
 						visible = "[IsDiarchyVisible]"
@@ -2674,8 +2674,9 @@ widget = {
 
 					flowcontainer = {
 						spacing = 2
-							direction = vertical
+						direction = vertical
 						ignoreinvisible = yes
+						visible = "[Not(GetPlayer.HasActiveCompanionAISetting('raise_armies'))]"
 
 						button_text = {
 							background = { using = Background_Area_Solid margin = { 5 3 } }
@@ -2708,7 +2709,7 @@ widget = {
 								raw_text = "Click here with Control slash to not split armies"
 							}
 							blockoverride "dot" { }
-							visible = "[And( Character.IsAtWar, Not(Character.HasRaisedRegiments)))]"
+							visible = "[And( Character.IsAtWar, Not(Character.HasRaisedRegiments))]"
 							visible_at_creation = no
 							# onclick = "[OpenGameView('outliner')]"
 
@@ -2720,31 +2721,79 @@ widget = {
 
 							tooltip = "[GetPlayerRaiseAllTooltip]"
 						}
+
+						button_text = {
+							background = { using = Background_Area_Solid margin = { 5 3 } }
+							visible = "[And(PlayerShouldDisbandAll, PlayerCanDisbandAll)]"
+							visible_at_creation = no
+
+							onclick = "[PlayerDisbandAll]"
+							enabled = "[PlayerCanDisbandAll]"
+							clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_unit_army_disband"
+							datacontext = "[GetPlayer]"
+							onclick = "[CloseGameView('outliner')]"
+
+							blockoverride "text" {
+								text = "DISBAND_ALL"
+							}
+							blockoverride "extra" {
+								text_single = {
+									margin_left = -3
+									raw_text = ", Control L."
+								}
+							}
+							shortcut = map_mode_17
+
+							tooltip = "[GetDisbandAllTooltip]"
+						}
 					}
 
-					button_text = {
-						background = { using = Background_Area_Solid margin = { 5 3 } }
-						visible = "[And(PlayerShouldDisbandAll, PlayerCanDisbandAll)]"
-						visible_at_creation = no
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+						visible = "[GetPlayer.HasActiveCompanionAISetting('raise_armies')]"
 
-						onclick = "[PlayerDisbandAll]"
-						enabled = "[PlayerCanDisbandAll]"
-						clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_unit_army_disband"
-						datacontext = "[GetPlayer]"
-						onclick = "[CloseGameView('outliner')]"
-
-						blockoverride "text" {
-							text = "DISBAND_ALL"
+						text_single = {
+							raw_text = "Armies are"
 						}
-						blockoverride "extra" {
-							text_single = {
-								margin_left = -3
-								raw_text = ", Control L."
+
+						text_single = {
+							visible = "[GetPlayer.HasRaisedRegiments]"
+							raw_text = "raised and"
+						}
+
+						text_single = {
+							raw_text = "automated"
+						}
+
+						text_single = {
+							visible = "[And(Not(GetPlayer.HasRaisedRegiments), GetPlayer.IsAtWar)]"
+							raw_text = "and should be raised soon"
+						}
+
+						text_single = {
+							visible = "[And(Not(GetPlayer.HasRaisedRegiments), Not(GetPlayer.IsAtWar))]"
+							raw_text = "and will be raised once you're at war"
+						}
+
+						text_single = {
+							visible = "[And(GetPlayer.HasRaisedRegiments, Not(GetPlayer.IsAtWar))]"
+							raw_text = "and should be dismissed soon."
+						}
+
+						dot_l = {}
+					}
+
+					container = {
+						visible = "[And(GetPlayer.HasRaisedRegiments, GetPlayer.HasActiveCompanionAISetting('raise_armies'))]"
+
+						state = {
+							name = _show
+
+							start_sound = {
+								soundeffect = "event:/SFX/UI/Unit/Army/sfx_ui_raise_army"
 							}
 						}
-						shortcut = map_mode_17
-
-						tooltip = "[GetDisbandAllTooltip]"
 					}
 
 					flowcontainer = {
@@ -3197,7 +3246,7 @@ widget = {
 						text_single = {
 							layoutpolicy_horizontal = expanding
 							margin_left = 3
-							raw_text = "Shortcuts:"
+							raw_text = "All menus:"
 						}
 
 
@@ -3361,7 +3410,7 @@ widget = {
 										onclick = "[Clear('extra_window')]"
 									}
 									button_text = {
-										visible = "[GreaterThan_int32( Character.GetTaxSlotsWithoutTaxCollectorCount, '(int32)0' )]"
+										visible = "[GreaterThan_int32( Character.GetUntaxedJurisdictionCount, '(int32)0' )]"
 										blockoverride "extra" {
 											text_single = {
 												raw_text = "TAX_SLOT_OVERVIEW_WINDOW_TAX_SLOTS_WARNING"
@@ -3469,6 +3518,13 @@ widget = {
 							}
 						}
 
+						text_single = {
+							onclick = "[CloseGameView('holding_view')]"
+							onclick = "[CloseGameView('army')]"
+							onclick = "[ToggleGameView('outliner')]"
+							raw_text = "Outliner, O."
+						}
+
 						button_text = {
 							onclick = "[ToggleGameViewData( 'inventory', GetPlayer.GetID )]"
 							shortcut = mapmode_kingdoms_secondary
@@ -3532,7 +3588,7 @@ widget = {
 
 					button_text = {
 						blockoverride "text" {
-							raw_text = "[Select_CString( Or( And(GetTutorial.ShouldBeVisible, Show('toggle_hud_hotkeys')), And(Not(GetTutorial.ShouldBeVisible), Not(Show('toggle_hud_hotkeys'))) ), 'Hide', 'Show')] shortcuts, Page Down."
+							raw_text = "[Select_CString( Or( And(GetTutorial.ShouldBeVisible, Show('toggle_hud_hotkeys')), And(Not(GetTutorial.ShouldBeVisible), Not(Show('toggle_hud_hotkeys'))) ), 'Hide', 'Show')] menus and shortcuts, Page Down."
 						}
 						shortcut = zoom_in
 						onclick = "[Click('toggle_hud_hotkeys')]"
@@ -5862,7 +5918,7 @@ types HUD
 					margin_left = 10
 
 					text_single = {
-						visible = "[GreaterThan_int32( Character.GetTaxSlotsWithoutTaxCollectorCount, '(int32)0' )]"
+						visible = "[GreaterThan_int32( Character.GetUntaxedJurisdictionCount, '(int32)0' )]"
 						layoutpolicy_horizontal = expanding
 						text = "TAX_SLOT_OVERVIEW_WINDOW_TAX_SLOTS_WARNING"
 						default_format = "#N"

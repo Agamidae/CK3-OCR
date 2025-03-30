@@ -271,6 +271,17 @@ window = {
 						ignoreinvisible = yes
 
 						button_text = {
+							onclick = "[PostCommand( GetToggleCompanionAICommand )]"
+							visible = "[GetPlayer.HasCompanionAI]"
+							clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_checkbox"
+							shortcut = map_mode_10
+							blockoverride "text" {
+								raw_text = "Automation is enabled, Shift W. Can't raise or disband manually."
+							}
+						}
+
+						button_text = {
+							visible = "[Not(GetPlayer.HasActiveCompanionAISetting('raise_armies'))]"
 							shortcut = map_mode_16
 					    blockoverride "text" {
 				        raw_text = "RAISE_ALL"
@@ -304,16 +315,16 @@ window = {
 					    }
 							datacontext = "[GetPlayer]"
 							onclick = "[PlayerRaiseAllRegiments]"
-							visible = "[PlayerCanRaiseAnyRallyPoint]"
+							visible = "[And(Not(GetPlayer.HasActiveCompanionAISetting('raise_armies')), PlayerCanRaiseAnyRallyPoint)]"
 							onclick = "[MilitaryView.Close]"
 							# onclick = "[OpenGameView('outliner')]"
 							clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_raise_army"
 						}
 
 						button_text = {
-						    blockoverride "text" {
-						        raw_text = "RAISE_ALL_RAIDERS"
-						    }
+					    blockoverride "text" {
+				        raw_text = "RAISE_ALL_RAIDERS"
+					    }
 							blockoverride "disabled" {
 								visible = "[Not(PlayerCanRaiseAnyRaiderRallyPoint)]"
 							}
@@ -332,9 +343,7 @@ window = {
 									raw_text = ", F"
 								}
 							}
-							blockoverride "dot" {
-
-							}
+							blockoverride "dot" {}
 						}
 
 						button_text = {
@@ -353,14 +362,32 @@ window = {
 								visible = "[Not(PlayerCanDisbandAll)]"
 							}
 							datacontext = "[GetPlayer]"
-
+							visible = "[Not(GetPlayer.HasActiveCompanionAISetting('raise_armies'))]"
 							onclick = "[PlayerDisbandAll]"
 							enabled = "[PlayerCanDisbandAll]"
 							tooltip = "[GetDisbandAllTooltip]"
 							clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_unit_army_disband"
-							blockoverride "dot" {
+							blockoverride "dot" {}
+						}
+
+						button_text = {
+							onclick = "[PostCommand( GetToggleCompanionAICommand )]"
+							visible = "[Not(GetPlayer.HasCompanionAI)]"
+							clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+							shortcut = map_mode_10
+							blockoverride "text" {
+								raw_text = "Enable automation, Shift W."
 							}
 						}
+
+						button_text = {
+							onclick = "[MilitaryView.ShowArmyAutomationOptions]"
+							shortcut = map_mode_7
+							blockoverride "text" {
+								raw_text = "Automation settings, Control W."
+							}
+						}
+
 						button_text = {
 							shortcut = character_finder
 							layoutpolicy_horizontal = expanding
@@ -376,7 +403,7 @@ window = {
 					vbox = {
 						name = "rally_points"
 						layoutpolicy_horizontal = expanding
-						visible = "[GetVariableSystem.HasValue( 'military_view_tabs', 'armies' )]"
+						visible = "[And(GetVariableSystem.HasValue( 'military_view_tabs', 'armies' ), Not(GetPlayer.HasActiveCompanionAISetting('raise_armies')))]"
 
 						button_text = {
 							layoutpolicy_horizontal = expanding
@@ -2590,6 +2617,24 @@ types OCR {
 						#
 						tooltip = "CREATE_MAA_TOOLTIP"
 					}
+
+					button_text = {
+						name = "take_back_button"
+						visible = "[Character.IsPlayerInteractionShown('request_title_troops_back_interaction')]"
+						datacontext = "[Title.GetHolder]"
+						layoutpolicy_horizontal = expanding
+
+						enabled = "[Character.IsPlayerInteractionValid('request_title_troops_back_interaction')]"
+						onclick = "[Character.OpenPlayerInteractionWithTargetTitle('request_title_troops_back_interaction', Title.Self)]"
+						blockoverride "disabled" {
+							visible = "[Not(Character.IsPlayerInteractionValid('request_title_troops_back_interaction'))]"
+						}
+
+						blockoverride "text" {
+							raw_text = "HIRED_TROOPS_VIEW_RECLAIM"
+						}
+						tooltip = "[Character.GetPlayerInteractionTooltip('request_title_troops_back_interaction')]"
+					}
 				}
 			}
 		}
@@ -2868,7 +2913,6 @@ types OCR {
 			item = {
 				button_imperial_army_item_ocr = {
 					name = imperial_army_item
-					widgetid = imperial_army_item
 					visible = "[And(Not(HiredTroopItem.IsHired), And(MilitaryView.CanRequestTitleArmyPersonally(Title.Self), MilitaryView.IsAdminTitleWithTroops(Title.Self)))]"
 					layoutpolicy_horizontal = expanding
 					blockoverride "num_army" {
@@ -3084,6 +3128,30 @@ types OCR {
 				tooltip = "TOTAL_MAA_COST_TOOLTIP"
 			}
 			dot_l = {}
+		}
+	}
+
+	type button_toggle_companion_ai_ocr = container {
+		ignoreinvisible = yes
+
+		button_text = {
+			onclick = "[PostCommand( GetToggleCompanionAICommand )]"
+			visible = "[GetPlayer.HasCompanionAI]"
+			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_checkbox"
+			shortcut = map_mode_10
+			blockoverride "text" {
+				raw_text = "Army automation is enabled, Shift W."
+			}
+		}
+
+		button_text = {
+			onclick = "[PostCommand( GetToggleCompanionAICommand )]"
+			visible = "[Not(GetPlayer.HasCompanionAI)]"
+			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_confirm"
+			shortcut = map_mode_10
+			blockoverride "text" {
+				raw_text = "Enable army automation, Shift W."
+			}
 		}
 	}
 }
@@ -3759,7 +3827,7 @@ types ArmiesView
 
 					expand = {}
 
-					soldiers_and_quality_small = {
+					hbox_soldiers_and_quality_small = {
 						datacontext = "[HiredTroopItem.GetComposition]"
 					}
 				}
@@ -3898,7 +3966,7 @@ types ArmiesView
 
 						button_plus = {
 							name = "can_be_created"
-							visible = "[MilitaryItem.CanCreateAnyMAAType]"
+							visible = "[MilitaryItem.MaACanBeCreated]"
 							parentanchor = vcenter
 							alwaystransparent = yes
 						}
@@ -3907,9 +3975,28 @@ types ArmiesView
 							name = "at_cap"
 							visible = "[Not(MilitaryItem.MaACanBeCreated)]"
 							parentanchor = left|vcenter
-							position = { 10 0 }
+							position = { 5 0 }
 							size = { 29 29 }
 						}
+					}
+
+					spacer = {
+							size = { 5 0 }
+						}
+
+					button_standard = {
+						name = "take_back_button"
+						visible = "[Character.IsPlayerInteractionShown('request_title_troops_back_interaction')]"
+						datacontext = "[Title.GetHolder]"
+						layoutpolicy_horizontal = expanding
+						max_width = 175
+
+						enabled = "[Character.IsPlayerInteractionValid('request_title_troops_back_interaction')]"
+						onclick = "[Character.OpenPlayerInteractionWithTargetTitle('request_title_troops_back_interaction', Title.Self)]"
+						tooltip = "[Character.GetPlayerInteractionTooltip('request_title_troops_back_interaction')]"
+						using = tooltip_sw
+
+						text = "HIRED_TROOPS_VIEW_RECLAIM"
 					}
 				}
 			}
@@ -4024,7 +4111,6 @@ types ArmiesView
 			item = {
 				button_imperial_army_item = {
 					name = imperial_army_item
-					widgetid = imperial_army_item
 					visible = "[And(IsNotHiredByPlayer(Title), And(MilitaryView.CanRequestTitleArmyPersonally(Title.Self), MilitaryView.IsAdminTitleWithTroops(Title.Self)))]"
 					layoutpolicy_horizontal = expanding
 					size = { 504 98 }
@@ -4241,7 +4327,7 @@ types ArmiesView
 						size = { -1 30 }
 					}
 
-					soldiers_and_quality_small = {
+					hbox_soldiers_and_quality_small = {
 						datacontext = "[HiredTroopItem.GetComposition]"
 					}
 				}
@@ -4265,6 +4351,206 @@ types ArmiesView
 
 types MilitaryView
 {
+	type army_automation_on_flat = widget
+	{
+		size = { 36 36 }
+
+		icon_flat_standard_gold = {
+			size = { 100% 100% }
+			texture = "gfx/interface/colors/black.dds"
+			parentanchor = center
+
+			modify_texture = {
+				name = "spin"
+				blend_mode = alphaMultiply
+				texture = "gfx/interface/icons/flat_icons/army_automation.dds"
+				rotate_uv = 0
+			}
+
+			state = {
+				name = a
+				next = b
+				trigger_on_create = yes
+				duration = 10
+
+				modify_texture = {
+					name = "spin"
+					rotate_uv = -360
+				}
+			}
+
+			state = {
+				name = b
+				next = a
+				trigger_on_create = yes
+				duration = 0
+
+				modify_texture = {
+					name = "spin"
+					rotate_uv = 0
+				}
+			}
+		}
+	}
+
+	type army_automation_on = icon {
+		size = { 30 30 }
+		texture = "gfx/interface/colors/black.dds"
+		visible = "[Army.IsControlledByCompanionAI]"
+
+		modify_texture = {
+			name = "spin"
+			texture = "gfx/interface/icons/army_status/army_status_automation.dds"
+			blend_mode = Normal
+			rotate_uv = 0
+		}
+
+		state = {
+			name = a
+			next = b
+			trigger_on_create = yes
+			duration = 10
+
+			modify_texture = {
+				name = "spin"
+				rotate_uv = -360
+			}
+		}
+
+		state = {
+			name = b
+			next = a
+			duration = 0
+
+			modify_texture = {
+				name = "spin"
+				rotate_uv = 0
+			}
+		}
+
+		modify_texture = {
+			name = "spin_alpha"
+			blend_mode = alphaMultiply
+			texture = "gfx/interface/icons/army_status/army_status_automation.dds"
+			rotate_uv = 0
+		}
+
+		state = {
+			name = c
+			next = d
+			trigger_on_create = yes
+			duration = 10
+
+			modify_texture = {
+				name = "spin_alpha"
+				rotate_uv = -360
+			}
+		}
+
+		state = {
+			name = d
+			next = c
+			duration = 0
+
+			modify_texture = {
+				name = "spin_alpha"
+				rotate_uv = 0
+			}
+		}
+	}
+
+	type army_automation_on_big = icon {
+		size = { 30 30 }
+		texture = "gfx/interface/colors/black.dds"
+		visible = "[Army.IsControlledByCompanionAI]"
+
+		modify_texture = {
+			name = "spin"
+			texture = "gfx/interface/icons/army_status/army_status_automation_big.dds"
+			blend_mode = Normal
+			rotate_uv = 0
+		}
+
+		state = {
+			name = a
+			next = b
+			trigger_on_create = yes
+			duration = 10
+
+			modify_texture = {
+				name = "spin"
+				rotate_uv = -360
+			}
+		}
+
+		state = {
+			name = b
+			next = a
+			duration = 0
+
+			modify_texture = {
+				name = "spin"
+				rotate_uv = 0
+			}
+		}
+
+		modify_texture = {
+			name = "spin_alpha"
+			blend_mode = alphaMultiply
+			texture = "gfx/interface/icons/army_status/army_status_automation_big.dds"
+			rotate_uv = 0
+		}
+
+		state = {
+			name = c
+			next = d
+			trigger_on_create = yes
+			duration = 10
+
+			modify_texture = {
+				name = "spin_alpha"
+				rotate_uv = -360
+			}
+		}
+
+		state = {
+			name = d
+			next = c
+			duration = 0
+
+			modify_texture = {
+				name = "spin_alpha"
+				rotate_uv = 0
+			}
+		}
+	}
+
+	type button_toggle_companion_ai = button_standard {
+		size = { 40 40 }
+
+		onclick = "[PostCommand( GetToggleCompanionAICommand )]"
+		down = "[GetPlayer.HasCompanionAI]"
+
+		tooltip = "MV_AUTOMATION_TOGGLE_TT"
+		using = tooltip_sw
+
+		button_army_automation = {
+			parentanchor = center
+			alwaystransparent = yes
+			size = { 32 32 }
+
+			visible = "[Not(GetPlayer.HasCompanionAI)]"
+		}
+
+		army_automation_on_flat = {
+			parentanchor = center
+			alwaystransparent = yes
+
+			visible = "[GetPlayer.HasCompanionAI]"
+		}
+	}
+
+
 	type hbox_event_troop_item = vbox {
 		background = {
 			using = Background_Area
@@ -4300,7 +4586,7 @@ types MilitaryView
 
 				expand = {}
 
-				soldiers_and_quality_small = {
+				hbox_soldiers_and_quality_small = {
 					datacontext = "[MilitaryViewEventTroop.GetComposition]"
 
 					blockoverride "background" {
@@ -4817,7 +5103,7 @@ types HiredTroops
 						text = "[SelectLocalization( MercenaryCompany.IsHiredByLocalPlayer, 'HIRED_TROOPS_VIEW_MC_HIRED_TIME_LEFT', 'HIRED_TROOPS_VIEW_NOT_AVAILABLE' )]"
 					}
 
-					soldiers_and_quality_small = {
+					hbox_soldiers_and_quality_small = {
 						datacontext = "[HiredTroopItem.GetComposition]"
 					}
 				}
@@ -5020,7 +5306,7 @@ types HiredTroops
 						}
 					}
 
-					soldiers_and_quality_small = {
+					hbox_soldiers_and_quality_small = {
 						datacontext = "[HiredTroopItem.GetComposition]"
 					}
 				}
