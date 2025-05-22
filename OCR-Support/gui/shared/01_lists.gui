@@ -74,6 +74,14 @@ types OCR {
 
 							block "vassal_name" {
 								text_single = {
+									raw_text = "Tributary,"
+									# raw_text = "[Character.GetRelationToString(GetPlayer)]."
+									tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+									max_width = 300
+									visible = "[And(Character.GetSuzerain.IsLocalPlayer, Or(Isnt('realm_tributaries'), IsGameViewOpen('character')))]"
+								}
+
+								text_single = {
 									raw_text = "[Character.GetFirstNameNoTooltip],"
 								}
 
@@ -103,13 +111,13 @@ types OCR {
 								raw_text = "[Character.GetRelationToString(GetPlayer)]."
 								tooltip = "EXTENDED_RELATIONS_TOOLTIP"
 								max_width = 300
-								visible = "[Character.GetLiege.IsLocalPlayer]"
+								visible = "[Or(Character.GetLiege.IsLocalPlayer, And(Is('realm_tributaries'), IsGameViewOpen('my_realm')))]"
 							}
 
 							# text_single = {
-							# 	datacontext = "[Character.GetVassalContract]"
+							# 	datacontext = "[Character.GetSubjectContract]"
 							# 	raw_text = "Not de-jure."
-							# 	visible = "[Not( VassalContract.IsRightfulLiege )]"
+							# 	visible = "[Not( SubjectContract.IsRightfulLiege )]"
 							# 	tooltip = "MRW_TT_NOT_RIGHTFUL_LIEGE"
 							# 	# align = left
 							# }
@@ -122,10 +130,53 @@ types OCR {
 						layoutpolicy_horizontal = expanding
 						spacing = 3
 
+						# block "cease" {}
+
+						hbox = {
+							visible = "[Character.HasSuzerain]"
+							datacontext = "[Character.GetSubjectContract]"
+
+							tooltip = "MY_REALM_WINDOW_CEASE_PAYING_TRIBUTE_CHANCE_TT"
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								text = "MY_REALM_WINDOW_CEASE_PAYING_TRIBUTE_CHANCE"
+								max_width = 300
+							}
+						}
+
 						text_single = {
-							raw_text = "[Character.GetOpinionOf(GetPlayer)|=] opinion,"
+							raw_text = "[Character.GetOpinionOf(GetPlayer)|=]"
 							tooltip = "[Character.GetOpinionBreakdownText(GetPlayer)]"
 						}
+
+						text_single = {
+							visible = "[Or(IsIndexFirst, Not(GetPlayer.UsesObedience))]"
+							raw_text = "opinion,"
+						}
+
+						text_single = {
+							visible = "[And(Not(Character.GetLiege.IsLocalPlayer), Not(Character.IsIndependentRuler))]"
+							raw_text = "[Character.GetOpinionOf( Character.GetLiege )|=] of liege."
+							tooltip = "[Character.GetOpinionBreakdownText( Character.GetLiege )]"
+						}
+
+						hbox = {
+							spacing = 3
+							visible = "[And(Character.HasOverlord, Character.UsesObedience)]"
+							# margin_left = -3
+
+
+							text_single = {
+								raw_text = "and[SelectLocalization(Character.IsObedientTo( Character.GetOverlord ), 'MY_REALM_WINDOW_OBEDIENT', 'MY_REALM_WINDOW_DISOBEDIENT' )]"
+
+							}
+							datacontext = "[Character.GetObedienceBreakdown]"
+							tooltipwidget = widget_obedience_tooltip
+
+							, = {}
+						}
+
 
 						text_single = {
 							raw_text = "[Character.GetMilitaryStrengthText]"
@@ -134,6 +185,9 @@ types OCR {
 						text_single = {
 							raw_text = "Soldiers,"
 						}
+
+
+						###
 
 						hbox = {
 							spacing = 3
@@ -148,7 +202,7 @@ types OCR {
 						}
 
 						text_single = {
-							visible = "[Character.IsPowerfulVassal]"
+							visible = "[And( Character.IsPowerfulVassal, Character.IsVassalOf( Character.GetOverlord ) )]"
 							raw_text = "[Localize('MY_REALM_WINDOW_POWERFUL_VASSAL')]."
 						}
 
@@ -156,12 +210,6 @@ types OCR {
 
 						vassal_expected_legitimacy_text = {
 							name = "legitimacy_expectation"
-						}
-
-						text_single = {
-							visible = "[Not(Character.GetLiege.IsLocalPlayer)]"
-							raw_text = "[Character.GetOpinionOf( Character.GetLiege )] opinion of liege."
-							tooltip = "[Character.GetOpinionBreakdownText( Character.GetLiege )]"
 						}
 
 						text_single = {
@@ -177,8 +225,8 @@ types OCR {
 						}
 
 						text_single = {
-							raw_text = "Loyal to your title, not you."
-							datacontext = "[VassalContract.GetTitleAllegiance]"
+							raw_text = "Loyal to the title."
+							datacontext = "[SubjectContract.GetTitleAllegiance]"
 							visible = "[Title.IsValid]"
 							tooltip = "MRW_TITLE_ALLEGIANCE"
 						}
@@ -228,14 +276,14 @@ types OCR {
 
 							button_text = {
 								onclick = "[Character.OpenPlayerInteraction('liege_modify_vassal_contract_interaction')]"
-								enabled = "[And(And( VassalContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony)), Character.IsPlayerInteractionValid('liege_modify_vassal_contract_interaction'))]"
+								enabled = "[And(And( SubjectContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony)), Character.IsPlayerInteractionValid('liege_modify_vassal_contract_interaction'))]"
 
 								blockoverride "extra" {
 									margin_left = -3
 
 									text_single = {
-										visible = "[And(And( VassalContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony)), Character.GetGovernment.IsType('feudal_government'))]"
-										raw_text = "[VassalContract.GetShortObligationLevelNameWithHighlightFor( 'feudal_government_taxes' )]"
+										visible = "[And(And( SubjectContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony)), Character.GetGovernment.IsType('feudal_government'))]"
+										raw_text = "[SubjectContract.GetShortObligationLevelNameWithHighlightFor( 'feudal_government_taxes' )]"
 										using = tooltip_se
 										alwaystransparent = yes
 									}
@@ -267,8 +315,8 @@ types OCR {
 									}
 
 									text_single = {
-										visible = "[And(And( VassalContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony)), Character.GetGovernment.IsType('feudal_government'))]"
-										raw_text = "[VassalContract.GetShortObligationLevelNameWithHighlightFor( 'feudal_government_levies' )]"
+										visible = "[And(And( SubjectContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony)), Character.GetGovernment.IsType('feudal_government'))]"
+										raw_text = "[SubjectContract.GetShortObligationLevelNameWithHighlightFor( 'feudal_government_levies' )]"
 										alwaystransparent = yes
 									}
 
@@ -329,7 +377,7 @@ types OCR {
 
 							flowcontainer = {
 								ignoreinvisible = yes
-								visible = "[Not( VassalContract.IsRightfulLiege )]"
+								visible = "[Not( SubjectContract.IsRightfulLiege )]"
 								spacing = 3
 
 								text_single = {
@@ -346,7 +394,7 @@ types OCR {
 							}
 
 							flowcontainer = {
-								visible = "[And( VassalContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony))]"
+								visible = "[And( SubjectContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony))]"
 								margin_left = -3
 								ignoreinvisible = yes
 
@@ -375,14 +423,14 @@ types OCR {
 									}
 									enabled = "[Character.IsPlayerInteractionValid('liege_modify_vassal_contract_interaction')]"
 									onclick = "[Character.OpenPlayerInteraction('liege_modify_vassal_contract_interaction')]"
-									visible = "[VassalContract.IsContractDefault]"
+									visible = "[SubjectContract.IsContractDefault]"
 
 									block "feudal_contract_button_round" {} #TODO
 								}
 							}
 
 							# text_single = {
-							# 	visible = "[And(And(Not(Character.GetGovernment.IsType('feudal_government')), VassalContract.UsesObligationLevels), Not( Character.GetPrimaryTitle.IsBarony ))]"
+							# 	visible = "[And(And(Not(Character.GetGovernment.IsType('feudal_government')), SubjectContract.UsesObligationLevels), Not( Character.GetPrimaryTitle.IsBarony ))]"
 							# 	raw_text = "No levels in a [Character.GetGovernment.GetName]."
 							# }
 
@@ -394,7 +442,7 @@ types OCR {
 
 							hbox = {
 								layoutpolicy_horizontal = expanding
-								visible = "[And( Not( VassalContract.UsesObligationLevels ), Not( Character.GetPrimaryTitle.IsBarony ) )]"
+								visible = "[And( Not( SubjectContract.UsesObligationLevels ), Not( Character.GetPrimaryTitle.IsBarony ) )]"
 
 								text_single = {
 									tooltip = MY_REALM_WINDOW_NO_FEUDAL_CONTRACT_TT
@@ -405,18 +453,18 @@ types OCR {
 							}
 
 							hbox = {
-								visible = "[And( VassalContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony))]"
+								visible = "[And( SubjectContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony))]"
 								spacing = 3
 
 								text_single = {
 									raw_text = "Contract was changed."
-									visible = "[Not(VassalContract.IsContractDefault)]"
+									visible = "[Not(SubjectContract.IsContractDefault)]"
 								}
 
 								text_single = {
 									raw_text = "Blocked."
 									tooltip = "VASSAL_CONTRACT_IS_BLOCKED"
-									visible = "[VassalContract.IsBlockedFromModification]"
+									visible = "[SubjectContract.IsBlockedFromModification]"
 								}
 							}
 
@@ -425,7 +473,7 @@ types OCR {
 
 						hbox = {
 							layoutpolicy_horizontal = expanding
-							visible = "[And( VassalContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony))]"
+							visible = "[And( SubjectContract.UsesObligationLevels, Not( Character.GetPrimaryTitle.IsBarony))]"
 							spacing = 3
 
 							button_round = {
@@ -1765,6 +1813,75 @@ types Lists
 		  }
 
 		  button_resize_page_ocr = {}
+
+			expand = {}
+		}
+
+		blockoverride "widget_index" {
+			page_index = {}
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			block "vbox_contents" {
+			}
+		}
+
+		page_buttons_ocr = {
+			block "show_pages" {}
+			block "page_index" {}
+		}
+
+		fixedgridbox = {
+			block "full_datamodel" {}
+			name = "items"
+			addcolumn = 1
+			addrow = 1
+			flipdirection = yes
+			item = {
+				widget = {
+					block "visible_item" {}
+				}
+			}
+		}
+	}
+
+	type vbox_paged_list_five = vbox {
+		layoutpolicy_horizontal = expanding
+
+		block "var" {
+			block "page_index" {
+				datacontext = "[GetPlayer.MakeScope.Var('generic_page')]"
+			}
+		}
+		datacontext = "[GetScriptedGui('generic_page')]"
+
+		# blockoverride "full_datamodel" {
+		#   datamodel = "[CharacterSelectionList.GetList]"
+		# }
+		# blockoverride "list_datamodel" {
+		#   datamodel = "[PageModelGlobal(CharacterSelectionList.GetList)]"
+		# }
+
+		block "reset_when" {
+			state = {
+			  name = "reset"
+			  on_finish = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope('target', MakeScopeFlag('reset')).End )]"
+				trigger_when = "[ResetPages( CountPrevItems )]"
+				trigger_on_create = yes
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+		  spacing = 3
+			block "show_pages" {}
+			block "page_index" {}
+
+		  text_single = {
+		    raw_text = "Showing from [PageStartGlobal] to [Min_CFixedPoint(Add_CFixedPoint(Scope.GetValue, vassals_per_page), IntToFixedPoint(PdxGuiWidget.AccessParent.AccessParent.FindChild('items').CountVisibleChildren))],"
+
+		  }
 
 			expand = {}
 		}

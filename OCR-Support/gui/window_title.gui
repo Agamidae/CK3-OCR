@@ -1,29 +1,23 @@
 ### TITLE WINDOW
-
 window = {
 	name = "title_view_window"
 	movable = no
 	allow_outside = yes
-	layer = windows_layer
 	using = base_ocr_window
 
 	state = {
 		name = _show
-		position = { 0 0 }
 		on_start = "[GetVariableSystem.Clear( 'title_tabs' )]"
 		on_start = "[GetVariableSystem.Set( 'hide_bottom_left_HUD', 'true' )]"
 		onclick = "[GetScriptedGui('adjacent_titles').Execute( GuiScope.SetRoot( Title.MakeScope ).End )]"
 
-		using = Animation_FadeIn_Quick
 		using = Sound_WindowShow_Standard
 	}
 
 	state = {
 		name = _hide
-		position_x = -60
 		on_start = "[GetVariableSystem.Clear( 'hide_bottom_left_HUD' )]"
 
-		using = Animation_FadeOut_Quick
 		using = Sound_WindowHide_Standard
 		on_finish = "[Click('clear_last_view')]"
 	}
@@ -206,6 +200,11 @@ window = {
 									raw_text = "out of [GuiScope.SetRoot(Title.MakeScope).ScriptValue('counties_in_title')]."
 								}
 
+								text_single = {
+									visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(Title.MakeScope).AddScope('player', Character.MakeScope).ScriptValue('you_with_tributaries_in_title'), GuiScope.SetRoot(Title.MakeScope).AddScope('player', Character.MakeScope).ScriptValue('your_counties_in_title'))]"
+									raw_text = "Or [GuiScope.SetRoot(Title.MakeScope).AddScope('player', Character.MakeScope).ScriptValue('you_with_tributaries_in_title')] counting tributaries."
+								}
+
 								expand = { }
 							}
 						}
@@ -344,6 +343,11 @@ window = {
 
 								text_single = {
 									raw_text = "out of [GuiScope.SetRoot(Title.MakeScope).ScriptValue('counties_in_title')]."
+								}
+
+								text_single = {
+									visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(Title.MakeScope).AddScope('player', GetPlayer.MakeScope).ScriptValue('you_with_tributaries_in_title'), GuiScope.SetRoot(Title.MakeScope).AddScope('player', GetPlayer.MakeScope).ScriptValue('your_counties_in_title'))]"
+									raw_text = "Or [GuiScope.SetRoot(Title.MakeScope).AddScope('player', GetPlayer.MakeScope).ScriptValue('you_with_tributaries_in_title')] counting tributaries."
 								}
 
 								text_single = {
@@ -668,35 +672,11 @@ window = {
 								ignoreinvisible = yes
 								layoutpolicy_horizontal = expanding
 
-								button_text = {
-									name = "toggle_promote_candidate"
+								flow_title_shared_buttons_ocr = {
 									layoutpolicy_horizontal = expanding
-									visible = "[And( And( GreaterThan_int32( Title.GetTierFrame, '(int32)3' ), Not(TitleViewWindow.GetTitle.HasLaws) ), Character.IsPlayerInteractionValid('influence_candidacy_interaction') )]"
-									enabled = "[Character.IsPlayerInteractionValid('influence_candidacy_interaction')]"
-									tooltip = "[Character.GetPlayerInteractionTooltip('influence_candidacy_interaction')]"
-									onclick = "[Character.OpenPlayerInteractionWithTargetTitle( 'influence_candidacy_interaction', Title.Self )]"
-									blockoverride "disabled" {
-										visible = "[Not(Character.IsPlayerInteractionValid('influence_candidacy_interaction'))]"
-									}
-
-									blockoverride "text" {
-										raw_text = "influence_candidacy_interaction"
-									}
+									datacontext = "[TitleViewWindow.GetTitle]"
+									datacontext = "[Title.GetHolder]"
 								}
-
-								button_text = {
-									layoutpolicy_horizontal = expanding
-									blockoverride "text" {
-										raw_text = "start_generate_claim_interaction"
-									}
-									name = "toggle_generate_claim"
-									visible = "[And( And( GreaterThan_int32( Title.GetTierFrame, '(int32)3' ), Not(TitleViewWindow.GetTitle.HasLaws) ), Character.IsPlayerInteractionValid('start_generate_claim_interaction') )]"
-
-									enabled = "[Character.IsPlayerInteractionValid('start_generate_claim_interaction')]"
-									tooltip = "[Character.GetPlayerInteractionTooltip('start_generate_claim_interaction')]"
-									onclick = "[Character.OpenPlayerInteraction('start_generate_claim_interaction')]"
-								}
-
 
 								button_text = {
 									name = "remove_law"
@@ -773,7 +753,7 @@ window = {
 									blockoverride "text" {
 										raw_text = "[Localize('TITLE_VIEW_USURP_TITLE')]."
 									}
-									visible = "[And( Not(Character.IsLocalPlayer), TitleViewWindow.ShowUsurp )]"
+									visible = "[And( And( Not(Character.IsLocalPlayer), TitleViewWindow.ShowUsurp ), Or( Not( IsNomad( GetPlayer ) ), GreaterThanOrEqualTo_int32( GetPlayer.GetPrimaryTitle.GetTierFrame, Title.GetTierFrame ) ) )]"
 									using = agot_can_usurp
 									onclick = "[CreateCommandPopup( TitleViewWindow.GetUsurpTitle )]"
 									tooltip = "[TitleViewWindow.GetUsurpTitleButtonTooltip]"
@@ -861,7 +841,7 @@ window = {
 						vbox = {
 							layoutpolicy_horizontal = expanding
 							name = "create_title"
-							visible = "[And( Not( Title.IsBarony ), Not( TitleViewWindow.GetTitle.HasHolder ) )]"
+							visible = "[And( And( Not( Title.IsBarony ), Not( TitleViewWindow.GetTitle.HasHolder ) ), Or( Not( IsNomad( GetPlayer ) ), GreaterThanOrEqualTo_int32( GetPlayer.GetPrimaryTitle.GetTierFrame, Title.GetTierFrame ) ) )]"
 
 							button_primary_text = {
 								layoutpolicy_horizontal = expanding
@@ -1228,8 +1208,6 @@ window = {
 								layoutpolicy_vertical = expanding
 								minimumsize = { 0 300 }
 
-								using = title_window_background_illustration
-
 								blockoverride "scrollbox_content" {
 									vbox = {
 										layoutpolicy_horizontal = expanding
@@ -1511,50 +1489,10 @@ window = {
 		}
 	}
 
-	window_title_old = {}
+	window_title = {}
 }
 
-######################################################
-################ TYPES AND TEMPLATES #################
-######################################################
-
-
-template title_view_window_side_pop_out
-{
-	position = { 0 80 }
-
-
-	state = {
-		name = _show
-		using = Animation_FadeIn_Standard
-		position_x = 590
-	}
-
-	state = {
-		name = _hide
-		using = Animation_FadeOut_Standard
-		position_x = 500
-	}
-}
-
-template title_window_background_illustration
-{
-	background = {
-		texture = "[GetIllustration( 'title_holding' ).GetTexture( TitleViewWindow.GetTitle )]"
-		alpha = 0.1
-		fittype = centercrop
-
-		modify_texture = {
-			texture = "gfx/interface/component_masks/mask_fade_vertical.dds"
-			blend_mode = alphamultiply
-			mirror = vertical
-		}
-
-		using = Mask_Rough_Edges
-	}
-}
-
-types Title
+types OCR
 {
 	type vbox_title_type_text = vbox {
 
@@ -1568,6 +1506,105 @@ types Title
 			layoutpolicy_horizontal = expanding
 			visible = "[Not(Title.CanHaveClaim)]"
 			text = "[Title.GetSpecialDescription]"
+		}
+	}
+
+	type flow_title_shared_buttons_ocr = flowcontainer {
+		direction = vertical
+		ignoreinvisible = yes
+
+		button_text = {
+			name = "toggle_promote_candidate"
+			visible = "[And( And( GreaterThan_int32( Title.GetTierFrame, '(int32)3' ), Not(Title.HasLaws) ), Character.IsPlayerInteractionValid('influence_candidacy_interaction') )]"
+			enabled = "[Character.IsPlayerInteractionValid('influence_candidacy_interaction')]"
+			tooltip = "[Character.GetPlayerInteractionTooltip('influence_candidacy_interaction')]"
+			onclick = "[Character.OpenPlayerInteractionWithTargetTitle( 'influence_candidacy_interaction', Title.Self )]"
+			blockoverride "disabled" {
+				visible = "[Not(Character.IsPlayerInteractionValid('influence_candidacy_interaction'))]"
+			}
+
+			blockoverride "text" {
+				raw_text = "influence_candidacy_interaction"
+			}
+		}
+
+		button_text = {
+			blockoverride "text" {
+				raw_text = "start_generate_claim_interaction"
+			}
+			name = "toggle_generate_claim"
+			visible = "[And( And( GreaterThan_int32( Title.GetTierFrame, '(int32)3' ), Not(Title.HasLaws) ), Character.IsPlayerInteractionValid('start_generate_claim_interaction') )]"
+
+			enabled = "[Character.IsPlayerInteractionValid('start_generate_claim_interaction')]"
+			tooltip = "[Character.GetPlayerInteractionTooltip('start_generate_claim_interaction')]"
+			onclick = "[Character.OpenPlayerInteraction('start_generate_claim_interaction')]"
+		}
+
+		container = {
+			ignoreinvisible = yes
+			using = locr_hide
+			# feudalize
+			button_text  = {
+				shortcut = map_mode_diplomatic_relations
+				blockoverride "text" {
+					raw_text = "feudalize_holding_interaction"
+				}
+				blockoverride "extra" {
+					, = {}
+					text_single = {
+						raw_text = "Shift F."
+					}
+				}
+				blockoverride "disabled" {
+					visible = "[Not(Character.IsPlayerInteractionWithTargetTitleValid('feudalize_holding_interaction', Title.Self))]"
+				}
+				visible = "[And( Character.IsLocalPlayer, Character.IsPlayerInteractionShownAndCanPickTitle('feudalize_holding_interaction', Title.Self) )]"
+				enabled = "[Character.IsPlayerInteractionWithTargetTitleValid('feudalize_holding_interaction', Title.Self)]"
+				tooltip = "[Character.GetPlayerInteractionWithTargetTitleTooltip('feudalize_holding_interaction', Title.Self)]"
+				oversound = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
+				clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_select"
+				onclick = "[Character.OpenPlayerInteractionWithTargetTitle('feudalize_holding_interaction', Title.Self)]"
+			}
+		}
+
+		button_text  = {
+			blockoverride "text" {
+				raw_text = "tribalize_holding_interaction"
+			}
+			blockoverride "dot" {}
+			blockoverride "disabled" {
+				visible = "[Not(Character.IsPlayerInteractionWithTargetTitleValid('tribalize_holding_interaction', Title.Self))]"
+			}
+			visible = "[And( Character.IsLocalPlayer, Character.IsPlayerInteractionShownAndCanPickTitle('tribalize_holding_interaction', Title.Self) )]"
+			enabled = "[Character.IsPlayerInteractionWithTargetTitleValid('tribalize_holding_interaction', Title.Self)]"
+			tooltip = "[Character.GetPlayerInteractionWithTargetTitleTooltip('tribalize_holding_interaction', Title.Self)]"
+			oversound = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
+			clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_select"
+			onclick = "[Character.OpenPlayerInteractionWithTargetTitle('tribalize_holding_interaction', Title.Self)]"
+		}
+
+
+		### RAZE HOLDING ###
+		button_text = {
+			visible = "[And( And( ObjectsEqual( Title.GetHolder, GetPlayer ), Not(Title.IsLeasedOut) ), IsNomad( GetPlayer ) )]"
+			datacontext = "[Title.GetProvince]"
+			shortcut = undo
+
+			onclick = "[CreateCommandPopup( Province.RazeHolding( GetPlayer ) )]"
+			enabled = "[IsValidCommand( Province.RazeHolding( GetPlayer ) )]"
+			tooltip = "[GetCommandDesc( Province.RazeHolding( GetPlayer ) )]"
+			blockoverride "text" {
+				raw_text = "RAZE_HOLDING_CONFIRMATION_TITLE"
+			}
+			blockoverride "extra" {
+				, = {}
+				text_single = {
+					raw_text = "Control Z."
+				}
+			}
+			blockoverride "disabled" {
+				visible = "[Not(IsValidCommand( Province.RazeHolding( GetPlayer ) ))]"
+			}
 		}
 	}
 }

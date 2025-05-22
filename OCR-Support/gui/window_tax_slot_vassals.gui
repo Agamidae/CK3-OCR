@@ -1026,45 +1026,542 @@ types OCR
 }
 
 
-# vassal_progressbars = {
-# 	blockoverride "width"
-# 	{
-# 		layoutpolicy_horizontal = expanding
-# 	}
-#
-# 	blockoverride "background"
-# 	{
-# 	}
-#
-# 	blockoverride "tax_progressbar_size"
-# 	{
-# 	}
-# 	blockoverride "tax_progressbar_value"
-# 	{
-# 		value = "[FixedPointToProgressbarValue( AssignedVassalList.GetTaxPercentage( CharacterListItem.Self ) )]"
-# 	}
-# 	blockoverride "tax_value"
-# 	{
-# 		text = "TAX_SLOT_VASSAL_WINDOW_ASSIGNED_VASSAL_TAX_CONTRIBUTION"
-# 	}
-# 	blockoverride "tax_breakdown"
-# 	{
-# 		datacontext = "[AssignedVassalList.GetTaxBreakdown( CharacterListItem.Self )]"
-# 	}
-#
-# 	blockoverride "levy_progressbar_size"
-# 	{
-# 	}
-# 	blockoverride "levy_progressbar_value"
-# 	{
-# 		value = "[FixedPointToProgressbarValue( AssignedVassalList.GetLevyPercentage( CharacterListItem.Self ) )]"
-# 	}
-# 	blockoverride "levy_value"
-# 	{
-# 		text = "TAX_SLOT_VASSAL_WINDOW_ASSIGNED_VASSAL_LEVY_CONTRIBUTION"
-# 	}
-# 	blockoverride "levy_breakdown"
-# 	{
-# 		datacontext = "[AssignedVassalList.GetLevyBreakdown( CharacterListItem.Self )]"
-# 	}
-# }
+types TaxCollectorVassalViewTypes
+{
+	type tax_slot_vassal_item = widget {
+		size = { 10 120 }
+
+		block "divider" {
+			divider = {
+				parentanchor = bottom|hcenter
+				size = { 100% 3 }
+			}
+		}
+
+		block "widget" {}
+		hbox = {
+			icon = {
+				size = { 25 25 }
+				block "selected_icon"
+				{
+					visible = "[AssignedVassalList.IsCharacterSelected( CharacterListItem.Self )]"
+					texture = "gfx/interface/icons/flat_icons/cancel.dds"
+					modify_texture = {
+						texture = "gfx/interface/colors/red.dds"
+						alpha = 0.75
+					}
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+				spacing = 10
+
+				portrait_head_small = {
+					blockoverride "portrait_button" {
+						text_single = {
+							name = "tutorial_highlight_character_view_opinion"
+							visible = "[InDebugMode]"
+							max_width = 100
+							margin = { 3 0 }
+							using = tooltip_es
+							default_format = "#D"
+						}
+					}
+				}
+
+				button_standard = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					onclick = "[CharacterListItem.OnClick('character')]"
+					enabled = "[CharacterListItem.IsSelectable]"
+
+					spriteType = Corneredtiled
+					spriteborder = { 20 20 }
+
+					block "character_selected_down"
+					{
+						down = no
+					}
+
+					background = {
+						texture = "gfx/interface/buttons/button_entry_characterlist.dds"
+						spriteType = Corneredtiled
+						margin = { 10 0 }
+						using = Color_Orange
+						alpha = 0
+						using = Mask_Rough_Edges
+					}
+
+					block "button" {}
+
+					character_list_arrow = {
+						name = "character_list_arrow"
+					}
+
+					# Selected icon
+					icon = {
+						block "character_selected_icon"
+						{
+							visible = no
+						}
+
+						parentanchor = left|vcenter
+						position = { -20 0 }
+						size = { 20 20 }
+						texture = "gfx/interface/buttons/button_entry_characterlist_arrow.dds"
+					}
+
+					block "overlay" {
+						using = default_character_list_overlay
+					}
+
+					block "button_content" {}
+				}
+			}
+		}
+	}
+
+	type assigned_vassal_button_content = vbox {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		margin = { 10 0 }
+
+		background = {
+			visible = "[AssignedVassalList.IsCharacterSelected( CharacterListItem.Self )]"
+			texture = "gfx/interface/colors/red.dds"
+			alpha = 0.1
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+
+				# Name
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					using = Font_Size_Medium
+					autoresize = no
+					alwaystransparent = yes
+
+					text = "[Character.GetUINameNoTooltip]"
+				}
+
+				text_single = {
+					name = "character_relation"
+					visible = "[Character.HasRelationTo( GetPlayer )]"
+					layoutpolicy_horizontal = expanding
+					alwaystransparent = yes
+
+					text = "[Character.GetRelationToString( GetPlayer )]"
+					default_format = "#low"
+					autoresize = no
+
+					tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+				}
+			}
+
+			icon = {
+				datacontext = "[Character.GetFaith]"
+				size = { 40 40 }
+				texture = "[Faith.GetIcon]"
+
+				tooltipwidget = {
+					faith_tooltip_core_tenents = {}
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			expand = {}
+
+			hbox = {
+				datacontext = "[Character.GetCulture]"
+				margin = { 5 0 }
+
+				Background = {
+					using = Background_Area
+				}
+
+				tooltipwidget = {
+					culture_tooltip = {}
+				}
+
+				using = tooltip_se
+
+				icon = {
+					name = "culture"
+					texture = "gfx/interface/icons/icon_culture.dds"
+					size = { 24 24 }
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					min_width = 60
+					align = center|nobaseline
+					autoresize = no
+					text = "CULTURE_LISTS_WINDOW"
+				}
+			}
+		}
+
+
+		### Vassal Info
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 10
+
+			icon = {
+				datacontext = "[Character.GetVassalStance]"
+				visible = "[Not( Character.IsPlayer )]"
+
+				size = { 40 40 }
+				texture = "[VassalStance.GetIcon]"
+
+				tooltipwidget = {
+					using = vassal_stance_tooltip
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				background = {
+					using = Background_Area
+				}
+
+				vassal_progressbars = {
+					blockoverride "width"
+					{
+						layoutpolicy_horizontal = expanding
+					}
+
+					blockoverride "background"
+					{
+					}
+
+					blockoverride "tax_progressbar_size"
+					{
+						size = { 100% 25 }
+					}
+					blockoverride "tax_progressbar_value"
+					{
+						value = "[FixedPointToProgressbarValue( AssignedVassalList.GetTaxPercentage( CharacterListItem.Self ) )]"
+					}
+					blockoverride "tax_value"
+					{
+						text = "TAX_SLOT_VASSAL_WINDOW_ASSIGNED_VASSAL_TAX_CONTRIBUTION"
+					}
+					blockoverride "tax_breakdown"
+					{
+						datacontext = "[AssignedVassalList.GetTaxBreakdown( CharacterListItem.Self )]"
+					}
+
+					blockoverride "levy_progressbar_size"
+					{
+						size = { 100% 25 }
+					}
+					blockoverride "levy_progressbar_value"
+					{
+						value = "[FixedPointToProgressbarValue( AssignedVassalList.GetLevyPercentage( CharacterListItem.Self ) )]"
+					}
+					blockoverride "levy_value"
+					{
+						text = "TAX_SLOT_VASSAL_WINDOW_ASSIGNED_VASSAL_LEVY_CONTRIBUTION"
+					}
+					blockoverride "levy_breakdown"
+					{
+						datacontext = "[AssignedVassalList.GetLevyBreakdown( CharacterListItem.Self )]"
+					}
+				}
+			}
+		}
+	}
+
+
+	type unassigned_vassal_button_content = vbox {
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+		margin = { 10 0 }
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+
+				# Name
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					using = Font_Size_Medium
+					autoresize = no
+					alwaystransparent = yes
+
+					text = "[Character.GetUINameNoTooltip]"
+				}
+
+				text_single = {
+					name = "character_relation"
+					visible = "[Character.HasRelationTo( GetPlayer )]"
+					layoutpolicy_horizontal = expanding
+					alwaystransparent = yes
+
+					text = "[Character.GetRelationToString( GetPlayer )]"
+					default_format = "#low"
+					autoresize = no
+
+					tooltip = "EXTENDED_RELATIONS_TOOLTIP"
+				}
+			}
+
+			icon = {
+				datacontext = "[Character.GetFaith]"
+				size = { 40 40 }
+				texture = "[Faith.GetIcon]"
+
+				tooltipwidget = {
+					faith_tooltip_core_tenents = {}
+				}
+			}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			text_single = {
+				layoutpolicy_horizontal = expanding
+				text = "[TaxSlotVassalWindow.GetTaxSlotStatusForCharacter( CharacterListItem.GetCharacter )]"
+			}
+
+			hbox = {
+				datacontext = "[Character.GetCulture]"
+				margin = { 5 0 }
+
+				Background = {
+					using = Background_Area
+				}
+
+				tooltipwidget = {
+					culture_tooltip = {}
+				}
+
+				using = tooltip_se
+
+				icon = {
+					name = "culture"
+					texture = "gfx/interface/icons/icon_culture.dds"
+					size = { 24 24 }
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					min_width = 60
+					align = center|nobaseline
+					autoresize = no
+					text = "CULTURE_LISTS_WINDOW"
+				}
+			}
+		}
+
+		### Vassal Info
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			spacing = 10
+
+			icon = {
+				datacontext = "[Character.GetVassalStance]"
+				size = { 40 40 }
+				texture = "[VassalStance.GetIcon]"
+				tooltipwidget = {
+					using = vassal_stance_tooltip
+				}
+			}
+
+			hbox = {
+				margin = { 10 5 }
+				spacing = 10
+				layoutpolicy_horizontal = expanding
+
+				Background = {
+					using = Background_Area
+				}
+
+				expand = {}
+				text_single = {
+					text = "TAX_SLOT_VASSAL_WINDOW_TAXABLE"
+				}
+
+				text_single = {
+					alwaystransparent = yes
+					text = "TAX_SLOT_VASSAL_WINDOW_UNASSIGNED_VASSAL_TAXABLE_INCOME"
+				}
+
+				divider_light = {
+					layoutpolicy_vertical = expanding
+				}
+
+				text_single = {
+					alwaystransparent = yes
+					text = "TAX_SLOT_VASSAL_WINDOW_UNASSIGNED_VASSAL_LEVIES"
+				}
+			}
+		}
+	}
+
+
+	type tax_contribution_tooltip = widget {
+		alwaystransparent = no
+
+		using = GeneralTooltipSetup
+
+		widget = {
+			name = "background"
+			using = DefaultTooltipBackground
+			size = { 100% 100% }
+			alwaystransparent = no
+		}
+
+		vbox = {
+			layoutpolicy_horizontal = expanding
+			set_parent_size_to_minimum = yes
+			ignoreinvisible = yes
+			spacing = 5
+			margin = { 10 10 }
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				margin = { 10 5 }
+				margin_bottom = 8
+				spacing = 15
+
+				background = {
+					using = Background_Area
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					text = "[ValueBreakdown.GetName]"
+					default_format = "#T"
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					text = "[ValueBreakdown.GetValue]"
+					align = right
+				}
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+
+				text_multi = {
+					margin = { 10 0 }
+					max_width = 300
+					autoresize = yes
+					block "descriptive_text"
+					{
+						text = "TAX_SLOT_VASSAL_WINDOW_TAX_SLOT_TAX_DESC"
+					}
+					default_format = "#instruction"
+				}
+
+				expand = {}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				datamodel = "[ValueBreakdown.GetSubValues]"
+				alwaystransparent = no
+				margin = { 10 10 }
+				spacing = 3
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					background = {
+						using = Background_Area
+						margin = { 10 5 }
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						block "sub_header"
+						{
+							text = "TAX_SLOT_VASSAL_WINDOW_TAX_SLOT_SUBHEADER"
+						}
+						default_format = "#high"
+					}
+
+					expand = {}
+
+					icon = {
+						size = { 25 25 }
+						block "contribution_icon"
+						{
+							texture = "gfx/interface/icons/icon_gold.dds"
+						}
+					}
+				}
+
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					visible = "[IsDataModelEmpty( ValueBreakdown.GetSubValues)]"
+
+					block "no_sub_values"
+					{
+						text = "TAX_SLOT_VASSAL_WINDOW_TAX_SLOT_NO_VASSALS_ASSIGNED"
+					}
+
+					default_format = "#weak"
+				}
+
+				item = {
+					hbox = {
+						name = "value_breakdown"
+						layoutpolicy_horizontal = expanding
+
+						text_single = {
+							name = "name"
+							layoutpolicy_horizontal = expanding
+							text = "[ValueBreakdown.GetName]"
+							min_width = 180
+							max_width = 250
+							fonttintcolor = "[TooltipInfo.GetTintColor]"
+							margin_right = 10
+						}
+
+						text_single= {
+							visible = "[And(ValueBreakdown.HasTooltip, ValueBreakdown.ShouldShowValue)]"
+							name = "value_with_tooltip"
+							text = "[ValueBreakdown.GetValue|L]"
+							align = right
+							fonttintcolor = "[TooltipInfo.GetTintColor]"
+
+							using = tooltip_below
+
+							tooltipwidget = {
+								recursive = yes
+
+								widget_value_breakdown_tooltip = {}
+							}
+						}
+
+						text_single = {
+							visible = "[And( Not(ValueBreakdown.HasTooltip), ValueBreakdown.ShouldShowValue )]"
+							name = "value_with_no_tooltip"
+							text = "[ValueBreakdown.GetValue]"
+							align = right
+							fonttintcolor = "[TooltipInfo.GetTintColor]"
+						}
+					}
+				}
+			}
+		}
+	}
+}

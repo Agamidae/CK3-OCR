@@ -388,6 +388,10 @@ types OCR {
 									raw_text = "[Character.RealmSize] counties,"
 								}
 								text_single = {
+									visible = "[GreaterThan_CFixedPoint(Character.MakeScope.ScriptValue('num_of_tributaries'), '(CFixedPoint)0')]"
+									raw_text = "[Character.MakeScope.ScriptValue('num_of_tributaries')] tributaries,"
+								}
+								text_single = {
 									visible = "[Character.IsAlive]"
 									raw_text = "[AddTextIf(Character.IsIndependentRuler, 'Independent,')]"
 								}
@@ -582,7 +586,7 @@ types OCR {
 											raw_text = "Non de-jure"
 											datacontext = "[CharacterWindow.GetCharacter]"
 											name = "non_dejure_liege"
-											visible = "[And(Not( Character.GetVassalContract.IsRightfulLiege ), Not(Character.IsHostage))]"
+											visible = "[And(Not( Character.GetSubjectContract.IsRightfulLiege ), Not(Character.IsHostage))]"
 										}
 										text_single = {
 											raw_text = "[liege|E],"
@@ -684,6 +688,70 @@ types OCR {
 								expand = { }
 							}
 						}
+
+						### Suzerain
+						vbox = {
+							name = "suzerain"
+							datacontext = "[CharacterWindow.GetCharacter.GetSuzerain]"
+							visible = "[CharacterWindow.GetCharacter.HasSuzerain]"
+							layoutpolicy_horizontal = expanding
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+
+								realm_name = {
+									shortcut = "zoom_out"
+									blockoverride "pre" {
+										spacing = 3
+
+										text_single = {
+											visible = "[CharacterWindow.GetCharacter.IsHostage]"
+											raw_text = "Hostage of"
+										}
+
+										text_single = {
+											visible = "[Not( CharacterWindow.GetCharacter.IsHostage )]"
+											raw_text = "Tributary of"
+										}
+									}
+								}
+
+								text_single = {
+									raw_text = "Page Up."
+								}
+
+								# 1.16
+								obedience_text_ocr = {
+									datacontext = "[CharacterWindow.GetCharacter]"
+									layoutpolicy_horizontal = expanding
+								}
+
+								expand = { }
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+								visible = "[And(Not( CharacterWindow.GetCharacter.IsHostage ), CharacterWindow.GetCharacter.MakeScope.Var('top_suzerain').IsSet)]"
+
+								realm_name = {
+									datacontext = "[CharacterWindow.GetCharacter.MakeScope.Var('top_suzerain').GetCharacter]"
+									shortcut = "zoom_out"
+									blockoverride "pre" {
+										spacing = 3
+
+										text_single = {
+											raw_text = "Top suzerain:"
+										}
+									}
+								}
+
+								expand = { }
+							}
+						}
+
+						# TODO top suzerain
 
 						locr_suzerain = {}
 
@@ -1157,7 +1225,9 @@ types OCR {
 
 						button_text = {
 							layoutpolicy_horizontal = expanding
-							visible =  "[And( Character.IsAlive, And( Character.HasLandedTitles, And(Character.IsCountOrAbove, Character.GetGovernment.HasRule( 'legitimacy' ) ) ) )]"
+							# visible =  "[And( Character.IsAlive, And( Character.HasLandedTitles, And(Character.IsCountOrAbove, Character.GetGovernment.HasRule( 'legitimacy' ) ) ) )]"
+							visible = "[And( Character.IsAlive, And(LegitimacyType.IsValid, Character.GetGovernment.HasRule( 'legitimacy' )))]"
+
 							datacontext = "[Character.GetLegitimacyType]"
 							datacontext = "[Character.GetLegitimacyLevel]"
 							shortcut = explore_legends
@@ -1416,7 +1486,7 @@ types OCR {
 
 				hbox = {
 					spacing = 3
-					visible = "[And(Has('expand_view', 'family'), Has('char_tab','vassals'))]"
+					visible = "[And(Has('expand_view', 'family'), Has('char_tab','subjects'))]"
 
 					text_single = {
 						datacontext = "[CharacterWindow.GetVassals]"
@@ -2402,6 +2472,8 @@ types OCR {
 							button = {
 								onclick = "[DiplomacyItem.OnClick]"
 								onclick = "[GetVariableSystem.Clear('expand_view')]"
+								datacontext = "[DiplomacyItem.GetTargetCharacter]"
+								datacontext = "[DiplomacyItem.GetConfederation]"
 
 								flowcontainer = {
 									direction = vertical
@@ -2514,6 +2586,19 @@ types OCR {
 
 							text_single = {
 								raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_rulers'))] Independent, [Character.MakeScope.ScriptValue('adjacent_rulers_at_war')] at war."
+							}
+							item = {
+								adjacent_ruler_button = { }
+							}
+						}
+						flowcontainer = {
+							visible = "[DataModelHasItems(Character.MakeScope.GetList('adjacent_suzerains'))]"
+							datamodel = "[Character.MakeScope.GetList('adjacent_suzerains')]"
+							direction = vertical
+							layoutpolicy_horizontal = expanding
+
+							text_single = {
+								raw_text = "[GetDataModelSize(Character.MakeScope.GetList('adjacent_suzerains'))] neighbours through tributaries, [Character.MakeScope.ScriptValue('adjacent_suzerains_at_war')] at war."
 							}
 							item = {
 								adjacent_ruler_button = { }
@@ -3383,7 +3468,7 @@ types OCR {
 			####################################
 
 			vbox_character_list = {
-				visible = "[GetVariableSystem.HasValue('char_tab','vassals')]"
+				visible = "[GetVariableSystem.HasValue('char_tab','subjects')]"
 				datacontext = "[CharacterWindow.GetVassals]"
 				layoutpolicy_horizontal = expanding
 				layoutpolicy_vertical = expanding

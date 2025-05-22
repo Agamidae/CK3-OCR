@@ -149,12 +149,12 @@ window = {
 							visible = "[GetVariableSystem.Exists('hide_army_info')]"
 							background = { using = Background_Area_Border_Solid }
 							margin_left = 10
+
 							hbox = {
 								layoutpolicy_horizontal = expanding
 								spacing = 3
 
 								text_single = {
-									datacontext = "[Army.GetComposition]"
 									raw_text = "[ArmyComposition.GetSoldierCountString]"
 								}
 
@@ -171,6 +171,28 @@ window = {
 								army_location = {}
 
 								expand = { }
+							}
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								visible = [Army.IsRaidArmy]
+								datacontext = "[ArmyWindow.GetRaidIntent]"
+
+								onclick = "[ToggleGameViewData( 'raid_intent_selection_window', ArmyWindow.AccessSelf )]"
+								enabled = [ArmyWindow.CanDisband]
+
+								tooltip = "RAID_OPEN_INTENT_WINDOW"
+								tooltip_when_disabled = "RAID_OPEN_INTENT_WINDOW_DISABLED"
+
+								blockoverride "extra" {
+									text_single = {
+										raw_text = "[RaidIntent.GetName] intent."
+									}
+
+									text_single = {
+										raw_text = "[Select_CString(ArmyWindow.CanDisband, 'click to', 'cannot')] change."
+									}
+								}
 							}
 
 							hbox = {
@@ -4059,9 +4081,147 @@ window = {
 		}
 	}
 
-
 	window_old_army = {
 		visible = "[GetVariableSystem.Exists('ocr')]"
+
+		widget = {
+			name = "expanded_armies_window"
+			visible = "[GetVariableSystem.Exists( 'expanded_armies_window' )]"
+			parentanchor = top
+			widgetanchor = bottom
+			position = { 40 0 }
+			layer = top
+
+			allow_outside = yes
+
+			using = Animation_ShowHide_Quick
+
+			state = {
+				name = _show
+				using = Animation_FadeIn_Quick
+				position_y = 15
+			}
+
+			state = {
+				name = _hide
+				using = Animation_FadeOut_Quick
+				position_y = 50
+			}
+
+			vbox = {
+				alwaystransparent = no
+				set_parent_size_to_minimum = yes
+
+				margin = { 5 5 }
+				using = Window_Background_Subwindow
+
+				header_pattern = {
+					layoutpolicy_horizontal = expanding
+
+					blockoverride "header_text"
+					{
+						text = "OUTLINER_ARMIES"
+						align = nobaseline
+						max_width = 280
+					}
+
+					blockoverride "button_close"
+					{
+						onclick = "[GetVariableSystem.Toggle( 'expanded_armies_window' )]"
+					}
+
+					expand = {}
+				}
+
+				hbox = {
+					margin = { 10 10 }
+					margin_top = 0
+
+					fixedgridbox = {
+						name = "banner_items_grid"
+						datamodel = "[ArmyWindow.GetSelectedUnitItems]"
+						visible = "[GreaterThan_int32(GetDataModelSize(ArmyWindow.GetSelectedUnitItems), '(int32)1')]"
+
+						addcolumn = 50
+						addrow = 50
+						datamodel_wrap = 10
+						flipdirection = yes
+
+						item = {
+							widget = {
+								size = { 50 50 }
+								name = "unit_item"
+
+								button = {
+									name = "unit_icon"
+									texture = "gfx/interface/icons/unit_view/unit_view_banner.dds"
+									clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_unit_army_select_army"
+
+									gfxtype = updownframedbuttongfx
+									framesize = { 96 96 }
+									size = { 50 50 }
+									onclick = "[PdxGuiTriggerAllAnimations('army_change')]"
+									onrightclick = "[SelectedUnitItem.OnRightClick]"
+									down = "[SelectedUnitItem.IsShown]"
+									effectname = "NoHighlight"
+
+									upframe = 1
+									overframe = 2
+									downframe = 3
+
+									highlight_icon = {
+										visible = "[SelectedUnitItem.IsGatheringArmy]"
+										size = { 50 50 }
+										texture = "gfx/interface/icons/unit_view/unit_view_gathering.dds"
+									}
+
+									highlight_icon = {
+										visible = "[SelectedUnitItem.GetArmy.IsEmbarked]"
+										size = { 50 50 }
+										texture = "gfx/interface/icons/unit_view/unit_view_disembarking.dds"
+									}
+
+									icon = {
+										visible = "[Or( And(SelectedUnitItem.IsShown, SelectedUnitItem.GetArmy.IsEmbarked), And(SelectedUnitItem.IsShown, SelectedUnitItem.IsGatheringArmy))]"
+										framesize = { 96 96 }
+										size = { 50 50 }
+										frame = 5
+										alwaystransparent = yes
+										texture = "gfx/interface/icons/unit_view/unit_view_banner.dds"
+									}
+
+									icon = {
+										visible = "[SelectedUnitItem.IsShown]"
+										framesize = { 96 96 }
+										size = { 50 50 }
+										frame = 4
+										alwaystransparent = yes
+										texture = "gfx/interface/icons/unit_view/unit_view_banner.dds"
+									}
+
+									state = {
+										name = _mouse_click
+										delay = 0.2
+										on_finish = "[SelectedUnitItem.OnClick]"
+									}
+								}
+
+								text_single = {
+									parentanchor = top|hcenter
+									alwaystransparent = yes
+									position = { 0 10 }
+
+									text = "[SelectedUnitItem.GetArmy.GetSoldierCount|*]"
+								}
+
+								tooltip = "[SelectedUnitItem.GetTooltip]"
+								using = tooltip_ne
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -5148,8 +5308,9 @@ template reorg_regiment_tooltips {
 
 types ArmyWindow
 {
-	type army_location = hbox {
-		hbox = {
+	type army_location = flowcontainer {
+		ignoreinvisible = yes
+		flowcontainer = {
 			visible = "[Not(Army.IsEmbarked)]"
 			spacing = 3
 			text_single = {

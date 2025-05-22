@@ -243,6 +243,83 @@ window = {
 
 types CharOCRTypes {
 
+	type obedience_text_ocr = flowcontainer {
+		ignoreinvisible = yes
+		spacing = 3
+		visible = "[Not(Character.IsLocalPlayer)]"
+
+		flowcontainer = {
+			ignoreinvisible = yes
+			spacing = 3
+			visible = "[And(Character.HasOverlord, Character.UsesObedience)]"
+
+			datacontext = "[Character.GetObedienceBreakdown]"
+			tooltipwidget = widget_obedience_tooltip
+			text_single = {
+				text = "[SelectLocalization(Character.IsObedientTo( Character.GetOverlord ), 'MY_REALM_WINDOW_OBEDIENT', 'MY_REALM_WINDOW_DISOBEDIENT' )]"
+			}
+
+			text_single = {
+				text = "[ValueBreakdown.GetFixedPointValue|0]"
+				default_format = "#L"
+				margin_right = 0
+
+				tooltip_visible = "[ValueBreakdown.HasTooltip]"
+
+				tooltipwidget = {
+					widget_value_breakdown_tooltip = {
+						blockoverride "header" {
+							text_label_left = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[obedience|E]"
+								default_format = "#T"
+							}
+						}
+					}
+				}
+			}
+
+			text_single = {
+				raw_text = "of"
+			}
+
+			text_single = {
+				datacontext = "[Character.GetObedienceThresholdBreakdown]"
+				raw_text = "[ValueBreakdown.GetFixedPointValue|0],"
+				default_format = "#L"
+				margin_left = 0
+
+				tooltip_visible = "[ValueBreakdown.HasTooltip]"
+
+				tooltipwidget = {
+					widget_value_breakdown_tooltip = {
+						blockoverride "header" {
+							text_label_left = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[obedience_threshold|E]"
+								default_format = "#T"
+							}
+						}
+					}
+				}
+			}
+		}
+
+		text_single = {
+			visible = "[Character.HasSuzerain]"
+			datacontext = "[Character.GetSubjectContract]"
+
+			tooltip = "MY_REALM_WINDOW_CEASE_PAYING_TRIBUTE_CHANCE_TT"
+			text = "MY_REALM_WINDOW_CEASE_PAYING_TRIBUTE_CHANCE"
+		}
+
+		text_single = {
+			visible = "[Character.HasSuzerain]"
+			datacontext = "[Character.GetSubjectContract]"
+			raw_text = "[SubjectContract.GetCeasePayingTributeChance|0%/]."
+		}
+	}
+
 	type modifier_item_ocr = flowcontainer {
 		datacontext = "[ModifierItem.GetStaticModifier]"
 		direction = vertical
@@ -445,6 +522,10 @@ types CharOCRTypes {
 				raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip],"
 			}
 			text_single = {
+				visible = "[Character.HasSuzerain]"
+				raw_text = "tributary of [Character.GetSuzerain.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+			}
+			text_single = {
 				visible = "[Character.IsAtWar]"
 				raw_text = "at war,"
 			}
@@ -461,8 +542,11 @@ types CharOCRTypes {
 			# 	raw_text = "[Scope.GetCharacter.GetFirstNameNicknamedOrMe],"
 			# }
 			text_single = {
-				raw_text = "[Character.GetMaxMilitaryStrength|0] men,"
+				raw_text = "[Character.GetMilitaryStrengthText|0] men,"
 			}
+			# text_single = {
+			# 	raw_text = "[Character.MakeScope.ScriptValue('current_military_strength_sval')] script"
+			# }
 			# text_single = {
 			# 	raw_text = "[Character.GetPrimaryTitle.GetTierAsNameNoTooltip]"
 			# }
@@ -752,8 +836,6 @@ types CharOCRTypes {
 			layoutpolicy_horizontal = expanding
 			block "hide_items" { }
 
-
-
 			block "gridbox" {
 				vbox = {
 					layoutpolicy_horizontal = expanding
@@ -793,7 +875,6 @@ types CharOCRTypes {
 								}
 								block "extra2" { }
 								block "extra3" { }
-								expand = { }
 							}
 						}
 					}
@@ -1710,8 +1791,8 @@ types CharOCRTypes {
 			datacontext = "[CharacterWindow.GetCharacter]"
 			visible = "[Character.IsRuler]"
 
-			onclick = "[GetVariableSystem.Set('char_tab', 'vassals')]"
-			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'vassals'))]"
+			onclick = "[GetVariableSystem.Set('char_tab', 'subjects')]"
+			enabled = "[Not(GetVariableSystem.HasValue('char_tab', 'subjects'))]"
 
 			flowcontainer = {
 				ignoreinvisible = yes
@@ -1725,11 +1806,11 @@ types CharOCRTypes {
 				}
 
 				text_single = {
-					text = "CV_TAB_VASSALS"
+					text = "CV_TAB_SUBJECTS"
 					margin_right = 3
 				}
 				text_single = {
-					text = "[CharacterWindow.GetTabItemsCount('vassals')]"
+					text = "[CharacterWindow.GetTabItemsCount('subjects')]"
 				}
 				dot_l = { }
 			}
@@ -1746,7 +1827,8 @@ types CharOCRTypes {
 
 	type char_text_soldiers = text_single {
 		raw_text = "Soldiers, [Character.GetMilitaryStrengthText]."
-		tooltip = "[CharacterWindow.GetMilitaryStrengthTooltip]"
+		# tooltip = "[CharacterWindow.GetMilitaryStrengthTooltip]"
+		tooltip = CHARACTER_WINDOW_MILITARY_STRENGTH_TOOLTIP
 		visible = "[Character.HasLandedTitles]"
 	}
 }
@@ -2167,29 +2249,29 @@ types CharacterWindow
 			name = "titles"
 			visible = "[Not( IsDataModelEmpty( CharacterWindow.GetTitles ) )]"
 			layoutpolicy_horizontal = expanding
+			spacing = 5
 
 			background = {
-				margin_left = 6
-				margin_top = -15
-				margin_bottom = -15
+				margin_left = 5
 				using = Background_Area_Titles
 			}
 
 			hbox = {
-				minimumsize = { 60 0 }
+				margin_left = 5
+
 				text_single = {
 					visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetTitles), '(int32)1' )]"
-					align = nobaseline
+
 					text = "CV_TITLES"
+					align = nobaseline
 				}
 
 				text_single = {
 					visible = "[Not(GreaterThan_int32( GetDataModelSize(CharacterWindow.GetTitles), '(int32)1' ))]"
-					align = nobaseline
-					text = "CV_TITLES_SINGULAR"
-				}
 
-				expand = {}
+					text = "CV_TITLES_SINGULAR"
+					align = nobaseline
+				}
 			}
 
 			button_standard_hover = {
@@ -2197,27 +2279,28 @@ types CharacterWindow
 
 				onclick = "[CharacterWindow.ToggleExpandedTitles]"
 				down = "[CharacterWindow.AreTitlesExpanded]"
+
 				tooltip = "[SelectLocalization( CharacterWindow.AreTitlesExpanded, 'CV_TITLES_HIDE_TT', 'CV_TITLES_SHOW_TT' )]"
 
 				hbox = {
 					layoutpolicy_horizontal = expanding
-					text_single = {
-						margin_bottom = 5
-						align = center
-						default_format = "#weak"
-						layoutpolicy_horizontal = expanding
 
+					text_single = {
 						visible = "[LessThan_int32( GetDataModelSize(CharacterWindow.GetTitles), '(int32)9' )]"
-						text = "KEY_KP_PLUS"
-					}
-					text_single = {
-						margin_bottom = 5
-						align = center
-						default_format = "#weak"
 						layoutpolicy_horizontal = expanding
 
+						text = "KEY_KP_PLUS"
+						align = center|nobaseline
+						default_format = "#weak"
+					}
+
+					text_single = {
 						visible = "[GreaterThan_int32( GetDataModelSize(CharacterWindow.GetTitles), '(int32)8' )]"
+						layoutpolicy_horizontal = expanding
+
 						text = "[GetNumberAbove_int32( GetDataModelSize(CharacterWindow.GetTitles), '(int32)8' )|=]"
+						align = center|nobaseline
+						default_format = "#weak"
 					}
 				}
 			}
@@ -2228,7 +2311,7 @@ types CharacterWindow
 				fixedgridbox = {
 					datamodel = "[CharacterWindow.GetTitles]"
 					flipdirection = yes
-					addrow = 60
+					addrow = 56
 					addcolumn = 38
 					maxverticalslots = 1
 
@@ -2239,6 +2322,7 @@ types CharacterWindow
 					item = {
 						coa_title_tiny_crown = {
 							datacontext = "[TitleItem.GetTitle]"
+							parentanchor = left|vcenter
 							using = tooltip_ne
 
 							icon = {
@@ -2249,9 +2333,18 @@ types CharacterWindow
 								position = { 5 0 }
 								texture = "gfx/interface/icons/title_status/icon_title_law.dds"
 							}
+							icon = {
+								name = "is_nomad"
+								visible = "[TitleItem.GetTitle.IsNomad]"
+								parentanchor = bottom|right
+								size = { 25 25 }
+								position = { 5 0 }
+								texture = "gfx/interface/icons/title_status/icon_title_nomad.dds"
+							}
 						}
 					}
 				}
+
 				expand = {}
 			}
 		}
@@ -2338,11 +2431,11 @@ types CharacterWindow
 								name = "claim"
 								tooltip_visible = no
 
-
 								highlight_icon = {
 									name = "pressed_claim"
 									visible = "[And(Claim.IsPressed, Not(Claim.IsImplicit))]"
 									texture = "gfx/interface/icons/title_status/icon_claim_pressed.dds"
+									position = { 5 3 }
 									size = { 24 24 }
 									parentanchor = bottom|right
 								}
@@ -2351,6 +2444,7 @@ types CharacterWindow
 									name = "unpressed_claim"
 									visible = "[And(Not(Claim.IsPressed), Not(Claim.IsImplicit))]"
 									texture = "gfx/interface/icons/title_status/icon_claim_unpressed.dds"
+									position = { 5 3 }
 									size = { 24 24 }
 									parentanchor = bottom|right
 								}
@@ -2359,6 +2453,7 @@ types CharacterWindow
 									name = "implicit_claim"
 									visible = "[Claim.IsImplicit]"
 									texture = "gfx/interface/icons/title_status/icon_claim_implicit.dds"
+									position = { 5 3 }
 									size = { 24 24 }
 									parentanchor = bottom|right
 								}
@@ -2374,28 +2469,40 @@ types CharacterWindow
 
 	type vbox_diplomacy_box = vbox {
 		name = "diplomacy"
-
 		layoutpolicy_vertical = expanding
 		layoutpolicy_horizontal = expanding
 
 		button_standard_hover = {
 			layoutpolicy_horizontal = expanding
 			size = { 100 25 }
+
+			onclick = "[SetMapMode( Select_CString( CharacterWindow.AreDiplomacyExpanded, 'realms', 'diplomatic_relations' ) )]"
 			onclick = "[CharacterWindow.ToggleExpandedDiplomacy]"
-			down = "[CharacterWindow.AreDiplomacyExpanded]"
+			down = "[Or( CharacterWindow.AreDiplomacyExpanded,  IsMapMode( 'diplomatic_relations' ) )]"
+
 			tooltip = "[SelectLocalization( CharacterWindow.AreDiplomacyExpanded, 'CV_DIPLOMACY_HIDE_TT', 'CV_DIPLOMACY_SHOW_TT' )]"
 
 			hbox = {
 				text_label_left = {
 					layoutpolicy_horizontal = expanding
+					alwaystransparent = yes
 					text = "CV_DIPLOMACY"
 					autoresize = no
 					margin_right = 0
-					margin_left = 5
+					margin_left = 18
+
+					button_expand = {
+						alwaystransparent = yes
+						position = { 1 3 }
+						alpha = 0.7
+						scale = 0.75
+						frame = "[BoolTo1And2( CharacterWindow.AreDiplomacyExpanded )]"
+					}
 				}
 
 				text_single = {
 					margin_bottom = 5
+					margin_right = 3
 					default_format = "#weak"
 
 					block "diplomacy_extra_items"
@@ -2412,15 +2519,15 @@ types CharacterWindow
 			fixedgridbox = {
 				name = "diplomacy_items"
 				datamodel = "[CharacterWindow.GetDiplomacyItems]"
-				flipdirection = yes
 				addrow = 65
 				addcolumn = 50
+				flipdirection = yes
 
 				block "diplomacy_slots"
 				{
+					datamodel_wrap = 2
 					maxverticalslots = 2
 					maxhorizontalslots = 2
-					datamodel_wrap = 2
 				}
 
 				item = {
@@ -2431,21 +2538,27 @@ types CharacterWindow
 						button = {
 							visible = "[Not(DiplomacyItem.IsStruggle)]"
 							parentanchor = top|hcenter
+							alwaystransparent = yes
 							position = { 0 -22 }
+							size = { 50 50 }
 							texture = "gfx/interface/icons/diplomatic_icons.dds"
+							# A new icon in diplomatic_icons.dds requires code support for mapping the DiplomacyItem type to that icon via the function below
 							frame = "[DiplomacyItem.GetDiplomacyFrame]"
 							framesize = { 120 120 }
-							size = { 50 50 }
+
 							tooltip_visible = no
 						}
 
 						coa_realm_small = {
-							visible = "[Not(DiplomacyItem.IsStruggle)]"
 							datacontext = "[DiplomacyItem.GetTargetCharacter]"
-							tooltip = "[DiplomacyItem.GetTooltip]"
-							using = tooltip_es
-							tooltip_offset = { 0 22 }
+							visible = "[And(Not(DiplomacyItem.IsStruggle), Not(DiplomacyItem.IsConfederation))]"
+							parentanchor = hcenter
+
 							onrightclick = "[DefaultOnRealmFlagClick(Character.GetID)]"
+
+							tooltip = "[DiplomacyItem.GetTooltip]"
+							tooltip_offset = { 0 22 }
+							using = tooltip_es
 
 							state = {
 								name = _mouse_hierarchy_enter
@@ -2461,29 +2574,42 @@ types CharacterWindow
 							}
 						}
 
+						coa_confederation_small = {
+							datacontext = "[DiplomacyItem.GetConfederation]"
+							visible = "[DiplomacyItem.IsConfederation]"
+							parentanchor = hcenter
+
+							tooltip = "[DiplomacyItem.GetTooltip]"
+							tooltip_offset = { -20 22 }
+							using = tooltip_es
+						}
+
 						text_single = {
 							name = "warscore"
 							visible = "[DiplomacyItem.HasWarScore]"
 							parentanchor = top|hcenter
 							position = { 0 -12 }
+
 							text = "[DiplomacyItem.GetWarScoreFraction|0%=+]"
-							fontsize = 13
 							align = nobaseline
+							fontsize = 13
 
 							background = {
 								using = Background_Area_ExtraDark
-								margin = { 0 1}
+								margin = { 0 1 }
 							}
 						}
 
 						button = {
 							datacontext = "[DiplomacyItem.GetStruggle]"
+							datacontext = "[DiplomacyItem.GetTargetCharacter]"
 							visible = "[DiplomacyItem.IsStruggle]"
+							parentanchor = hcenter
 							position = { 0 -3 }
 							size = { 52 64 }
+
 							onclick = "[DiplomacyItem.OnClick]"
 
-							datacontext = "[DiplomacyItem.GetTargetCharacter]"
 							tooltipwidget = struggle_tooltip;
 							using = tooltip_es
 							tooltip_offset = { 0 22 }
@@ -2691,6 +2817,7 @@ types CharacterWindow
 			flowcontainer = {
 				direction = vertical
 				parentanchor = bottom
+				margin_right = 5
 
 				portrait_opinion = {
 					block "portrait_opinion" {}
@@ -2732,7 +2859,7 @@ types CharacterWindow
 			}
 
 			flowcontainer = {
-				parentanchor = vcenter
+				parentanchor = bottom
 
 				coa_realm_small = {
 					visible = "[Character.HasLandedTitles]"
@@ -2742,7 +2869,7 @@ types CharacterWindow
 
 				portrait_status_icons = {
 					parentanchor = bottom
-					margin_bottom = 2
+					margin_bottom = 4
 				}
 			}
 		}
@@ -2754,7 +2881,7 @@ types CharacterWindow
 			position = { 0 -3 }
 			size = { 30 30 }
 			texture = "gfx/interface/icons/scale_of_power.dds"
-			tooltip = IN_ACTIVE_DIARCHY
+			tooltip = DIARCH_ICON_TOOLTIP
 			using = tooltip_below
 		}
 
@@ -2775,16 +2902,14 @@ types CharacterWindow
 	type hbox_character_view_secondary_stats_bar = hbox {
 		name = "character_view_secondary_stats_bar"
 		visible = "[Character.IsAlive]"
-		spacing = 8
-		margin_bottom = 6
-		margin_top = 3
-		margin_left = 1
-
 		layoutpolicy_horizontal = expanding
+
+		margin = { 0 5 }
+		margin_right = 10
 
 		background = {
 			using = Background_Area_Dark
-			margin_left = 5
+			margin_left = 3
 		}
 
 		#Gold
@@ -2792,9 +2917,11 @@ types CharacterWindow
 			size = { 72 32 }
 
 			hbox = {
-				expand = {}
-
 				tooltip = "[Character.GetGoldTooltipWithBalance]"
+				using = tooltip_se
+				spacing = 3
+
+				expand = {}
 
 				icon = {
 					name = "icon_gold"
@@ -2815,18 +2942,19 @@ types CharacterWindow
 			}
 		}
 
+		divider_light = {
+			layoutpolicy_vertical = expanding
+		}
+
 		#Prestige
 		widget = {
 			size = { 72 32 }
 
 			hbox = {
-				spacing = 2
+				spacing = 3
 
 				tooltip = "[Character.GetPrestigeTooltipWithBalance]"
-
-				divider_light = {
-					layoutpolicy_vertical = expanding
-				}
+				using = tooltip_se
 
 				expand = {}
 
@@ -2849,17 +2977,17 @@ types CharacterWindow
 			}
 		}
 
+		divider_light = {
+			layoutpolicy_vertical = expanding
+		}
+
 		#Piety
 		widget = {
 			size = { 72 32 }
 
 			hbox = {
-
 				tooltip = "[Character.GetPietyTooltipWithBalance]"
-
-				divider_light = {
-					layoutpolicy_vertical = expanding
-				}
+				using = tooltip_se
 
 				expand = {}
 
@@ -2882,18 +3010,59 @@ types CharacterWindow
 			}
 		}
 
+		divider_light = {
+			visible = "[IsNomad( Character )]"
+			layoutpolicy_vertical = expanding
+		}
+
+		#Herd
+		widget = {
+			datacontext = "[Character.GetDomicile]"
+			visible = "[IsNomad( Character )]"
+			size = { 92 32 }
+
+			hbox = {
+				spacing = 3
+
+				tooltip = "[Domicile.GetHerdBreakdown]"
+				using = tooltip_se
+
+				expand = {}
+
+				icon = {
+					name = "herd_icon"
+					size = { 30 30 }
+					texture = "gfx/interface/icons/icon_herd.dds"
+				}
+
+				text_single = {
+					name = "total_herd"
+					text = "[Domicile.GetHerd|0]"
+					default_format = "#high"
+					align = center|nobaseline
+					fontsize_min = 12
+					max_width = 50
+				}
+
+				expand = {}
+			}
+		}
+
+		divider_light = {
+			visible = "[Character.GetGovernment.HasRule( 'administrative' )]"
+			layoutpolicy_vertical = expanding
+		}
+
 		#Influence
 		widget = {
+			visible = "[Character.GetGovernment.HasRule( 'administrative' )]"
 			size = { 72 32 }
 
 			hbox = {
-				visible = "[Character.GetGovernment.HasRule( 'administrative' )]"
+				spacing = 3
 
 				tooltip = "[Character.GetInfluenceTooltipWithBalance]"
-
-				divider_light = {
-					layoutpolicy_vertical = expanding
-				}
+				using = tooltip_se
 
 				expand = {}
 
@@ -2916,35 +3085,37 @@ types CharacterWindow
 			}
 		}
 
-		#Legitimacy
-		widget = {
-			layoutpolicy_vertical = expanding
-			size = { 72 32 }
-
+		divider_light = {
 			datacontext = "[Character.GetLegitimacyType]"
 			datacontext = "[Character.GetLegitimacyLevel]"
+			visible = "[And(LegitimacyType.IsValid, Character.GetGovernment.HasRule( 'legitimacy' ))]"
+			layoutpolicy_vertical = expanding
+		}
 
-			using = tooltip_ne
+		#Legitimacy
+		widget = {
+			datacontext = "[Character.GetLegitimacyType]"
+			datacontext = "[Character.GetLegitimacyLevel]"
+			visible = "[And(LegitimacyType.IsValid, Character.GetGovernment.HasRule( 'legitimacy' ))]"
+			size = { 72 32 }
+
+			tooltipwidget = {
+				legitimacy_hud_tooltip = {
+					datacontext = "[CharacterWindow.GetLegitimacyBar]"
+				}
+			}
+
+			using = tooltip_se
 
 			hbox = {
-				visible = "[And(LegitimacyType.IsValid, Character.GetGovernment.HasRule( 'legitimacy' ))]"
-
-				tooltipwidget = {
-					legitimacy_hud_tooltip = {
-						datacontext = "[CharacterWindow.GetLegitimacyBar]"
-					}
-				}
-
-				divider_light = {
-					layoutpolicy_vertical = expanding
-				}
+				spacing = 3
 
 				expand = {}
 
 				icon = {
-					size = { 32 32 }
+					size = { 30 30 }
 
-					texture = "gfx/interface/icons/legitimacy_level_icon.dds"
+					texture = "[Character.GetLegitimacyType.GetLevelsIcon]"
 					framesize = { 70 70 }
 					frame = "[IntToFrameIndex( LegitimacyLevel.GetIndex )]"
 				}
@@ -2958,18 +3129,22 @@ types CharacterWindow
 			}
 		}
 
+		divider_light = {
+			visible = "[Character.HasLandedTitles]"
+			layoutpolicy_vertical = expanding
+		}
+
 		#Dread
 		widget = {
+			visible = "[Character.HasLandedTitles]"
 			size = { 72 32 }
 
 			hbox = {
 				visible = "[Character.HasLandedTitles]"
+				spacing = 3
 
 				tooltip = "[Character.GetDreadBreakdown]"
-
-				divider_light = {
-					layoutpolicy_vertical = expanding
-				}
+				using = tooltip_se
 
 				expand = {}
 
@@ -2998,12 +3173,14 @@ types CharacterWindow
 		}
 
 		widget = {
-			tooltip = "[CharacterWindow.GetMilitaryStrengthTooltip]"
+			visible = "[Character.HasLandedTitles]"
 			size = { 72 32 }
 
+			tooltip = CHARACTER_WINDOW_MILITARY_STRENGTH_TOOLTIP
+			using = tooltip_es
+
 			hbox = {
-				visible = "[Character.HasLandedTitles]"
-				spacing = 2
+				spacing = 3
 
 				expand = {}
 
@@ -3036,9 +3213,16 @@ types CharacterWindow
 				expand = {}
 			}
 		}
-
-		expand = {}
 	}
+}
+
+template Background_Area_Titles
+{
+	texture = "gfx/interface/component_masks/mask_rough_edges.dds"
+	spriteType = Corneredtiled
+	spriteborder = { 20 20 }
+	color = { 0 0 0 0.3 }
+	texture_density = 2
 }
 
 template Animation_Character_Window_Refresh

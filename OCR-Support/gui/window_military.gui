@@ -135,6 +135,7 @@ window = {
 					layoutpolicy_horizontal = expanding
 					# visible = "[Isnt('rally_point_window')]"
 					margin_left = 5
+					enabled = "[Not(IsGameViewOpen('raid_intent_selection_window'))]"
 
 					text_single = {
 						raw_text = "Tabs:"
@@ -319,6 +320,18 @@ window = {
 							onclick = "[MilitaryView.Close]"
 							# onclick = "[OpenGameView('outliner')]"
 							clicksound = "event:/SFX/UI/Unit/Army/sfx_ui_raise_army"
+						}
+
+						button_text = {
+							datacontext = "[MilitaryView.GetDefaultRaidIntent]"
+							visible = "[Character.CanRaid]"
+							blockoverride "text" {
+								raw_text = "Raid intent: [RaidIntent.GetName]. Shift F."
+							}
+							shortcut = map_mode_diplomatic_relations
+
+							onclick = "[ToggleGameViewData( 'raid_intent_selection_window', GetPlayer )]"
+							clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_select"
 						}
 
 						button_text = {
@@ -788,22 +801,22 @@ window = {
 													raw_text = ", click to [Select_CString(GetVariableSystem.Exists('special_troops'), 'Show', 'Hide')]."
 												}
 											}
-										    blockoverride "text" {
-										        raw_text = "MILITARY_VIEW_EVENT_TROOPS"
-												align = left
-										    }
+									    blockoverride "text" {
+								        raw_text = "MILITARY_VIEW_EVENT_TROOPS"
+									    }
 											onclick = "[GetVariableSystem.Toggle('special_troops')]"
 										}
 
-										vbox = {
+										fixedgridbox = {
 											visible = "[Not(GetVariableSystem.Exists('special_troops'))]"
 											datamodel = "[MilitaryView.GetEventTroops]"
 											layoutpolicy_horizontal = expanding
+											addrow = 70
+											addcolumn = 580
+											setitemsizefromcell = yes
 
 											item = {
-												hbox_event_troop_item_ocr = {
-													layoutpolicy_horizontal = expanding
-												}
+												widget_event_troop_item_ocr = {}
 											}
 										}
 									}
@@ -1693,25 +1706,26 @@ window = {
 
 
 types OCR {
-	type hbox_event_troop_item_ocr = vbox {
-		spacing = -6
-
-		hbox  = {
-			name = "header"
+	type widget_event_troop_item_ocr = widget {
+		# size set by the fixedgridbox
+		vbox = {
 			layoutpolicy_horizontal = expanding
-
 
 			hbox = {
 				layoutpolicy_horizontal = expanding
-				spacing = 2
+				spacing = 3
 
 				button_text = {
 					blockoverride "text" {
 						raw_text = "MILITARY_VIEW_EVENT_TROOPS_RAISE"
-						align = left
 					}
 					onclick = "[OnRaiseEventTroops(MilitaryViewEventTroop.Self)]"
-					# visible = "[MilitaryViewEventTroop.CanBeRaised]"
+					visible = "[MilitaryViewEventTroop.CanBeRaised]"
+					blockoverride "disabled" {
+						visible = "[MilitaryView.IsAutomatingArmies]"
+					}
+					enabled = "[Not(MilitaryView.IsAutomatingArmies)]"
+					tooltip = "[MilitaryView.GetCanRaiseEventTroopTooltip]"
 				}
 
 				soldiers_and_quality_small_text = {
@@ -1736,64 +1750,58 @@ types OCR {
 
 				expand = { }
 			}
-		}
 
-		vbox = {
-			margin = { 5 5 }
-			layoutpolicy_horizontal = expanding
-
-			hbox = {
-				name = "menatarms"
+			vbox = {
 				layoutpolicy_horizontal = expanding
+				spacing = 3
+
 				hbox = {
-					name = "regiment_types"
-					datamodel = "[MilitaryViewEventTroop.GetRegiments]"
-					layoutpolicy_vertical = expanding
-					margin_left = 5
-					spacing = 3
-					item = {
-						text_single = {
-							raw_text = "[Regiment.GetMAAType.GetName], "
+					name = "menatarms"
+					layoutpolicy_horizontal = expanding
+					hbox = {
+						name = "regiment_types"
+						datamodel = "[MilitaryViewEventTroop.GetRegiments]"
+						layoutpolicy_vertical = expanding
+						margin_left = 5
+						spacing = 3
+						item = {
+							text_single = {
+								raw_text = "[Regiment.GetMAAType.GetName], "
+							}
 						}
 					}
+
+					expand = { }
 				}
 
-				expand = { }
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					text_single = {
+						visible = "[Not(MilitaryViewEventTroop.IsInheritable)]"
+
+						text = "MILITARY_VIEW_EVENT_TROOPS_NOT_INHERITABLE"
+					}
+
+					hbox = {
+						visible = "[MilitaryViewEventTroop.IsInheritable]"
+						text_single = {
+							visible = "[Not(War.IsValid)]"
+							text = "MILITARY_VIEW_EVENT_TROOPS_INHERITABLE"
+						}
+
+						text_single = {
+							datacontext = "[MilitaryViewEventTroop.GetAssociatedWar]"
+							visible = "[War.IsValid]"
+							text = "MILITARY_VIEW_EVENT_TROOPS_ASSOCIATED_WAR"
+							max_width = 450
+						}
+					}
+
+					expand = {}
+				}
 			}
 
-			hbox = {
-				layoutpolicy_horizontal = expanding
-				text_single = {
-					visible = "[Not(MilitaryViewEventTroop.IsInheritable)]"
-
-					text = "MILITARY_VIEW_EVENT_TROOPS_NOT_INHERITABLE"
-				}
-
-				text_single = {
-					visible = "[MilitaryViewEventTroop.IsInheritable]"
-
-					text = "MILITARY_VIEW_EVENT_TROOPS_INHERITABLE"
-				}
-				dot = { }
-				expand = { }
-			}
-
-
-			hbox = {
-				datacontext = "[MilitaryViewEventTroop.GetAssociatedWar]"
-				visible = "[War.IsValid]"
-
-				layoutpolicy_horizontal = expanding
-
-				text_single = {
-					visible = "[MilitaryViewEventTroop.IsInheritable]"
-					text = "MILITARY_VIEW_EVENT_TROOPS_ASSOCIATED_WAR"
-					max_width = 450
-					multiline = yes
-				}
-
-				expand = { }
-			}
+			expand = {}
 		}
 	}
 
