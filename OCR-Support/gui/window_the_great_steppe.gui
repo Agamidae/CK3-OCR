@@ -1,0 +1,925 @@
+﻿window = {
+	name = "window_the_great_steppe"
+	widgetid = "window_the_great_steppe"
+	datacontext = "[SteppeWindow.GetSituation]"
+	datacontext = "[SteppeWindow.GetHerdLeaderboardWindow]"
+	using = base_ocr_window
+
+	using = sound_situation_panel
+
+	state = {
+		name = _show
+		using = Animation_FadeIn_Quick
+		using = Sound_WindowShow_Standard
+		on_finish = "[GetScriptedGui('situation_regions').Execute( GuiScope.SetRoot( Situation.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+	}
+
+	state = {
+		name = _hide
+		using = Animation_FadeOut_Quick
+		using = Sound_WindowHide_Standard
+		on_finish = "[Set('gurkhan_tip', 'yes')]"
+	}
+
+	window_ocr = {
+		blockoverride "ocr_header" {
+			button = {
+				using = close_window_ocr
+				onclick = "[SteppeWindow.Close]"
+			}
+
+			hbox = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[SteppeWindow.GetPlayerSubRegion]"
+				spacing = 3
+
+				text_single = {
+					raw_text = "THE_GREAT_STEPPE_WINDOW_HEADER"
+				}
+
+				dot_l = {}
+
+				text_single = {
+					raw_text = "[Situation.MakeScope.ScriptValue('all_nomads')] nomads,"
+				}
+
+				text_single = {
+					raw_text = "[Situation.MakeScope.ScriptValue('steppe_size')] counties."
+				}
+
+				text_single = {
+					visible = no
+					# visible = "[SteppeWindow.IsSubRegionSelected( SituationSubRegion.Self )]"
+					# visible = "[Or(Isnt('steppe_tab'), Has('steppe_tab', SituationSubRegion.GetNameNoTooltip))]"
+					raw_text = "[SituationSubRegion.GetCurrentPhase.GetType.GetName] for [SituationSubRegion.GetCurrentPhase.GetEndDate.GetTimeToDate] in [SituationSubRegion.GetName]."
+					# GetTimeDiffFromNow
+				}
+
+				expand = {}
+			}
+
+			button_text = {
+				layoutpolicy_horizontal = expanding
+				datacontext = "[SteppeWindow.GetPlayerSubRegion]"
+				shortcut = map_mode_1
+				visible = "[Isnt('steppe_tab')]"
+				onclick = "[Set('steppe_tab', 'current_season')]"
+				blockoverride "text" {
+					raw_text = "[SituationSubRegion.GetCurrentPhase.GetType.GetName] in [SituationSubRegion.GetNameNoTooltip], your region. Season details, E."
+				}
+			}
+		}
+
+		blockoverride "ocr_content" {
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Isnt('steppe_tab')]"
+
+				spacing = 5 # just for me
+
+				# rulers
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Isnt('gurkhan_tip')]"
+						raw_text = "Strongest nomad of the Steppe, or Gurkhan:"
+					}
+
+					button_text = {
+						using = char_click
+						datacontext = "[SteppeWindow.GetGurkhan]"
+						visible = "[Character.IsValid]"
+						layoutpolicy_horizontal = expanding
+						blockoverride "pre" {
+							text_single = {
+								visible = "[Is('gurkhan_tip')]"
+								alwaystransparent = yes
+								raw_text = "Gurkhan:"
+							}
+						}
+						blockoverride "text" {
+							raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+						}
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Character.GetHerdAndRaisedHorde|0*] herd,"
+
+								tooltipwidget = {
+									herd_breakdown_hud_toolip = {
+										datacontext = "[Character.GetDomicile]"
+
+										blockoverride "herd_limit_breakdown"
+										{
+											datacontext = "[SteppeWindow.AccessHerdLimitBreakdown( Domicile.Self )]"
+										}
+										blockoverride "herd_change_breakdown"
+										{
+											datacontext = "[SteppeWindow.AccessHerdChangeBreakdown( Character.Self )]"
+										}
+										blockoverride "herd_conversion_breakdown"
+										{
+											datacontext = "[SteppeWindow.AccessHerdConversionBreakdown( Domicile.Self )]"
+										}
+									}
+								}
+							}
+
+							text_single = {
+								datacontext = "[Character.GetCapitalLocation]"
+								raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+							}
+							# text_single = {
+							# 	# raw_text = "[SteppeWindow.GetGurkhanLocationDesc]"
+							# 	# raw_text = "in [SituationSubRegion.GetNameNoTooltip]"
+							# 	raw_text = "in [Situation.GetTopCharacterParticipantGroup(Character.Self).GetSubRegion.GetName]."
+							# }
+						}
+					}
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "There is no gurkhan, somehow. Something went wrong."
+						datacontext = "[SteppeWindow.GetGurkhan]"
+						visible = "[Not(Character.IsValid)]"
+					}
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						blockoverride "extra" {
+							text_single = {
+								text = "THE_GREAT_STEPPE_WINDOW_HERD_LEADERBOARD_BUTTON"
+							}
+							, = {}
+							text_single = {
+								raw_text = "[Situation.MakeScope.ScriptValue('all_nomads')], Shift E."
+							}
+							text_single = {
+								raw_text = "[Situation.MakeScope.ScriptValue('all_nomads_indy')] fully independent."
+							}
+						}
+
+						onclick = "[HerdLeaderboard.Toggle]"
+					}
+				}
+
+				# neighbours
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					button_text = {
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(Situation.MakeScope.GetList('neighbours'))] realms bordering the Steppe, G."
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						datamodel = "[DataModelFirst(Situation.MakeScope.GetList('neighbours'), '(int32)1')]"
+
+						item = {
+							button_text = {
+								using = char_click
+								visible = "[Character.IsValid]"
+								# datacontext_from_model = {
+								# 	datamodel = "[Situation.MakeScope.GetList('neighbours')]"
+								# 	index = "1"
+								# }
+								datacontext = "[Scope.GetCharacter]"
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "Strongest: [Character.GetPrimaryTitle.GetNameNoTierNoTooltip], [Character.GetMilitaryStrengthText] soldiers."
+									}
+								}
+							}
+						}
+					}
+
+
+					expand = {}
+				}
+
+				# seasons
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					text_single = {
+						layoutpolicy_horizontal = expanding
+						raw_text = "[GetDataModelSize(Situation.MakeScope.GetList('regions'))] Steppe regions, select for more details."
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						datamodel = "[Situation.MakeScope.GetList('regions')]"
+
+						item = {
+							button_text = {
+								datacontext = "[Scope.Title.GetCountyData.GetSubRegionInSituation(Situation.Self)]"
+								layoutpolicy_horizontal = expanding
+								onclick = "[Set('steppe_tab', 'region')]"
+								onclick = "[Set('steppe_region', SituationSubRegion.GetNameNoTooltip)]"
+								shortcuts_list = {
+									blockoverride "click" {
+										onclick = "[Set('steppe_tab', 'region')]"
+										onclick = "[Set('steppe_region', SituationSubRegion.GetNameNoTooltip)]"
+									}
+								}
+								blockoverride "num" {}
+								blockoverride "text" {
+									raw_text = "[SituationSubRegion.GetNameNoTooltip],"
+								}
+								blockoverride "extra" {
+									datacontext = "[SituationSubRegion.GetCurrentPhase]"
+
+									text_single = {
+										raw_text = "[SituationPhase.GetName]."
+									}
+
+									text_single = {
+										raw_text = "[GetDataModelSize(SituationSubRegion.GetParticipatingCharacters)] rulers,"
+									}
+
+									text_single = {
+										raw_text = "[Scope.ScriptValue('situation_region_size')] counties,"
+									}
+
+									text_single = {
+										raw_text = "[Scope.ScriptValue('situation_region_avg_fertility')|0] fertility."
+									}
+								}
+							}
+						}
+					}
+				}
+
+				# predictions
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					datacontext = "[SteppeWindow.GetAstrologer]"
+					datacontext = "[CourtPosition.GetPositionType]"
+					datacontext = "[CourtPosition.GetEmployee]"
+
+					#TODO make a button to appoint
+					text_single = {
+						visible = "[Not(Character.IsValid)]"
+						text = "THE_GREAT_STEPPE_WINDOW_NO_PREDICTION"
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Character.IsValid]"
+
+						button_text = {
+							layoutpolicy_horizontal = expanding
+							onclick = "[Set('steppe_tab', 'predictions')]"
+
+							blockoverride "extra" {
+
+
+								text_single = {
+									raw_text = "Season predictions,"
+								}
+
+								text_single = {
+									raw_text = "based on [CourtPosition.GetAptitudeText] aptitude of your [CourtPosition.GetNameNoTooltip]."
+									margin_top = 2
+								}
+							}
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							layoutpolicy_horizontal = expanding
+
+							datamodel = "[Situation.GetSubRegions]"
+
+							item = {
+								button_text = {
+									datacontext = "[SteppeWindow.GetSeasonPrediction( SituationSubRegion.Self )]"
+									blockoverride "text" {
+										raw_text = "[SituationSubRegion.GetNameNoTooltip],"
+									}
+
+									blockoverride "extra" {
+										button_text = {
+											visible = "[CourtAstrologerPrediction.GetSituationPhaseFirst.IsValid]"
+
+											blockoverride "text" {
+												margin_left = -3
+												raw_text = "[CourtAstrologerPrediction.GetSituationPhaseFirst.GetNameNoTooltip],"
+											}
+
+											blockoverride "extra" {
+												text_single = {
+													raw_text = "[CourtAstrologerPrediction.GetPercentFirst|%0] chance."
+												}
+											}
+										}
+
+										button_text = {
+											visible = "[CourtAstrologerPrediction.GetSituationPhaseSecond.IsValid]"
+
+											blockoverride "text" {
+												margin_left = -3
+												raw_text = "[CourtAstrologerPrediction.GetSituationPhaseSecond.GetNameNoTooltip],"
+											}
+
+											blockoverride "extra" {
+												text_single = {
+													raw_text = "[CourtAstrologerPrediction.GetPercentSecond|%0]."
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+
+						text_single = {
+							layoutpolicy_horizontal = expanding
+							visible = "[Isnt('gurkhan_tip')]"
+							raw_text = "Tip: remember that low aptitide [CourtPosition.GetNameNoTooltip] can get both seasons wrong."
+						}
+
+						spacer = {
+							size = { 0 5 }
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							direction = vertical
+							layoutpolicy_horizontal = expanding
+
+							char_name = {
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "Your [CourtPosition.GetName]:"
+									}
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = "[Character.GetAge],"
+									}
+									text_single = {
+										raw_text = "[CourtPosition.GetAptitudeText|V] aptitude,"
+										tooltipwidget = {
+											court_position_aptitude_breakdown_tooltip = {
+												datacontext = "[CourtPosition.GetAptitudeTooltip]"
+
+												blockoverride "header_text" {
+													text = "COURT_POSITION_aptitude_description_position"
+												}
+
+												blockoverride "modifier_list" {
+													text = "[CourtPosition.GetEmployerBonuses]"
+												}
+											}
+										}
+									}
+								}
+							}
+
+							text_single = {
+								raw_text = "[GetDataModelSize(CourtPositionType.GetTasks)] tasks available:"
+							}
+
+							flowcontainer = {
+								name = "task_items"
+								datacontext = "[CourtPosition.GetPositionType]"
+								datamodel = "[CourtPositionType.GetTasks]"
+								direction = vertical
+								ignoreinvisible = yes
+
+								item = {
+									widget_court_position_task_ocr = {
+										# blockoverride "nums" {}
+										blockoverride "shortcuts" {
+											visible = no
+										}
+										blockoverride "on_click"
+										{
+											onclick = "[SteppeWindow.UpdateAstrologerAnimation( CourtPositionTaskType.Self )]"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				# map extents
+				flow_map_extents = {
+					layoutpolicy_horizontal = expanding
+					blockoverride "name" {
+						raw_text = "[Situation.GetNameNoTooltip]"
+					}
+					datacontext = "[Situation.MakeScope]"
+				}
+			}
+
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Is('steppe_tab')]"
+
+				button = {
+					using = close_window_ocr
+					onclick = "[Clear('steppe_tab')]"
+				}
+
+				# focused region
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Has('steppe_tab', 'region')]"
+
+					datamodel = "[Situation.MakeScope.GetList('regions')]"
+
+					item = {
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[Scope.Title.GetCountyData.GetSubRegionInSituation(Situation.Self)]"
+							datacontext = "[SituationSubRegion.GetCurrentPhase]"
+							datacontext = "[Scope.Title.GetCountyData]"
+							datacontext = "[Scope.Title.GetCountyData.GetCapital]"
+
+							button = {
+								shortcuts_list = {
+									blockoverride "click" {
+										onclick = "[Set('steppe_region', SituationSubRegion.GetNameNoTooltip)]"
+									}
+								}
+							}
+
+							flowcontainer = {
+								ignoreinvisible = yes
+								direction = vertical
+								layoutpolicy_horizontal = expanding
+								visible = "[Has('steppe_region', SituationSubRegion.GetNameNoTooltip)]"
+
+								# region and distance
+								button_text = {
+									using = prov_click
+									blockoverride "num" {}
+									blockoverride "text" {
+										raw_text = "[SituationSubRegion.GetNameNoTooltip],"
+									}
+									blockoverride "extra" {
+										text_single = {
+											visible = "[Not(ObjectsEqual(SteppeWindow.GetPlayerSubRegion, SituationSubRegion.Self))]"
+											raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+										}
+										text_single = {
+											visible = "[ObjectsEqual(SteppeWindow.GetPlayerSubRegion, SituationSubRegion.Self)]"
+											raw_text = "your region."
+										}
+									}
+								}
+
+								# season
+								button_text = {
+									shortcut = map_mode_1
+									# onclick = "[]" #TODO
+									blockoverride "text" {
+										raw_text = "[SituationPhase.GetName]"
+									}
+									blockoverride "extra" {
+										text_single = {
+											raw_text = "for [SituationPhase.GetEndDate.GetTimeToDate]."
+										}
+										text_single = {
+											raw_text = "Season details, E."
+										}
+									}
+								}
+
+								# counties
+								button_text = {
+									shortcut = character_finder
+									blockoverride "text" {
+										raw_text = "[Scope.Title.MakeScope.ScriptValue('situation_region_size')] counties, C."
+									}
+									blockoverride "extra" {
+										text_single = {
+											raw_text = "[Scope.Title.MakeScope.ScriptValue('situation_region_avg_fertility')|0] average fertility."
+										}
+									}
+								}
+
+								# rulers
+								button_text = {
+									blockoverride "text" {
+										raw_text = "[Scope.Title.MakeScope.ScriptValue('situation_region_participants')] rulers, G."
+									}
+									blockoverride "extra" {
+										text_single = {
+											raw_text = "[Scope.Title.MakeScope.ScriptValue('situation_region_herders')] herders,"
+										}
+										text_single = {
+											raw_text = "[Scope.Title.MakeScope.ScriptValue('situation_region_indy')] fully independent."
+										}
+									}
+								}
+
+								# TODO region neighbours
+								# button_text = {
+								# 	blockoverride "text" {
+								# 		raw_text = "[GetDataModelSize(Situation.MakeScope.GetList('neighbours'))] bodering realms, G."
+								# 	}
+								# 	blockoverride "extra" {
+								#
+								# 	}
+								# }
+
+								spacer = {
+									size = { 0 5 }
+								}
+
+								text_single = {
+									raw_text = "Next season predictions, select for details."
+								}
+
+								flowcontainer = {
+									direction = vertical
+									ignoreinvisible = yes
+									datacontext = "[SteppeWindow.GetAstrologer]"
+									datacontext = "[CourtPosition.GetPositionType]"
+									datacontext = "[CourtPosition.GetEmployee]"
+									datacontext = "[SteppeWindow.GetSeasonPrediction( SituationSubRegion.Self )]"
+
+									text_single = {
+										visible = "[Not(Character.IsValid)]"
+										text = "THE_GREAT_STEPPE_WINDOW_NO_PREDICTION"
+									}
+
+									flowcontainer = {
+										ignoreinvisible = yes
+										direction = vertical
+										visible = "[Character.IsValid]"
+
+										flowcontainer = {
+											ignoreinvisible = yes
+											direction = vertical
+											visible ="[And( CourtAstrologerPrediction.GetSituationPhaseFirst.IsValid, CourtAstrologerPrediction.GetSituationPhaseSecond.IsValid )]"
+
+											# button_text = {
+											# 	blockoverride "text" {
+											# 		raw_text = "[SteppeWindow.GetSeasonPredictionDesc( CourtAstrologerPrediction.Self )] chance."
+											# 	}
+											# }
+
+											button_text = {
+												visible = "[CourtAstrologerPrediction.GetSituationPhaseFirst.IsValid]"
+
+												blockoverride "text" {
+													raw_text = "[CourtAstrologerPrediction.GetSituationPhaseFirst.GetNameNoTooltip],"
+												}
+
+												blockoverride "extra" {
+													text_single = {
+														raw_text = "[CourtAstrologerPrediction.GetPercentFirst|%0] chance."
+													}
+												}
+											}
+
+											button_text = {
+												visible = "[CourtAstrologerPrediction.GetSituationPhaseSecond.IsValid]"
+
+												blockoverride "text" {
+													raw_text = "[CourtAstrologerPrediction.GetSituationPhaseSecond.GetNameNoTooltip],"
+												}
+
+												blockoverride "extra" {
+													text_single = {
+														raw_text = "[CourtAstrologerPrediction.GetPercentSecond|%0]."
+													}
+												}
+											}
+										}
+
+									} #Character.IsValid
+								}
+
+								spacer = {
+									size = { 0 5 }
+								}
+
+								# map extents
+								flow_map_extents = {
+									blockoverride "name" {
+										raw_text = "[SituationSubRegion.GetNameNoTooltip]"
+									}
+								}
+
+								button_text = {
+									using = prov_click
+									visible = "[Not(Scope.Title.GetHolder.GetTopLiege.IsLocalPlayer)]"
+									datacontext = "[Scope.Title.GetCountyData.GetCapital]"
+									blockoverride "text" {
+										raw_text = "Closest county:"
+									}
+									blockoverride "extra" {
+										text_single = {
+											raw_text = "[Scope.Title.GetNameNoTierNoTooltip],"
+										}
+										text_single = {
+											raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)],"
+										}
+										text_single = {
+											raw_text = "in [Scope.Title.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	window_herd_leaderboard = {
+		datacontext = "[SteppeWindow.GetCharacterList]"
+		visible = "[HerdLeaderboard.IsVisible]"
+	}
+
+	window_the_great_steppe = {}
+}
+
+	#
+	# hbox = {
+	# 	layoutpolicy_horizontal = expanding
+	#
+	# 	### ASTROLOGER INFO ###
+	# 	vbox = {
+	# 		name = "astrologer_header_steppe_region"
+	# 		layoutpolicy_horizontal = expanding
+	# 		layoutpolicy_vertical = expanding
+	#
+	# 		hbox = {
+	# 			layoutpolicy_horizontal = expanding
+	# 			layoutpolicy_vertical = expanding
+	#
+	# 			hbox = {
+	# 				layoutpolicy_horizontal = expanding
+	# 				layoutpolicy_vertical = expanding
+	# 				margin = { 15 10 }
+	# 				spacing = 10
+	#
+	# 				background = {
+	# 					using = Background_Area_Dark
+	# 				}
+	#
+	# 				background = {
+	# 					using = GenericObjectCardHeaderBackground
+	# 					using = Color_Blue
+	# 				}
+	#
+	# 				icon = {
+	# 					size = { 35 35 }
+	# 					texture = "gfx/interface/icons/court_position_types/court_astrologer_court_position.dds"
+	# 				}
+	#
+	# 				### ASTROLOGER NAME ###
+	# 				vbox = {
+	# 					text_single = {
+	# 						visible = "[Character.IsValid]"
+	# 						layoutpolicy_horizontal = expanding
+	#
+	# 						text = "[Character.GetUINameNoTooltipNoFormat]"
+	# 						align = nobaseline
+	# 						max_width = 300
+	# 					}
+	#
+	# 					text_single = {
+	# 						layoutpolicy_horizontal = expanding
+	#
+	# 						text = "THE_GREAT_STEPPE_WINDOW_ASTROLOGER"
+	# 						align = nobaseline
+	# 						default_format = "#high"
+	# 						max_width = 300
+	# 						using = Font_Size_Medium
+	# 					}
+	# 				}
+	#
+	# 				expand = {}
+	#
+	# 				### ASTROLOGER COURT POSITION TYPE ###
+	# 				vbox = {
+	# 					visible = "[Character.IsValid]"
+	#
+	# 					### Aptitude
+	# 					text_single = {
+	# 						layoutpolicy_horizontal = expanding
+	#
+	# 						text = "COURT_POSITION_aptitude_description_position"
+	# 						align = right|nobaseline
+	# 						max_width = 180
+	#
+	# 						tooltipwidget = {
+	# 							court_position_aptitude_breakdown_tooltip = {
+	# 								datacontext = "[CourtPosition.GetAptitudeTooltip]"
+	#
+	# 								blockoverride "header_text" {
+	# 									text = "COURT_POSITION_aptitude_description_position"
+	# 								}
+	#
+	# 								blockoverride "modifier_list" {
+	# 									text = "[CourtPosition.GetEmployerBonuses]"
+	# 								}
+	# 							}
+	# 						}
+	# 					}
+	#
+	# 					### ASTROLOGER SALARY ###
+	# 					text_single = {
+	# 						layoutpolicy_horizontal = expanding
+	# 						max_width = 180
+	#
+	# 						text = "COURT_POSITIONS_WINDOW_SALARY_SHORT"
+	# 						align = right|nobaseline
+	#
+	# 						tooltip = "[CourtPosition.GetSalaryBreakdownTooltip]"
+	# 					}
+	# 				}
+	# 			}
+	# 		}
+	#
+	# 		### ASTROLOGER PORTRAIT ###
+	# 		hbox = {
+	# 			layoutpolicy_horizontal = expanding
+	# 			layoutpolicy_vertical = expanding
+	#
+	# 			background =  {
+	# 				texture = "gfx/interface/illustrations/event_scenes/ep2_feast_steppe.dds"
+	# 				fittype = centercrop
+	# 				using = Mask_Rough_Edges
+	# 				alpha = 0.3
+	# 			}
+	#
+	# 			### PREDICTION ###
+	# 			vbox = {
+	# 				visible = "[Character.IsValid]"
+	# 				layoutpolicy_vertical = expanding
+	#
+	# 				margin = { 5 20 }
+	# 				spacing = 15
+	#
+	# 				background = {
+	# 					using = Background_Area_ExtraDark
+	# 					alpha = 0.7
+	#
+	# 					modify_texture = {
+	# 						texture = "gfx/interface/component_masks/mask_fade_horizontal_middle_thick.dds"
+	# 						blend_mode = alphamultiply
+	# 						alpha = 0.9
+	# 					}
+	# 				}
+	#
+	# 				### SEASONAL BAR ###
+	# 				widget = {
+	# 					datacontext = "[SteppeWindow.GetSeasonPrediction( SteppeWindow.SituationSubRegion.Self )]"
+	# 					visible = "[And( CourtAstrologerPrediction.GetSituationPhaseFirst.IsValid, CourtAstrologerPrediction.GetSituationPhaseSecond.IsValid )]"
+	# 					size = { 300 60 }
+	#
+	# 					progressbar = {
+	# 						parentanchor = center
+	# 						size = { 100% 130% }
+	# 						using = Mask_Rough_Edges
+	#
+	# 						progresstexture = "[CourtAstrologerPrediction.GetSituationPhaseFirst.GetIcon]"
+	# 						noprogresstexture = "[CourtAstrologerPrediction.GetSituationPhaseSecond.GetIcon]"
+	# 						min = 0
+	# 						max = 1
+	# 						value = "[FixedPointToFloat( CourtAstrologerPrediction.GetPercentFirst )]"
+	#
+	# 						modify_texture = {
+	# 							texture = "gfx/interface/component_masks/season_bar_mask.dds"
+	# 							blend_mode = alphaMultiply
+	# 						}
+	# 					}
+	# 				}
+	#
+	# 				### SEASONAL PREDICITON CHANCE ###
+	# 				text_single = {
+	# 					datacontext = "[SteppeWindow.GetSeasonPrediction( SteppeWindow.SituationSubRegion.Self )]"
+	# 					layoutpolicy_horizontal = expanding
+	#
+	# 					text = "[SteppeWindow.GetSeasonPredictionDesc( CourtAstrologerPrediction.Self )]"
+	# 					align = nobaseline
+	# 					max_width = 300
+	# 				}
+	#
+	# 				expand = {}
+	# 			}
+	#
+	# 			### PREDICTION - NO ASTROLOGER ###
+	# 			vbox = {
+	# 				visible = "[Not(Character.IsValid)]"
+	# 				layoutpolicy_horizontal = expanding
+	# 				layoutpolicy_vertical = expanding
+	#
+	# 				background = {
+	# 					using = Background_Area_ExtraDark
+	# 					alpha = 0.7
+	# 					margin = { 24 24 }
+	#
+	# 					modify_texture = {
+	# 						texture = "gfx/interface/window_county/mask_holding_illustration.dds"
+	# 						blend_mode = alphamultiply
+	# 					}
+	# 				}
+	#
+	# 				expand = { layoutpolicy_vertical = expanding }
+	#
+	# 				text_multi = {
+	# 					layoutpolicy_horizontal = expanding
+	# 					layoutpolicy_vertical = expanding
+	#
+	# 					text = "THE_GREAT_STEPPE_WINDOW_NO_PREDICTION"
+	# 					max_width = 200
+	# 				}
+	#
+	# 				expand = { layoutpolicy_vertical = expanding }
+	# 			}
+	#
+	# 			### ASTROLOGER
+	# 			hbox = {
+	# 				visible = "[Character.IsValid]"
+	#
+	# 				widget = {
+	# 					size = { 210 195 }
+	#
+	# 					portrait_button = {
+	# 						parentanchor = center
+	# 						size = { 180 195 }
+	#
+	# 						portrait_texture = "[Character.GetAnimatedPortrait( 'environment_council', 'camera_shoulders', SteppeWindow.GetAstrologerAnimation, PdxGetWidgetScreenSize( PdxGuiWidget.Self ) )]"
+	# 						mask = "gfx/portraits/portrait_mask_council.dds"
+	# 						effectname = "NoHighlight"
+	# 						using = portrait_base
+	# 					}
+	#
+	# 					### ASTROLOGER TASKS ###
+	# 					fixedgridbox = {
+	# 						name = "task_items"
+	# 						datacontext = "[CourtPosition.GetPositionType]"
+	# 						datamodel = "[CourtPositionType.GetTasks]"
+	# 						parentanchor = bottom|right
+	# 						position = { 0 -10 }
+	#
+	# 						addcolumn = 40
+	# 						addrow = 40
+	# 						setitemsizefromcell = yes
+	# 						datamodel_wrap = 3
+	#
+	# 						item = {
+	# 							widget_court_position_task = {
+	# 								blockoverride "on_click"
+	# 								{
+	# 									onclick = "[SteppeWindow.UpdateAstrologerAnimation( CourtPositionTaskType.Self )]"
+	# 								}
+	# 							}
+	# 						}
+	# 					}
+	# 				}
+	# 			}
+	#
+	# 			### VACANT/EMPTY POSITION - HIRE BUTTON ###
+	# 			widget = {
+	# 				size = { 180 195 }
+	# 				allow_outside = yes
+	# 				scissor = yes
+	# 				visible = "[Not( Character.IsValid )]"
+	# 				tooltip = "THE_GREAT_STEPPE_WINDOW_HIRE_ASTROLOGER"
+	# 				tooltip_offset = { -100 10 }
+	#
+	# 				button = {
+	# 					size = { 220 300 }
+	# 					position = { -20 -100}
+	#
+	# 					allow_outside = yes
+	# 					gfxtype = framedbuttongfx
+	# 					effectname = "NoHighlight"
+	#
+	# 					texture = "gfx/portraits/unknown_portraits/button_unknown_small.dds"
+	# 					framesize = { 564 780 }
+	# 					upframe = 1
+	# 					overframe = 2
+	#
+	# 					button_icon = {
+	# 						parentanchor = center
+	# 						size = { 48 48 }
+	# 						position = { 0 92 }
+	#
+	# 						alwaystransparent = yes
+	# 						texture = "gfx/interface/icons/flat_icons/plus.dds"
+	# 					}
+	# 					onclick = "[ShowCourtPositionAppointOrReplace( GetPlayer.GetID, 'court_astrologer_court_position' )]"
+	#
+	# 				}
+	# 			}
+	# 		}
+	# 	}
+	# }

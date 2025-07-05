@@ -52,6 +52,8 @@ window = {
 		name = _hide
 		on_start = "[GetVariableSystem.Clear( 'county_view_open' )]"
 		on_start = "[GetVariableSystem.Clear( 'hide_bottom_left_HUD' )]"
+		on_finish = "[Clear('county_tabs')]"
+		on_finish = "[Clear('holding_tabs')]"
 		on_finish = "[ClickAdd('last_view', GetPlayer, Province)]"
 		on_finish = "[Clear('hide_grant_titles')]"
 
@@ -99,6 +101,10 @@ window = {
 		error_button = {
 			layoutpolicy_horizontal = expanding
 		}
+
+		# text_single = {
+		# 	raw_text = "[Province.MakeScope.ScriptValue('county_control')] control"
+		# }
 
 		# debug
 		# text_single = {
@@ -165,6 +171,45 @@ window = {
 						# }
 						vbox = {
 							layoutpolicy_horizontal = expanding
+
+							button_text = {
+								layoutpolicy_horizontal = expanding
+								using = title_click
+								datacontext = "[HoldingView.GetHolding.GetProvince.GetTitle]"
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "[HoldingView.GetProvince.GetTitle.GetNameNoTier],"
+									}
+									text_single = {
+										raw_text = "[HoldingView.GetCountyTitle.GetNameNoTier],"
+									}
+									text_single = {
+										raw_text = "held by [HoldingView.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+									}
+									text_single = {
+										margin_left = 3
+										raw_text = "De jure"
+									}
+									text_single = {
+										raw_text = "[HoldingView.GetCountyTitle.GetDeJureLiege.GetNameNoTierNoTooltip],"
+									}
+									text_single = {
+										raw_text = "[HoldingView.GetCountyTitle.GetDeJureLiege.GetDeJureLiege.GetNameNoTierNoTooltip]."
+									}
+
+									text_single = {
+										raw_text = "X Y:"
+									}
+
+									text_single = {
+										raw_text = "[FixedPointToInt(Divide_CFixedPoint(County.GetCapital.MakeScope.Var('pos_x').GetValue, '(CFixedPoint)100'))|0],"
+									}
+
+									text_single = {
+										raw_text = "[FixedPointToInt(Divide_CFixedPoint(County.GetCapital.MakeScope.Var('pos_y').GetValue, '(CFixedPoint)100'))|0]."
+									}
+								}
+							}
 
 							# holding
 							hbox = {
@@ -798,7 +843,7 @@ window = {
 								using = title_click
 								datacontext = "[HoldingView.GetCountyTitle.GetDeJureLiege]"
 								blockoverride "text" {
-									raw_text = "De jure in [Title.GetNameNoTierNoTooltip], [Title.GetDeJureLiege.GetNameNoTierNoTooltip], Page Up."
+									raw_text = "De jure in [Title.GetNameNoTierNoTooltip], [Title.GetDeJureLiege.GetNameNoTierNoTooltip], [Title.GetDeJureLiege.GetDeJureLiege.GetNameNoTierNoTooltip], Page Up."
 								}
 								shortcut = "zoom_out"
 							}
@@ -829,6 +874,7 @@ window = {
 								layoutpolicy_horizontal = expanding
 								onclick = "[GetVariableSystem.Set('county_tabs', 'adjacent counties')]"
 								shortcut = map_mode_6
+								shortcut = editor_autosave
 								onclick = "[GetScriptedGui('adjacent_counties').Execute( GuiScope.SetRoot( HoldingView.GetCountyTitle.MakeScope ).AddScope( 'player', GetPlayer.MakeScope).AddScope('target', HoldingView.GetProvince.MakeScope).End )]"
 								# visible = "[Or(Or(DataModelHasItems( HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_seas') ), DataModelHasItems( HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_rivers') )), DataModelHasItems( HoldingView.GetCountyTitle.MakeScope.GetList('adjacent_counties') ))]"
 								blockoverride "text" {
@@ -902,7 +948,7 @@ window = {
 
 									text_single = {
 										margin_left = -3
-										raw_text = ", Control A."
+										raw_text = ", A."
 									}
 								}
 							}
@@ -2046,7 +2092,7 @@ window = {
 						layoutpolicy_horizontal = expanding
 						onclick = "[GetVariableSystem.Clear('county_tabs')]"
 						visible = "[GetVariableSystem.Exists('county_tabs')]"
-						shortcut = close_window
+						using = close_window_ocr
 
 						# blockoverride "extra" {
 						# 	text_single = {
@@ -2070,14 +2116,23 @@ window = {
 
 					button = {
 						visible = "[GetVariableSystem.Exists('holding_tabs')]"
-						shortcut = close_window
+						using = close_window_ocr
 						onclick = "[GetVariableSystem.Clear('holding_tabs')]"
 					}
 
-					text_single = {
+					button_text = {
 						layoutpolicy_horizontal = expanding
+						shortcut = map_mode_1
 						visible = "[GetVariableSystem.HasValue('county_tabs', 'holdings')]"
-						raw_text = "Holdings of [HoldingView.GetCountyTitle.GetNameNoTierNoTooltip]:"
+						onclick = "[Toggle('holding_buildings')]"
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "Holdings of [HoldingView.GetCountyTitle.GetNameNoTierNoTooltip]."
+							}
+							text_single = {
+								raw_text = "[Select_CString(Is('holding_buildings'), 'Show', 'Hide')] buildings, E."
+							}
+						}
 					}
 
 					dynamicgridbox = {
@@ -2088,108 +2143,141 @@ window = {
 						datamodel = "[HoldingView.GetCountyTitle.MakeScope.GetList('county_holdings')]"
 
 						item = {
-							button_text = {
-								datacontext = "[Scope.GetProvince.GetHolding]"
-								blockoverride "text" {
-									raw_text = "[AddTextIf(Not(Holding.IsEmpty), Concatenate(Holding.GetPrimaryBuildingType.GetTypeName, ' '))][Holding.GetNameNoTooltip],"
-								}
-								blockoverride "pre" {
-									spacing = 3
-									text_single = {
-										raw_text = "[Scope.GetProvince.MakeScope.Var('order').GetValue],"
-										visible = "[LessThan_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)6')]"
+							flowcontainer = {
+								ignoreinvisible = yes
+								direction = vertical
+
+								button_text = {
+									datacontext = "[Scope.GetProvince.GetHolding]"
+									blockoverride "text" {
+										raw_text = "[AddTextIf(Not(Holding.IsEmpty), Concatenate(Holding.GetPrimaryBuildingType.GetTypeName, ' '))][Holding.GetNameNoTooltip],"
 									}
-									text_single = {
-										raw_text = "T,"
+									blockoverride "pre" {
+										spacing = 3
+										text_single = {
+											raw_text = "[Scope.GetProvince.MakeScope.Var('order').GetValue],"
+											visible = "[LessThan_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)6')]"
+										}
+										text_single = {
+											raw_text = "T,"
+											visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)6')]"
+										}
+										text_single = {
+											raw_text = "Y,"
+											visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)7')]"
+										}
+
+										text_single = {
+											visible = "[Scope.GetProvince.GetHolding.GetLesseeOrHolder.IsLocalPlayer]"
+											raw_text = "Your"
+										}
+									}
+									blockoverride "extra" {
+										text_single = {
+											raw_text = "[Scope.GetProvince.GetTerrain.GetName]."
+										}
+										text_single = {
+											visible = "[Not(Holding.IsEmpty)]"
+											raw_text = "[Scope.GetProvince.MakeScope.ScriptValue('num_buildings_sval')] buildings,"
+										}
+										text_single = {
+											visible = "[Not(ObjectsEqual(MyCapital.Self, Province.Self))]"
+											datacontext = "[Scope.GetProvince]"
+											raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+										}
+									}
+									onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
+									onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+									onclick = "[GetVariableSystem.Clear('county_tabs')]"
+
+									button = {
+										onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
+										onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+										shortcut = speed_1
+										visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)1')]"
+										onclick = "[GetVariableSystem.Clear('county_tabs')]"
+									}
+									button = {
+										onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
+										onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+										shortcut = speed_2
+										visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)2')]"
+										onclick = "[GetVariableSystem.Clear('county_tabs')]"
+									}
+									button = {
+										onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
+										onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+										shortcut = speed_3
+										visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)3')]"
+										onclick = "[GetVariableSystem.Clear('county_tabs')]"
+									}
+									button = {
+										onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
+										onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+										shortcut = speed_4
+										visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)4')]"
+										onclick = "[GetVariableSystem.Clear('county_tabs')]"
+									}
+									button = {
+										onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
+										onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+										shortcut = speed_5
+										visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)5')]"
+										onclick = "[GetVariableSystem.Clear('county_tabs')]"
+									}
+									button = {
+										onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
+										onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+										shortcut = map_mode_4
 										visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)6')]"
+										onclick = "[GetVariableSystem.Clear('county_tabs')]"
 									}
-									text_single = {
-										raw_text = "Y,"
+									button = {
+										onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
+										onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
+										shortcut = mapmode_duchies_secondary
 										visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)7')]"
+										onclick = "[GetVariableSystem.Clear('county_tabs')]"
+									}
+								}
+
+								flowcontainer = {
+									ignoreinvisible = yes
+									spacing = 3
+									visible = "[Isnt('holding_buildings')]"
+
+									flowcontainer = {
+										ignoreinvisible = yes
+										spacing = 3
+										datamodel = "[Scope.Province.MakeScope.GetList('buildings_ledger')]"
+										visible = "[DataModelHasItems(Scope.Province.MakeScope.GetList('buildings_ledger'))]"
+
+										item = {
+											text_single = {
+												raw_text = "[Localize(Concatenate('building_', Scope.GetFlagName))],"
+											}
+										}
+									}
+
+									flowcontainer = {
+										ignoreinvisible = yes
+										spacing = 3
+										datamodel = "[Scope.Province.MakeScope.GetList('duchy_building_ledger')]"
+										visible = "[DataModelHasItems(Scope.Province.MakeScope.GetList('duchy_building_ledger'))]"
+
+										item = {
+											text_single = {
+												raw_text = "[Localize(Concatenate('building_', Scope.GetFlagName))],"
+											}
+										}
 									}
 
 									text_single = {
-										visible = "[Scope.GetProvince.GetHolding.GetLesseeOrHolder.IsLocalPlayer]"
-										raw_text = "Your"
+										visible = "[Scope.Var('special_building').IsSet]"
+										raw_text = "[Localize(Concatenate('building_', Scope.Var('special_building').GetFlagName))],"
 									}
 								}
-								blockoverride "extra" {
-									text_single = {
-										raw_text = "[Scope.GetProvince.GetTerrain.GetName]."
-									}
-									text_single = {
-										visible = "[Not(ObjectsEqual(MyCapital.Self, Province.Self))]"
-										datacontext = "[Scope.GetProvince]"
-										raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
-									}
-									# flowcontainer = {
-									# 	ignoreinvisible = yes
-									# 	datacontext = "[Scope.GetProvince.GetHolding]"
-									# 	visible = "[Not(Holding.IsEmpty)]"
-									# 	spacing = 3
-									#
-									# 	text_single = {
-									# 		raw_text = "Tax, [Holding.GetIncome|1],"
-									# 	}
-									# 	text_single = {
-									# 		tooltip = "[Holding.GetTaxTooltip]"
-									# 		raw_text = "Levies, [Holding.GetMaxLevySize|0]."
-									# 	}
-									# }
-								}
-								onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
-								onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-								onclick = "[GetVariableSystem.Clear('county_tabs')]"
 
-								button = {
-									onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-									shortcut = speed_1
-									visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)1')]"
-									onclick = "[GetVariableSystem.Clear('county_tabs')]"
-								}
-								button = {
-									onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-									shortcut = speed_2
-									visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)2')]"
-									onclick = "[GetVariableSystem.Clear('county_tabs')]"
-								}
-								button = {
-									onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-									shortcut = speed_3
-									visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)3')]"
-									onclick = "[GetVariableSystem.Clear('county_tabs')]"
-								}
-								button = {
-									onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-									shortcut = speed_4
-									visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)4')]"
-									onclick = "[GetVariableSystem.Clear('county_tabs')]"
-								}
-								button = {
-									onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-									shortcut = speed_5
-									visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)5')]"
-									onclick = "[GetVariableSystem.Clear('county_tabs')]"
-								}
-								button = {
-									onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-									shortcut = map_mode_4
-									visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)6')]"
-									onclick = "[GetVariableSystem.Clear('county_tabs')]"
-								}
-								button = {
-									onclick = "[OpenGameViewData('holding_view', Scope.GetProvince)]"
-									onclick = "[DefaultOnCoatOfArmsRightClick(Scope.GetProvince.GetTitle.GetID)]"
-									shortcut = mapmode_duchies_secondary
-									visible = "[EqualTo_CFixedPoint(Scope.GetProvince.MakeScope.Var('order').GetValue, '(CFixedPoint)7')]"
-									onclick = "[GetVariableSystem.Clear('county_tabs')]"
-								}
 							}
 						}
 					}
@@ -3158,7 +3246,7 @@ window = {
 							# }
 
 							button = {
-								shortcut = close_window
+								using = close_window_ocr
 								visible = "[Is('adjacent_counties_ring')]"
 								onclick = "[Clear('adjacent_counties_ring')]"
 							}
@@ -3446,7 +3534,7 @@ window = {
 		# datacontext = "[GetPlayer.MakeScope.Var('region_province').GetProvince]"
 		button = {
 			# visible = "[Isnt('province_region')]"
-			shortcut = close_window
+			using = close_window_ocr
 			onclick = "[Clear('extra_window')]"
 		}
 		blockoverride "show_window" {
@@ -3483,7 +3571,7 @@ window = {
 						visible = "[Or(Isnt('province_region'), Has('province_region', Scope.GetFlagName))]"
 
 						button = {
-							# shortcut = close_window
+							# using = close_window_ocr
 							shortcut = go_back
 							onclick = "[Clear('province_region')]"
 						}
@@ -3681,7 +3769,7 @@ window = {
 	alwaystransparent = yes
 
 	# button = {
-	# 	shortcut = close_window
+	# 	using = close_window_ocr
 	# }
 
 	window_ocr = {
@@ -4045,7 +4133,7 @@ window = {
 											oversound = "event:/SFX/UI/Generic/sfx_ui_generic_pointer_over"
 											clicksound = "event:/SFX/UI/Generic/sfx_ui_generic_close"
 											shortcut = "go_back"
-											# shortcut = close_window
+											# using = close_window_ocr
 										}
 
 										button_text = {
@@ -4455,7 +4543,7 @@ window = {
 	holding_tracks_view_old = {}
 
 	# button = {
-	# 	shortcut = close_window
+	# 	using = close_window_ocr
 	# 	onclick = "[GetVariableSystem.Clear('county_tabs')]"
 	# 	onclick = "[GetVariableSystem.Clear('holding_tabs')]"
 	# 	onclick = "[HoldingView.CloseHoldingConstruction]"

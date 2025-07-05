@@ -1,0 +1,366 @@
+﻿all_holy_sites_held_by_faith = {
+  is_shown = {
+    any_holy_site = {
+      count = all
+      holder.faith = root
+    }
+  }
+}
+
+faith_followers = {
+	effect = {
+		clear_variable_list = followers
+		clear_global_variable_list = faith_followers_sort
+
+		add_flag_ocr = { name = faith_followers_sort flag = size }
+		add_flag_ocr = { name = faith_followers_sort flag = strength }
+		add_flag_ocr = { name = faith_followers_sort flag = distance }
+		add_flag_ocr = { name = faith_followers_sort flag = piety }
+		add_flag_ocr = { name = faith_followers_sort flag = devotion }
+		add_flag_ocr = { name = faith_followers_sort flag = sins }
+		add_flag_ocr = { name = faith_followers_sort flag = virtues }
+
+		if = {
+			limit = { exists = scope:sorting }
+			scope:player = {
+				set_variable = {
+					name = faith_followers_sort
+					value = scope:sorting
+				}
+			}
+		}
+		ordered_faith_character = {
+			order_by = {
+				if = {
+					limit = {
+						scope:player = { has_variable = faith_followers_sort }
+					}
+					switch = {
+						trigger = scope:player.var:faith_followers_sort
+						flag:size = {
+							add = sub_realm_size
+						}
+						flag:strength = {
+							add = current_military_strength
+						}
+						flag:distance = {
+							add = "capital_province.squared_distance(scope:player.capital_province)"
+							multiply = -1
+						}
+						flag:piety = {
+							add = piety
+						}
+						flag:devotion = {
+							add = piety_level
+						}
+						flag:sins = {
+							every_character_trait = {
+								limit = {
+									root = {
+										trait_is_sin = prev
+									}
+								}
+								add = 1
+							}
+							# prioritize big sinners
+							add = {
+								add = sub_realm_size
+								divide = 10000
+							}
+						}
+						flag:virtues = {
+							every_character_trait = {
+								limit = {
+									root = {
+										trait_is_virtue = prev
+									}
+								}
+								add = 1
+							}
+							# prioritize big sinners
+							add = {
+								add = sub_realm_size
+								divide = 10000
+							}
+						}
+					}
+				}
+				else = {
+					add = sub_realm_size
+				}
+			}
+			min = 0
+			limit = {
+				trigger_if = {
+					limit = {
+						scope:player = { NOT = { has_variable = faith_followers_filter } }
+					}
+          is_ruler = yes
+				}
+			}
+			root = {
+				add_to_variable_list = {
+					name = followers
+					target = prev
+				}
+			}
+		}
+	}
+}
+
+faith_followers_filter = {
+  effect = {
+    toggle_var = {
+      VAR = faith_followers_filter
+    }
+  }
+}
+
+faith_counties_ocr = {
+	effect = {
+		clear_variable_list = faith_counties
+
+		ordered_county = {
+			order_by = {
+				add = "title_province.squared_distance(scope:player.capital_province)"
+        multiply = -1
+			}
+			min = 0
+			limit = {
+        is_landless_type_title = no
+        faith = root
+				trigger_if = {
+					limit = {
+						scope:player = { has_variable = faith_counties_filter }
+					}
+          holder.faith != root
+				}
+			}
+			root = {
+				add_to_variable_list = {
+					name = faith_counties
+					target = prev
+				}
+			}
+		}
+	}
+}
+
+faith_counties_filter = {
+  effect = {
+    toggle_var = {
+      VAR = faith_counties_filter
+    }
+  }
+}
+
+has_excommunication = {
+	is_shown = {
+		has_doctrine_parameter = excommunication_active
+	}
+}
+
+adjacent_faiths_ocr = {
+  effect = {
+    every_in_list = {
+      variable = adjacent_faiths
+      remove_variable = closest_county
+    }
+    clear_variable_list = adjacent_faiths
+    ordered_county = {
+      order_by = {
+        add = "title_province.squared_distance(scope:player.capital_province)"
+        multiply = -1
+      }
+      min = 0
+      limit = {
+        is_landless_type_title = no
+        faith = root
+      }
+      every_neighboring_county = {
+        limit = {
+          is_landless_type_title = no
+          faith != root
+          faith = {
+            NOT = { is_in_list = faiths }
+          }
+        }
+        faith = {
+          add_to_list = faiths
+          set_variable = {
+            name = closest_county
+            value = prev
+          }
+        }
+      }
+    }
+    ordered_in_list = {
+      list = faiths
+      order_by = {
+        add = "var:closest_county.title_province.squared_distance(scope:player.capital_province)"
+        multiply = -1
+      }
+      min = 0
+      add_root_list = {
+        name = adjacent_faiths
+      }
+    }
+  }
+}
+
+faith_has_rulers = {
+  is_shown = {
+    any_faith_ruler = {
+      count > 0
+    }
+  }
+}
+
+faith_closest_county_ocr = {
+  effect = {
+    ordered_county = {
+      order_by = {
+        add = "title_province.squared_distance(scope:player.capital_province)"
+        multiply = -1
+      }
+      max = 1
+      limit = {
+        faith = root
+      }
+      prev = {
+        set_variable = {
+          name = closest_county
+          value = prev
+        }
+      }
+    }
+  }
+}
+
+
+faith_holders_wrong_counties = {
+  effect = {
+    clear_variable_list = wrong_counties
+    every_faith_ruler = {
+      every_sub_realm_county = {
+        limit = {
+          holder = prev
+          faith != root
+        }
+        add_to_list = counties
+      }
+    }
+    ordered_in_list = {
+      list = counties
+      order_by = {
+        add = "title_province.squared_distance(scope:player.capital_province)"
+        multiply = -1
+      }
+      min = 0
+      add_root_list = {
+        name = wrong_counties
+      }
+    }
+  }
+}
+
+
+culture_holders_wrong_counties = {
+  effect = {
+    clear_variable_list = wrong_counties
+    every_ruler = {
+      limit = {
+        culture = root
+      }
+      every_sub_realm_county = {
+        limit = {
+          holder = prev
+          culture != root
+        }
+        add_to_list = counties
+      }
+    }
+    ordered_in_list = {
+      list = counties
+      order_by = {
+        add = "title_province.squared_distance(scope:player.capital_province)"
+        multiply = -1
+      }
+      min = 0
+      add_root_list = {
+        name = wrong_counties
+      }
+    }
+  }
+}
+
+
+culture_closest_county_ocr = {
+  effect = {
+    ordered_county = {
+      order_by = {
+        add = "title_province.squared_distance(scope:player.capital_province)"
+        multiply = -1
+      }
+      max = 1
+      limit = {
+        culture = root
+      }
+      prev = {
+        set_variable = {
+          name = closest_county
+          value = prev
+        }
+      }
+    }
+  }
+}
+
+
+adjacent_cultures_ocr = {
+  effect = {
+    every_in_list = {
+      variable = adjacent_cultures
+      remove_variable = closest_county
+    }
+    clear_variable_list = adjacent_cultures
+    ordered_county = {
+      order_by = {
+        add = "title_province.squared_distance(scope:player.capital_province)"
+        multiply = -1
+      }
+      min = 0
+      limit = {
+        is_landless_type_title = no
+        culture = root
+      }
+      every_neighboring_county = {
+        limit = {
+          is_landless_type_title = no
+          culture != root
+          culture = {
+            NOT = { is_in_list = cultures }
+          }
+        }
+        culture = {
+          add_to_list = cultures
+          set_variable = {
+            name = closest_county
+            value = prev
+          }
+        }
+      }
+    }
+    ordered_in_list = {
+      list = cultures
+      order_by = {
+        add = "var:closest_county.title_province.squared_distance(scope:player.capital_province)"
+        multiply = -1
+      }
+      min = 0
+      add_root_list = {
+        name = adjacent_cultures
+      }
+    }
+  }
+}

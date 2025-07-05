@@ -17,16 +17,19 @@ window = {
 		name = _show
 		position = { 0 0 }
 		on_start = "[GetVariableSystem.Set( 'hide_bottom_left_HUD', 'true' )]"
+		# on_finish = "[GetScriptedGui('faith_map_extents').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
 
 		using = Animation_FadeIn_Quick
 		using = Sound_WindowShow_Standard
+		on_finish = "[GetScriptedGui('faith_closest_county_ocr').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
 	}
 
 	state = {
-		name = tab
-		on_start = "[GetVariableSystem.Set( 'faith_view_tabs', 'beliefs' )]"
-		trigger_when = "[Not(GetVariableSystem.Exists('faith_view_tabs'))]"
+		name = closest
+		trigger_when = "[Not(Faith.MakeScope.Var('closest_county').IsSet)]"
+		on_finish = "[GetScriptedGui('faith_closest_county_ocr').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
 	}
+
 
 	state = {
 		name = _hide
@@ -37,981 +40,1349 @@ window = {
 		using = Animation_FadeOut_Quick
 		using = Sound_WindowHide_Standard
 		on_finish = "[Click('clear_last_view')]"
+		on_finish = "[Set('holy_site_tip', 'yes')]"
 	}
 
-	widget = {
-		size = { 100% 100% }
-		using = Window_Background_Subwindow
-		using = ocr
+	window_ocr = {
+		blockoverride "ocr_header" {
+			button = {
+				using = close_window_ocr
+				onclick = "[FaithWindow.Close]"
+			}
 
-		### INSIDE WINDOW
-		vbox = {
-			visible = "[Not(GetVariableSystem.Exists('ocr'))]"
-			using = ocr_margins
-			margin_left = 10
+			button = {
+				using = close_window_ocr
+				onclick = "[Clear('faith_view_tabs')]"
+				visible = "[Is('faith_view_tabs')]"
+			}
 
-			### Header
-			widget_header_with_picture = {
-				name = "header"
-				size = { 0 25 }
+			button_text = {
 				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = fixed
-
-				blockoverride "size" {
-					size = { 100% 25 }
+				onclick = "[FaithWindow.ToggleReligionWindow]"
+				shortcut = map_mode_diplomatic_relations
+				blockoverride "text" {
+					raw_text = "FAITH_VIEW_HEADING"
 				}
+				blockoverride "extra" {
 
-				blockoverride "header_text"
-				{
-					text = ""
-					using = tooltip_es
-
-					state = {
-						name = "faith_view_refresh"
-						using = Animation_Refresh_FadeOut
-					}
-
-					state = {
-						using = Animation_Refresh_FadeIn
-					}
-				}
-
-				blockoverride "button_close"
-				{
-					onclick = "[FaithWindow.Close]"
-				}
-
-				blockoverride "button_back"
-				{
-					size = { 0 0 }
-					visible = "[HasViewHistory]"
-					onclick = "[OpenFromViewHistory]"
-					tooltip = "[GetViewHistoryTooltip]"
-				}
-
-				blockoverride "button_me"
-				{
-					onclick = "[DefaultOnCharacterClick(GetPlayer.GetID)]"
-					size = { 0 0 }
-				}
-
-				blockoverride "illustration_texture"
-				{
-				}
-
-				flowcontainer = {
-					text_single = {
-						raw_text = "FAITH_VIEW_HEADING"
-					}
-
-					dot = { }
-
-					space = { }
-
+					, = {}
 					flowcontainer = {
 						ignoreinvisible = yes
+						spacing = 3
+						visible = "[Isnt('faith_view_tabs')]"
 
 						text_single = {
-							visible = "[And( Not( Faith.GetReligion.HasPaganRoots ), Not( Faith.IsUnreformed ) )]"
-							text = "FAITH_VIEW_SUBHEADING"
+							visible = "[ObjectsEqual( GetPlayer.GetFaith, Faith.Self )]"
+							raw_text = "Your"
+						}
+
+						text_single = {
+							visible = "[Not(Faith.IsUnreformed)]"
+							raw_text = "[organized|E]"
 						}
 
 						text_single = {
 							visible = "[Faith.IsUnreformed]"
-							text = "FAITH_VIEW_UNREFORMED_SUBHEADING"
+							text = "[GetFaithDoctrine('unreformed_faith_doctrine').GetBaseName]"
 						}
 
 						text_single = {
-							visible = "[And( Faith.GetReligion.HasPaganRoots, Not( Faith.IsUnreformed ) )]"
-							text = "FAITH_VIEW_REFORMED_SUBHEADING"
+							raw_text = "[Faith.GetReligion.GetAdjective]"
 						}
-
-						dot = { }
-					}
-
-					space = { }
-
-					flowcontainer = {
-						ignoreinvisible = yes
-						visible = "[ObjectsEqual( GetPlayer.GetFaith, Faith.Self )]"
 
 						text_single = {
-							name = "your_faith"
-							text = "FAITH_VIEW_YOUR_FAITH"
+							raw_text = "[faith|e],"
 						}
-
-						dot = { }
-					}
-
-				}
-			}
-
-			button_text = {
-				blockoverride "text" {
-					raw_text = "Show faith description."
-				}
-				layoutpolicy_horizontal = expanding
-				onclick = "[GetVariableSystem.Toggle('faith_desc')]"
-				visible = "[And(Not(GetVariableSystem.Exists('faith_desc')), GetVariableSystem.HasValue( 'faith_view_tabs', 'beliefs' ))]"
-			}
-
-			flowcontainer = {
-				visible = "[And(GetVariableSystem.Exists('faith_desc'), GetVariableSystem.HasValue( 'faith_view_tabs', 'beliefs' ))]"
-				direction = vertical
-				max_width = 600
-
-				flowcontainer = {
-					text_multi = {
-						autoresize = yes
-						max_width = 600
-						raw_text = "[Faith.GetFlavorDesc]"
-					}
-				}
-
-				button_text = {
-					blockoverride "text" {
-						raw_text = "Hide faith description."
-					}
-					onclick = "[GetVariableSystem.Clear('faith_desc')]"
-				}
-			}
-
-			vbox = {
-				datacontext = "[FaithWindow.GetFaith]"
-				layoutpolicy_horizontal = expanding
-				visible = "[GetVariableSystem.HasValue( 'faith_view_tabs', 'beliefs' )]"
-
-				flowcontainer = {
-					direction = vertical
-					ignoreinvisible = yes
-					layoutpolicy_horizontal = expanding
-
-					flowcontainer = {
-						ignoreinvisible = yes
-						visible = "[Not(ObjectsEqual( GetPlayer.GetFaith, Faith.Self ))]"
 
 						text_single = {
-							name = "our_view"
-							text = "FAITH_VIEW_OUR_VIEW"
+							visible = "[EqualTo_int32(GetDataModelSize(Faith.GetReligion.GetFaiths), '(int32)1')]"
+							raw_text = "only one,"
 						}
-
-						dot = { }
-					}
-
-					flowcontainer = {
-						ignoreinvisible = yes
-						visible = "[Not(ObjectsEqual( GetPlayer.GetFaith, Faith.Self ))]"
 
 						text_single = {
-							name = "their_view"
-							text = "FAITH_VIEW_THEIR_VIEW"
+							visible = "[GreaterThan_int32(GetDataModelSize(Faith.GetReligion.GetFaiths), '(int32)1')]"
+							raw_text = "one of [GetDataModelSize(Faith.GetReligion.GetFaiths)],"
 						}
 
-						dot = { }
-					}
-				}
-
-				flowcontainer = {
-					ignoreinvisible = yes
-					layoutpolicy_horizontal = expanding
-
-					text_single = {
-						raw_text = "FAITH_WINDOW_FERVOR"
+						text_single = {
+							raw_text = "Shift F."
+						}
 					}
 
 					text_single = {
-						raw_text = ". [Faith.GetYearlyFervorChange|=+2] per year."
-						tooltip = "FERVOR_TT"
+						visible = "[Is('faith_view_tabs')]"
+						raw_text = "[Get('faith_view_tabs')]."
 					}
 				}
-			}
-
-			flowcontainer = {
-				visible = "[GetVariableSystem.HasValue( 'faith_view_tabs', 'beliefs' )]"
-				direction = vertical
-				layoutpolicy_horizontal = expanding
-
-				char_name = {
-					blockoverride "pre" {
-						text_single = {
-							raw_text = "RELIGIOUS_HEAD"
-						}
-						space = { }
-					}
-					blockoverride "width" {
-						max_width = 600
-					}
-					datacontext = "[Faith.GetReligiousHead]"
-					visible = "[Faith.GetReligiousHead.IsValid]"
-				}
-
-				button_text = {
-					datacontext = "[Faith.GetReligiousHead]"
-					visible = "[Faith.GetReligiousHead.IsValid]"
-					shortcut = decrease_speed_2
-
-					onclick = "[ToggleFilteredCharacterInteractionMenu(Character.Self, 'interaction_category_religion')]"
-					onclick = "[Set('filtered_actions', 'yes')]"
-					blockoverride "text" {
-						raw_text = "[GetNumberOfValidInteractionsWithFilter(Character.Self, 'interaction_category_religion')] [head_of_faith|E] Interactions, Z."
-					}
-				}
-
-
-				flowcontainer = {
-					ignoreinvisible = yes
-					visible = "[Not( Faith.GetReligiousHead.IsValid)]"
-
-					text_single = {
-						text = "RELIGIOUS_HEAD_EMPTY_DESC"
-						max_width = 600
-						autoresize = yes
-					}
-
-					dot = { }
-				}
-			}
-
-			vbox = {
-				visible = "[GetVariableSystem.HasValue( 'faith_view_tabs', 'beliefs' )]"
-				layoutpolicy_horizontal = expanding
-
-				widget_doctrine_item_ocr = {
-					visible = "[Faith.HasDoctrineByKey( 'doctrine_spiritual_head' )]"
-
-					blockoverride "background" { }
-
-					blockoverride "doctrine_icon"
-					{
-						texture = "[GetDoctrine( 'doctrine_spiritual_head' ).GetIcon]"
-					}
-
-					blockoverride "wdi_context"
-					{
-						datacontext = "[GetDoctrine('doctrine_spiritual_head')]"
-						datacontext = "[Faith]"
-					}
-				}
-
-				widget_doctrine_item_ocr = {
-					visible = "[Faith.HasDoctrineByKey( 'doctrine_temporal_head' )]"
-
-					blockoverride "background" { }
-
-					blockoverride "doctrine_icon"
-					{
-						texture = "[GetDoctrine( 'doctrine_temporal_head' ).GetIcon]"
-					}
-
-					blockoverride "wdi_context"
-					{
-						datacontext = "[GetDoctrine('doctrine_temporal_head')]"
-						datacontext = "[Faith]"
-					}
-				}
-
-				button_text = {
-					blockoverride "text" {
-						raw_text = "Title: [Title.GetNameNoTooltip|U]."
-					}
-					layoutpolicy_horizontal = expanding
-					using = title_click
-					datacontext = "[Faith.GetReligiousHeadTitle]"
-					visible = "[Title.IsValid]"
-				}
-			}
-
-			hbox = {
-				layoutpolicy_horizontal = expanding
-
-				button_text = {
-					blockoverride "text" {
-						text = "FAITH_CONVERSION_CONVERT"
-					}
-					blockoverride "dot" {
-
-					}
-					visible = "[NotEqualTo_uint32( Faith.GetID, GetPlayer.GetFaith.GetID )]"
-					onclick = "[ToggleGameViewData( 'faith_conversion', Faith.GetID )]"
-				}
-
-				button_text = {
-					blockoverride "text" {
-						text = "CREATE_REFORM_FAITH_TEXT"
-					}
-					blockoverride "dot" {
-
-					}
-					visible = "[And( ObjectsEqual(Faith.Self, GetPlayer.GetFaith ), GetVariableSystem.HasValue( 'faith_view_tabs', 'beliefs' ))]"
-
-					onclick = "[OpenGameViewData( 'faith_creation', Faith.GetID )]"
-				}
-
-				button_text = {
-					blockoverride "text" {
-						text = "CREATE_TEMPORAL_HEAD_OF_FAITH_TITLE"
-					}
-					blockoverride "disabled" {
-						visible = "[Not(ScriptedGui.IsValid( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ))]"
-					}
-					blockoverride "dot" { }
-
-					visible = "[And( And( Not(Faith.HasDoctrineByKey( 'doctrine_no_head' )), Not( Faith.GetReligiousHeadTitle.IsValid ) ), ObjectsEqual( GetPlayer.GetFaith, Faith.Self ) )]"
-					datacontext = "[GetScriptedGui( 'create_head_of_faith' )]"
-					enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
-					onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
-					tooltip = "[ScriptedGui.BuildTooltip( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
-				}
-
-				button_text = {
-					blockoverride "text" {
-						text = "RECREATE_TEMPORAL_HEAD_OF_FAITH_TITLE"
-					}
-					blockoverride "disabled" {
-						visible = "[Not(ScriptedGui.IsValid( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ))]"
-					}
-					blockoverride "dot" { }
-
-					visible = "[And( And( Not(Faith.HasDoctrineByKey( 'doctrine_no_head' )), And(Faith.GetReligiousHeadTitle.IsValid, Not( Faith.GetReligiousHeadTitle.HasHolder ))), ObjectsEqual( GetPlayer.GetFaith, Faith.Self ) )]"
-					datacontext = "[GetScriptedGui( 'recreate_head_of_faith' )]"
-					enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
-					onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
-					tooltip = "[ScriptedGui.BuildTooltip( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
-				}
-
-				expand = { }
 			}
 
 			### Tabs
-			vbox = {
+			hbox = {
 				layoutpolicy_horizontal = expanding
 				name = "tabs"
+				visible = "[Isnt('faith_view_tabs')]"
+
+				text_single = {
+					raw_text = "Menus:"
+				}
 
 				button_text = {
-					layoutpolicy_horizontal = expanding
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "1,"
+						}
+					}
 					blockoverride "text" {
 						raw_text = "FAITH_BELIEFS"
-						align = left
 					}
-					blockoverride "extra" {
-						text_single = {
-							raw_text = " tab 1"
-						}
-						text_single = {
-							raw_text = ", Selected"
-							visible = "[GetVariableSystem.HasValue( 'faith_view_tabs', 'beliefs' )]"
-						}
-						text_single = {
-							raw_text = "."
-						}
-					}
-					onclick = "[GetVariableSystem.Set( 'faith_view_tabs', 'beliefs' )]"
+					blockoverride "dot" {}
+					onclick = "[Set('faith_view_tabs', 'beliefs')]"
 					shortcut = "speed_1"
 				}
 
 				button_text = {
-					layoutpolicy_horizontal = expanding
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "2,"
+						}
+					}
 					blockoverride "text" {
 						raw_text = "FAITH_HOLY_SITES"
-						align = left
 					}
-					blockoverride "extra" {
-						text_single = {
-							raw_text = ", tab 2"
-						}
-						text_single = {
-							raw_text = ", Selected"
-							visible = "[GetVariableSystem.HasValue( 'faith_view_tabs', 'holy_sites' )]"
-						}
-						text_single = {
-							raw_text = "."
-						}
-					}
-					onclick = "[GetVariableSystem.Set( 'faith_view_tabs', 'holy_sites' )]"
+					blockoverride "dot" {}
+					onclick = "[GetVariableSystem.Set( 'faith_view_tabs', 'holy sites' )]"
 					shortcut = "speed_2"
 				}
 
 				button_text = {
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "3,"
+						}
+					}
 					blockoverride "text" {
-						raw_text = "Other faiths, 3."
-						align = left
+						raw_text = "Followers."
 					}
 					shortcut = "speed_3"
-					layoutpolicy_horizontal = expanding
-					datacontext = "[Faith.GetReligion]"
-					onclick = "[FaithWindow.ToggleReligionWindow]"
+					onclick = "[GetScriptedGui('faith_followers').Execute( GuiScope.SetRoot( FaithWindow.GetFaith.MakeScope ).AddScope('player', GetPlayer.MakeScope ).End )]"
+					onclick = "[Set('faith_view_tabs', 'followers')]"
 				}
 
 				button_text = {
+					shortcut = editor_autosave
 					blockoverride "text" {
-						raw_text = "Followers, 4."
-						align = left
+						raw_text = "A, Adjacent faiths."
 					}
-					shortcut = "speed_4"
-					layoutpolicy_horizontal = expanding
-					onclick = "[GetScriptedGui('followers').Execute( GuiScope.SetRoot( FaithWindow.GetFaith.MakeScope ).End )]"
-					onclick = "[GetVariableSystem.Toggle('followers')]"
+					onclick = "[GetScriptedGui('adjacent_faiths_ocr').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+					onclick = "[Set('faith_view_tabs', 'adjacent faiths')]"
 				}
 
 				agot_patron_tab_button = { }
+
+				expand = {}
 			}
 
-			vbox = {
-				name = "tab_beliefs"
-				visible = "[GetVariableSystem.HasValue( 'faith_view_tabs', 'beliefs' )]"
+			spacer = { size = { 0 5 } }
+
+			# desc
+			flowcontainer = {
+				visible = "[Has('faith_view_tabs', 'description')]"
+				direction = vertical
 				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
 
-				state = {
-					name = _show
-					using = Animation_FadeIn_Quick
+				button = {
+					shortcut = mapmode_house_secondary
+					onclick = "[Clear('faith_view_tabs')]"
 				}
-
-				state = {
-					name = _hide
-					alpha = 0
-				}
-
-
-				### Doctrines
-				vbox = {
-					name = "doctrines"
-					layoutpolicy_horizontal = expanding
-					layoutpolicy_vertical = expanding
-					#margin_top = 10
-
-					scrollbox = {
-						layoutpolicy_horizontal = expanding
-						layoutpolicy_vertical = expanding
-
-
-						blockoverride "scrollbox_content"
-						{
-							#margin_top = 20
-
-							state = {
-								name = "faith_view_refresh"
-								using = Animation_Refresh_FadeOut
-							}
-
-							state = {
-								using = Animation_Refresh_FadeIn
-							}
-
-							### Core Tenets
-							vbox = {
-								layoutpolicy_horizontal = expanding
-
-								flowcontainer = {
-									ignoreinvisible = yes
-									layoutpolicy_horizontal = expanding
-									text_single = {
-										text = "FAITH_CORE_TENETS_HEADING"
-									}
-
-									dot = { }
-								}
-
-								vbox = {
-									name = "doctrines_grid_core_tenets"
-									datamodel = "[FaithWindow.GetGroupingHelper( 'core_tenets' ).GetGrouping]"
-									layoutpolicy_horizontal = expanding
-
-									# button_text = {
-									#     blockoverride "text" {
-									#         raw_text = "[Select_CString(GetVariableSystem.Exists('tenet_desc'), 'Hide', 'Show')] tenet descriptions."
-									#     }
-									# 	onclick = "[GetVariableSystem.Toggle('tenet_desc')]"
-									# 	layoutpolicy_horizontal = expanding
-									# }
-
-									state = {
-										name = "faith_view_refresh"
-										using = Animation_Refresh_FadeOut
-									}
-
-									state = {
-										using = Animation_Refresh_FadeIn
-									}
-
-									item = {
-										container_tenet_item_ocr = {
-											datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
-											datacontext = "[GuiFaithDoctrineItem.GetFaith]"
-											tooltip = "FAITH_WINDOW_DOCTRINE_TOOLTIP"
-										}
-									}
-								}
-							}
-
-							vbox = {
-								name = "sins_and_virtues"
-								layoutpolicy_horizontal = expanding
-
-								hbox = {
-									name = "sins"
-									layoutpolicy_horizontal = expanding
-
-									flowcontainer = {
-										ignoreinvisible = yes
-
-										text_single = {
-											raw_text = "[GetDataModelSize(FaithWindow.GetSins)]"
-										}
-										space = { }
-										text_single = {
-											raw_text = "FAITH_WINDOW_SINS"
-										}
-										text_single = {
-											raw_text = ":"
-										}
-										space = { }
-									}
-
-									dynamicgridbox = {
-										name = "virtues_grid"
-										datamodel = "[FaithWindow.GetSins]"
-										flipdirection = yes
-										datamodel_wrap = 7
-
-										item = {
-											text_single = {
-												margin_right = 3
-												datacontext = "[GuiVirtueOrSinItem.GetTrait]"
-												raw_text = "[Trait.GetNameNoTooltip( GetPlayer )],"
-												tooltipwidget = {
-													using = faith_window_trait_tooltip
-												}
-											}
-										}
-									}
-
-									expand = { }
-								}
-
-								hbox = {
-									name = "virtues"
-									layoutpolicy_horizontal = expanding
-
-									flowcontainer = {
-										ignoreinvisible = yes
-
-										text_single = {
-											raw_text = "[GetDataModelSize(FaithWindow.GetVirtues)]"
-										}
-										space = { }
-										text_single = {
-											raw_text = "FAITH_WINDOW_VIRTUES"
-										}
-										text_single = {
-											raw_text = ":"
-										}
-										space = { }
-									}
-
-									dynamicgridbox = {
-										name = "virtues_grid"
-										datamodel = "[FaithWindow.GetVirtues]"
-										flipdirection = yes
-
-										item = {
-											text_single = {
-												margin_right = 3
-												datacontext = "[GuiVirtueOrSinItem.GetTrait]"
-												raw_text = "[Trait.GetNameNoTooltip( GetPlayer )],"
-												tooltipwidget = {
-													using = faith_window_trait_tooltip
-												}
-											}
-										}
-									}
-
-									expand = { }
-								}
-							}
-
-							vbox = {
-								layoutpolicy_horizontal = expanding
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									raw_text = "[GetDataModelSize(FaithWindow.GetGroupingHelper( 'main_group' ).GetGrouping)] [Localize('FAITH_DOCTRINES_IMPORTANT')]."
-								}
-
-								vbox = {
-									layoutpolicy_horizontal = expanding
-									name = "important_doctrines"
-									datamodel = "[FaithWindow.GetGroupingHelper( 'main_group' ).GetGrouping]"
-
-									item = {
-										vbox = {
-											layoutpolicy_horizontal = expanding
-											name = "doctrine_list_item"
-											datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
-											visible = "[FaithDoctrine.IsVisible]"
-											tooltip = "FAITH_WINDOW_DOCTRINE_TOOLTIP"
-											using = tooltip_se
-
-											text_single = {
-												layoutpolicy_horizontal = expanding
-												name = "doctrine_name"
-												raw_text = "[FaithDoctrine.GetNameNoTooltip( GuiFaithDoctrineItem.GetFaith )]."
-											}
-										}
-									}
-								}
-							}
-
-							vbox_agot_extra_doctrines = { }
-
-							vbox = {
-								layoutpolicy_horizontal = expanding
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									raw_text = "[GetDataModelSize(FaithWindow.GetGroupingHelper( 'marriage' ).GetGrouping)] [Localize('FAITH_DOCTRINES_MARRIAGE')]."
-								}
-
-								vbox = {
-									datamodel = "[FaithWindow.GetGroupingHelper( 'marriage' ).GetGrouping]"
-									layoutpolicy_horizontal = expanding
-
-									item = {
-										widget_doctrine_item_ocr = { }
-									}
-								}
-
-								##
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									raw_text = "[GetDataModelSize(FaithWindow.GetGroupingHelper( 'crimes' ).GetGrouping)] [Localize('FAITH_DOCTRINES_CRIMES')]."
-								}
-
-								vbox = {
-									datamodel = "[FaithWindow.GetGroupingHelper( 'crimes' ).GetGrouping]"
-									layoutpolicy_horizontal = expanding
-
-									item = {
-										widget_doctrine_item_ocr = { }
-									}
-								}
-
-								###
-
-
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									raw_text = "[GetDataModelSize(FaithWindow.GetGroupingHelper( 'clergy' ).GetGrouping)] [Localize('FAITH_DOCTRINES_CLERGY')]."
-								}
-
-								vbox = {
-									datamodel = "[FaithWindow.GetGroupingHelper( 'clergy' ).GetGrouping]"
-									layoutpolicy_horizontal = expanding
-
-									item = {
-										widget_doctrine_item_ocr = { }
-									}
-								}
-
-								###
-								text_single = {
-									layoutpolicy_horizontal = expanding
-									visible = "[DataModelHasItems(FaithWindow.GetGroupingHelper( 'special' ).GetGrouping)]"
-									raw_text = "[GetDataModelSize(FaithWindow.GetGroupingHelper( 'special' ).GetGrouping)] [Localize('FAITH_DOCTRINES_SPECIAL')]."
-								}
-
-								vbox = {
-									datamodel = "[FaithWindow.GetGroupingHelper( 'special' ).GetGrouping]"
-									layoutpolicy_horizontal = expanding
-
-									item = {
-										text_single = {
-											layoutpolicy_horizontal = expanding
-											datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
-											datacontext = "[GuiFaithDoctrineItem.GetFaith]"
-
-											raw_text = "[FaithDoctrine.GetNameNoTooltip( GuiFaithDoctrineItem.GetFaith )]."
-											tooltip = "FAITH_WINDOW_DOCTRINE_TOOLTIP_WITH_FAITH"
-										}
-									}
-								}
-							}
-						}
+				flowcontainer = {
+					text_multi_wide = {
+						raw_text = "[Faith.GetFlavorDesc]"
 					}
 				}
 			}
 
-			## HOLY SITES
-			scrollbox = {
-				name = "tab_holy_sites"
-				visible = "[GetVariableSystem.HasValue( 'faith_view_tabs', 'holy_sites' )]"
+			vbox = {
 				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
+				visible = "[Isnt('faith_view_tabs')]"
 
-				blockoverride "scrollbox_background" { }
-				blockoverride "scrollbox_background_fade" { }
+				# actions
+				flowcontainer = {
+					layoutpolicy_horizontal = expanding
+					direction = vertical
+					ignoreinvisible = yes
 
-				state = {
-					name = _show
-					using = Animation_FadeIn_Quick
+					button_text = {
+						blockoverride "text" {
+							text = "FAITH_CONVERSION_CONVERT"
+						}
+						blockoverride "dot" {
+
+						}
+						visible = "[NotEqualTo_uint32( Faith.GetID, GetPlayer.GetFaith.GetID )]"
+						onclick = "[ToggleGameViewData( 'faith_conversion', Faith.GetID )]"
+					}
+
+					button_text = {
+						shortcut = map_mode_15
+						blockoverride "text" {
+							text = "CREATE_REFORM_FAITH_TEXT"
+						}
+						blockoverride "extra" {
+							, = {}
+							text_single = {
+								raw_text = "Control F."
+							}
+						}
+						visible = "[ObjectsEqual(Faith.Self, GetPlayer.GetFaith )]"
+
+						onclick = "[OpenGameViewData( 'faith_creation', Faith.GetID )]"
+					}
+
+					button_text = {
+						blockoverride "text" {
+							text = "CREATE_TEMPORAL_HEAD_OF_FAITH_TITLE"
+						}
+						blockoverride "disabled" {
+							visible = "[Not(ScriptedGui.IsValid( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ))]"
+						}
+						blockoverride "dot" { }
+
+						visible = "[And( And( Not(Faith.HasDoctrineByKey( 'doctrine_no_head' )), Not( Faith.GetReligiousHeadTitle.IsValid ) ), ObjectsEqual( GetPlayer.GetFaith, Faith.Self ) )]"
+						datacontext = "[GetScriptedGui( 'create_head_of_faith' )]"
+						enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
+						onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
+						tooltip = "[ScriptedGui.BuildTooltip( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
+					}
+
+					button_text = {
+						blockoverride "text" {
+							text = "RECREATE_TEMPORAL_HEAD_OF_FAITH_TITLE"
+						}
+						blockoverride "disabled" {
+							visible = "[Not(ScriptedGui.IsValid( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ))]"
+						}
+						blockoverride "dot" { }
+
+						visible = "[And( And( Not(Faith.HasDoctrineByKey( 'doctrine_no_head' )), And(Faith.GetReligiousHeadTitle.IsValid, Not( Faith.GetReligiousHeadTitle.HasHolder ))), ObjectsEqual( GetPlayer.GetFaith, Faith.Self ) )]"
+						datacontext = "[GetScriptedGui( 'recreate_head_of_faith' )]"
+						enabled = "[ScriptedGui.IsValid( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
+						onclick = "[ScriptedGui.Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
+						tooltip = "[ScriptedGui.BuildTooltip( GuiScope.SetRoot( GetPlayer.MakeScope ).AddScope( 'faith', Faith.MakeScope ).End ) ]"
+					}
 				}
 
-				state = {
-					name = _hide
-					alpha = 0
+				spacer = { size = { 0 5 } }
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					using = prov_click
+					datacontext = "[Faith.MakeScope.Var('closest_county')]"
+					visible = "[And(Scope.IsSet, Not(ObjectsEqual(Faith.Self, GetPlayer.GetFaith)))]"
+					datacontext = "[Scope.Title.GetCountyData.GetCapital]"
+					datacontext = "[Scope.Title]"
+					blockoverride "extra" {
+						text_distance_capital = {}
+						text_single = {
+							raw_text = "Closest county: [Title.GetNameNoTierNoTooltip],"
+						}
+						text_single = {
+							visible = "[Not(ObjectsEqual(Title.Self, Title.GetHolder.GetTopLiege.GetPrimaryTitle))]"
+							raw_text = "in [Title.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip]"
+						}
+					}
+				}
+
+				# counties
+				hbox = {
+					layoutpolicy_horizontal = expanding
+
+					button_text = {
+						shortcut = character_finder
+						onclick = "[Set('faith_view_tabs', 'counties')]"
+						onclick = "[GetScriptedGui('faith_counties_ocr').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope ).End )]"
+
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Faith.GetNumberOfCountiesOfFaith] counties, C."
+							}
+
+							text_single = {
+								raw_text = "[Faith.MakeScope.ScriptValue('faith_held_by_enemies')] held by non-believers."
+							}
+						}
+					}
+
+					button_map_extents = {
+						layoutpolicy_horizontal = expanding
+						onclick = "[GetScriptedGui('faith_map_extents').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+						onclick = "[Set('faith_view_tabs', 'map extents')]"
+					}
+
+					expand = {}
+				}
+
+				# rulers
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[GetScriptedGui('faith_followers').Execute( GuiScope.SetRoot( FaithWindow.GetFaith.MakeScope ).AddScope('player', GetPlayer.MakeScope ).End )]"
+					onclick = "[Set('faith_view_tabs', 'followers')]"
+
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "[Faith.MakeScope.ScriptValue('num_faith_rulers')] rulers,"
+						}
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							spacing = 3
+							visible = "[GetScriptedGui('faith_has_rulers').IsShown( GuiScope.SetRoot( Faith.MakeScope ).End )]"
+
+							text_single = {
+								raw_text = "of them"
+							}
+
+							text_single = {
+								raw_text = "[Faith.MakeScope.ScriptValue('num_faith_sinners')] sinners,"
+							}
+
+							text_single = {
+								raw_text = "[Faith.MakeScope.ScriptValue('num_faith_virtuous')] virtuous,"
+							}
+
+							text_single = {
+								visible = "[GetScriptedGui('has_excommunication').IsShown( GuiScope.SetRoot( Faith.MakeScope ).End )]"
+								raw_text = "[Faith.MakeScope.ScriptValue('num_faith_excommunicated')] excommunicated,"
+							}
+						}
+
+						text_single = {
+							visible = "[Not(GetScriptedGui('faith_has_rulers').IsShown( GuiScope.SetRoot( Faith.MakeScope ).End ))]"
+							raw_text = "[Faith.MakeScope.ScriptValue('faith_followers')] followers."
+						}
+					}
+				}
+
+				# wrong counties
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					shortcut = court_scene_editor_toolset_translate
+					onclick = "[GetScriptedGui('faith_holders_wrong_counties').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+					onclick = "[Set('faith_view_tabs', 'counties of other faiths')]"
+
+					blockoverride "extra" {
+						text_single = {
+							raw_text = "[Faith.GetAdherentNamePluralNoTooltip] hold [Faith.MakeScope.ScriptValue('faith_holders_wrong_counties')] counties of other faiths"
+						}
+						text_single = {
+							raw_text = "and converting [Faith.MakeScope.ScriptValue('faith_holders_convert_counties')]."
+						}
+						text_single = {
+							raw_text = "W."
+						}
+					}
 				}
 
 
-				blockoverride "scrollbox_content"
-				{
-					vbox = {
-						name = "holy_sites"
-						datamodel = "[FaithWindow.GetHolySites]"
+				# holy sites
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[Set('faith_view_tabs', 'holy sites')]"
+					blockoverride "text" {
+						raw_text = "[GetDataModelSize(FaithWindow.GetHolySites)] holy sites,"
+					}
+					blockoverride "extra" {
+						text_single = {
+							visible = "[GetScriptedGui('all_holy_sites_held_by_faith').IsShown( GuiScope.SetRoot( Faith.MakeScope ).End )]"
+							raw_text = "all"
+						}
+						text_single = {
+							raw_text = "[Faith.MakeScope.ScriptValue('faith_holy_sites_held')] held by [Faith.GetAdherentNamePlural]."
+						}
+					}
+				}
+
+				spacer = { size = { 0 5 } }
+
+				# evil and fervor
+				vbox = {
+					datacontext = "[FaithWindow.GetFaith]"
+					layoutpolicy_horizontal = expanding
+					visible = "[Isnt('faith_view_tabs')]"
+
+					# fervor
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = army_split_half
+						onclick = "[Set('faith_view_tabs', 'fervor')]"
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "FAITH_WINDOW_FERVOR"
+							}
+
+							text_single = {
+								raw_text = "[Faith.GetYearlyFervorChange|=+2] per year. F."
+								tooltip = "FERVOR_TT"
+							}
+						}
+					}
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
 						layoutpolicy_horizontal = expanding
 
 						flowcontainer = {
-							layoutpolicy_horizontal = expanding
+							ignoreinvisible = yes
+							visible = "[Not(ObjectsEqual( GetPlayer.GetFaith, Faith.Self ))]"
 
 							text_single = {
-								datacontext = "[FaithWindow.GetFaith]"
-								text = "FAITH_HOLY_SITE_EXPLANATION"
+								name = "our_view"
+								text = "FAITH_VIEW_OUR_VIEW"
 							}
 
 							dot = { }
 						}
 
-						button_text = {
-							blockoverride "text" {
-								raw_text = "[Select_CString(GetVariableSystem.Exists('site_holders'), 'Show', 'Hide')] holders."
+						flowcontainer = {
+							ignoreinvisible = yes
+							visible = "[Not(ObjectsEqual( GetPlayer.GetFaith, Faith.Self ))]"
+
+							text_single = {
+								name = "their_view"
+								text = "FAITH_VIEW_THEIR_VIEW"
 							}
-							layoutpolicy_horizontal = expanding
-							onclick = "[GetVariableSystem.Toggle('site_holders')]"
+
+							dot = { }
+						}
+					}
+				}
+			}
+
+			spacer = { size = { 0 5 } }
+
+			# sins
+			vbox = {
+				layoutpolicy_horizontal = expanding
+				visible = "[Isnt('faith_view_tabs')]"
+
+				# tenets
+
+				button_text = {
+					layoutpolicy_horizontal = expanding
+					onclick = "[Set('faith_view_tabs', 'beliefs')]"
+					onclick = "[Set('doctrines', 'tenets')]"
+					blockoverride "text" {
+						raw_text = "Core tenets:"
+					}
+
+					blockoverride "extra" {
+						flowcontainer = {
+							ignoreinvisible = yes
+							spacing = 3
+							datamodel = "[FaithWindow.GetGroupingHelper( 'core_tenets' ).GetGrouping]"
+
+							item = {
+								text_single = {
+									datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
+									datacontext = "[GuiFaithDoctrineItem.GetFaith]"
+									raw_text = "[FaithDoctrine.GetNameNoTooltip( Faith.Self )]."
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					name = "sins_and_virtues"
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						name = "sins"
+						layoutpolicy_horizontal = expanding
+
+						flowcontainer = {
+							ignoreinvisible = yes
+
+							text_single = {
+								raw_text = "FAITH_WINDOW_SINS"
+							}
+							space = { }
+							text_single = {
+								raw_text = "[GetDataModelSize(FaithWindow.GetSins)]"
+							}
+							text_single = {
+								raw_text = ":"
+							}
+							space = { }
 						}
 
-						text_single = {
-							raw_text = "[GetDataModelSize(FaithWindow.GetHolySites)] Holy sites:"
-							layoutpolicy_horizontal = expanding
+						dynamicgridbox = {
+							name = "virtues_grid"
+							datamodel = "[FaithWindow.GetSins]"
+							flipdirection = yes
+							datamodel_wrap = 7
+
+							item = {
+								text_single = {
+									margin_right = 3
+									datacontext = "[GuiVirtueOrSinItem.GetTrait]"
+									raw_text = "[Trait.GetNameNoTooltip( GetPlayer )],"
+									tooltipwidget = {
+										using = faith_window_trait_tooltip
+									}
+								}
+							}
 						}
+
+						expand = { }
+					}
+
+					hbox = {
+						name = "virtues"
+						layoutpolicy_horizontal = expanding
+
+						flowcontainer = {
+							ignoreinvisible = yes
+
+							text_single = {
+								raw_text = "FAITH_WINDOW_VIRTUES"
+							}
+							space = { }
+							text_single = {
+								raw_text = "[GetDataModelSize(FaithWindow.GetVirtues)]"
+							}
+							text_single = {
+								raw_text = ":"
+							}
+							space = { }
+						}
+
+						dynamicgridbox = {
+							name = "virtues_grid"
+							datamodel = "[FaithWindow.GetVirtues]"
+							flipdirection = yes
+
+							item = {
+								text_single = {
+									margin_right = 3
+									datacontext = "[GuiVirtueOrSinItem.GetTrait]"
+									raw_text = "[Trait.GetNameNoTooltip( GetPlayer )],"
+									tooltipwidget = {
+										using = faith_window_trait_tooltip
+									}
+								}
+							}
+						}
+
+						expand = { }
+					}
+				}
+
+				# crimes
+				flowcontainer = {
+					ignoreinvisible = yes
+					spacing = 3
+					layoutpolicy_horizontal = expanding
+
+					text_single = {
+						raw_text = "Crimes [PdxGuiWidget.AccessParent.FindChild('crimes').CountVisibleChildren]:"
+					}
+
+					flowcontainer = {
+						datamodel = "[FaithWindow.GetGroupingHelper( 'crimes' ).GetGrouping]"
+						ignoreinvisible = yes
+						name = "crimes"
+						spacing = 3
 
 
 						item = {
-							vbox = {
-								name = "faith_list_item"
-								datacontext = "[GuiHolySiteItem.GetHolySite]"
-								datacontext = "[HolySite.GetBarony]"
-								layoutpolicy_horizontal = expanding
+							text_single = {
+								datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
+								datacontext = "[GuiFaithDoctrineItem.GetFaith]"
+								raw_text = "[FaithDoctrine.GetGroup.GetName( Faith.Self )],"
 
-								vbox = {
-									layoutpolicy_horizontal = expanding
+								visible = "[EqualTo_string(FaithDoctrine.GetNameNoTooltip( Faith.Self ), Localize('game_concept_criminal'))]"
 
-									hbox = {
-										layoutpolicy_horizontal = expanding
-										spacing = 3
+							}
+						}
+					}
+				}
 
-										button_text = {
-											blockoverride "text" {
-												raw_text = "[HolySite.GetName]."
-												align = left
-											}
-											using = prov_click
-										}
+				spacer = { size = { 0 5 } }
 
-										text_single = {
-											datacontext = "[FaithWindow.GetFaith]"
-											visible = "[Not( GuiHolySiteItem.IsHeldByFaith )]"
-											raw_text = "Not held by [Faith.GetNameNoTooltip]."
-										}
+				# desc button
+				button_text = {
+					shortcut = mapmode_house_secondary
+					blockoverride "text" {
+						raw_text = "Show faith description, Shift D."
+					}
+					layoutpolicy_horizontal = expanding
+					onclick = "[Set('faith_view_tabs', 'description')]"
+				}
 
-										text_single = {
-											datacontext = "[FaithWindow.GetFaith]"
-											visible = "[GuiHolySiteItem.IsHeldByFaith]"
-											raw_text = "[Faith.GetAdjectiveNoTooltip]."
-										}
+				# hof
+				vbox = {
+					layoutpolicy_horizontal = expanding
 
-										expand = { }
-									}
+					# hof
+					flowcontainer = {
+						direction = vertical
+						layoutpolicy_horizontal = expanding
 
-									vbox = {
-										layoutpolicy_horizontal = expanding
-										visible = "[Not(GetVariableSystem.Exists('site_holders'))]"
-
-										hbox = {
-											layoutpolicy_horizontal = expanding
-											datacontext = "[Title.GetHolder]"
-											tooltip = "FAITH_HOLY_SITE_HOLDER_TOOLTIP"
-											spacing = 3
-
-											char_name = {
-												datacontext = "[Title.GetHolder]"
-												blockoverride "bg" {
-												}
-
-												blockoverride "pre" {
-													text_single = {
-														raw_text = "Holder: "
-													}
-												}
-
-												blockoverride "text" {
-												}
-
-												blockoverride "extra" {
-													spacing = 0
-													space = { }
-
-													text_single = {
-														raw_text = "[Character.GetTitledFirstNameNicknamedNoTooltip]"
-													}
-													text_single = {
-														raw_text = " of [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]"
-														visible = "[Not(ObjectsEqual(Title.GetHolder.GetPrimaryTitle, Title.GetProvince.GetCounty))]"
-													}
-													text_single = {
-														raw_text = ", "
-													}
-												}
-											}
-
-											text_single = {
-												datacontext = "[Title.GetDeJureLiege.GetHolder.GetFaith]"
-												raw_text = "[Faith.GetAdjectiveNoTooltip]."
-											}
-											expand = { }
-										}
-
-										char_name = {
-											layoutpolicy_horizontal = expanding
-											blockoverride "bg" {
-
-											}
-											datacontext = "[Title.GetHolder.GetTopLiege]"
-											visible = "[Not(Title.GetHolder.IsIndependentRuler)]"
-											blockoverride "pre" {
-												text_single = {
-													raw_text = "Vassal of "
-												}
-											}
-											blockoverride "width" {
-												max_width = 550
-											}
-										}
-									}
+						char_name = {
+							shortcut = army_create_new
+							blockoverride "pre" {
+								text_single = {
+									raw_text = "RELIGIOUS_HEAD"
 								}
-
-								vbox = {
-									layoutpolicy_horizontal = expanding
-
-									hbox = {
-										layoutpolicy_horizontal = expanding
-										margin_left = 3
-										margin_top = 2
-
-										vbox = {
-											layoutpolicy_vertical = expanding
-											#
-											# text_single = {
-											# 	raw_text = "Inactive effects:"
-											# 	layoutpolicy_horizontal = expanding
-											# 	visible = "[Not( GuiHolySiteItem.IsHeldByFaith )]"
-											# }
-
-											text_multi = {
-												name = "effects_notheld"
-												layoutpolicy_horizontal = expanding
-												text = "[HolySite.GetEffectDesc( GuiHolySiteItem.GetFaith )]"
-												autoresize = yes
-												max_width = 600
-											}
-										}
-
-										expand = {
-											layoutpolicy_horizontal = expanding
-										}
-									}
-
-									expand = { }
+								, = {}
+							}
+							blockoverride "extra" {
+								text_single = {
+									raw_text = "H."
 								}
 							}
+							blockoverride "width" {
+								max_width = 600
+							}
+							datacontext = "[Faith.GetReligiousHead]"
+							visible = "[Faith.GetReligiousHead.IsValid]"
+						}
+
+						button_text = {
+							datacontext = "[Faith.GetReligiousHead]"
+							visible = "[Faith.GetReligiousHead.IsValid]"
+							shortcut = decrease_speed_2
+
+							onclick = "[ToggleFilteredCharacterInteractionMenu(Character.Self, 'interaction_category_religion')]"
+							onclick = "[Set('filtered_actions', 'yes')]"
+							blockoverride "text" {
+								raw_text = "[GetNumberOfValidInteractionsWithFilter(Character.Self, 'interaction_category_religion')] [head_of_faith|E] Interactions, Z."
+							}
+						}
+
+
+						flowcontainer = {
+							ignoreinvisible = yes
+							visible = "[Not( Faith.GetReligiousHead.IsValid)]"
+
+							text_single = {
+								text = "RELIGIOUS_HEAD_EMPTY_DESC"
+								max_width = 600
+								autoresize = yes
+							}
+
+							dot = { }
+						}
+					}
+
+					# hof doctrines
+					vbox = {
+						layoutpolicy_horizontal = expanding
+
+						widget_doctrine_item_ocr = {
+							visible = "[Faith.HasDoctrineByKey( 'doctrine_spiritual_head' )]"
+
+							blockoverride "background" { }
+
+							blockoverride "doctrine_icon"
+							{
+								texture = "[GetDoctrine( 'doctrine_spiritual_head' ).GetIcon]"
+							}
+
+							blockoverride "wdi_context"
+							{
+								datacontext = "[GetDoctrine('doctrine_spiritual_head')]"
+								datacontext = "[Faith]"
+							}
+						}
+
+						widget_doctrine_item_ocr = {
+							visible = "[Faith.HasDoctrineByKey( 'doctrine_temporal_head' )]"
+
+							blockoverride "background" { }
+
+							blockoverride "doctrine_icon"
+							{
+								texture = "[GetDoctrine( 'doctrine_temporal_head' ).GetIcon]"
+							}
+
+							blockoverride "wdi_context"
+							{
+								datacontext = "[GetDoctrine('doctrine_temporal_head')]"
+								datacontext = "[Faith]"
+							}
+						}
+
+						button_text = {
+							shortcut = map_mode_2
+							blockoverride "text" {
+								raw_text = "Title: [Title.GetNameNoTooltip|U], T."
+							}
+							layoutpolicy_horizontal = expanding
+							using = title_click
+							datacontext = "[Faith.GetReligiousHeadTitle]"
+							visible = "[Title.IsValid]"
 						}
 					}
 				}
 			}
 		}
 
-		window = {
-			name = "followers"
-			size = { 700 100% }
-			position = { 0 0 }
-			layer = top
-			visible = "[GetVariableSystem.Exists('followers')]"
-
-			using = Window_Movable
-			using = Window_Background_Subwindow
-
-			state = {
-				name = _show
-				using = Animation_FadeIn_Quick
-				using = Sound_WindowShow_Standard
-			}
-
-			state = {
-				name = _hide
-				using = Animation_FadeOut_Quick
-				using = Sound_WindowHide_Standard
-			}
-
-			attachto = {
-				widgetid = "faith_window"
-				inherit_visibility = no
-			}
-
+		blockoverride "ocr_content" {
 			vbox = {
-				layoutpolicy_vertical = expanding
 				layoutpolicy_horizontal = expanding
+				visible = "[Is('faith_view_tabs')]"
 
-				header_pattern = {
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+					layoutpolicy_horizontal = expanding
+					visible = "[Has('faith_view_tabs', 'fervor')]"
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+						text_single = {
+							raw_text = "FAITH_WINDOW_FERVOR"
+						}
+					}
+
+					text_multi_wide = {
+						raw_text = "[Faith.GetYearlyFervorChangeDesc]"
+					}
+
+					text_multi_wide = {
+						raw_text = "game_concept_fervor_desc"
+					}
+
+				}
+
+				# beliefs
+				vbox = {
+					name = "tab_beliefs"
+					visible = "[Has('faith_view_tabs', 'beliefs')]"
 					layoutpolicy_horizontal = expanding
 
-					blockoverride "header_text"
-					{
-						raw_text = "[GetDataModelSize(FaithWindow.GetFaith.MakeScope.GetList('followers'))] [FaithWindow.GetFaith.GetAdjectiveNoTooltip] followers."
+					spacing = 10
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						visible = "[And(Isnt('doctrines'), Isnt('doctrine'))]"
+						spacing = -1
+
+						text_single = {
+							raw_text = "Links:"
+						}
+
+						button_text = {
+							shortcut = speed_1
+							onclick = "[Set('doctrines', 'tenets')]"
+							blockoverride "text" {
+								raw_text = "Tenets one."
+							}
+						}
+						button_text = {
+							shortcut = speed_2
+							onclick = "[Set('doctrines', 'main')]"
+							blockoverride "text" {
+								raw_text = "Main 2."
+							}
+						}
+						button_text = {
+							shortcut = speed_3
+							onclick = "[Set('doctrines', 'marriage')]"
+							blockoverride "text" {
+								raw_text = "Marriage 3."
+							}
+						}
+						button_text = {
+							shortcut = speed_4
+							onclick = "[Set('doctrines', 'crime')]"
+							blockoverride "text" {
+								raw_text = "Crimes 4."
+							}
+						}
+						button_text = {
+							shortcut = speed_5
+							onclick = "[Set('doctrines', 'clergy')]"
+							blockoverride "text" {
+								raw_text = "Clergy 5."
+							}
+						}
+						button_text = {
+							visible = "[DataModelHasItems(FaithWindow.GetGroupingHelper( 'special' ).GetGrouping)]"
+							shortcut = character_finder
+							onclick = "[Set('doctrines', 'special')]"
+							blockoverride "text" {
+								raw_text = "special C."
+							}
+						}
+
+						expand = {}
 					}
 
-					blockoverride "button_close"
-					{
-						onclick = "[GetVariableSystem.Clear('followers')]"
+					button = {
+						using = close_window_ocr
+						visible = "[Is('doctrines')]"
+						onclick = "[Clear('doctrines')]"
 					}
 
-					blockoverride "button_back"
-					{
-						visible = no
+					button = {
+						using = close_window_ocr
+						visible = "[Is('doctrine')]"
+						onclick = "[Clear('doctrine')]"
+					}
+
+					### Core Tenets
+
+
+					vbox_doctrine_group = {
+						blockoverride "set" {
+							onclick = "[Set('doctrines', 'tenets')]"
+						}
+						visible = "[Or(Isnt('doctrines'), Has('doctrines', 'tenets'))]"
+						blockoverride "datamodel" {
+							datamodel = "[FaithWindow.GetGroupingHelper( 'core_tenets' ).GetGrouping]"
+						}
+						blockoverride "doctrine" {
+							raw_text = "FAITH_CORE_TENETS_HEADING"
+						}
+
+						blockoverride "item" {
+							button = {
+								visible = "[Or(Isnt('doctrine'), Has('doctrine', FaithDoctrine.GetNameNoTooltip( Faith.Self )))]"
+								onclick = "[Set('doctrine', FaithDoctrine.GetNameNoTooltip( Faith.Self ))]"
+								layoutpolicy_horizontal = expanding
+								datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
+								datacontext = "[GuiFaithDoctrineItem.GetFaith]"
+								shortcuts_list = {
+									visible = "[Has('doctrines', 'tenets')]"
+									blockoverride "click" {
+										onclick = "[Set('doctrine', FaithDoctrine.GetNameNoTooltip( Faith.Self ))]"
+									}
+								}
+								container_tenet_item_ocr = {
+									blockoverride "num" {
+										visible = "[Has('doctrines', 'tenets')]"
+									}
+									resizeparent = yes
+									margin = { 3 1 }
+									tooltip = "FAITH_WINDOW_DOCTRINE_TOOLTIP"
+								}
+							}
+						}
+					}
+
+					###
+					vbox_doctrine_group = {
+						visible = "[And(DataModelHasItems(FaithWindow.GetGroupingHelper( 'special' ).GetGrouping), Or(Isnt('doctrines'), Has('doctrines', 'special')))]"
+						blockoverride "set" {
+							onclick = "[Set('doctrines', 'special')]"
+						}
+						blockoverride "item" {
+							flowcontainer = {
+								layoutpolicy_horizontal = expanding
+								ignoreinvisible = yes
+								direction = vertical
+								datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
+								datacontext = "[GuiFaithDoctrineItem.GetFaith]"
+								text_single = {
+									raw_text = "[FaithDoctrine.GetNameNoTooltip( GuiFaithDoctrineItem.GetFaith )]."
+									tooltip = "FAITH_WINDOW_DOCTRINE_TOOLTIP_WITH_FAITH"
+									visible = "[Not(Has('doctrines', 'special'))]"
+								}
+								text_multi_wide = {
+									visible = "[Has('doctrines', 'special')]"
+									raw_text = "FAITH_WINDOW_DOCTRINE_TOOLTIP_WITH_FAITH"
+								}
+							}
+						}
+					}
+
+					vbox_doctrine_group = {
+						blockoverride "set" {
+							onclick = "[Set('doctrines', 'main')]"
+						}
+						visible = "[Or(Isnt('doctrines'), Has('doctrines', 'main'))]"
+						blockoverride "datamodel" {
+							datamodel = "[FaithWindow.GetGroupingHelper( 'main_group' ).GetGrouping]"
+						}
+						blockoverride "doctrine" {
+							raw_text = "FAITH_DOCTRINES_IMPORTANT"
+						}
+					}
+
+					vbox_agot_extra_doctrines = { }
+
+					vbox_doctrine_group = {
+						blockoverride "set" {
+							onclick = "[Set('doctrines', 'marriage')]"
+						}
+						visible = "[Or(Isnt('doctrines'), Has('doctrines', 'marriage'))]"
+						blockoverride "datamodel" {
+							datamodel = "[FaithWindow.GetGroupingHelper( 'marriage' ).GetGrouping]"
+						}
+						blockoverride "doctrine" {
+							raw_text = "FAITH_DOCTRINES_MARRIAGE"
+						}
+					}
+
+					##
+					vbox_doctrine_group = {
+						blockoverride "set" {
+							onclick = "[Set('doctrines', 'crime')]"
+						}
+						visible = "[Or(Isnt('doctrines'), Has('doctrines', 'crime'))]"
+						blockoverride "datamodel" {
+							datamodel = "[FaithWindow.GetGroupingHelper( 'crimes' ).GetGrouping]"
+						}
+						blockoverride "doctrine" {
+							raw_text = "FAITH_DOCTRINES_CRIMES"
+						}
+					}
+
+					###
+
+					vbox_doctrine_group = {
+						blockoverride "set" {
+							onclick = "[Set('doctrines', 'clergy')]"
+						}
+						visible = "[Or(Isnt('doctrines'), Has('doctrines', 'clergy'))]"
+						blockoverride "datamodel" {
+							datamodel = "[FaithWindow.GetGroupingHelper( 'clergy' ).GetGrouping]"
+						}
+						blockoverride "doctrine" {
+							raw_text = "FAITH_DOCTRINES_CLERGY"
+						}
 					}
 				}
 
-				scrollbox = {
+				# map extents
+				vbox = {
 					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
 
-					blockoverride "scrollbox_content" {
-						fixedgridbox = {
-							addrow = 20
-							addcolumn = 690
-							datamodel = "[FaithWindow.GetFaith.MakeScope.GetList('followers')]"
+					visible = "[Has('faith_view_tabs', 'map extents')]"
 
-							item = {
-								char_name = {
-									blockoverride "bg" {
+					state = {
+						name = _hide
+						on_finish = "[Set('map_extent_de_jure_tip', 'yes')]"
+					}
 
+					blockoverride "name" {
+						raw_text = "[Faith.GetNameNoTooltip]"
+					}
+					blockoverride "refresh" {
+						onclick = "[GetScriptedGui('faith_map_extents').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+					}
+					# blockoverride "average" {
+					# 	datacontext = "[Faith.MakeScope]"
+					# }
+					flow_map_extents = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[Faith.MakeScope]"
+					}
+
+					spacer = { size = { 0 5 } }
+
+					flow_map_areas = {
+						datacontext = "[Faith.MakeScope]"
+						blockoverride "center" {
+							datacontext = "[Faith.MakeScope.Var('center').Title.GetCountyData]"
+							visible = "[Faith.MakeScope.Var('center').IsSet]"
+						}
+						layoutpolicy_horizontal = expanding
+					}
+
+					expand = {}
+				}
+
+				# holy sites
+				vbox = {
+					name = "holy_sites"
+					visible = "[GetVariableSystem.HasValue( 'faith_view_tabs', 'holy sites' )]"
+					layoutpolicy_horizontal = expanding
+
+					flowcontainer = {
+						layoutpolicy_horizontal = expanding
+						ignoreinvisible = yes
+						spacing = 3
+
+						text_single = {
+							raw_text = "[GetDataModelSize(FaithWindow.GetHolySites)] holy sites,"
+						}
+						text_single = {
+							visible = "[GetScriptedGui('all_holy_sites_held_by_faith').IsShown( GuiScope.SetRoot( Faith.MakeScope ).End )]"
+							raw_text = "all"
+						}
+						text_single = {
+							raw_text = "[Faith.MakeScope.ScriptValue('faith_holy_sites_held')] held by [Faith.GetAdherentNamePlural]."
+						}
+					}
+
+					flowcontainer = {
+						layoutpolicy_horizontal = expanding
+						visible = "[Isnt('holy_site_tip')]"
+
+						text_single = {
+							datacontext = "[FaithWindow.GetFaith]"
+							text = "FAITH_HOLY_SITE_EXPLANATION"
+						}
+
+						dot = { }
+					}
+
+					# button_text = {
+					# 	blockoverride "text" {
+					# 		raw_text = "[Select_CString(GetVariableSystem.Exists('site_holders'), 'Show', 'Hide')] holders."
+					# 	}
+					# 	layoutpolicy_horizontal = expanding
+					# 	onclick = "[GetVariableSystem.Toggle('site_holders')]"
+					# }
+
+					button_text = {
+						shortcut = army_split_half
+						blockoverride "text" {
+							raw_text = "[Select_CString(GetVariableSystem.Exists('holy_site_effects'), 'Show', 'Hide')] effects, F."
+						}
+						layoutpolicy_horizontal = expanding
+						onclick = "[GetVariableSystem.Toggle('holy_site_effects')]"
+					}
+
+					spacer = { size = { 0 5 } }
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						visible = "[GreaterThan_CFixedPoint(Faith.MakeScope.ScriptValue('faith_holy_sites_held'), '(CFixedPoint)0')]"
+						blockoverride "text" {
+							raw_text = "[Faith.MakeScope.ScriptValue('faith_holy_sites_held')] holy sites held by [Faith.GetAdherentNamePlural]:"
+						}
+					}
+
+					vbox_holy_sites_ocr = {}
+
+					button_text = {
+						visible = "[GreaterThan_CFixedPoint(Faith.MakeScope.ScriptValue('faith_holy_sites_not_held'), '(CFixedPoint)0')]"
+						layoutpolicy_horizontal = expanding
+						blockoverride "text" {
+							raw_text = "[Faith.MakeScope.ScriptValue('faith_holy_sites_not_held')] holy sites not held by [Faith.GetAdherentNamePlural]:"
+						}
+					}
+
+					vbox_holy_sites_ocr = {
+						blockoverride "visible" {
+							visible = "[Not(GuiHolySiteItem.IsHeldByFaith)]"
+						}
+					}
+				}
+
+				# followers
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					visible = "[Has('faith_view_tabs', 'followers')]"
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						layoutpolicy_horizontal = expanding
+						visible = "[Isnt('faith_followers_sort')]"
+
+						button_text = {
+							shortcut = army_split_half
+							onclick = "[GetScriptedGui('faith_followers_filter').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							onclick = "[GetScriptedGui('faith_followers').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope ).End )]"
+							blockoverride "pre" {
+								text_single = {
+									raw_text = "[GetDataModelSize(FaithWindow.GetFaith.MakeScope.GetList('followers'))] [FaithWindow.GetFaith.GetAdjectiveNoTooltip] [Select_CString(GetPlayer.MakeScope.Var('faith_followers_filter').IsSet, 'followers', 'rulers')],"
+								}
+							}
+							blockoverride "text" {
+								raw_text = "show [Select_CString(GetPlayer.MakeScope.Var('faith_followers_filter').IsSet, 'rulers only', 'all followers')], F."
+							}
+						}
+					}
+
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						visible = "[Isnt('faith_followers_sort')]"
+
+						layoutpolicy_horizontal = expanding
+
+						button_text = {
+							shortcut = map_mode_2
+							onclick = "[Set('faith_followers_sort', 'yes')]"
+							blockoverride "text" {
+								raw_text = "Sorted by:"
+							}
+							blockoverride "extra" {
+								text_single = {
+									visible = "[Not(GetPlayer.MakeScope.Var('faith_followers_sort').IsSet)]"
+									raw_text = "realm size,"
+								}
+								text_single = {
+									visible = "[GetPlayer.MakeScope.Var('faith_followers_sort').IsSet]"
+									raw_text = "[GetPlayer.MakeScope.Var('faith_followers_sort').GetFlagName],"
+								}
+
+								text_single = {
+									raw_text = "T."
+								}
+							}
+						}
+
+						button_text = {
+							visible = "[Isnt('faith_followers_sort')]"
+							shortcut = map_mode_18
+							onclick = "[GetScriptedGui('faith_followers').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope ).End )]"
+							blockoverride "extra" {
+								text_single = {
+									raw_text = "Refresh, Control R."
+								}
+							}
+						}
+					}
+
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						direction = vertical
+						layoutpolicy_horizontal = expanding
+						visible = "[Is('faith_followers_sort')]"
+						datamodel = "[GetGlobalList('faith_followers_sort')]"
+
+						button = {
+							using = close_window_ocr
+							onclick = "[Clear('faith_followers_sort')]"
+						}
+
+						text_single = {
+							raw_text = "Sort by:"
+						}
+
+						item = {
+							button_text = {
+								blockoverride "y" {}
+								blockoverride "sclick" {
+									onclick = "[GetScriptedGui('faith_followers').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope ).AddScope('sorting', MakeScopeFlag(Scope.GetFlagName)).End )]"
+									onclick = "[Clear('faith_followers_sort')]"
+								}
+								shortcuts_list = {}
+								blockoverride "text" {
+									raw_text = "[Scope.GetFlagName]"
+								}
+							}
+						}
+					}
+
+					fixedgridbox = {
+						layoutpolicy_horizontal = expanding
+						addrow = 20
+						addcolumn = 690
+						datamodel = "[FaithWindow.GetFaith.MakeScope.GetList('followers')]"
+						visible = "[Isnt('faith_followers_sort')]"
+
+						item = {
+							button_text = {
+								blockoverride "sclick" {
+									using = char_click
+								}
+								shortcuts_list = {
+								}
+								blockoverride "num" {}
+								datacontext = "[Scope.GetCharacter]"
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "[Character.GetFirstNameNoTooltip]"
 									}
-									datacontext = "[Scope.GetCharacter]"
-									blockoverride "width" {
-										max_width = 690
+
+									text_single = {
+										margin_right = -3
+										visible = "[Character.HasLandedTitles]"
+										raw_text = "of [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]"
 									}
-									blockoverride "extra" {
+								}
+								blockoverride "extra" {
+									, = {}
+									flowcontainer = {
+										ignoreinvisible = yes
+										spacing = 3
+										visible = "[GetPlayer.MakeScope.Var('faith_followers_sort').IsSet]"
+
 										text_single = {
-											raw_text = "[Character.GetRelationToString(GetPlayer)]."
+											visible = "[EqualTo_string(GetPlayer.MakeScope.Var('faith_followers_sort').GetFlagName, 'piety')]"
+											raw_text = "[Character.GetPiety] piety."
+										}
+										text_single = {
+											visible = "[EqualTo_string(GetPlayer.MakeScope.Var('faith_followers_sort').GetFlagName, 'devotion')]"
+											raw_text = "[GetPietyLevelName(Character.GetPietyLevel)]."
+										}
+										text_single = {
+											visible = "[EqualTo_string(GetPlayer.MakeScope.Var('faith_followers_sort').GetFlagName, 'strength')]"
+											raw_text = "[Character.GetMilitaryStrengthText] men,"
+										}
+										text_single = {
+											visible = "[EqualTo_string(GetPlayer.MakeScope.Var('faith_followers_sort').GetFlagName, 'sins')]"
+											raw_text = "[Character.MakeScope.ScriptValue('num_of_sins')] sins,"
+										}
+										text_single = {
+											visible = "[EqualTo_string(GetPlayer.MakeScope.Var('faith_followers_sort').GetFlagName, 'virtues')]"
+											raw_text = "[Character.MakeScope.ScriptValue('num_of_virtues')] virtues,"
+										}
+										text_single = {
+											raw_text = "[Character.RealmSize] counties,"
 										}
 									}
+									# text_single = {
+									# 	raw_text = "[Character.GetTitleAsNameNoTooltip]"
+									# }
+
+
+									text_single = {
+										visible = "[Not(ObjectsEqual(Province.Self, MyCapital))]"
+										datacontext = "[Character.GetCurrentLocation]"
+										raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+									}
+								}
+							}
+						}
+					}
+				}
+
+				# counties
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Has('faith_view_tabs', 'counties')]"
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
+						layoutpolicy_horizontal = expanding
+
+						button_text = {
+							shortcut = army_split_half
+							onclick = "[GetScriptedGui('faith_counties_filter').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+							onclick = "[GetScriptedGui('faith_counties_ocr').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope ).End )]"
+							blockoverride "extra" {
+								text_single = {
+									raw_text = "[GetDataModelSize(Faith.MakeScope.GetList('faith_counties'))] counties[AddTextIf(GetPlayer.MakeScope.Var('faith_counties_filter').IsSet, ' held by non-believers')]."
+								}
+								text_single = {
+									raw_text = "Show [Select_CString(GetPlayer.MakeScope.Var('faith_counties_filter').IsSet, 'all', 'held by non-believers')] F,"
+								}
+							}
+						}
+
+						button_text = {
+							onclick = "[GetScriptedGui('faith_counties_ocr').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope ).End )]"
+							shortcut = map_mode_18
+							blockoverride "text" {
+								raw_text = "Refresh, Control R."
+							}
+						}
+					}
+
+					fixedgridbox = {
+						layoutpolicy_horizontal = expanding
+						addrow = 20
+						addcolumn = 690
+						datamodel = "[Faith.MakeScope.GetList('faith_counties')]"
+
+						item = {
+							button_county_ocr = {
+								shortcuts_list = {
+									blockoverride "click" {
+										using = prov_click
+									}
+								}
+								blockoverride "num" {}
+								blockoverride "extra" {
+									text_single = {
+										# visible = "[GetPlayer.MakeScope.Var('faith_counties_filter').IsSet]"
+										visible = "[Not(ObjectsEqual(Faith.Self, Title.GetHolder.GetFaith))]"
+										raw_text = "Holder is [Title.GetHolder.GetFaith.GetAdjectiveNoTooltip]."
+									}
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Has('faith_view_tabs', 'counties of other faiths')]"
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = map_mode_18
+
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(Faith.MakeScope.GetList('wrong_counties'))] counties. refresh, Control R."
+						}
+					}
+
+					fixedgridbox = {
+						layoutpolicy_horizontal = expanding
+						addrow = 20
+						addcolumn = 600
+						datamodel = "[Faith.MakeScope.GetList('wrong_counties')]"
+
+						item = {
+							button_county_ocr = {
+								blockoverride "num" {}
+								shortcuts_list = {}
+								blockoverride "faith" {}
+								blockoverride "sclick" {
+									using = prov_click
+								}
+							}
+						}
+					}
+				}
+
+				# adjacent
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					visible = "[Has('faith_view_tabs', 'adjacent faiths')]"
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = map_mode_18
+						onclick = "[GetScriptedGui('adjacent_faiths_ocr').Execute( GuiScope.SetRoot( Faith.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(Faith.MakeScope.GetList('adjacent_faiths'))] faiths, Refresh Control R."
+						}
+					}
+
+					fixedgridbox = {
+						layoutpolicy_horizontal = expanding
+						addrow = 20
+						addcolumn = 690
+						datamodel = "[FaithWindow.GetFaith.MakeScope.GetList('adjacent_faiths')]"
+
+						item = {
+							button_text = {
+								datacontext = "[Scope.Faith]"
+								datacontext = "[Scope.Var('closest_county').Title.GetCountyData.GetCapital]"
+								blockoverride "sclick" {
+									onclick = "[OpenGameViewData( 'faith', Faith.GetID )]"
+									onclick = "[Clear('faith_view_tabs')]"
+								}
+								shortcuts_list = {}
+								blockoverride "num" {}
+								blockoverride "text" {
+									raw_text = "[Faith.GetNameNoTooltip],"
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = "[Faith.GetReligion.GetNameNoTooltip],"
+									}
+									text_single = {
+										raw_text = "[Faith.GetNumberOfCountiesOfFaith] counties,"
+									}
+									text_distance_capital = {}
 								}
 							}
 						}
@@ -1023,29 +1394,26 @@ window = {
 
 	window_faith_vanilla = {}
 
-	window_faith_patron_tab = { } # AGOT Added
+	window_faith_patron_tab = {} # AGOT Added
 
 }
 
 ### RELIGION VIEW
 window = {
 	name = "religion_window"
+	using = base_ocr_window
 	size = { 700 100% }
 	position = { 0 0 }
 	datacontext = "[ReligionWindow.GetReligion]"
 	layer = top
 
-	using = Window_Movable
-
 	state = {
 		name = _show
-		using = Animation_FadeIn_Quick
 		using = Sound_WindowShow_Standard
 	}
 
 	state = {
 		name = _hide
-		using = Animation_FadeOut_Quick
 		using = Sound_WindowHide_Standard
 	}
 
@@ -1054,39 +1422,100 @@ window = {
 		inherit_visibility = no
 	}
 
-	vbox = {
-		layoutpolicy_horizontal = expanding
-		layoutpolicy_vertical = expanding
+	window_ocr = {
+		blockoverride "show_window" {
+		}
+		blockoverride "ocr_header" {
 
-		vbox = {
-			margin_left = 10
-			layoutpolicy_horizontal = expanding
-			layoutpolicy_vertical = expanding
+			button = {
+				using = close_window_ocr
+				onclick = "[ReligionWindow.Close]"
+			}
 
-			using = Window_Background_Subwindow
-
-			header_pattern = {
+			hbox = {
 				layoutpolicy_horizontal = expanding
-				size = { 0 22 }
 
-				blockoverride "header_text"
-				{
-					# text = "RELIGION_WINDOW_TITLE"
-				}
+				# text_single = {
+				# 	raw_text = "[Faith.GetNameNoTooltip],"
+				# }
 
 				text_single = {
 					raw_text = "[GetDataModelSize(ReligionWindow.GetFaiths)] [AddTextIf(ReligionWindow.ShowOnlyReligionFaiths, ReligionWindow.GetReligion.GetAdjectiveNoTooltip)][AddTextIf(ReligionWindow.ShowOnlyReligionFaiths, ' ')]faiths."
 				}
 
-				blockoverride "button_close"
-				{
+				expand = {}
+			}
+
+			hbox = {
+				# alpha = 0
+				visible = no
+				layoutpolicy_horizontal = expanding
+				name = "tabs"
+
+				text_single = {
+					raw_text = "Menus:"
+				}
+
+				button_text = {
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "1,"
+						}
+					}
+					blockoverride "text" {
+						raw_text = "FAITH_BELIEFS"
+					}
+					blockoverride "dot" {}
+					onclick = "[Set('faith_view_tabs', 'beliefs')]"
+					onclick = "[ReligionWindow.Close]"
+					shortcut = "speed_1"
+				}
+
+				button_text = {
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "2,"
+						}
+					}
+					blockoverride "text" {
+						raw_text = "FAITH_HOLY_SITES"
+					}
+					blockoverride "dot" {}
+					onclick = "[GetVariableSystem.Set( 'faith_view_tabs', 'holy sites' )]"
+					onclick = "[ReligionWindow.Close]"
+					shortcut = "speed_2"
+				}
+
+				# button_text = {
+				# 	blockoverride "pre" {
+				# 		text_single = {
+				# 			raw_text = "3,"
+				# 		}
+				# 	}
+				# 	blockoverride "text" {
+				# 		raw_text = "Other faiths."
+				# 	}
+				# 	shortcut = "speed_3"
+				# 	onclick = "[ReligionWindow.Close]"
+				# }
+
+				button_text = {
+					blockoverride "pre" {
+						text_single = {
+							raw_text = "4,"
+						}
+					}
+					blockoverride "text" {
+						raw_text = "Followers."
+					}
+					shortcut = "speed_4"
+					onclick = "[Set('faith_view_tabs', 'followers')]"
 					onclick = "[ReligionWindow.Close]"
 				}
 
-				blockoverride "button_back"
-				{
-					visible = no
-				}
+				agot_patron_tab_button = { }
+
+				expand = {}
 			}
 
 			vbox = {
@@ -1097,9 +1526,9 @@ window = {
 				hbox = {
 					layoutpolicy_horizontal = expanding
 					button_text = {
-					    blockoverride "text" {
+						blockoverride "text" {
 							raw_text = "[Select_CString(ReligionWindow.ShowOnlyReligionFaiths, 'Show all existing faiths', 'Show only fiaths of this religion')]."
-					    }
+						}
 						onclick = "[ReligionWindow.OnShowOnlyReligionFaiths]"
 					}
 
@@ -1130,120 +1559,119 @@ window = {
 				}
 			}
 
-			scrollbox = {
-				name = "faiths_scroll_area"
+		}
+		blockoverride "ocr_content" {
+			vbox = {
+				datamodel = "[ReligionWindow.GetFaiths]"
 				layoutpolicy_horizontal = expanding
-				layoutpolicy_vertical = expanding
 
-				blockoverride "scrollbox_content"
-				{
-					vbox = {
-						datamodel = "[ReligionWindow.GetFaiths]"
+				item = {
+					button_standard = {
+						name = "show_faith_info"
 						layoutpolicy_horizontal = expanding
+						size = { 0 20 }
 
-						item = {
-							button_standard = {
-								name = "show_faith_info"
+						shortcuts_list = {
+							blockoverride "click" {
+								onclick = "[OpenGameViewData( 'faith', Faith.GetID )]"
+								onclick = "[ReligionWindow.Close]"
+							}
+						}
+						state = {
+							name = _mouse_click
+							on_finish = "[OpenGameViewData( 'faith', Faith.GetID )]"
+							on_finish = "[ReligionWindow.Close]"
+						}
+
+						background = {
+							visible = "[Faith.IsSelected]"
+							using = Background_Area
+						}
+
+						vbox = {
+							layoutpolicy_horizontal = expanding
+							spacing = -2
+							resizeparent =yes
+
+							hbox = {
 								layoutpolicy_horizontal = expanding
-								size = { 0 20 }
-								onclick = "[PdxGuiTriggerAllAnimations('faith_view_refresh')]"
+								layoutpolicy_vertical = expanding
 
-								state = {
-									name = _mouse_click
-									on_finish = "[OpenGameViewData( 'faith', Faith.GetID )]"
-									on_finish = "[ReligionWindow.Close]"
+								text_single = {
+									raw_text = "[IndexNumber], "
 								}
 
-								background = {
-									visible = "[Faith.IsSelected]"
-									using = Background_Area
+								text_single = {
+									name = "faith_name"
+									raw_text = "FAITH_COOLTIP_GETNAME"
+									max_width = 300
 								}
 
-								vbox = {
+								dot = {}
+
+								hbox = {
+									visible = "[Not(ReligionWindow.ShowOnlyReligionFaiths)]"
+
+									space = { }
+
+									text_single = {
+										name = "religion_faith_name"
+										text = "FAITH_RELIGION"
+										max_width = 300
+									}
+
+									dot = { }
+								}
+
+								hbox = {
+									visible = "[GreaterThan_int32(Faith.GetNumberOfCountiesOfFaith, '(int32)0')]"
+									space = { }
+
+									text_single = {
+										name = "fervor"
+										text = "FAITH_WINDOW_FERVOR"
+									}
+								}
+
+								hbox = {
 									layoutpolicy_horizontal = expanding
-									spacing = -2
-									resizeparent =yes
+									visible = "[EqualTo_int32(Faith.GetNumberOfCountiesOfFaith, '(int32)0')]"
+									spacing = 3
 
-									hbox = {
-										layoutpolicy_horizontal = expanding
-										layoutpolicy_vertical = expanding
-
-										text_single = {
-											name = "faith_name"
-											raw_text = "FAITH_COOLTIP_GETNAME"
-											max_width = 300
-										}
-
-										dot = {}
-
-										hbox = {
-											visible = "[Not(ReligionWindow.ShowOnlyReligionFaiths)]"
-
-											space = { }
-
-											text_single = {
-												name = "religion_faith_name"
-												text = "FAITH_RELIGION"
-												max_width = 300
-											}
-
-											dot = { }
-										}
-
-										hbox = {
-											visible = "[GreaterThan_int32(Faith.GetNumberOfCountiesOfFaith, '(int32)0')]"
-											space = { }
-
-											text_single = {
-												name = "fervor"
-												text = "FAITH_WINDOW_FERVOR"
-											}
-
-											dot = { }
-										}
-
-										hbox = {
-											layoutpolicy_horizontal = expanding
-											visible = "[EqualTo_int32(Faith.GetNumberOfCountiesOfFaith, '(int32)0')]"
-											spacing = 3
-
-											text_single = {
-												name = "counties"
-												raw_text = " [Faith.GetNumberOfCountiesOfFaith] counties,"
-											}
-
-
-											text_single = {
-												raw_text = "[GuiScope.SetRoot(Faith.MakeScope).ScriptValue('faith_followers')] total followers."
-											}
-
-											expand = { }
-										}
-
-										expand = { }
+									text_single = {
+										name = "counties"
+										raw_text = " [Faith.GetNumberOfCountiesOfFaith] counties,"
 									}
 
-									hbox = {
-										layoutpolicy_horizontal = expanding
-										spacing = 3
-										visible = "[GreaterThan_int32(Faith.GetNumberOfCountiesOfFaith, '(int32)0')]"
-
-										text_single = {
-											name = "counties"
-											raw_text = "[Faith.GetNumberOfCountiesOfFaith] counties,"
-										}
-
-										text_single = {
-											raw_text = "[GuiScope.SetRoot(Faith.MakeScope).ScriptValue('faith_rulers')] rulers."
-											visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(Faith.MakeScope).ScriptValue('faith_rulers'), '(CFixedPoint)0')]"
-										}
-
-										text_single = {
-											raw_text = "[GuiScope.SetRoot(Faith.MakeScope).ScriptValue('faith_followers')] total followers."
-										}
-										expand = { }
+									text_single = {
+										raw_text = "[GuiScope.SetRoot(Faith.MakeScope).ScriptValue('faith_followers')] total followers."
 									}
+
+									expand = { }
 								}
+
+								expand = { }
+							}
+
+							hbox = {
+								layoutpolicy_horizontal = expanding
+								spacing = 3
+								visible = "[GreaterThan_int32(Faith.GetNumberOfCountiesOfFaith, '(int32)0')]"
+
+								text_single = {
+									name = "counties"
+									raw_text = "[Faith.GetNumberOfCountiesOfFaith] counties,"
+								}
+
+								text_single = {
+									raw_text = "[GuiScope.SetRoot(Faith.MakeScope).ScriptValue('faith_rulers')] rulers."
+									visible = "[GreaterThan_CFixedPoint(GuiScope.SetRoot(Faith.MakeScope).ScriptValue('faith_rulers'), '(CFixedPoint)0')]"
+								}
+
+								text_single = {
+									raw_text = "[GuiScope.SetRoot(Faith.MakeScope).ScriptValue('faith_followers')] total followers."
+								}
+								expand = { }
 							}
 						}
 					}
@@ -1282,20 +1710,31 @@ types OCR {
 		direction = vertical
 		ignoreinvisible = yes
 		name = "doctrine_name"
-		text_single = {
-			raw_text = "[FaithDoctrine.GetNameNoTooltip( Faith.Self )]."
-			visible = "[Not(GetVariableSystem.Exists('tenet_desc'))]"
+		flowcontainer = {
+			ignoreinvisible = yes
+			spacing = 3
+
+			text_single = {
+				block "num" {
+					visible = no
+				}
+				raw_text = "[IndexNumber],"
+			}
+			text_single = {
+				raw_text = "[FaithDoctrine.GetNameNoTooltip( Faith.Self )]."
+			}
+			visible = "[Not(Has('doctrine', FaithDoctrine.GetNameNoTooltip( Faith.Self )))]"
 		}
 
 		text_multi = {
-			visible = "[GetVariableSystem.Exists('tenet_desc')]"
 			max_width = 590
+			visible = "[Has('doctrine', FaithDoctrine.GetNameNoTooltip( Faith.Self ))]"
 			autoresize = yes
 			raw_text = "FAITH_WINDOW_DOCTRINE_TOOLTIP"
 		}
 	}
 
-	type widget_doctrine_item_ocr = hbox {
+	type widget_doctrine_item_ocr = vbox {
 		block "wdi_context"
 		{
 			datacontext = "[GuiFaithDoctrineItem.GetDoctrine]"
@@ -1307,25 +1746,190 @@ types OCR {
 		tooltip_offset = { 0 25 }
 		layoutpolicy_horizontal = expanding
 		spacing = 3
-		text_single = {
-			name = "doctrine_group_name"
-			block "text_title"
-			{
-				raw_text = "[FaithDoctrine.GetGroup.GetName( Faith.Self )]:"
+		visible = "[Or(Isnt('doctrine'), Has('doctrine', FaithDoctrine.GetGroup.GetName( Faith.Self )))]"
+
+		button_text = {
+			layoutpolicy_horizontal = expanding
+			alwaystransparent = "[IsGameViewOpen('faith_creation')]"
+			blockoverride "y" {
+				visible = "[Is('doctrines')]"
+			}
+			blockoverride "sclick" {
+				onclick = "[Set('doctrine', FaithDoctrine.GetGroup.GetName( Faith.Self ))]"
+			}
+			shortcuts_list = {
+				visible = "[Is('doctrines')]"
+			}
+			# enabled = "[Is('doctrines')]"
+			blockoverride "pre" {
+				text_single = {
+					name = "doctrine_group_name"
+					block "text_title"
+					{
+						raw_text = "[FaithDoctrine.GetGroup.GetName( Faith.Self )]:"
+					}
+				}
+
+				text_single = {
+					visible = "[Isnt('doctrine')]"
+					name = "faith_name"
+					block "text_desc"
+					{
+						raw_text = "[FaithDoctrine.GetNameNoTooltip( Faith.Self )]."
+					}
+				}
+
 			}
 		}
 
-		text_single = {
-			name = "faith_name"
-			block "text_desc"
-			{
-				raw_text = "[FaithDoctrine.GetNameNoTooltip( Faith.Self )]."
-			}
+		text_multi_wide = {
+			visible = "[Has('doctrine', FaithDoctrine.GetGroup.GetName( Faith.Self ))]"
+			raw_text = "FAITH_WINDOW_DOCTRINE_TOOLTIP"
 		}
-
-		block "extra" { }
 
 		expand = { }
+	}
+
+	type vbox_doctrine_group = vbox {
+		layoutpolicy_horizontal = expanding
+
+		button_text = {
+			visible = "[Isnt('doctrine')]"
+			block "set" {}
+			layoutpolicy_horizontal = expanding
+			blockoverride "text" {
+				raw_text = "[PdxGuiWidget.AccessParent.AccessParent.AccessParent.FindChild('items').CountVisibleChildren]"
+			}
+			blockoverride "extra" {
+				text_single = {
+					block "doctrine" {
+						raw_text = "FAITH_DOCTRINES_SPECIAL"
+					}
+				}
+				text_single = {
+					margin_left = -3
+					raw_text = ":"
+				}
+
+				text_single = {
+					visible = "[And(Is('doctrines'), Hasnt('doctrines', 'special'))]"
+					raw_text = "select for details."
+				}
+			}
+		}
+
+		vbox = {
+			name = "items"
+			block "datamodel" {
+				datamodel = "[FaithWindow.GetGroupingHelper( 'special' ).GetGrouping]"
+			}
+			layoutpolicy_horizontal = expanding
+
+			item = {
+				block "item" {
+					widget_doctrine_item_ocr = {}
+				}
+			}
+		}
+	}
+
+	type vbox_holy_sites_ocr = vbox {
+		layoutpolicy_horizontal = expanding
+		datamodel = "[FaithWindow.GetHolySites]"
+
+		item = {
+			vbox = {
+				datacontext = "[GuiHolySiteItem.GetHolySite]"
+				datacontext = "[HolySite.GetBarony]"
+				block "visible" {
+					visible = "[GuiHolySiteItem.IsHeldByFaith]"
+				}
+				layoutpolicy_horizontal = expanding
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						button_text = {
+							blockoverride "num" {}
+							blockoverride "sclick" {
+								using = prov_click
+							}
+							shortcuts_list = {}
+							blockoverride "text" {
+								raw_text = "[HolySite.GetName],"
+							}
+							datacontext = "[HolySite.GetBarony.GetProvince]"
+							blockoverride "extra" {
+								text_single = {
+									raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)],"
+								}
+								text_single = {
+									raw_text = "inside"
+								}
+								text_single = {
+									raw_text = "[HolySite.GetBarony.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+								}
+								text_single = {
+									raw_text = "[HolySite.GetBarony.GetHolder.GetTopLiege.GetMilitaryStrengthText] strong."
+								}
+							}
+						}
+
+						# text_single = {
+						# 	datacontext = "[FaithWindow.GetFaith]"
+						# 	visible = "[Not( GuiHolySiteItem.IsHeldByFaith )]"
+						# 	raw_text = "Not held by [Faith.GetNameNoTooltip]."
+						# }
+
+						expand = { }
+					}
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						visible = no# "[Not(GetVariableSystem.Exists('site_holders'))]"
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							datacontext = "[Title.GetHolder]"
+							tooltip = "FAITH_HOLY_SITE_HOLDER_TOOLTIP"
+							spacing = 3
+
+							char_name = {
+								datacontext = "[Title.GetHolder]"
+								blockoverride "bg" {
+								}
+
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "Holder: "
+									}
+								}
+							}
+
+							text_single = {
+								datacontext = "[Title.GetDeJureLiege.GetHolder.GetFaith]"
+								raw_text = "[Faith.GetAdjectiveNoTooltip]."
+							}
+							expand = { }
+						}
+					}
+				}
+
+				vbox = {
+					layoutpolicy_vertical = expanding
+
+					text_multi_wide = {
+						visible = "[Isnt('holy_site_effects')]"
+						layoutpolicy_horizontal = expanding
+						raw_text = "[AddTextIf(Not(GuiHolySiteItem.IsHeldByFaith), 'Inactive ')]Effects for [HolySite.GetEffectDesc( GuiHolySiteItem.GetFaith )]"
+					}
+				}
+			}
+		}
 	}
 }
 

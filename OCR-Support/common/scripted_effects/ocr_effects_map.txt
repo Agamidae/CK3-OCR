@@ -1,0 +1,754 @@
+﻿# removes variables from the current scope
+# $order$ is the ordered_ iterator
+# $faith$ is what we're checking adjacent counties for
+# basic one without areas
+map_extents_ocr = {
+  remove_extent_vars_ocr = yes
+  find_extents_ocr = { order = $order$ }
+  map_center_ocr = { order = $order$ }
+}
+
+# for characters
+map_extents_areas_ocr = {
+  map_extents_ocr = { order = $order$ }
+
+  map_faith_center_ocr = { list = $list$ }
+  map_areas_char_ocr = { list = $list$ }
+  dominant_terrain = yes
+}
+
+
+# for steppe regions
+# we run this on a county inside a region, prev is a region
+# regions can't hold variables, this is why the complication
+map_extents_regions_ocr = {
+  remove_extent_vars_ocr = yes
+
+  prev = {
+    find_extents_ocr = { order = $order$ }
+    map_center_ocr = { order = $order$ }
+  }
+}
+
+remove_extent_vars_ocr = {
+  save_scope_as = map
+  remove_variable = eastest
+  remove_variable = westest
+  remove_variable = northest
+  remove_variable = southest
+  remove_variable = center
+}
+
+# $order$
+find_extents_ocr = {
+  $order$ = {
+    order_by = title_province.var:pos_y
+    max = 1
+
+    scope:map = {
+      set_variable = {
+        name = northest
+        value = prev
+      }
+    }
+  }
+
+  $order$ = {
+    order_by = title_province.var:pos_x
+    max = 1
+
+    scope:map = {
+      set_variable = {
+        name = eastest
+        value = prev
+      }
+    }
+  }
+
+  $order$ = {
+    order_by = {
+      add = title_province.var:pos_x
+      multiply = -1
+    }
+    max = 1
+
+    scope:map = {
+      set_variable = {
+        name = westest
+        value = prev
+      }
+    }
+  }
+
+  $order$ = {
+    order_by = {
+      add = title_province.var:pos_y
+      multiply = -1
+    }
+    max = 1
+
+    scope:map = {
+      set_variable = {
+        name = southest
+        value = prev
+      }
+    }
+  }
+}
+
+###
+# for faiths and cultures
+# need to use a variable list, so can't substitute easily
+map_extents_faith_ocr = {
+  remove_extent_vars_ocr = yes
+
+  find_faith_extents_ocr = { list = $list$ }
+  map_faith_center_ocr = { list = $list$ }
+  map_areas_ocr = { faith = $faith$ list = $list$ }
+}
+
+# requires a variable list of counties, $list$
+find_faith_extents_ocr = {
+  ordered_in_list = {
+    variable = $list$
+    order_by = title_province.var:pos_y
+    max = 1
+
+    scope:map = {
+      set_variable = {
+        name = northest
+        value = prev
+      }
+    }
+  }
+
+  ordered_in_list = {
+    variable = $list$
+    order_by = title_province.var:pos_x
+    max = 1
+
+    scope:map = {
+      set_variable = {
+        name = eastest
+        value = prev
+      }
+    }
+  }
+
+  ordered_in_list = {
+    variable = $list$
+    order_by = {
+      add = title_province.var:pos_x
+      multiply = -1
+    }
+    max = 1
+
+    scope:map = {
+      set_variable = {
+        name = westest
+        value = prev
+      }
+    }
+  }
+
+  ordered_in_list = {
+    variable = $list$
+    order_by = {
+      add = title_province.var:pos_y
+      multiply = -1
+    }
+    max = 1
+
+    scope:map = {
+      set_variable = {
+        name = southest
+        value = prev
+      }
+    }
+  }
+}
+
+# requires a variable list of counties, $list$
+map_faith_center_ocr = {
+  # find central coordinate
+  set_local_variable = {
+    name = center_x
+    value = {
+      add = var:eastest.title_province.var:pos_x
+      subtract = var:westest.title_province.var:pos_x
+      divide = 2
+      add = var:westest.title_province.var:pos_x
+    }
+  }
+
+  set_local_variable = {
+    name = center_y
+    value = {
+      add = var:northest.title_province.var:pos_y
+      subtract = var:southest.title_province.var:pos_y
+      divide = 2
+      add = var:southest.title_province.var:pos_y
+    }
+  }
+
+  # find center, sets var center on root
+  ordered_in_list = {
+    variable = $list$
+    order_by = {
+      add = {
+        add = title_province.var:pos_x
+        subtract = local_var:center_x
+        save_temporary_value_as = temp
+        if = {
+          limit = { scope:temp < 0 }
+          multiply = -1
+        }
+      }
+      add = {
+        add = title_province.var:pos_y
+        subtract = local_var:center_y
+        save_temporary_value_as = temp
+        if = {
+          limit = { scope:temp < 0 }
+          multiply = -1
+        }
+      }
+      multiply = -1
+    }
+    max = 1
+
+    root = {
+      set_variable = {
+        name = center
+        value = prev
+      }
+    }
+  }
+}
+
+# same, but can use ordered_ iterator isntead of a variable list
+# $order$
+map_center_ocr = {
+  # find central coordinate
+  set_local_variable = {
+    name = center_x
+    value = {
+      add = scope:map.var:eastest.title_province.var:pos_x
+      subtract = scope:map.var:westest.title_province.var:pos_x
+      divide = 2
+      add = scope:map.var:westest.title_province.var:pos_x
+    }
+  }
+
+  set_local_variable = {
+    name = center_y
+    value = {
+      add = scope:map.var:northest.title_province.var:pos_y
+      subtract = scope:map.var:southest.title_province.var:pos_y
+      divide = 2
+      add = scope:map.var:southest.title_province.var:pos_y
+    }
+  }
+
+  # find center, sets var center on root
+  $order$ = {
+    order_by = {
+      add = {
+        add = title_province.var:pos_x
+        subtract = local_var:center_x
+        save_temporary_value_as = temp
+        if = {
+          limit = { scope:temp < 0 }
+          multiply = -1
+        }
+      }
+      add = {
+        add = title_province.var:pos_y
+        subtract = local_var:center_y
+        save_temporary_value_as = temp
+        if = {
+          limit = { scope:temp < 0 }
+          multiply = -1
+        }
+      }
+      multiply = -1
+    }
+    max = 1
+
+    scope:map = {
+      set_variable = {
+        name = center
+        value = prev
+      }
+    }
+  }
+}
+
+# requires a variable list of counties, $list$
+# uses root
+# $faith$
+map_areas_ocr = {
+  if = {
+    limit = {
+      always = yes
+    }
+    dominant_terrain = yes
+
+    every_in_list = {
+      variable = area_centers
+      clear_variable_list = blob
+    }
+    clear_variable_list = area_centers
+
+    var:center = {
+      add_to_list = counties
+      add_to_list = area_centers
+      every_neighboring_county = {
+        limit = {
+          $faith$ = root
+        }
+        add_to_list = ring
+        add_to_list = counties
+      }
+      while = {
+        limit = {
+          any_in_list = {
+            list = ring
+            any_neighboring_county = {
+              $faith$ = root
+              NOT = { is_in_list = counties }
+            }
+          }
+        }
+        every_in_list = {
+          list = ring
+          every_neighboring_county = {
+            limit = {
+              $faith$ = root
+              NOT = { is_in_list = counties }
+            }
+            add_to_list = ring
+            add_to_list = counties
+          }
+          remove_from_list = ring
+        }
+      }
+    }
+    every_in_list = {
+      list = counties
+
+      root.var:center = {
+        add_to_variable_list = {
+          name = blob
+          target = prev
+        }
+      }
+    }
+
+    every_in_list = {
+      list = ring
+      remove_from_list = ring
+    }
+
+    while = {
+      limit = {
+        any_in_list = {
+          variable = $list$
+          NOT = { is_in_list = counties }
+        }
+      }
+
+      random_in_list = {
+        variable = $list$
+        limit = { NOT = { is_in_list = counties } }
+
+        add_to_list = counties
+        add_to_list = area_centers
+
+        save_scope_as = center
+
+        add_to_variable_list = {
+          name = blob
+          target = this
+        }
+
+        every_neighboring_county = {
+          limit = {
+            $faith$ = root
+          }
+          add_to_list = ring
+          add_to_list = counties
+
+          scope:center = {
+            add_to_variable_list = {
+              name = blob
+              target = prev
+            }
+          }
+        }
+
+        while = {
+          limit = {
+            any_in_list = {
+              list = ring
+              any_neighboring_county = {
+                $faith$ = root
+                NOT = { is_in_list = counties }
+              }
+            }
+          }
+          every_in_list = {
+            list = ring
+            every_neighboring_county = {
+              limit = {
+                $faith$ = root
+                NOT = { is_in_list = counties }
+              }
+              add_to_list = ring
+              add_to_list = counties
+
+              scope:center = {
+                add_to_variable_list = {
+                  name = blob
+                  target = prev
+                }
+              }
+            }
+            remove_from_list = ring
+          }
+        }
+
+        every_in_list = {
+          list = ring
+          remove_from_list = ring
+        }
+      }
+    }
+
+    ordered_in_list = {
+      list = area_centers
+      order_by = {
+        # value = "title_province.squared_distance(scope:player.capital_province)"
+        # multiply = -1
+        every_in_list = {
+          variable = blob
+          add = 1
+        }
+      }
+      min = 0
+      add_prev_list = { name = area_centers }
+    }
+  }
+}
+
+map_areas_char_ocr = {
+  if = {
+    limit = {
+      always = yes
+    }
+    every_in_list = {
+      variable = area_centers
+      clear_variable_list = blob
+    }
+    clear_variable_list = area_centers
+
+    var:center = {
+      add_to_list = counties
+      add_to_list = area_centers
+      every_neighboring_county = {
+        limit = {
+          holder = {
+            target_is_liege_or_above = root
+          }
+        }
+        add_to_list = ring
+        add_to_list = counties
+      }
+      while = {
+        limit = {
+          any_in_list = {
+            list = ring
+            any_neighboring_county = {
+              holder = {
+                target_is_liege_or_above = root
+              }
+              NOT = { is_in_list = counties }
+            }
+          }
+        }
+        every_in_list = {
+          list = ring
+          every_neighboring_county = {
+            limit = {
+              holder = {
+                target_is_liege_or_above = root
+              }
+              NOT = { is_in_list = counties }
+            }
+            add_to_list = ring
+            add_to_list = counties
+          }
+          remove_from_list = ring
+        }
+      }
+    }
+    every_in_list = {
+      list = counties
+
+      root.var:center = {
+        add_to_variable_list = {
+          name = blob
+          target = prev
+        }
+      }
+    }
+
+    every_in_list = {
+      list = ring
+      remove_from_list = ring
+    }
+
+    while = {
+      limit = {
+        any_in_list = {
+          variable = $list$
+          NOT = { is_in_list = counties }
+        }
+      }
+
+      random_in_list = {
+        variable = $list$
+        limit = { NOT = { is_in_list = counties } }
+
+        add_to_list = counties
+        add_to_list = area_centers
+
+        save_scope_as = center
+
+        add_to_variable_list = {
+          name = blob
+          target = this
+        }
+
+        every_neighboring_county = {
+          limit = {
+            holder = {
+              target_is_liege_or_above = root
+            }
+          }
+          add_to_list = ring
+          add_to_list = counties
+
+          scope:center = {
+            add_to_variable_list = {
+              name = blob
+              target = prev
+            }
+          }
+        }
+
+        while = {
+          limit = {
+            any_in_list = {
+              list = ring
+              any_neighboring_county = {
+                holder = {
+                  target_is_liege_or_above = root
+                }
+                NOT = { is_in_list = counties }
+              }
+            }
+          }
+          every_in_list = {
+            list = ring
+            every_neighboring_county = {
+              limit = {
+                holder = {
+                  target_is_liege_or_above = root
+                }
+                NOT = { is_in_list = counties }
+              }
+              add_to_list = ring
+              add_to_list = counties
+
+              scope:center = {
+                add_to_variable_list = {
+                  name = blob
+                  target = prev
+                }
+              }
+            }
+            remove_from_list = ring
+          }
+        }
+
+        every_in_list = {
+          list = ring
+          remove_from_list = ring
+        }
+      }
+    }
+
+    ordered_in_list = {
+      list = area_centers
+      order_by = {
+        # value = "title_province.squared_distance(scope:player.capital_province)"
+        # multiply = -1
+        every_in_list = {
+          variable = blob
+          add = 1
+        }
+      }
+      min = 0
+      add_prev_list = { name = area_centers }
+    }
+  }
+}
+
+total_holdings_ocr = {
+  if = {
+    limit = {	has_variable_list = vassal_counties	}
+    every_in_list = {
+      variable = vassal_counties
+      every_county_province = {
+        limit = {
+          has_holding = yes
+          has_holding_type = $type$
+        }
+        add = 1
+      }
+    }
+  }
+  every_in_list = {
+    variable = counties
+    every_county_province = {
+      limit = {
+        has_holding = yes
+        has_holding_type = $type$
+      }
+      add = 1
+    }
+  }
+}
+
+add_terrains_to_list = {
+  random_in_list = {
+    list = provinces
+    limit = { terrain = $terrain$ }
+    add_to_list = terrains
+    set_variable = {
+      name = terrain_in_area
+      value = 0
+    }
+  }
+}
+
+count_terrain = {
+  random_in_list = {
+    list = terrains
+    limit = { terrain = $terrain$ }
+
+    change_variable = {
+      name = terrain_in_area
+      add = 1
+    }
+  }
+}
+
+dominant_terrain = {
+  every_in_list = {
+    variable = terrains
+    remove_variable = terrain_in_area
+    remove_variable = terrain_provinces
+    remove_variable = terrain_percentage
+  }
+  clear_variable_list = terrains
+
+  if = {
+    limit = {
+      has_variable_list = vassal_counties
+    }
+    every_in_list = {
+      variable = vassal_counties
+      every_county_province = {
+        add_to_list = provinces
+      }
+    }
+  }
+  set_local_variable = {
+    name = provinces
+    value = 0
+  }
+  every_in_list = {
+    variable = counties
+    every_county_province = {
+      add_to_list = provinces
+    }
+  }
+
+  add_terrains_to_list = { terrain = plains }
+  add_terrains_to_list = { terrain = sea }
+  add_terrains_to_list = { terrain = coastal_sea }
+  add_terrains_to_list = { terrain = farmlands }
+  add_terrains_to_list = { terrain = hills }
+  add_terrains_to_list = { terrain = mountains }
+  add_terrains_to_list = { terrain = desert }
+  add_terrains_to_list = { terrain = desert_mountains }
+  add_terrains_to_list = { terrain = oasis }
+  add_terrains_to_list = { terrain = jungle }
+  add_terrains_to_list = { terrain = forest }
+  add_terrains_to_list = { terrain = taiga }
+  add_terrains_to_list = { terrain = wetlands }
+  add_terrains_to_list = { terrain = steppe }
+  add_terrains_to_list = { terrain = floodplains }
+  add_terrains_to_list = { terrain = drylands }
+
+  every_in_list = {
+    list = provinces
+    change_local_variable = {
+      name = provinces
+      add = 1
+    }
+    switch = {
+      trigger = terrain
+      plains = { count_terrain = { terrain = plains } }
+      sea = { count_terrain = { terrain = sea } }
+      coastal_sea = { count_terrain = { terrain = coastal_sea } }
+      farmlands = { count_terrain = { terrain = farmlands } }
+      hills = { count_terrain = { terrain = hills } }
+      mountains = { count_terrain = { terrain = mountains } }
+      desert = { count_terrain = { terrain = desert } }
+      desert_mountains = { count_terrain = { terrain = desert_mountains } }
+      oasis = { count_terrain = { terrain = oasis } }
+      jungle = { count_terrain = { terrain = jungle } }
+      forest = { count_terrain = { terrain = forest } }
+      taiga = { count_terrain = { terrain = taiga } }
+      wetlands = { count_terrain = { terrain = wetlands } }
+      steppe = { count_terrain = { terrain = steppe } }
+      floodplains = { count_terrain = { terrain = floodplains } }
+      drylands = { count_terrain = { terrain = drylands } }
+    }
+  }
+
+
+  ordered_in_list = {
+    list = terrains
+    min = 0
+    order_by = var:terrain_in_area
+
+    add_root_list = { name = terrains }
+
+    set_variable = {
+      name = terrain_provinces
+      value = local_var:provinces
+    }
+
+    set_variable = {
+      name = terrain_percentage
+      value = {
+        add = var:terrain_in_area
+        divide = var:terrain_provinces
+      }
+    }
+  }
+}

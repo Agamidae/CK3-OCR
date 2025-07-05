@@ -1,0 +1,1134 @@
+types VANILLA {
+	type window_the_great_steppe = window {
+		using = vanilla
+		parentanchor = top|right
+		layer = windows_layer
+		allow_outside = yes
+		movable = no
+
+		using = Window_Size_MainTab
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+			using = Sound_WindowShow_Standard
+			using = Window_Position_MainTab
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+			using = Sound_WindowHide_Standard
+			using = Window_Position_MainTab_Hide
+		}
+
+		margin_widget = {
+			size = { 100% 100% }
+			margin = { 0 30 }
+			margin_right = 13
+
+			widget = {
+				size = { 100% 100% }
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					using = Window_Margins
+
+					using = Animation_Tab_Switch
+
+					header_pattern = {
+						layoutpolicy_horizontal = expanding
+
+						blockoverride "header_text"
+						{
+							text = "THE_GREAT_STEPPE_WINDOW_HEADER"
+							datacontext = "[SteppeWindow.GetSituation]"
+						}
+
+						blockoverride "button_close"
+						{
+							onclick = "[SteppeWindow.Close]"
+						}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						margin = { 5 5 }
+
+						background = {
+							using = Background_Area_Dark
+						}
+
+						### SUB_REGION CARDS ###
+						datamodel = [Situation.GetSubRegions]
+
+						item = {
+							vbox_season_tab = {}
+						}
+					}
+
+					vbox_season_contents = {
+						datacontext = "[SteppeWindow.GetSelectedSubRegion]"
+					}
+
+					vbox_nomads_of_situation = {}
+
+					expand = {}
+				}
+			}
+		}
+
+		situation_mini_map_mode = {}
+
+		window_herd_leaderboard = {
+			datacontext = "[SteppeWindow.GetCharacterList]"
+			visible = "[HerdLeaderboard.IsVisible]"
+		}
+	}
+}
+
+types SituationTypes
+{
+	type vbox_season_tab = vbox {
+		layoutpolicy_horizontal = expanding
+
+		spacer = {
+			visible = "[SteppeWindow.IsSubRegionSelected( SituationSubRegion.Self )]"
+			size = { 90 0 }
+
+			state = {
+				name = _show
+				size = { 90 0 }
+				duration = 0.3
+			}
+
+			state = {
+				name = _hide
+				size = { 0 0 }
+				duration = 0.3
+			}
+		}
+
+		### Note: To change height just replace all 228 below
+		button = {
+			layoutpolicy_horizontal = expanding
+			size = { 0 228 }
+			onclick = "[PdxGuiTriggerAllAnimations( 'subregion_refresh' )]"
+			scissor = yes
+
+			state = {
+				name = _mouse_click
+				on_finish = "[SteppeWindow.SelectSubRegion( SituationSubRegion.Self )]"
+			}
+
+			highlight_icon = {
+				parentanchor = center
+				size = { 248 228 }
+				texture = "[SituationSubRegion.GetCurrentPhase.GetType.GetIllustration]"
+				using = Mask_Rough_Edges
+
+				modify_texture = {
+					texture = "gfx/interface/component_masks/mask_culture_era_tab.dds"
+					blend_mode = alphamultiply
+					alpha = 0.9
+				}
+			}
+
+			highlight_icon = {
+				visible = "[Not( SteppeWindow.IsSubRegionSelected( SituationSubRegion.Self ) )]"
+				parentanchor = center
+				size = { 248 228 }
+				texture = "[SituationSubRegion.GetCurrentPhase.GetType.GetIllustration]"
+				tintcolor = { 0 0 0 0.5 }
+			}
+
+			### FRAYED EDGES ###
+			widget = {
+				parentanchor = left
+				size = { 6 228 }
+
+				background = {
+					using = Background_Area_Solid
+					spriteType = Corneredtiled
+					spriteborder = { 20 20 }
+					spriteborder_right = 11
+					margin = { 0 20 }
+					margin_left = 10
+				}
+			}
+
+			widget = {
+				parentanchor = right
+				size = { 6 228 }
+
+				background = {
+					using = Background_Area_Solid
+					mirror = horizontal
+					spriteType = Corneredtiled
+					spriteborder = { 20 20 }
+					spriteborder_right = 11
+					margin = { 0 20 }
+					margin_right = 10
+				}
+			}
+
+			### Name of SubRegion ###
+			text_single = {
+				parentanchor = top|hcenter
+				visible = "[SteppeWindow.IsSubRegionSelected( SituationSubRegion.Self )]"
+
+				state = {
+					name = _show
+					using = Animation_FadeIn_Standard
+				}
+
+				state = {
+					name = _hide
+					using = Animation_FadeOut_Standard
+				}
+
+				text = "THE_GREAT_STEPPE_WINDOW_SUB_REGION_NAME"
+			}
+
+			text_label_center = {
+				visible = "[And( ObjectsEqual( SituationSubRegion.Self, SteppeWindow.GetPlayerSubRegion.Self ), Not( SteppeWindow.IsSubRegionSelected( SituationSubRegion.Self ) ) )]"
+				parentanchor = bottom|hcenter
+				position = { 0 -8 }
+
+				text = "THE_GREAT_STEPPE_WINDOW_SEASON_REGION_HOME"
+				default_format = "#low"
+			}
+
+			text_label_center = {
+				visible = "[And( ObjectsEqual( SituationSubRegion.Self, SteppeWindow.GetPlayerSubRegion.Self ), SteppeWindow.IsSubRegionSelected( SituationSubRegion.Self ) )]"
+				parentanchor = bottom|hcenter
+				position = { 0 -8 }
+
+				text = "THE_GREAT_STEPPE_WINDOW_SEASON_REGION_HOME"
+				default_format = "#high"
+			}
+		}
+	}
+
+	type vbox_season_contents = vbox {
+		layoutpolicy_horizontal = expanding
+
+		state = {
+			name = "subregion_refresh"
+			using = Animation_Refresh_FadeOut
+		}
+		state = {
+			using = Animation_Refresh_FadeIn
+		}
+
+		### LOCATION INFO ###
+		hbox = {
+			margin = { 15 10 }
+			layoutpolicy_horizontal = expanding
+			layoutpolicy_vertical = expanding
+
+			vbox = {
+				layoutpolicy_vertical = expanding
+
+				text_single = {
+					margin_bottom = 4
+					layoutpolicy_horizontal = expanding
+					max_width = 280
+					min_width = 280
+
+					text = "[SteppeWindow.GetSubRegionTitle]"
+					using = Font_Size_Medium
+					align = nobaseline
+				}
+
+				### LOCATION CURRENT PHASE & END ###
+				text_single = {
+					layoutpolicy_horizontal = expanding
+					max_width = 280
+					min_width = 280
+
+					text = "[SteppeWindow.GetSelectedRegionSeasonName]"
+					align = nobaseline
+				}
+
+				text_multi = {
+					layoutpolicy_horizontal = expanding
+					max_width = 280
+					min_width = 280
+
+					text = "[SteppeWindow.GetSelectedRegionSeasonEndDate]"
+					default_format = "#Weak"
+					align = nobaseline
+				}
+
+			}
+
+			expand = {}
+
+			### LOCATION EFFECTS & PREDICITON ###
+			vbox = {
+				name = "situations_header"
+				layoutpolicy_vertical = expanding
+
+				expand = {}
+
+				text_single = {
+					margin_bottom = 5
+					layoutpolicy_horizontal = expanding
+
+					text = "THE_GREAT_STEPPE_WINDOW_SEASON_EFFECTS"
+					align = nobaseline
+				}
+
+				fixedgridbox = {
+					name = "task_items"
+					datamodel = "[SteppeWindow.GetSeasonEffects( SteppeWindow.GetSelectedSubRegion.Self )]"
+
+					addcolumn = 50
+					addrow = 48
+					setitemsizefromcell = yes
+					datamodel_wrap = 6
+					maxhorizontalslots = 6
+					maxverticalslots = 2
+					flipdirection = yes
+
+					item = {
+						button_situation_phase_effect_item = {}
+					}
+				}
+			}
+		}
+
+		### ASTROLOGER CARD ###
+		vbox_court_astrologer_card = {}
+	}
+
+	type button_situation_phase_effect_item = icon {
+		datacontext = "[GetPlayer]"
+
+		icon = {
+			parentanchor = center
+			size = { 50 50 }
+			texture = "gfx/interface/icons/struggle_banners/icon_background_dark.dds"
+		}
+
+		proportional_icon = {
+			size = { 75% 75% }
+			position = { 0 0 }
+			parentanchor = center
+			alwaystransparent = yes
+			texture = "[SituationModifierNamedSet.GetIcon]"
+		}
+
+		tooltipwidget = {
+			using = situation_modifier_named_set_tooltip
+		}
+	}
+
+	type vbox_nomads_of_situation = vbox {
+		name = "gurkhan_steppe_window"
+		datacontext = "[SteppeWindow.GetGurkhan]"
+		visible = "[Character.IsValid]"
+		layoutpolicy_horizontal = expanding
+		allow_outside = yes
+
+		### NOMADS TOP HEADER ###
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			margin = { 15 15 }
+
+			background = {
+				using = Background_Area_Dark
+			}
+
+			background = {
+				using = GenericObjectCardHeaderBackground
+				using = Color_Blue
+			}
+
+			text_single = {
+				text = "THE_GREAT_STEPPE_WINDOW_NOMADS_HEADER"
+				align = nobaseline
+				default_format = "#high"
+				using = Font_Size_Medium
+			}
+
+			expand = {}
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+			margin = { 25 0 }
+
+			background =  {
+				texture = "gfx/interface/illustrations/event_story/mpo_steppe_region.dds"
+				fittype = centercrop
+				using = Mask_Rough_Edges
+				alpha = 0.15
+				margin_bottom = 40
+			}
+
+			### GURKHAN PORTRAIT ###
+			widget = {
+				size = { 220 250 }
+
+				tooltipwidget = {
+					container_character_tooltip = {}
+				}
+
+				blockoverride "portrait_button"
+				{
+					using = tooltip_ne
+				}
+
+				blockoverride "glow_visible"
+				{
+					visible = no
+				}
+
+				using = Character_Background
+
+				portrait_button = {
+					parentanchor = hcenter
+					position = { 0 -30 }
+					size = { 220 260 }
+
+					using = portrait_base
+
+					portrait_texture = "[Character.GetAnimatedPortrait( 'environment_hud', 'camera_torso', 'war_over_win', PdxGetWidgetScreenSize( PdxGuiWidget.Self ) )]"
+					background_texture = "gfx/portraits/portrait_transparent.dds"
+					effectname = "NoHighlight"
+					texture = "gfx/portraits/portrait_transparent.dds"
+					mask = "gfx/portraits/portrait_mask_body.dds"
+				}
+
+				portrait_status_icons = {
+					parentanchor = bottom|right
+					position = { -15 -105 }
+				}
+
+				coa_realm_small_crown = {
+					visible = "[Character.HasLandedTitles]"
+					parentanchor = bottom|left
+					position = { 10 -105 }
+				}
+
+				portrait_opinion = {
+					parentanchor = bottom|hcenter
+					position = { 10 -105 }
+				}
+
+				widget = {
+					parentanchor = bottom|hcenter
+					size = { 220 100 }
+
+					vbox = {
+						layoutpolicy_horizontal = expanding
+						parentanchor = center
+
+						background = {
+							using = Background_Area_Solid
+						}
+
+						hbox = {
+							layoutpolicy_horizontal = expanding
+							margin = { 15 5 }
+
+							background = {
+								using = Background_Area_Solid
+								margin = { 10 0 }
+							}
+
+							background = {
+								using = GenericObjectCardHeaderBackground
+								using = Color_Blue
+								margin = { 10 0 }
+							}
+
+							icon = {
+								size = { 40 50 }
+								texture = "gfx/interface/icons/icon_gurkhan.dds"
+							}
+
+							### GURKHAN TITLE & NAME ###
+							vbox = {
+								layoutpolicy_horizontal = expanding
+								layoutpolicy_vertical = expanding
+
+								margin = { 10 0 }
+
+								expand = {}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+
+									text = "[Character.GetShortUINameNotMeNoTooltip|U]"
+									align = nobaseline
+									max_width = 150
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+
+									text = "THE_GREAT_STEPPE_WINDOW_GURKHAN_SUBTITLE"
+									align = nobaseline
+									max_width = 150
+								}
+
+								expand = {}
+							}
+						}
+
+						vbox = {
+							margin_bottom = 5
+
+							### GURKHAN LOCATION ###
+							text_single = {
+								layoutpolicy_horizontal = expanding
+
+								text = "[SteppeWindow.GetGurkhanLocationDesc]"
+								align = nobaseline
+								default_format = "#Weak"
+								max_width = 210
+							}
+
+							### GURKHAN HERD ###
+							text_single = {
+								datacontext = "[SteppeWindow.GetGurkhan]"
+								layoutpolicy_horizontal = expanding
+
+								text = "THE_GREAT_STEPPE_WINDOW_CHARACTER_HERD"
+								align = nobaseline
+								default_format = "#Weak"
+								max_width = 210
+
+								tooltipwidget = {
+									herd_breakdown_hud_toolip = {
+										datacontext = "[Character.GetDomicile]"
+
+										blockoverride "herd_limit_breakdown"
+										{
+											datacontext = "[SteppeWindow.AccessHerdLimitBreakdown( Domicile.Self )]"
+										}
+										blockoverride "herd_change_breakdown"
+										{
+											datacontext = "[SteppeWindow.AccessHerdChangeBreakdown( Character.Self )]"
+										}
+										blockoverride "herd_conversion_breakdown"
+										{
+											datacontext = "[SteppeWindow.AccessHerdConversionBreakdown( Domicile.Self )]"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			expand = {}
+
+			vbox = {
+				layoutpolicy_vertical = expanding
+				spacing = 10
+
+				expand = {}
+
+				hbox = {
+					datacontext = "[SteppeWindow.GetCharacterList]"
+					layoutpolicy_horizontal = expanding
+					margin = { 0 10 }
+
+					fixedgridbox = {
+						datamodel = "[DataModelSkipFirst( DataModelFirst( CharacterSelectionList.GetList, '(int32)4' ), '(int32)1' )]"
+						visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+
+						addcolumn = 90
+						addrow = 115
+						datamodel_reuse_widgets = yes
+						flipdirection = yes
+
+						item = {
+							widget_nomad_character = {}
+						}
+					}
+				}
+
+				button_standard = {
+					size = { 200 40}
+					text = "THE_GREAT_STEPPE_WINDOW_HERD_LEADERBOARD_BUTTON"
+
+					onclick = "[HerdLeaderboard.Toggle]"
+
+					using = tooltip_ne
+				}
+
+				expand = {}
+			}
+		}
+	}
+
+	type vbox_court_astrologer_card = vbox {
+		datacontext = "[SteppeWindow.GetAstrologer]"
+		datacontext = "[CourtPosition.GetPositionType]"
+		layoutpolicy_horizontal = expanding
+
+		hbox = {
+			datacontext = "[CourtPosition.GetEmployee]"
+			layoutpolicy_horizontal = expanding
+
+			### ASTROLOGER INFO ###
+			vbox = {
+				name = "astrologer_header_steppe_region"
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+						margin = { 15 10 }
+						spacing = 10
+
+						background = {
+							using = Background_Area_Dark
+						}
+
+						background = {
+							using = GenericObjectCardHeaderBackground
+							using = Color_Blue
+						}
+
+						icon = {
+							size = { 35 35 }
+							texture = "gfx/interface/icons/court_position_types/court_astrologer_court_position.dds"
+						}
+
+						### ASTROLOGER NAME ###
+						vbox = {
+							text_single = {
+								visible = "[Character.IsValid]"
+								layoutpolicy_horizontal = expanding
+
+								text = "[Character.GetUINameNoTooltipNoFormat]"
+								align = nobaseline
+								max_width = 300
+							}
+
+							text_single = {
+								layoutpolicy_horizontal = expanding
+
+								text = "THE_GREAT_STEPPE_WINDOW_ASTROLOGER"
+								align = nobaseline
+								default_format = "#high"
+								max_width = 300
+								using = Font_Size_Medium
+							}
+						}
+
+						expand = {}
+
+						### ASTROLOGER COURT POSITION TYPE ###
+						vbox = {
+							visible = "[Character.IsValid]"
+
+							### Aptitude
+							text_single = {
+								layoutpolicy_horizontal = expanding
+
+								text = "COURT_POSITION_aptitude_description_position"
+								align = right|nobaseline
+								max_width = 180
+
+								tooltipwidget = {
+									court_position_aptitude_breakdown_tooltip = {
+										datacontext = "[CourtPosition.GetAptitudeTooltip]"
+
+										blockoverride "header_text" {
+											text = "COURT_POSITION_aptitude_description_position"
+										}
+
+										blockoverride "modifier_list" {
+											text = "[CourtPosition.GetEmployerBonuses]"
+										}
+									}
+								}
+							}
+
+							### ASTROLOGER SALARY ###
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								max_width = 180
+
+								text = "COURT_POSITIONS_WINDOW_SALARY_SHORT"
+								align = right|nobaseline
+
+								tooltip = "[CourtPosition.GetSalaryBreakdownTooltip]"
+							}
+						}
+					}
+				}
+
+				### ASTROLOGER PORTRAIT ###
+				hbox = {
+					layoutpolicy_horizontal = expanding
+					layoutpolicy_vertical = expanding
+
+					background =  {
+						texture = "gfx/interface/illustrations/event_scenes/ep2_feast_steppe.dds"
+						fittype = centercrop
+						using = Mask_Rough_Edges
+						alpha = 0.3
+					}
+
+					### PREDICTION ###
+					vbox = {
+						visible = "[Character.IsValid]"
+						layoutpolicy_vertical = expanding
+
+						margin = { 5 20 }
+						spacing = 15
+
+						background = {
+							using = Background_Area_ExtraDark
+							alpha = 0.7
+
+							modify_texture = {
+								texture = "gfx/interface/component_masks/mask_fade_horizontal_middle_thick.dds"
+								blend_mode = alphamultiply
+								alpha = 0.9
+							}
+						}
+
+						### SEASONAL BAR ###
+						widget = {
+							datacontext = "[SteppeWindow.GetSeasonPrediction( SteppeWindow.GetSelectedSubRegion.Self )]"
+							visible = "[And( CourtAstrologerPrediction.GetSituationPhaseFirst.IsValid, CourtAstrologerPrediction.GetSituationPhaseSecond.IsValid )]"
+							size = { 300 60 }
+
+							progressbar = {
+								parentanchor = center
+								size = { 100% 130% }
+								using = Mask_Rough_Edges
+
+								progresstexture = "[CourtAstrologerPrediction.GetSituationPhaseFirst.GetIcon]"
+								noprogresstexture = "[CourtAstrologerPrediction.GetSituationPhaseSecond.GetIcon]"
+								min = 0
+								max = 1
+								value = "[FixedPointToFloat( CourtAstrologerPrediction.GetPercentFirst )]"
+
+								modify_texture = {
+									texture = "gfx/interface/component_masks/season_bar_mask.dds"
+									blend_mode = alphaMultiply
+								}
+							}
+						}
+
+						### SEASONAL PREDICITON CHANCE ###
+						text_single = {
+							datacontext = "[SteppeWindow.GetSeasonPrediction( SteppeWindow.GetSelectedSubRegion.Self )]"
+							layoutpolicy_horizontal = expanding
+
+							text = "[SteppeWindow.GetSeasonPredictionDesc( CourtAstrologerPrediction.Self )]"
+							align = nobaseline
+							max_width = 300
+						}
+
+						expand = {}
+					}
+
+					### PREDICTION - NO ASTROLOGER ###
+					vbox = {
+						visible = "[Not(Character.IsValid)]"
+						layoutpolicy_horizontal = expanding
+						layoutpolicy_vertical = expanding
+
+						background = {
+							using = Background_Area_ExtraDark
+							alpha = 0.7
+							margin = { 24 24 }
+
+							modify_texture = {
+								texture = "gfx/interface/window_county/mask_holding_illustration.dds"
+								blend_mode = alphamultiply
+							}
+						}
+
+						expand = { layoutpolicy_vertical = expanding }
+
+						text_multi = {
+							layoutpolicy_horizontal = expanding
+							layoutpolicy_vertical = expanding
+
+							text = "THE_GREAT_STEPPE_WINDOW_NO_PREDICTION"
+							max_width = 200
+						}
+
+						expand = { layoutpolicy_vertical = expanding }
+					}
+
+					### ASTROLOGER
+					hbox = {
+						visible = "[Character.IsValid]"
+
+						widget = {
+							size = { 210 195 }
+
+							portrait_button = {
+								parentanchor = center
+								size = { 180 195 }
+
+								portrait_texture = "[Character.GetAnimatedPortrait( 'environment_council', 'camera_shoulders', SteppeWindow.GetAstrologerAnimation, PdxGetWidgetScreenSize( PdxGuiWidget.Self ) )]"
+								mask = "gfx/portraits/portrait_mask_council.dds"
+								effectname = "NoHighlight"
+								using = portrait_base
+							}
+
+							### ASTROLOGER TASKS ###
+							fixedgridbox = {
+								name = "task_items"
+								datacontext = "[CourtPosition.GetPositionType]"
+								datamodel = "[CourtPositionType.GetTasks]"
+								parentanchor = bottom|right
+								position = { 0 -10 }
+
+								addcolumn = 40
+								addrow = 40
+								setitemsizefromcell = yes
+								datamodel_wrap = 3
+
+								item = {
+									widget_court_position_task = {
+										blockoverride "on_click"
+										{
+											onclick = "[SteppeWindow.UpdateAstrologerAnimation( CourtPositionTaskType.Self )]"
+										}
+									}
+								}
+							}
+						}
+					}
+
+					### VACANT/EMPTY POSITION - HIRE BUTTON ###
+					widget = {
+						size = { 180 195 }
+						allow_outside = yes
+						scissor = yes
+						visible = "[Not( Character.IsValid )]"
+						tooltip = "THE_GREAT_STEPPE_WINDOW_HIRE_ASTROLOGER"
+						tooltip_offset = { -100 10 }
+
+						button = {
+							size = { 220 300 }
+							position = { -20 -100}
+
+							allow_outside = yes
+							gfxtype = framedbuttongfx
+							effectname = "NoHighlight"
+
+							texture = "gfx/portraits/unknown_portraits/button_unknown_small.dds"
+							framesize = { 564 780 }
+							upframe = 1
+							overframe = 2
+
+							button_icon = {
+								parentanchor = center
+								size = { 48 48 }
+								position = { 0 92 }
+
+								alwaystransparent = yes
+								texture = "gfx/interface/icons/flat_icons/plus.dds"
+							}
+							onclick = "[ShowCourtPositionAppointOrReplace( GetPlayer.GetID, 'court_astrologer_court_position' )]"
+
+						}
+					}
+				}
+			}
+		}
+	}
+
+	type vbox_herd_leaderboard_item = vbox {
+		margin_top = 2
+		margin_left = 12
+		layoutpolicy_horizontal = expanding
+		layoutpolicy_vertical = expanding
+
+		### ITEM NAME ###
+		text_single = {
+			layoutpolicy_horizontal = expanding
+
+			text = "[Character.GetUINameNoTooltip|U]"
+			using = Font_Size_Medium
+			align = nobaseline
+		}
+
+		### ITEM LOCATION ###
+		text_single = {
+			datacontext = "[HerdLeaderboard.GetItemSubRegion( CharacterListItem.Self )]"
+			layoutpolicy_horizontal = expanding
+
+			text = "THE_GREAT_STEPPE_WINDOW_CHARACTER_LOCATION"
+			default_format = "#Weak"
+			align = nobaseline
+		}
+
+		### ITEM REALM SIZE ###
+		text_single = {
+			visible = "[NotEqualTo_int32(Character.GetPrimaryTitle.GetTierFrame, '(int32)2')]" #nonbaron
+			layoutpolicy_horizontal = expanding
+
+			text = "REALM_WINDOW_SIZE"
+			align = nobaseline
+			tooltip = "REALM_WINDOW_SIZE_TT"
+		}
+
+		hbox = {
+			layoutpolicy_horizontal = expanding
+
+			### ITEM HERD ###
+			text_single = {
+				layoutpolicy_horizontal = expanding
+
+				text = "THE_GREAT_STEPPE_WINDOW_CHARACTER_HERD"
+				align = nobaseline
+
+				tooltipwidget = {
+					herd_breakdown_hud_toolip = {
+						datacontext = "[Character.GetDomicile]"
+
+						blockoverride "herd_limit_breakdown"
+						{
+							datacontext = "[SteppeWindow.AccessHerdLimitBreakdown( Domicile.Self )]"
+						}
+						blockoverride "herd_change_breakdown"
+						{
+							datacontext = "[SteppeWindow.AccessHerdChangeBreakdown( Character.Self )]"
+						}
+						blockoverride "herd_conversion_breakdown"
+						{
+							datacontext = "[SteppeWindow.AccessHerdConversionBreakdown( Domicile.Self )]"
+						}
+					}
+				}
+			}
+
+			expand = {}
+
+			### ITEM MILITARY ###
+			hbox = {
+				datacontext = "[HerdLeaderboard.GetArmyComposition( CharacterListItem.Self )]"
+				spacing = 4
+
+				text_single = {
+					text = "THE_GREAT_STEPPE_WINDOW_CHARACTER_MILITARY_STRENGTH"
+					align = nobaseline
+				}
+
+				icon = {
+					name = "icon_soldier"
+					texture = "gfx/interface/icons/icon_soldier.dds"
+					size = { 23 23 }
+				}
+
+				text_single = {
+					text = "[ArmyComposition.GetSoldierCountString]"
+					align = nobaseline
+				}
+
+				army_quality_icon = {
+					tooltip_visible = no
+				}
+
+				tooltip = "[ArmyComposition.GetArmyCompositionTooltip]"
+			}
+		}
+		expand = {}
+	}
+
+	type window_herd_leaderboard = window  {
+		name = "herd_leaderboard_window"
+		widgetanchor = right
+		position = { 10 70 }
+		size = { 750 82% }
+
+		layer = middle
+		movable = yes
+
+		using = Window_Background
+		using = Window_Decoration_Spike
+		using = Window_Size_CharacterList
+
+		state = {
+			name = _show
+			using = Animation_FadeIn_Quick
+		}
+
+		state = {
+			name = _hide
+			using = Animation_FadeOut_Quick
+		}
+
+		vbox = {
+			using = Window_Margins
+
+			header_pattern = {
+				layoutpolicy_horizontal = expanding
+
+				blockoverride "header_text"
+				{
+					text = "THE_GREAT_STEPPE_WINDOW_HERD_LEADERBOARD_BUTTON"
+				}
+
+				blockoverride "button_close"
+				{
+					onclick = "[HerdLeaderboard.Close]"
+				}
+			}
+
+			vbox_character_list = {
+				layoutpolicy_horizontal = expanding
+				layoutpolicy_vertical = expanding
+
+				blockoverride "sort_buttons"
+				{
+					hbox_list_sort_buttons = {
+						layoutpolicy_horizontal = expanding
+
+						blockoverride "filters_visible" {
+							visible = no
+						}
+
+						blockoverride "sort_dropdown" {
+							dropdown_sort_characterlist = {
+								name = "herd_owners_sort_options"
+							}
+						}
+					}
+				}
+
+				blockoverride "skill_sort_buttons" {}
+
+				blockoverride "scrollbox_empty_visibility"
+				{
+					layoutpolicy_vertical = expanding
+					visible = "[Not( CharacterSelectionList.HasItems )]"
+					text = "THE_GREAT_STEPPE_WINDOW_HERD_LEADERBOARD_EMPTY"
+				}
+
+				blockoverride "container_implementation"
+				{
+					fixedgridbox = {
+						addcolumn = 630
+						addrow = 100
+
+						name = "characters_grid"
+						datamodel_reuse_widgets = yes
+						datamodel = "[CharacterSelectionList.GetList]"
+						visible = "[Not(CharacterSelectionList.IsBuildingList)]"
+
+						item = {
+							widget_character_list_item_finder = {
+								size = { 630 100 }
+
+								background = {
+									using = Background_Area
+								}
+							}
+						}
+					}
+				}
+
+				blockoverride "button_content"
+				{
+					vbox_herd_leaderboard_item = {}
+				}
+			}
+		}
+	}
+
+	type situation_mini_map_mode = mini_map_mode {
+		parentanchor = bottom|left
+		widgetanchor = bottom|right
+		position = { -250 -25 }
+
+		blockoverride "widget_size"
+		{
+			size = { 360 60 }
+		}
+
+		blockoverride "map_mode_buttons"
+		{
+			icon_button_mapmode = {
+				blockoverride = "mm_datacontext"
+				{
+					datacontext = "[GetMapMode( 'realms' )]"
+				}
+			}
+
+			icon_button_mapmode = {
+				blockoverride = "mm_datacontext"
+				{
+					datacontext = "[GetMapMode( 'situation' )]"
+				}
+			}
+
+			icon_button_mapmode = {
+				blockoverride = "mm_datacontext"
+				{
+					datacontext = "[GetMapMode( 'migration_counties' )]"
+				}
+
+				blockoverride "mm_button"
+				{
+					shortcut = "map_mode_19"
+				}
+			}
+
+			icon_button_mapmode = {
+				blockoverride = "mm_datacontext"
+				{
+					datacontext = "[GetMapMode( 'cultures' )]"
+				}
+
+				blockoverride "mm_button"
+				{
+					shortcut = "map_mode_2"
+				}
+			}
+
+			icon_button_mapmode = {
+				blockoverride = "mm_datacontext"
+				{
+					datacontext = "[GetMapMode( 'landless_rulers' )]"
+				}
+
+				blockoverride "mm_button"
+				{
+					shortcut = "map_mode_18"
+				}
+			}
+		}
+	}
+
+	type widget_nomad_character = widget {
+		datacontext = "[CharacterListItem.GetCharacter]"
+		size = { 90 115 }
+
+		vbox = {
+			portrait_head_small = {}
+
+			text_single = {
+				text = "THE_GREAT_STEPPE_WINDOW_NOMAD_LABEL"
+				default_format = "#Weak"
+				align = nobaseline
+			}
+		}
+	}
+}

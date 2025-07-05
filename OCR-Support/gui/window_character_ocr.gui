@@ -54,9 +54,25 @@ types OCR {
 				layoutpolicy_horizontal = expanding
 				margin = { 10 10 }
 
-				error_button = {
+				hbox = {
 					layoutpolicy_horizontal = expanding
+					visible = "[InDebugMode]"
+
+					button_text = {
+						visible = "[WatchWindowsEnabled]"
+						onclick = "[AddWatchWindow( CharacterWindow.GetCharacter.MakeScope )]"
+						blockoverride "text" {
+							raw_text = "Watch"
+						}
+					}
+
+					error_button = {
+					}
+
+
+					expand = {}
 				}
+
 
 				#1st line: name
 				hbox = {
@@ -1097,7 +1113,7 @@ types OCR {
 									raw_text = "[Character.MakeScope.ScriptValue('neighbours_at_war_sval')] at war,"
 								}
 								text_single = {
-									raw_text = "Control A."
+									raw_text = "A."
 								}
 							}
 							visible = "[And( And(GreaterThan_int32(Character.RealmSize, '(int32)0'), Not(IsLandlessAdventurer(Character))), Character.IsAlive)]"
@@ -1105,6 +1121,7 @@ types OCR {
 							onclick = "[GetScriptedGui('holdings_list').Execute( GuiScope.SetRoot( Character.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
 							using = expanded_view
 							shortcut = map_mode_6
+							shortcut = editor_autosave
 						}
 					}
 
@@ -1126,6 +1143,13 @@ types OCR {
 						# titles
 						counties_tabs = {
 							blockoverride "hotkeys" { }
+						}
+
+						button_map_extents = {
+							layoutpolicy_horizontal = expanding
+							onclick = "[Set('expand_view', 'map extents')]"
+							onclick = "[GetScriptedGui('map_extents_ocr').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
+							datacontext = "[Character.MakeScope]"
 						}
 					}
 
@@ -1414,7 +1438,7 @@ types OCR {
 			button = {
 				onclick = "[GetVariableSystem.Clear('expand_view')]"
 				onclick = "[GetScriptedGui('close_expanded_view').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-				shortcut = "close_window"
+				using = close_window_ocr
 				shortcut = "map_mode_1"
 			}
 
@@ -1585,6 +1609,47 @@ types OCR {
 
 				vbox = {
 					layoutpolicy_horizontal = expanding
+
+					visible = "[Has('expand_view', 'map extents')]"
+
+					state = {
+						name = _hide
+						on_finish = "[Set('map_extent_de_jure_tip', 'yes')]"
+					}
+
+					blockoverride "tribs" {
+						visible = "[GreaterThan_CFixedPoint(Character.MakeScope.ScriptValue('num_of_tributaries'), '(CFixedPoint)0')]"
+					}
+
+					blockoverride "name" {
+						raw_text = "[Character.GetPrimaryTitle.GetNameNoTierNoTooltip]"
+					}
+
+					blockoverride "refresh" {
+						onclick = "[GetScriptedGui('map_extents_ocr').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
+					}
+
+					flow_map_extents = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[Character.MakeScope]"
+						blockoverride "click" {
+							onclick = "[GetScriptedGui('map_extents_ocr').Execute( GuiScope.SetRoot( Character.MakeScope ).End )]"
+						}
+						blockoverride "realm" {}
+					}
+
+					flow_map_areas = {
+						datacontext = "[Character.MakeScope]"
+						blockoverride "center" {
+							datacontext = "[Character.MakeScope.Var('center').Title.GetCountyData]"
+							visible = "[Character.MakeScope.Var('center').IsSet]"
+						}
+						layoutpolicy_horizontal = expanding
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
 					layoutpolicy_vertical = expanding
 
 					visible = "[GetVariableSystem.HasValue('expand_view', 'personality')]"
@@ -1644,7 +1709,7 @@ types OCR {
 						visible = "[Is('legit_levels')]"
 
 						button = {
-							shortcut = close_window
+							using = close_window_ocr
 							onclick = "[Clear('legit_levels')]"
 							visible = "[Isnt('legit_tier')]"
 						}
@@ -1655,7 +1720,7 @@ types OCR {
 						}
 
 						button = {
-							shortcut = close_window
+							using = close_window_ocr
 							onclick = "[Clear('legit_tier')]"
 							visible = "[Is('legit_tier')]"
 						}
@@ -1899,6 +1964,9 @@ types OCR {
 											text_single = {
 												raw_text = "[IndexNumber],"
 											}
+											# text_single = {
+											# 	raw_text = "[Scope.Title.GetProvince.MakeScope.ScriptValue('county_control')]"
+											# }
 											text_single = {
 												raw_text = "[Scope.Title.GetNameNoTierNoTooltip],"
 											}
@@ -2007,6 +2075,10 @@ types OCR {
 														datacontext = "[GetPlayer.MakeScope.Var('char_counties_page')]"
 													}
 
+													# text_single = {
+													# 	raw_text = "[Scope.Title.GetProvince.MakeScope.ScriptValue('county_control')]"
+													# }
+
 													text_single = {
 														raw_text = "[Scope.GetLandedTitle.GetBaseNameNoTierNoTooltip],"
 													}
@@ -2066,7 +2138,7 @@ types OCR {
 							# 	size = { 0 0 }
 							# 	onclick = "[GetVariableSystem.Clear('expand_view')]"
 							# 	onclick = "[GetScriptedGui('close_expanded_view').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
-							# 	shortcut = "close_window"
+							# 	using = close_window_ocr
 							# }
 
 							flowcontainer = {

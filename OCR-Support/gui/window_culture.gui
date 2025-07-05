@@ -22,6 +22,13 @@ window = {
 		on_start = "[GetVariableSystem.Set( 'hide_bottom_left_HUD', 'true' )]"
 		on_start = "[GetVariableSystem.Set( 'culture_view_tabs', 'overview' )]"
 		on_start = "[CultureWindow.HideReformationMode]"
+		on_finish = "[GetScriptedGui('culture_closest_county_ocr').Execute( GuiScope.SetRoot( Culture.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+	}
+
+	state = {
+		name = closest
+		trigger_when = "[Not(Culture.MakeScope.Var('closest_county').IsSet)]"
+		on_finish = "[GetScriptedGui('culture_closest_county_ocr').Execute( GuiScope.SetRoot( Culture.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
 	}
 
 	state = {
@@ -72,8 +79,17 @@ window = {
 					comma = {}
 					text_single = {
 						visible = "[Has('culture_view_tabs', 'overview')]"
-						raw_text = "[Culture.GetPlayerRelationString]."
+						raw_text = "[Culture.GetHeritage.GetNameNoTooltip],"
 					}
+
+					text_single = {
+						visible = "[Not(ObjectsEqual(Culture.Self, GetPlayer.GetCulture))]"
+						raw_text = "[Culture.GetAcceptance( GetPlayer.GetCulture )|%/0V],"
+					}
+					# text_single = {
+					# 	visible = "[Has('culture_view_tabs', 'overview')]"
+					# 	raw_text = "[Culture.GetPlayerRelationString]."
+					# }
 					text_single = {
 						raw_text = "[Get('culture_view_tabs')] tab,"
 					}
@@ -124,7 +140,7 @@ window = {
 					button_text = {
 						shortcut = speed_3
 						blockoverride "text" {
-							raw_text = "3, other cultures."
+							raw_text = "3, all cultures."
 						}
 						onclick = "[GetVariableSystem.Set( 'culture_view_tabs', 'other cultures' )]"
 						onclick = "[ClickAdd('culture_list', GetPlayer, Culture)]"
@@ -141,65 +157,142 @@ window = {
 						onclick = "[CultureWindow.HideReformationMode]"
 					}
 
+					button_text = {
+						shortcut = speed_5
+						blockoverride "text" {
+							raw_text = "5, rulers."
+						}
+						onclick = "[GetVariableSystem.Set( 'culture_view_tabs', 'rulers' )]"
+						onclick = "[ClickAdd('culture_characters_list', GetPlayer, Culture)]"
+						onclick = "[CultureWindow.HideReformationMode]"
+					}
+
 					expand = {}
 				}
 
 				vbox = {
 					layoutpolicy_horizontal = expanding
-					visible = "[Has('culture_view_tabs', 'overview')]"
+					visible = "[And(Not(CultureWindow.IsInReformationMode), Has('culture_view_tabs', 'overview'))]"
 
-					hbox = {
+					button_text = {
 						layoutpolicy_horizontal = expanding
-						spacing = 3
-
-						text_single = {
-							raw_text = "There are"
+						using = prov_click
+						datacontext = "[Culture.MakeScope.Var('closest_county')]"
+						visible = "[And(Scope.IsSet, Not(ObjectsEqual(Culture.Self, GetPlayer.GetCulture)))]"
+						datacontext = "[Scope.Title.GetCountyData.GetCapital]"
+						datacontext = "[Scope.Title]"
+						blockoverride "extra" {
+							text_distance_capital = {}
+							text_single = {
+								raw_text = "Closest county: [Title.GetNameNoTierNoTooltip],"
+							}
+							text_single = {
+								visible = "[Not(ObjectsEqual(Title.Self, Title.GetHolder.GetTopLiege.GetPrimaryTitle))]"
+								raw_text = "in [Title.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip]."
+							}
 						}
+					}
 
-						text_single = {
-							raw_text = "[Culture.MakeScope.ScriptValue('culture_counties')] [Culture.GetNameNoTooltip] counties"
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = character_finder
+						onclick = "[Set('culture_view_tabs', 'counties')]"
+						# onclick = "[Click('culture_counties_filter')]"
+						onclick = "[ClickAdd('culture_counties_list', GetPlayer, Culture)]"
+
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Culture.MakeScope.ScriptValue('culture_counties')] [Culture.GetNameNoTooltip] counties,"
+							}
+							text_single = {
+								layoutpolicy_horizontal = expanding
+								raw_text = "[Culture.MakeScope.ScriptValue('culture_held_by_enemies')] held by foreigners,"
+							}
+							text_single = {
+								# visible = "[GreaterThan_CFixedPoint(Culture.MakeScope.ScriptValue('culture_held_by_enemies'), '(CFixedPoint)0')]"
+								raw_text = "C."
+							}
 						}
+					}
 
-						text_single = {
-							raw_text = "and"
+					# wrong counties
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = court_scene_editor_toolset_translate
+						onclick = "[GetScriptedGui('culture_holders_wrong_counties').Execute( GuiScope.SetRoot( Culture.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+						onclick = "[Set('culture_view_tabs', 'counties of other cultures')]"
+
+						blockoverride "extra" {
+							text_single = {
+								raw_text = "[Culture.MakeScope.ScriptValue('culture_rulers')] rulers,"
+							}
+							text_single = {
+								raw_text = "holding [Culture.MakeScope.ScriptValue('culture_holders_wrong_counties')] counties of other cultures"
+							}
+							text_single = {
+								visible = "[GreaterThan_CFixedPoint(Culture.MakeScope.ScriptValue('culture_holders_wrong_counties'), '(CFixedPoint)0')]"
+								raw_text = "and converting [Culture.MakeScope.ScriptValue('culture_holders_convert_counties')]"
+							}
+							, = {}
+							text_single = {
+								raw_text = "W."
+							}
 						}
-
-						text_single = {
-							raw_text = "[Culture.MakeScope.ScriptValue('culture_rulers')] rulers."
-						}
-
-						expand = {}
 					}
 
 					vbox_locr_culture_desc = {}
 
 					hbox = {
-						visible = "[Not( ObjectsEqual( Culture.Self, GetPlayer.GetCulture ) )]"
-						name = "acceptance"
 						layoutpolicy_horizontal = expanding
+						spacing = -8
 
-						text_single = {
-							name = "acceptance_text"
-							text = "CULTURE_VIEW_ACCEPTANCE"
-							tooltip = "CULTURE_ACCEPTANCE_TOOLTIP"
+						button_map_extents = {
+							onclick = "[GetScriptedGui('culture_map_extents').Execute( GuiScope.SetRoot( Culture.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+							onclick = "[Set('culture_view_tabs', 'map extents')]"
 						}
 
-						dot = { }
-
-						space = { }
-
-						text_single = {
-							visible = "[NotEqualTo_CFixedPoint( Culture.GetAcceptanceDiff( GetPlayer.GetCulture ), '(CFixedPoint)0')]"
-							text = "CULTURE_VIEW_ACCEPTANCE_DIFF"
-							tooltip = "CULTURE_ACCEPTANCE_TOOLTIP"
+						button_text = {
+							shortcut = editor_autosave
+							onclick = "[Set('culture_view_tabs', 'adjacent cultures')]"
+							onclick = "[GetScriptedGui('adjacent_cultures_ocr').Execute( GuiScope.SetRoot( Culture.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+							blockoverride "text" {
+								raw_text = "Adjacent cultures, A."
+							}
 						}
 
-						text_single = {
-							visible = "[NotEqualTo_CFixedPoint( Culture.GetAcceptanceDiff( GetPlayer.GetCulture ), '(CFixedPoint)0')]"
-							raw_text = " per year."
-						}
 
-						expand = { }
+						expand = {}
+					}
+
+					button_text = {
+						visible = "[Not( ObjectsEqual( Culture.Self, GetPlayer.GetCulture ) )]"
+						shortcut = army_split_half
+						layoutpolicy_horizontal = expanding
+						onclick = "[Set('culture_view_tabs', 'acceptance')]"
+						blockoverride "extra" {
+							text_single = {
+								name = "acceptance_text"
+								text = "CULTURE_VIEW_ACCEPTANCE"
+								tooltip = "CULTURE_ACCEPTANCE_TOOLTIP"
+							}
+
+							dot_l = {}
+
+							text_single = {
+								visible = "[NotEqualTo_CFixedPoint( Culture.GetAcceptanceDiff( GetPlayer.GetCulture ), '(CFixedPoint)0')]"
+								text = "CULTURE_VIEW_ACCEPTANCE_DIFF"
+								tooltip = "CULTURE_ACCEPTANCE_TOOLTIP"
+							}
+
+							text_single = {
+								visible = "[NotEqualTo_CFixedPoint( Culture.GetAcceptanceDiff( GetPlayer.GetCulture ), '(CFixedPoint)0')]"
+								raw_text = "per year."
+							}
+							text_single = {
+								raw_text = "F."
+							}
+						}
 					}
 
 					text_single = {
@@ -222,7 +315,7 @@ window = {
 					button_text = {
 						layoutpolicy_horizontal = expanding
 						name = "cancel_reform_culture"
-						shortcut = close_window
+						using = close_window_ocr
 						blockoverride "text" {
 							text = "REFORM_CULTURE_CLOSE_LABEL"
 						}
@@ -323,7 +416,7 @@ window = {
 
 						button_text = {
 							visible = "[And(And(ObjectsEqual(Culture.GetCultureHead.Self, GetPlayer ), HasDlcFeature( 'reform_culture' )), GetPlayer.IsValid)]"
-							shortcut = army_split_half
+							shortcut = map_mode_15
 							blockoverride "disabled" {
 								visible = "[Culture.IsReforming]"
 							}
@@ -333,7 +426,7 @@ window = {
 							blockoverride "extra" {
 								comma = {}
 								text_single = {
-									raw_text = "F."
+									raw_text = "Control F."
 								}
 							}
 							name = "reform_culture"
@@ -378,6 +471,22 @@ window = {
 				}
 
 				#tabs
+
+				flowcontainer = {
+					ignoreinvisible = yes
+					direction = vertical
+					layoutpolicy_horizontal = expanding
+
+					visible = "[Has('culture_view_tabs', 'acceptance')]"
+
+					text_multi_wide = {
+						text = "CULTURE_ACCEPTANCE_TOOLTIP"
+					}
+
+					text_multi_wide = {
+						raw_text = "game_concept_cultural_acceptance_desc"
+					}
+				}
 
 				#cultures
 				vbox = {
@@ -468,50 +577,360 @@ window = {
 					}
 				}
 
-				#culture counties
 				vbox = {
-					datamodel = "[GetPlayer.MakeScope.GetList('culture_counties')]"
 					layoutpolicy_horizontal = expanding
-					visible = "[Has('culture_view_tabs', 'counties')]"
 
-					button_text = {
+					visible = "[Has('culture_view_tabs', 'rulers')]"
+
+					# flowcontainer = {
+					# 	ignoreinvisible = yes
+					# 	layoutpolicy_horizontal = expanding
+					# 	visible = "[Isnt('culture_followers_sort')]"
+					#
+					# 	button_text = {
+					# 		shortcut = army_split_half
+					# 		onclick = "[GetScriptedGui('culture_followers_filter').Execute( GuiScope.SetRoot( GetPlayer.MakeScope ).End )]"
+					# 		onclick = "[GetScriptedGui('culture_followers').Execute( GuiScope.SetRoot( Culture.MakeScope ).AddScope('player', GetPlayer.MakeScope ).End )]"
+					# 		blockoverride "pre" {
+					# 			text_single = {
+					# 				raw_text = "[GetDataModelSize(CultureWindow.GetCulture.MakeScope.GetList('followers'))] [CultureWindow.GetCulture.GetAdjectiveNoTooltip] [Select_CString(GetPlayer.MakeScope.Var('culture_followers_filter').IsSet, 'followers', 'rulers')],"
+					# 			}
+					# 		}
+					# 		blockoverride "text" {
+					# 			raw_text = "show [Select_CString(GetPlayer.MakeScope.Var('culture_followers_filter').IsSet, 'rulers only', 'all followers')], F."
+					# 		}
+					# 	}
+					# }
+					#
+					# flowcontainer = {
+					# 	ignoreinvisible = yes
+					# 	visible = "[Isnt('culture_followers_sort')]"
+					#
+					# 	layoutpolicy_horizontal = expanding
+					#
+					# 	button_text = {
+					# 		shortcut = map_mode_2
+					# 		onclick = "[Set('culture_followers_sort', 'yes')]"
+					# 		blockoverride "text" {
+					# 			raw_text = "Sorted by:"
+					# 		}
+					# 		blockoverride "extra" {
+					# 			text_single = {
+					# 				visible = "[Not(GetPlayer.MakeScope.Var('culture_followers_sort').IsSet)]"
+					# 				raw_text = "realm size,"
+					# 			}
+					# 			text_single = {
+					# 				visible = "[GetPlayer.MakeScope.Var('culture_followers_sort').IsSet]"
+					# 				raw_text = "[GetPlayer.MakeScope.Var('culture_followers_sort').GetFlagName],"
+					# 			}
+					#
+					# 			text_single = {
+					# 				raw_text = "T."
+					# 			}
+					# 		}
+					# 	}
+					#
+
+					flowcontainer = {
+						ignoreinvisible = yes
+						spacing = 3
 						layoutpolicy_horizontal = expanding
-						shortcut = map_mode_11
-						blockoverride "text" {
-							raw_text = "Refresh, Shift E."
-						}
-						onclick = "[ClickAdd('culture_counties_list', GetPlayer, Culture)]"
-					}
 
-					text_single = {
-						layoutpolicy_horizontal = expanding
-						raw_text = "[GetDataModelSize(GetPlayer.MakeScope.GetList('culture_counties'))] counties:"
-					}
-
-					item = {
 						button_text = {
+							shortcut = map_mode_18
 							layoutpolicy_horizontal = expanding
-							datacontext = "[Scope.Title]"
-							onclick = "[OpenGameViewData('holding_view', Scope.Title.GetProvince.Self)]"
-							onclick = "[CloseGameView('culture_window')]"
-
+							onclick = "[ClickAdd('culture_characters_list', GetPlayer, Culture)]"
 							blockoverride "extra" {
 								text_single = {
-									raw_text = "[Title.GetNameNoTierNoTooltip],"
+									raw_text = "[GetDataModelSize(Culture.MakeScope.GetList('culture_characters'))] rulers."
 								}
 								text_single = {
-									visible = "[Not(ObjectsEqual(Title.Self, Title.GetHolder.GetTopLiege.GetPrimaryTitle))]"
-									raw_text = "in [Title.GetHolder.GetTopLiege.GetPrimaryTitle.GetNameNoTierNoTooltip],"
+									raw_text = "Refresh, Control R."
 								}
+							}
+						}
 
-								text_single = {
-									datacontext = "[Title.GetProvince]"
-									visible = "[Not(ObjectsEqual(MyCapital, Province.Self))]"
-									raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]"
+						button_text = {
+							shortcut = map_mode_2
+							onclick = "[Click('culture_characters_sorting')]"
+							onclick = "[ClickAdd('culture_characters_list', GetPlayer, Culture)]"
+							blockoverride "text" {
+								raw_text = "[Select_CString(GetPlayer.MakeScope.Var('culture_characters_sorting').IsSet, 'Sorted by distance, sort by size', 'Sorted by size, sort by distance')], T."
+							}
+						}
+
+					}
+					# }
+					#
+					# flowcontainer = {
+					# 	ignoreinvisible = yes
+					# 	direction = vertical
+					# 	layoutpolicy_horizontal = expanding
+					# 	visible = "[Is('culture_followers_sort')]"
+					# 	datamodel = "[GetGlobalList('culture_followers_sort')]"
+					#
+					# 	button = {
+					# 		using = close_window_ocr
+					# 		onclick = "[Clear('culture_followers_sort')]"
+					# 	}
+					#
+					# 	text_single = {
+					# 		raw_text = "Sort by:"
+					# 	}
+					#
+					# 	item = {
+					# 		button_text = {
+					# 			blockoverride "y" {}
+					# 			blockoverride "sclick" {
+					# 				onclick = "[GetScriptedGui('culture_followers').Execute( GuiScope.SetRoot( Culture.MakeScope ).AddScope('player', GetPlayer.MakeScope ).AddScope('sorting', MakeScopeFlag(Scope.GetFlagName)).End )]"
+					# 				onclick = "[Clear('culture_followers_sort')]"
+					# 			}
+					# 			shortcuts_list = {}
+					# 			blockoverride "text" {
+					# 				raw_text = "[Scope.GetFlagName]"
+					# 			}
+					# 		}
+					# 	}
+					# }
+
+					fixedgridbox = {
+						layoutpolicy_horizontal = expanding
+						addrow = 20
+						addcolumn = 690
+						datamodel = "[Culture.MakeScope.GetList('culture_characters')]"
+						# visible = "[Isnt('culture_followers_sort')]"
+
+						item = {
+							button_text = {
+								blockoverride "sclick" {
+									using = char_click
+								}
+								# shortcuts_list = {
+								# }
+								# blockoverride "num" {}
+								datacontext = "[Scope.GetCharacter]"
+								blockoverride "pre" {
+									text_single = {
+										raw_text = "[Character.GetFirstNameNoTooltip]"
+									}
+
+									text_single = {
+										margin_right = -3
+										visible = "[Character.HasLandedTitles]"
+										raw_text = "of [Character.GetPrimaryTitle.GetNameNoTierNoTooltip]"
+									}
+								}
+								blockoverride "extra" {
+									, = {}
+									flowcontainer = {
+										ignoreinvisible = yes
+										spacing = 3
+										visible = no#"[GetPlayer.MakeScope.Var('culture_followers_sort').IsSet]"
+
+										text_single = {
+											visible = "[EqualTo_string(GetPlayer.MakeScope.Var('culture_followers_sort').GetFlagName, 'piety')]"
+											raw_text = "[Character.GetPiety] piety."
+										}
+										text_single = {
+											visible = "[EqualTo_string(GetPlayer.MakeScope.Var('culture_followers_sort').GetFlagName, 'devotion')]"
+											raw_text = "[GetPietyLevelName(Character.GetPietyLevel)]."
+										}
+										text_single = {
+											visible = "[EqualTo_string(GetPlayer.MakeScope.Var('culture_followers_sort').GetFlagName, 'strength')]"
+											raw_text = "[Character.GetMilitaryStrengthText] men,"
+										}
+										text_single = {
+											visible = "[EqualTo_string(GetPlayer.MakeScope.Var('culture_followers_sort').GetFlagName, 'sins')]"
+											raw_text = "[Character.MakeScope.ScriptValue('num_of_sins')] sins,"
+										}
+										text_single = {
+											visible = "[EqualTo_string(GetPlayer.MakeScope.Var('culture_followers_sort').GetFlagName, 'virtues')]"
+											raw_text = "[Character.MakeScope.ScriptValue('num_of_virtues')] virtues,"
+										}
+										text_single = {
+											raw_text = "[Character.RealmSize] counties,"
+										}
+									}
+									# text_single = {
+									# 	raw_text = "[Character.GetTitleAsNameNoTooltip]"
+									# }
+
+									text_single = {
+										raw_text = "[Character.RealmSize] counties,"
+									}
+
+									text_single = {
+										raw_text = "[Character.GetMilitaryStrengthText] men,"
+									}
+
+
+									text_single = {
+										visible = "[Not(ObjectsEqual(Province.Self, MyCapital))]"
+										datacontext = "[Character.GetCurrentLocation]"
+										raw_text = "[DistanceTo(MyCapital, Province)|0] [DaysTo(MyCapital, Province)] [Direction(MyCapital, Province)]."
+									}
 								}
 							}
 						}
 					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+
+					visible = "[Has('culture_view_tabs', 'adjacent cultures')]"
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = map_mode_18
+						onclick = "[GetScriptedGui('adjacent_cultures_ocr').Execute( GuiScope.SetRoot( Culture.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(Culture.MakeScope.GetList('adjacent_cultures'))] cultures, Refresh Control R."
+						}
+					}
+
+					fixedgridbox = {
+						layoutpolicy_horizontal = expanding
+						addrow = 20
+						addcolumn = 690
+						datamodel = "[Culture.MakeScope.GetList('adjacent_cultures')]"
+
+						item = {
+							button_text = {
+								datacontext = "[Scope.Culture]"
+								datacontext = "[Scope.Var('closest_county').Title.GetCountyData.GetCapital]"
+								blockoverride "sclick" {
+									onclick = "[OpenGameViewData( 'culture_window', Culture.GetID )]"
+									onclick = "[Set('culture_view_tabs', 'overview')]"
+								}
+								# shortcuts_list = {}
+								# blockoverride "num" {}
+								blockoverride "text" {
+									raw_text = "[Culture.GetNameNoTooltip],"
+								}
+								blockoverride "extra" {
+									text_single = {
+										raw_text = "[Culture.GetHeritage.GetNameNoTooltip],"
+									}
+									text_single = {
+										raw_text = "[Culture.MakeScope.ScriptValue('culture_counties')] counties,"
+									}
+									text_distance_capital = {}
+								}
+							}
+						}
+					}
+				}
+
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Has('culture_view_tabs', 'counties of other cultures')]"
+
+					button_text = {
+						layoutpolicy_horizontal = expanding
+						shortcut = map_mode_18
+						blockoverride "text" {
+							raw_text = "[GetDataModelSize(Culture.MakeScope.GetList('wrong_counties'))] counties. refresh, Control R."
+						}
+					}
+
+					fixedgridbox = {
+						layoutpolicy_horizontal = expanding
+						addrow = 20
+						addcolumn = 600
+						datamodel = "[Culture.MakeScope.GetList('wrong_counties')]"
+
+						item = {
+							button_county_ocr = {
+								# blockoverride "num" {}
+								# shortcuts_list = {}
+								blockoverride "culture" {}
+								blockoverride "sclick" {
+									using = prov_click
+								}
+							}
+						}
+					}
+				}
+
+				#culture counties
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Has('culture_view_tabs', 'counties')]"
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+
+						button_text = {
+							shortcut = map_mode_11
+							blockoverride "text" {
+								raw_text = "Refresh, Shift E."
+							}
+							onclick = "[ClickAdd('culture_counties_list', GetPlayer, Culture)]"
+						}
+
+						button_text = {
+							shortcut = army_split_half
+							onclick = "[Click('culture_counties_filter')]"
+							onclick = "[ClickAdd('culture_counties_list', GetPlayer, Culture)]"
+							blockoverride "text" {
+								raw_text = "[Select_CString(GetPlayer.MakeScope.Var('culture_counties_filter').IsSet, 'Show all', 'filter held by foreigners')], F."
+							}
+						}
+
+
+						expand = {}
+					}
+
+					hbox = {
+						layoutpolicy_horizontal = expanding
+						spacing = 3
+
+						text_single = {
+							raw_text = "[PdxGuiWidget.AccessParent.AccessParent.FindChild('items').CountVisibleChildren] counties"
+						}
+
+						text_single = {
+							raw_text = "[AddTextIf(GetPlayer.MakeScope.Var('culture_counties_filter').IsSet, 'held by foreigners')]"
+						}
+
+						text_single = {
+							margin_left = -3
+							raw_text = ":"
+						}
+
+
+						expand = {}
+					}
+
+
+					vbox = {
+						name = "items"
+						layoutpolicy_horizontal = expanding
+						datamodel = "[GetPlayer.MakeScope.GetList('culture_counties')]"
+
+						item = {
+							button_county_ocr = {
+								layoutpolicy_horizontal = expanding
+								# blockoverride "holder" {
+								# 	visible = "[And(Not(Scope.Title.GetHolder.IsLocalPlayer), Not(Scope.Title.GetHolder.IsIndependentRuler))]"
+								# }
+								blockoverride "click" {
+									onclick = "[OpenGameViewData('holding_view', Scope.Title.GetProvince.Self)]"
+									onclick = "[CloseGameView('culture_window')]"
+								}
+								blockoverride "extra" {
+									text_single = {
+										margin_left = -3
+										# visible = "[GetPlayer.MakeScope.Var('culture_counties_filter').IsSet]"
+										visible = "[Not(ObjectsEqual(Culture.Self, Title.GetHolder.GetCulture))]"
+										raw_text = "Holder is [Title.GetHolder.GetCulture.GetNameNoTooltip]."
+									}
+								}
+							}
+						}
+					}
+
 				}
 
 				vbox = {
@@ -817,6 +1236,36 @@ window = {
 					expand = { }
 				}
 
+				vbox = {
+					layoutpolicy_horizontal = expanding
+					visible = "[Has('culture_view_tabs', 'map extents')]"
+
+					state = {
+						name = _hide
+						on_finish = "[Set('map_extent_de_jure_tip', 'yes')]"
+					}
+
+					blockoverride "name" {
+						raw_text = "[Culture.GetNameNoTooltip]"
+					}
+					blockoverride "refresh" {
+						onclick = "[GetScriptedGui('culture_map_extents').Execute( GuiScope.SetRoot( Culture.MakeScope ).AddScope('player', GetPlayer.MakeScope).End )]"
+					}
+
+					flow_map_extents = {
+						layoutpolicy_horizontal = expanding
+						datacontext = "[Culture.MakeScope]"
+					}
+					spacer = { size = { 0 5 } }
+					flow_map_areas = {
+						datacontext = "[Culture.MakeScope]"
+						blockoverride "center" {
+							datacontext = "[Culture.MakeScope.Var('center').Title.GetCountyData]"
+							visible = "[Culture.MakeScope.Var('center').IsSet]"
+						}
+					}
+				}
+
 				# inno
 				vbox = {
 					name = "innovations_area_tutorial_uses_this"
@@ -1110,6 +1559,12 @@ window = {
 									}
 
 									expand = { }
+								}
+
+								text_single = {
+									layoutpolicy_horizontal = expanding
+									margin_left = 5
+									raw_text = "Average [Culture.MakeScope.ScriptValue('culture_avg_development')|1] development of [Culture.GetNameNoTooltip] counties."
 								}
 							}
 						}
